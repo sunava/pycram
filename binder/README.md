@@ -36,7 +36,7 @@ Files for running Pycram on BinderHub.
 
 ### Option 2: Run on BinderHub
 
-- Link to the binderhub: https://binder.intel4coro.de/v2/gh/cram2/pycram.git/binder-xpra
+- Link to the binderhub: https://binder.intel4coro.de/v2/gh/IntEL4CoRo/pycram/binder-xpra?labpath=examples%2Fintro.ipynb
 
 ## Usage
 
