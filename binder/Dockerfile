@@ -35,3 +35,4 @@ RUN git config --global --add safe.directory ${PWD}
 COPY --chown=${NB_USER}:users binder/entrypoint.sh /
 ENTRYPOINT ["/entrypoint.sh"]
 CMD ["start-notebook.sh"]
+RUN pip install jupyter-notebookparams
