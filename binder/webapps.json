@@ -8,7 +8,7 @@
   {
     "name": "XPRA",
     "title": "Xpra Desktop",
-    "icon": "proxy/8001/rvizweb/webapps/webapps/xpra-logo.svg",
+    "icon": "proxy/8001/rvizweb/webapps/xpra-logo.svg",
     "url": "xprahtml5/index.html",
     "start": true
   },
