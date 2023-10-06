@@ -36,7 +36,9 @@ Files for running Pycram on BinderHub.
 
 ### Option 2: Run on BinderHub
 
-- Link to the binderhub: https://binder.intel4coro.de/v2/gh/IntEL4CoRo/pycram/binder-xpra?labpath=examples%2Fintro.ipynb
+- intro.ipynb: [![Binder](https://binder.intel4coro.de/badge_logo.svg)](https://binder.intel4coro.de/v2/gh/IntEL4CoRo/pycram.git/binder-xpra?urlpath=lab%2Ftree%2Fexamples%2Fintro.ipynb)
+
+- Passing ROS paramters (robot=pr2, environment=kitchen): [![Binder](https://binder.intel4coro.de/badge_logo.svg)](https://binder.intel4coro.de/v2/gh/IntEL4CoRo/pycram.git/binder-xpra?urlpath=lab%2Ftree%2Fexamples%2Faction_designator.ipynb%3Frobot%3Dpr2%26environment%3Dkitchen)
 
 ## Usage
 
