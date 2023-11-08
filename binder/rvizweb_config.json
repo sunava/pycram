@@ -1,0 +1,34 @@
+{
+  "globalOptions": {
+    "background": "#333333",
+    "fixedFrame": "/simulated/odom"
+  },
+  "sidebarOpened": true,
+  "displays": [
+    {
+      "isShown": true,
+      "name": "Grid",
+      "options": {
+        "cellSize": "1",
+        "color": "#888888",
+        "numCells": "10"
+      },
+      "type": "grid"
+    },
+    {
+      "isShown": true,
+      "name": "TF",
+      "options": {},
+      "type": "tf"
+    },
+    {
+      "isShown": true,
+      "name": "Robot model",
+      "options": {
+        "param": "robot_description",
+        "tfPrefix": "simulated/pr2_2"
+      },
+      "type": "urdf"
+    }
+  ]
+}
