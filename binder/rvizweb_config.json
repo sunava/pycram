@@ -29,7 +29,7 @@
       "name": "Robot model",
       "options": {
         "param": "robot_description",
-        "tfPrefix": "simulated/pr2_3"
+        "tfPrefix": "simulated/pr2_1"
       },
       "type": "urdf"
     }
