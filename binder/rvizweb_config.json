@@ -1,10 +1,7 @@
 {
   "globalOptions": {
     "background": "#333333",
-    "fixedFrame": "/simulated/odom",
-    "url": "wss://jupyter.intel4coro.de/user/k3cks-pycram-cmqkk5d8/proxy/9090",
-    "colladaServer": "https://jupyter.intel4coro.de/user/k3cks-pycram-cmqkk5d8/proxy/8001",
-    "videoServer": "https://jupyter.intel4coro.de/user/k3cks-pycram-cmqkk5d8/proxy/9999"
+    "fixedFrame": "/simulated/odom"
   },
   "sidebarOpened": true,
   "displays": [
