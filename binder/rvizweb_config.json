@@ -1,7 +1,7 @@
 {
   "globalOptions": {
     "background": "#333333",
-    "fixedFrame": "/simulated/odom",
+    "fixedFrame": "/simulated/odom"
   },
   "sidebarOpened": true,
   "displays": [
