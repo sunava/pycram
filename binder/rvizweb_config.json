@@ -1,7 +1,7 @@
 {
   "globalOptions": {
     "background": "#333333",
-    "fixedFrame": "/simulated/odom"
+    "fixedFrame": "/simulated/odom",
   },
   "sidebarOpened": true,
   "displays": [
@@ -29,6 +29,14 @@
         "tfPrefix": "simulated/pr2_2"
       },
       "type": "urdf"
+    },
+    {
+      "isShown": true,
+      "name": "Marker array",
+      "options": {
+        "topic": "/viz_marker"
+      },
+      "type": "markerArray"
     }
   ]
 }
