@@ -3,7 +3,8 @@
     "name": "rvizweb",
     "title": "Rvizweb",
     "icon": "proxy/8001/rvizweb/webapps/r.svg",
-    "url": "proxy/8001/rvizweb/webapps/rvizweb/build/www/index.html"
+    "url": "proxy/8001/rvizweb/webapps/rvizweb/build/www/index.html",
+    "start": true
   },
   {
     "name": "XPRA",
