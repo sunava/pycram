@@ -33,14 +33,14 @@ class HSRDescription(RobotDescription):
         arm_links = ["arm_flex_link", "arm_roll_link", "wrist_flex_link", "wrist_roll_link"]
         arm_carry = {"park": [0, 1.5, -1.85, 0]}
         gripper_links = ["hand_l_distal_link", "hand_l_spring_proximal_link", "hand_palm_link",
-                         "hand_r_distal_link", "hand_r_spring_proximal_link"]
+                         "hand_r_distal_link", "hand_r_spring_proximal_link", "gripper_tool_frame"]
         gripper_joints = ["hand_motor_joint"]
         gripper = GripperDescription("gripper", gripper_links=gripper_links, gripper_joints=gripper_joints,
                                      gripper_meter_to_jnt_multiplier=1.0, gripper_minimal_position=0.0,
                                      gripper_convergence_delta=0.001)
         arm_chain = ChainDescription("left", arm_joints, arm_links, static_joint_states=arm_carry)
         arm_inter = InteractionDescription(arm_chain, "wrist_roll_link")
-        arm_manip = ManipulatorDescription(arm_inter, tool_frame="gripper_tool_frame", gripper_description=gripper)
+        arm_manip = ManipulatorDescription(arm_inter, tool_frame="hand_gripper_tool_frame", gripper_description=gripper)
         self.add_chain("left", arm_manip)
         self.add_static_gripper_chains("left", {"open": [0.3], "close": [0.0]})
 

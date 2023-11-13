@@ -70,7 +70,7 @@ def generate_orientation(position: List[float], origin: Pose) -> List[float]:
         robot should face.
     :return: A quaternion of the calculated orientation
     """
-    angle = np.arctan2(position[1]-origin.position.y, position[0]-origin.position.x) + np.pi
+    angle = np.arctan2(position[1] - origin.position.y, position[0] - origin.position.x) + np.pi
     quaternion = list(tf.transformations.quaternion_from_euler(0, 0, angle, axes="sxyz"))
     return quaternion
 
@@ -141,7 +141,8 @@ def reachability_validator(pose: Pose,
     # left_joints = robot_description._safely_access_chains('left').joints
     left_joints = robot_description.chains['left'].joints
     # right_joints = robot_description._safely_access_chains('right').joints
-    right_joints = robot_description.chains['right'].joints
+    if robot.name != 'hsr':
+        right_joints = robot_description.chains['right'].joints
     # TODO Make orientation adhere to grasping orientation
     res = False
     arms = []

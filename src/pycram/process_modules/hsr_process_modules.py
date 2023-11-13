@@ -1,14 +1,27 @@
+from abc import ABC
 from threading import Lock
+from typing import Any
 
+import actionlib
+
+import pycram.bullet_world_reasoning as btr
+import numpy as np
+import time
+import rospy
+import pybullet as p
+
+from ..plan_failures import EnvironmentManipulationImpossible
 from ..robot_descriptions import robot_description
 from ..process_module import ProcessModule, ProcessModuleManager
-from ..bullet_world import BulletWorld
-from ..helper import _apply_ik
-import pycram.bullet_world_reasoning as btr
-import pybullet as p
-import logging
-import time
-
+from ..bullet_world import BulletWorld, Object
+from ..helper import transform
+from ..external_interfaces.ik import request_ik, IKError
+from ..helper import _transform_to_torso, _apply_ik, calculate_wrist_tool_offset, inverseTimes
+from ..local_transformer import LocalTransformer
+from ..designators.motion_designator import *
+from ..enums import JointType, ObjectType
+from ..external_interfaces import giskard
+from ..external_interfaces.robokudo import query
 
 def _park_arms(arm):
     """
@@ -214,6 +227,19 @@ class HSRWorldStateDetecting(ProcessModule):
         if solution['cmd'] == "world-state-detecting":
             obj_type = solution['object_type']
             return list(filter(lambda obj: obj.type == obj_type, BulletWorld.current_bullet_world.objects))[0]
+
+###########################################################
+########## Process Modules for the Real HSR ###############
+###########################################################
+
+class HSRNavigationReal(ProcessModule):
+    """
+    Process module for the real PR2 that sends a cartesian goal to giskard to move the robot base
+    """
+
+    def _execute(self, designator: MoveMotion.Motion) -> Any:
+        rospy.logdebug(f"Sending goal to giskard to Move the robot")
+        giskard.achieve_cartesian_goal(designator.target, robot_description.base_link, "map")
 
 
 class HSRManager(ProcessModuleManager):
