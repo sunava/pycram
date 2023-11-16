@@ -66,7 +66,7 @@ After that you can prepare the required dependencies for the specific Docker/Bin
 <details><summary>
 2. Setup for pycram</summary>
 <br>
-To setup a pycram workspace with docker it is neccessary to clone the respective repositories for that. For this simply create a rosinstall file to clone all at once. A reference for this can be this [rosinstall](https://github.com/K3cks/pycram/blob/binder-example/binder/pycram-http.rosinstall) file. This  differs from the standard rosinstall for pycram since the intitialization of submoudles needs to be done seperately.
+To setup a pycram workspace with docker it is neccessary to clone the respective repositories for that. For this simply create a rosinstall file to clone all at once. A reference for this can be this <a href="https://github.com/K3cks/pycram/blob/binder-example/binder/pycram-http.rosinstall">rosinstall</a> file. This  differs from the standard rosinstall for pycram since the intitialization of submoudles needs to be done seperately.
 <br>
 
 ```
@@ -303,7 +303,7 @@ This can then be copied into a local file. <b> Delete </b> lines containing the 
                       Pick up Example &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 </font></b></summary>
 
-A short example is shown here with Initializing a world with a robot, spawning and then picking up an object. This is written in an jupyter notebook in the file [pick-test.ipynb](https://github.com/K3cks/pycram/blob/binder-example/examples/pick-test.ipynb). There is also one cell which can create an <b> TFBroadcaster, a JointPublisher and a VisualizationMarkerPublisher</b>
+A short example is shown here with Initializing a world with a robot, spawning and then picking up an object. This is written in an jupyter notebook in the file <a href="https://github.com/K3cks/pycram/blob/binder-example/examples/pick-test.ipynb">pick-test.ipynb</a>. There is also one cell which can create an <b> TFBroadcaster, a JointPublisher and a VisualizationMarkerPublisher</b>
 
 <li><b><font size=+2> 
                       Initialize World, Robot and object &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
