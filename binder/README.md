@@ -66,7 +66,7 @@ After that you can prepare the required dependencies for the specific Docker/Bin
 <details><summary>
 2. Setup for pycram</summary>
 <br>
-To setup a pycram workspace with docker it is neccessary to clone the respective repositories for that. For this simply create a rosinstall file to clone all at once. A reference for this can be this [pycram-http.rosinstall](https://github.com/K3cks/pycram/blob/binder-example/binder/pycram-http.rosinstall) file. This  differs from the standard rosinstall for pycram since the intitialization of submoudles needs to be done seperately.
+To setup a pycram workspace with docker it is neccessary to clone the respective repositories for that. For this simply create a rosinstall file to clone all at once. A reference for this can be this [rosinstall](https://github.com/K3cks/pycram/blob/binder-example/binder/pycram-http.rosinstall) file. This  differs from the standard rosinstall for pycram since the intitialization of submoudles needs to be done seperately.
 <br>
 
 ```
