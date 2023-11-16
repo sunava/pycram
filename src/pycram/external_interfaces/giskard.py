@@ -69,7 +69,7 @@ def sync_worlds() -> None:
     currently at in the BulletWorld.
     """
     init_giskard_interface()
-    add_gripper_groups()
+    # add_gripper_groups()
     bullet_object_names = set()
     for obj in BulletWorld.current_bullet_world.objects:
         if obj.name != robot_description.name and len(obj.links) != 1:

@@ -17,7 +17,7 @@
     <param name="robot_description"
               textfile="$(find pycram)/resources/boxy.urdf"/>
   </group>
-   <!-- HSR -->
+   <!-- HSRB -->
   <group if="$(eval robot == 'hsr')">
     <param name="robot_description"
               textfile="$(find pycram)/resources/hsr.urdf"/>

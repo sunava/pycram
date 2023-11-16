@@ -378,7 +378,7 @@ POSSIBILITY OF SUCH DAMAGE.
     </sensor>
   </gazebo>
   <gazebo>
-    <!-- IMU Plugin is a model plugin. Then it should be atached to HSR-B model. -->
+    <!-- IMU Plugin is a model plugin. Then it should be atached to HSRB-B model. -->
     <plugin filename="libgazebo_ros_imu.so" name="base_imu_plugin">
       <imuName>base_imu</imuName>
       <topicName>base_imu/data</topicName>

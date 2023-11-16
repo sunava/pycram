@@ -13,7 +13,7 @@ from __future__ import annotations
 
 import operator
 
-from pycram.helper import _block
+# from pycram.helper import _block
 from enum import Enum
 from macropy.core.macros import Macros
 from macropy.core.hquotes import macros, hq

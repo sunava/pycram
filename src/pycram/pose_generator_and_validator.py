@@ -141,7 +141,7 @@ def reachability_validator(pose: Pose,
     # left_joints = robot_description._safely_access_chains('left').joints
     left_joints = robot_description.chains['left'].joints
     # right_joints = robot_description._safely_access_chains('right').joints
-    if robot.name != 'hsr':
+    if robot.name != 'hsrb':
         right_joints = robot_description.chains['right'].joints
     # TODO Make orientation adhere to grasping orientation
     res = False

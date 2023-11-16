@@ -6,8 +6,11 @@ from pycram.bullet_world import BulletWorld, Object
 from pycram.process_module import simulated_robot, with_simulated_robot
 from pycram.enums import ObjectType
 
-world = BulletWorld()
-robot = Object("pr2", ObjectType.ROBOT, "pr2.urdf", pose=Pose([1, 2, 0]))
+from pycram.ros.viz_marker_publisher import VizMarkerPublisher
+
+world = BulletWorld("DIRECT")
+v = VizMarkerPublisher()
+robot = Object("hsrb", ObjectType.ROBOT, "hsrb.urdf", pose=Pose([1, 2, 0]))
 apartment = Object("apartment", ObjectType.ENVIRONMENT, "apartment.urdf")
 
 milk = Object("milk", ObjectType.MILK, "milk.stl", pose=Pose([2.5, 2, 1.02]), color=[1, 0, 0, 1])
@@ -34,7 +37,7 @@ def move_and_detect(obj_type):
 
 
 with simulated_robot:
-    ParkArmsAction([Arms.BOTH]).resolve().perform()
+    ParkArmsAction([Arms.LEFT]).resolve().perform()
 
     MoveTorsoAction([0.25]).resolve().perform()
 
