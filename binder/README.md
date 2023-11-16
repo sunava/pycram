@@ -1,5 +1,5 @@
 <!-----------------------TABLE OF CONTENTS---------------------->
-<h2><details open><summary>Table of Contents</summary></h2>
+<font size=+2><details open><summary>Table of Contents</summary>
 <ol><li><details><summary>Binder</summary>
 <ol>
 <li>Official</li>
@@ -22,6 +22,7 @@
   </ol>
   </details>
 </details></ol>
+</font>
 
 <!------------------------Binder---------------------------->
 <details><summary style="text-align: center;"><b><font size=+4>
