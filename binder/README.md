@@ -1,7 +1,9 @@
 <!-----------------------TABLE OF CONTENTS---------------------->
-<font size=+1><summary>Table of Contents</summary>
+<h1><summary>Table of Contents</summary></h1>
 
-1. [Binder](binder)
+<h3>
+
+1. [Binder](#binder)
     1. [Official](#Official)
     1. [Intel4coro](#intelcoro)
 2. [Project Integration](#ProjectIntegration)
@@ -17,44 +19,44 @@
 3. [Tutorial](#tutorial)
    1. [Pick up object with Visualization](#pickup)
  
-</font>
+</h3>
 
 <!------------------------Binder---------------------------->
 <a name="binder">
-<summary style="text-align: center;"><b><font size=+4>
+<summary style="text-align: center;"><b><h1>
                       Binder 
-</font></b></summary>
+</h1></b></summary>
 
 ---
 
 <a name="Official">
-<summary style="text-align: center;"><b><font size=+3> Official </font></b></summary>
+<summary style="text-align: center;"><b><h2> Official </h2></b></summary>
 
 Explaination of official binder TBD
 
 
 <a name="intelcoro">
-<summary style="text-align: center;"><b><font size=+3> Intel4coro </font></b></summary>
+<summary style="text-align: center;"><b><h2> Intel4coro </h2></b></summary>
 
 Explaination of Intel4coro TBD
 
 <!--------------------Project Integration------------------------>
 <a name="ProjectIntegration">
-<summary style="text-align: center;"><b><font size=+4>
+<summary style="text-align: center;"><b><h1>
                       Project Integration 
-</font></b></summary>
+</h1></b></summary>
 
 ---
 
 <a name="dockerbasics">
-<summary style="text-align: center;"><b><font size=+3> 
+<summary style="text-align: center;"><b><h2> 
                       Docker Fundamentals
-</font></b></summary>
+</h2></b></summary>
 </br>
 
 
 <a name="dockerfile">
-<li><b><font size=+2> Dockerfile </font></b>
+<li><b><h3> Dockerfile </h3></b>
 </br></br>
 <summary>
 1. Setup base system</summary>
@@ -131,7 +133,7 @@ RUN pip install https://raw.githubusercontent.com/yxzhan/jupyterlab-rviz/master/
 <br><br> 
 
 <a name="compose">
-<li><b><font size=+2>docker-compose.yml</font></b>
+<li><b><h3>docker-compose.yml</h3></b>
 <p>
 To specify the the Docker image a compose file should be defined as a yml file. This will configure required capabilites such as the location of the Dockerfile and the entrypoint, permissions and the necessary drivers. This project used the following compose file, saved as <b>docker-compose.yml</b>:
 <p>
@@ -172,7 +174,7 @@ services:
 
 
 <a name="entry">
-<li><b><font size=+2> entrypoint.sh </font></b>
+<li><b><h3> entrypoint.sh </h3></b>
 </a>
 
 The entrypoint is usually executed when the built system should start. This will set some defaults as sourced workspaces or files launched by ros. An example for this would be the following code as a file called <b>entrypoint.sh</b>:
@@ -204,9 +206,9 @@ In short this does the following instructions:
 <br>
 
 <a name="webapps">
-<summary style="text-align: center;"><b><font size=+3>
+<summary style="text-align: center;"><b><h2>
                         Adding Webapps
-</font></b></summary>
+</h2></b></summary>
 <br>
 This file defines the available apps for this Binderhub as a json file. The main parameters for the respective entries are:
 <p>
@@ -266,7 +268,7 @@ RvizWeb and XPRA are also started by default to simplify the process of running 
 
 
 <a name="rvizweb">
-<li><b><font size=+2>  Custom RvizWeb configuration </font></b>
+<li><b><h3>  Custom RvizWeb configuration </h3></b>
 
 Adding an RvizWeb is relative similar to adding a local rviz configuration. Although the config file structure differ (RvizWeb uses json and not the rviz format) which is why the <b>config file needs to be created using RvizWeb</b>. When first setting up a config, this can then be copied by clicking on <b> Load Config</b>:
 
@@ -288,7 +290,7 @@ This can then be copied into a local file. <b> Delete </b> lines containing the 
 </li>
 
 <a name="xpra">
-<li><b><font size=+2>XPRA </font></b>
+<li><b><h3>XPRA </h3></b>
 
 
 
@@ -301,23 +303,23 @@ This can then be copied into a local file. <b> Delete </b> lines containing the 
 <!--------------------Tutorial------------------------>
 
 <a name="tutorial">
-<summary style="text-align: center;"><b><font size=+4>
+<summary style="text-align: center;"><b><h1>
                        Tutorials
-</font></b></summary>
+</h1></b></summary>
 
 ---
 
 
 <a name="pickup">
-<summary style="text-align: center;"><b><font size=+3> 
+<summary style="text-align: center;"><b><h2> 
                       Pick up Example
-</font></b></summary>
+</h2></b></summary>
 
 A short example is shown here with Initializing a world with a robot, spawning and then picking up an object. This is written in an jupyter notebook in the file <a href="https://github.com/K3cks/pycram/blob/binder-example/examples/pick-test.ipynb">pick-test.ipynb</a>. There is also one cell which can create an <b> TFBroadcaster, a JointPublisher and a VisualizationMarkerPublisher</b>
 
-<li><b><font size=+2> 
+<li><b><h3> 
                       Initialize World, Robot and object 
-</font></b></li>
+</h3></b></li>
 When executing the initialization, the Bulletworld should open on XPRA and every action can be seen there as well. 
 This is seperated into 3 different cells for clarification on what each action does. Alternatively the Bulletworld can also be initialized with a Parameter <b>'DIRECT'</b> if working with XPRA is not desired. This will not open any windows and execute everything without direct visualization. Although it is possible to use the <b>TFBroadcaster, JointPublisher or VisualizationMarker to visualize </b> the current execution in RvizWeb  
 
@@ -358,15 +360,15 @@ milk = Object("milk", "milk", "milk.stl", pose=Pose([2, 0, 1]))
 milk_BO = BelieveObject(names=["milk"])
 ```
 
-<li><b><font size=+2> 
+<li><b><h3> 
                       Creating Several Publisher &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
-</font></b></li>
+</h3></b></li>
 
 In case any Publisher is wanted, it is neccessary to prepare a display for that depending on the type of Visualization is desired to use:
 
-<summary><b> 
+<summary><b><h4>
                       TFBroadcaster
-</b></summary>
+</h4></b></summary>
  
 To set up the TFBroadcaster simply add the display called <b> TF </b>. If you want to visualize all tf-frames, then you do not need to add a prefix. The following picture shows the location of the TF display: 
 
@@ -380,9 +382,9 @@ Then the following line of code adds the TFBroadcaster. As soon as this is calle
 
 
 
-<summary><b> 
+<summary><b><h4>
                       Joint State Publisher
-</b></summary>
+</h4></b></summary>
 To set up the Joint State Publisher for a robot add the display called <b> Robot Model </b>. The robot description should be called <b> robot_description</b>. The tf-prefix might variate, the starting prefix so far is <b> simulated/pr2_2</b>. The following picture shows the setup of this display: 
 
 <p align="center">
@@ -395,9 +397,9 @@ Then the following line of code adds the JointStatePublisher. As soon as this is
 
 
 
-<summary><b> 
+<summary><b><h4> 
                       VisualizationMarker
-</b></summary>
+</h4></b></summary>
 To set up the Visualization add the disply called <b> Marker Array </b>. It is required to set a topic name which is currently <b> /viz_marker</b>. The following picture shows the setup of this display: 
 
 <p align="center">
