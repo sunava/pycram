@@ -56,7 +56,9 @@ Explaination of Intel4coro TBD
 
 
 <a name="dockerfile">
-<li><b><h3> Dockerfile </h3></b>
+
+ - ### Dockerfile
+
 </br></br>
 <summary>
 1. Setup base system</summary>
