@@ -1,57 +1,59 @@
 <!-----------------------TABLE OF CONTENTS---------------------->
 <font size=+1><summary>Table of Contents</summary>
 
-1. Binder
-    1. Official
-    1. Intel4coro
-2. Project Integration
-    1. Docker Foundation
+1. [Binder](binder)
+    1. [Official](#Official)
+    1. [Intel4coro](#intelcoro)
+2. [Project Integration](#ProjectIntegration)
+    1. [Docker Foundation](#dockerbasics)
 
-        1. Dockerfile
-        2. docker-compose.yml
-        3. entrypoint.sh
-    2. webapp.json
-        1. RvizWeb
-        2. XPRA
+        1. [Dockerfile](#dockerfile)
+        2. [docker-compose.yml](#compose)
+        3. [entrypoint.sh](#entry)
+    2. [webapp.json](#webapps)
+        1. [Custom RvizWeb configuration](#rvizweb)
+        2. [XPRA](#xpra)
   
-3. Tutorial
-   1. Pick up object with Visualization
+3. [Tutorial](#tutorial)
+   1. [Pick up object with Visualization](#pickup)
  
 </font>
 
 <!------------------------Binder---------------------------->
+<a name="binder">
 <summary style="text-align: center;"><b><font size=+4>
                       Binder 
 </font></b></summary>
 
 ---
 
-<b><font size=+2> Official </font></b>
+<a name="Official">
+<summary style="text-align: center;"><b><font size=+3> Official </font></b></summary>
 
 Explaination of official binder TBD
 
 
-
-<b><font size=+2> Intel4coro </font></b>
+<a name="intelcoro">
+<summary style="text-align: center;"><b><font size=+3> Intel4coro </font></b></summary>
 
 Explaination of Intel4coro TBD
 
 <!--------------------Project Integration------------------------>
-
+<a name="ProjectIntegration">
 <summary style="text-align: center;"><b><font size=+4>
                       Project Integration 
 </font></b></summary>
 
 ---
 
-
+<a name="dockerbasics">
 <summary style="text-align: center;"><b><font size=+3> 
                       Docker Fundamentals
 </font></b></summary>
 </br>
 
 
-
+<a name="dockerfile">
 <li><b><font size=+2> Dockerfile </font></b>
 </br></br>
 <summary>
@@ -128,8 +130,7 @@ RUN pip install https://raw.githubusercontent.com/yxzhan/jupyterlab-rviz/master/
 
 <br><br> 
 
----
-
+<a name="compose">
 <li><b><font size=+2>docker-compose.yml</font></b>
 <p>
 To specify the the Docker image a compose file should be defined as a yml file. This will configure required capabilites such as the location of the Dockerfile and the entrypoint, permissions and the necessary drivers. This project used the following compose file, saved as <b>docker-compose.yml</b>:
@@ -169,7 +170,6 @@ services:
 </li>
 <br><br>
 
----
 
 <a name="entry">
 <li><b><font size=+2> entrypoint.sh </font></b>
@@ -199,11 +199,13 @@ In short this does the following instructions:
 - copy webapps file and execute previous commands
 </li>
 
+---
 
 <br>
 
+<a name="webapps">
 <summary style="text-align: center;"><b><font size=+3>
-                        Adding Webapps     &emsp;&emsp;
+                        Adding Webapps
 </font></b></summary>
 <br>
 This file defines the available apps for this Binderhub as a json file. The main parameters for the respective entries are:
@@ -262,8 +264,8 @@ RvizWeb and XPRA are also started by default to simplify the process of running 
 ]
 ```
 
----
 
+<a name="rvizweb">
 <li><b><font size=+2>  Custom RvizWeb configuration </font></b>
 
 Adding an RvizWeb is relative similar to adding a local rviz configuration. Although the config file structure differ (RvizWeb uses json and not the rviz format) which is why the <b>config file needs to be created using RvizWeb</b>. When first setting up a config, this can then be copied by clicking on <b> Load Config</b>:
@@ -283,9 +285,9 @@ This can then be copied into a local file. <b> Delete </b> lines containing the 
 
 <b> Note: When using a custom RvizWeb configuration, ensure that the name of the file match with the config file specified in the [entrypoint](#entry).</b>
 
----
-
 </li>
+
+<a name="xpra">
 <li><b><font size=+2>XPRA </font></b>
 
 
@@ -297,18 +299,24 @@ This can then be copied into a local file. <b> Delete </b> lines containing the 
 
 
 <!--------------------Tutorial------------------------>
+
+<a name="tutorial">
 <summary style="text-align: center;"><b><font size=+4>
-                       Tutorials &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&ensp;&nbsp;&nbsp;&nbsp;
+                       Tutorials
 </font></b></summary>
 
+---
+
+
+<a name="pickup">
 <summary style="text-align: center;"><b><font size=+3> 
-                      Pick up Example &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+                      Pick up Example
 </font></b></summary>
 
 A short example is shown here with Initializing a world with a robot, spawning and then picking up an object. This is written in an jupyter notebook in the file <a href="https://github.com/K3cks/pycram/blob/binder-example/examples/pick-test.ipynb">pick-test.ipynb</a>. There is also one cell which can create an <b> TFBroadcaster, a JointPublisher and a VisualizationMarkerPublisher</b>
 
 <li><b><font size=+2> 
-                      Initialize World, Robot and object &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+                      Initialize World, Robot and object 
 </font></b></li>
 When executing the initialization, the Bulletworld should open on XPRA and every action can be seen there as well. 
 This is seperated into 3 different cells for clarification on what each action does. Alternatively the Bulletworld can also be initialized with a Parameter <b>'DIRECT'</b> if working with XPRA is not desired. This will not open any windows and execute everything without direct visualization. Although it is possible to use the <b>TFBroadcaster, JointPublisher or VisualizationMarker to visualize </b> the current execution in RvizWeb  
