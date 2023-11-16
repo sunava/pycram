@@ -1,53 +1,51 @@
 <!-----------------------TABLE OF CONTENTS---------------------->
-<font size=+2><details open><summary>Table of Contents</summary>
-<ol><li><details><summary>Binder</summary>
-<ol>
-<li>Official</li>
-    <li>Intel4coro</li></li></ol>
-  </details></li>
-<li><details><summary>Project Integration</summary>
-  <ol><li> Docker Foundation
-<ol>
-    <li>Dockerfile</li>
-    <li>docker-compose.yml</li>
-    <li>entrypoint.sh</li></li></ol>
-  <li>webapp.json
-<ol>
-    <li>RvizWeb</li>
-    <li>XPRA</li></ol>
-  </details>
-<li><details><summary>Tutorial</summary>
-  <ol>
-	<li> Pick up object with Visualization</li>
-  </ol>
-  </details>
-</details></ol>
+<font size=+1><summary>Table of Contents</summary>
+
+1. Binder
+    1. Official
+    1. Intel4coro
+2. Project Integration
+    1. Docker Foundation
+
+        1. Dockerfile
+        2. docker-compose.yml
+        3. entrypoint.sh
+    2. webapp.json
+        1. RvizWeb
+        2. XPRA
+  
+3. Tutorial
+   1. Pick up object with Visualization
+ 
 </font>
 
 <!------------------------Binder---------------------------->
-<details><summary style="text-align: center;"><b><font size=+4>
-                      Binder &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&emsp;&emsp;&ensp;&ensp;&ensp;
+<summary style="text-align: center;"><b><font size=+4>
+                      Binder 
 </font></b></summary>
 
+---
 
 <b><font size=+2> Official </font></b>
 
 Explaination of official binder TBD
 
----
+
 
 <b><font size=+2> Intel4coro </font></b>
 
 Explaination of Intel4coro TBD
-</details>
+
 <!--------------------Project Integration------------------------>
 
-<details><summary style="text-align: center;"><b><font size=+4>
+<summary style="text-align: center;"><b><font size=+4>
                       Project Integration 
 </font></b></summary>
-<p>
 
-<details><summary style="text-align: center;"><b><font size=+3> 
+---
+
+
+<summary style="text-align: center;"><b><font size=+3> 
                       Docker Fundamentals
 </font></b></summary>
 </br>
@@ -56,15 +54,18 @@ Explaination of Intel4coro TBD
 
 <li><b><font size=+2> Dockerfile </font></b>
 </br></br>
+<summary>
+1. Setup base system</summary>
 
 The Dockerfile describes how the system will be set it up. A base system is defined at first to set the desired distribution as well as other predefined requirements. This is done with the following statement:
 
-1. `FROM intel4coro/base-notebook:20.04-noetic-full-xpra` 
+`FROM intel4coro/base-notebook:20.04-noetic-full-xpra` 
 
 After that you can prepare the required dependencies for the specific Docker/Binder in this file. The following steps contain the Dockerfile of this repository as an example. If you want to build a Binderhub using pycram, you can just paste the code blocks for the wanted steps into your Dockerfile:
 
 <br></br> 
-<details><summary>
+
+<summary>
 2. Setup for pycram</summary>
 <br>
 To setup a pycram workspace with docker it is neccessary to clone the respective repositories for that. For this simply create a rosinstall file to clone all at once. A reference for this can be this <a href="https://github.com/K3cks/pycram/blob/binder-example/binder/pycram-http.rosinstall">rosinstall</a> file. This  differs from the standard rosinstall for pycram since the intitialization of submoudles needs to be done seperately.
@@ -77,9 +78,9 @@ WORKDIR ${PYCRAM_WS}/src/
 COPY --chown=${NB_USER}:users . pycram/
 RUN vcs import --input pycram/binder/pycram-http.rosinstall --recursive
 ```
-</details>
+
 <br>
-<details><summary>
+<summary>
 3. Clone pycram into workspace</summary>
 
 ```
@@ -93,9 +94,9 @@ RUN pip install --requirement ${PYCRAM_WS}/src/pycram/requirements.txt --user
 RUN pip install --requirement ${PYCRAM_WS}/src/pycram/src/neem_interface_python/requirements.txt --user \
   && pip cache purge
 ```
-</details>
+
 <br>
-<details><summary>
+<summary>
 4. Build pycram workspace</summary>
 
 ```
@@ -108,10 +109,10 @@ USER ${NB_USER}
 RUN catkin build
 ```
 
-</details>
+
 <br>
 
-<details><summary>
+<summary>
 5. Start entrypoint.sh</summary>
 
 ```
@@ -122,7 +123,7 @@ ENTRYPOINT ["/entrypoint.sh"]
 CMD ["start-notebook.sh"]
 RUN pip install https://raw.githubusercontent.com/yxzhan/jupyterlab-rviz/master/dist/jupyterlab_rviz-0.3.1.tar.gz
 ```
-</details>
+
 </li>
 
 <br><br> 
@@ -197,11 +198,11 @@ In short this does the following instructions:
   - launch the ik solver for pycram
 - copy webapps file and execute previous commands
 </li>
-</details>
+
 
 <br>
 
-<details><summary style="text-align: center;"><b><font size=+3>
+<summary style="text-align: center;"><b><font size=+3>
                         Adding Webapps     &emsp;&emsp;
 </font></b></summary>
 <br>
@@ -291,16 +292,16 @@ This can then be copied into a local file. <b> Delete </b> lines containing the 
 
 </li>
 
-</details>
+
 <br>
-</details>
+
 
 <!--------------------Tutorial------------------------>
-<details><summary style="text-align: center;"><b><font size=+4>
+<summary style="text-align: center;"><b><font size=+4>
                        Tutorials &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&ensp;&nbsp;&nbsp;&nbsp;
 </font></b></summary>
 
-<details open><summary style="text-align: center;"><b><font size=+3> 
+<summary style="text-align: center;"><b><font size=+3> 
                       Pick up Example &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 </font></b></summary>
 
@@ -355,7 +356,7 @@ milk_BO = BelieveObject(names=["milk"])
 
 In case any Publisher is wanted, it is neccessary to prepare a display for that depending on the type of Visualization is desired to use:
 
-<details><summary><b> 
+<summary><b> 
                       TFBroadcaster
 </b></summary>
  
@@ -369,9 +370,9 @@ Then the following line of code adds the TFBroadcaster. As soon as this is calle
 <br>
 `broadcaster = TFBroadcaster()`
 
-</details>
 
-<details><summary><b> 
+
+<summary><b> 
                       Joint State Publisher
 </b></summary>
 To set up the Joint State Publisher for a robot add the display called <b> Robot Model </b>. The robot description should be called <b> robot_description</b>. The tf-prefix might variate, the starting prefix so far is <b> simulated/pr2_2</b>. The following picture shows the setup of this display: 
@@ -384,9 +385,9 @@ Then the following line of code adds the JointStatePublisher. As soon as this is
 <br>
 `joint_publisher = JointStatePublisher("joint_states", 0.1)`
 
-</details>
 
-<details><summary><b> 
+
+<summary><b> 
                       VisualizationMarker
 </b></summary>
 To set up the Visualization add the disply called <b> Marker Array </b>. It is required to set a topic name which is currently <b> /viz_marker</b>. The following picture shows the setup of this display: 
@@ -401,7 +402,7 @@ Then the following line of code adds the VisualizationMarker. Here all markers s
 
 <b> NOTE: This is currently bugged in RvizWeb and needs further investigation. Visualizationmarker does work locally, but only shows a bugged model in RvizWeb.</b>
 
-</details>
+
 
 
 
