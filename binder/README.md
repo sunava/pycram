@@ -1,54 +1,410 @@
-# Pycram on BinderHub
+<!-----------------------TABLE OF CONTENTS---------------------->
+<h2><details open><summary>Table of Contents</summary></h2>
+<ol><li><details><summary>Binder</summary>
+<ol>
+<li>Official</li>
+    <li>Intel4coro</li></li></ol>
+  </details></li>
+<li><details><summary>Project Integration</summary>
+  <ol><li> Docker Foundation
+<ol>
+    <li>Dockerfile</li>
+    <li>docker-compose.yml</li>
+    <li>entrypoint.sh</li></li></ol>
+  <li>webapp.json
+<ol>
+    <li>RvizWeb</li>
+    <li>XPRA</li></ol>
+  </details>
+<li><details><summary>Tutorial</summary>
+  <ol>
+	<li> Pick up object with Visualization</li>
+  </ol>
+  </details>
+</details></ol>
 
-Files for running Pycram on BinderHub.
+<!------------------------Binder---------------------------->
+<details><summary style="text-align: center;"><b><font size=+4>
+                      Binder &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&emsp;&emsp;&ensp;&ensp;&ensp;
+</font></b></summary>
 
-## Quick Start
 
-### Option 1: Test Image Locally (Under repo directory)
+<b><font size=+2> Official </font></b>
 
-- Run Docker image
+Explaination of official binder TBD
 
-  ```bash
-  docker compose -f ./binder/docker-compose.yml up
-  ```
+---
 
-- Run Docker image with X-forwarding
+<b><font size=+2> Intel4coro </font></b>
 
-  ```bash
-  xhost +local:docker && \
-  docker compose -f ./binder/docker-compose.yml up && \
-  xhost -local:docker
-  ```
+Explaination of Intel4coro TBD
+</details>
+<!--------------------Project Integration------------------------>
 
-- Open Web browser and go to http://localhost:8888/
+<details><summary style="text-align: center;"><b><font size=+4>
+                      Project Integration 
+</font></b></summary>
+<p>
 
-- To stop and remove container:
+<details><summary style="text-align: center;"><b><font size=+3> 
+                      Docker Fundamentals
+</font></b></summary>
+</br>
 
-  ```bash
-  docker compose -f ./binder/docker-compose.yml down
-  ```
 
-- Force image rebuild
 
-  ```bash
-  docker compose -f ./binder/docker-compose.yml up -d --build
-  ```
+<li><b><font size=+2> Dockerfile </font></b>
+</br></br>
 
-### Option 2: Run on BinderHub
+The Dockerfile describes how the system will be set it up. A base system is defined at first to set the desired distribution as well as other predefined requirements. This is done with the following statement:
 
-- intro.ipynb: [![Binder](https://binder.intel4coro.de/badge_logo.svg)](https://binder.intel4coro.de/v2/gh/IntEL4CoRo/pycram.git/binder-xpra?urlpath=lab%2Ftree%2Fexamples%2Fintro.ipynb)
+1. `FROM intel4coro/base-notebook:20.04-noetic-full-xpra` 
 
-- Passing ROS paramters (robot=pr2, environment=kitchen): [![Binder](https://binder.intel4coro.de/badge_logo.svg)](https://binder.intel4coro.de/v2/gh/IntEL4CoRo/pycram.git/binder-xpra?urlpath=lab%2Ftree%2Fexamples%2Faction_designator.ipynb%3Frobot%3Dpr2%26environment%3Dkitchen)
+After that you can prepare the required dependencies for the specific Docker/Binder in this file. The following steps contain the Dockerfile of this repository as an example. If you want to build a Binderhub using pycram, you can just paste the code blocks for the wanted steps into your Dockerfile:
 
-## Usage
+<br></br> 
+<details><summary>
+2. Setup for pycram</summary>
+<br>
+To setup a pycram workspace with docker it is neccessary to clone the respective repositories for that. For this simply create a rosinstall file to clone all at once. A reference for this can be this [pycram-http.rosinstall](https://github.com/K3cks/pycram/blob/binder-example/binder/pycram-http.rosinstall) file. This  differs from the standard rosinstall for pycram since the intitialization of submoudles needs to be done seperately.
+<br>
 
-1. Open notebooks in [../examples](../examples)
+```
+ENV PATH=$PATH:/home/user/.local/bin
+ENV PYCRAM_WS=/home/${NB_USER}/workspace/ros
+WORKDIR ${PYCRAM_WS}/src/
+COPY --chown=${NB_USER}:users . pycram/
+RUN vcs import --input pycram/binder/pycram-http.rosinstall --recursive
+```
+</details>
+<br>
+<details><summary>
+3. Clone pycram into workspace</summary>
 
-1. PyCram Docs: https://pycram.readthedocs.io/en/latest/examples.html
+```
+RUN cd pycram \
+  && git submodule update --init \
+  && git clone https://github.com/Tigul/neem_interface_python.git src/neem_interface_python \
+  && cd src/neem_interface_python \
+  && git clone https://github.com/benjaminalt/neem-interface.git src/neem-interface
 
-## Files Descriptions
+RUN pip install --requirement ${PYCRAM_WS}/src/pycram/requirements.txt --user 
+RUN pip install --requirement ${PYCRAM_WS}/src/pycram/src/neem_interface_python/requirements.txt --user \
+  && pip cache purge
+```
+</details>
+<br>
+<details><summary>
+4. Build pycram workspace</summary>
 
-1. ***[Dockerfile](./Dockerfile):*** Pycram jupyterlab docker image.
-1. ***[pycram-http.rosinstall](./pycram-http.rosinstall):*** Initiating ros workspace in docker image require https url. (Comparing to [pycram.rosinstall](../pycram.rosinstall): pycram is excluded, repo `orocos_kinematics_dynamics` is PyKDL).
-1. ***[entrypoint.sh](./entrypoint.sh):*** Entrypoint of the docker image, start roscore and robot web tools.
-1. ***[docker-compose.yml](./docker-compose.yml):*** For testing the docker image locally.
+```
+WORKDIR  ${PYCRAM_WS}
+USER root
+RUN rosdep update \
+  && rosdep install -y --ignore-src --from-paths ./ -r \
+  && rosdep fix-permissions
+USER ${NB_USER}
+RUN catkin build
+```
+
+</details>
+<br>
+
+<details><summary>
+5. Start entrypoint.sh</summary>
+
+```
+WORKDIR ${PYCRAM_WS}/src/pycram
+RUN git config --global --add safe.directory ${PWD}
+COPY --chown=${NB_USER}:users binder/entrypoint.sh /
+ENTRYPOINT ["/entrypoint.sh"]
+CMD ["start-notebook.sh"]
+RUN pip install https://raw.githubusercontent.com/yxzhan/jupyterlab-rviz/master/dist/jupyterlab_rviz-0.3.1.tar.gz
+```
+</details>
+</li>
+
+<br><br> 
+
+---
+
+<li><b><font size=+2>docker-compose.yml</font></b>
+<p>
+To specify the the Docker image a compose file should be defined as a yml file. This will configure required capabilites such as the location of the Dockerfile and the entrypoint, permissions and the necessary drivers. This project used the following compose file, saved as <b>docker-compose.yml</b>:
+<p>
+
+```
+version: '3'
+services:
+  pycram:
+    image: pycram:binder-xpra
+    build:
+      context: ../
+      dockerfile: ./binder/Dockerfile
+    stdin_open: true
+    tty: true
+    ports: 
+      - 8888:8888
+    privileged: true
+    # user: root
+    command: jupyter lab --allow-root --NotebookApp.token='' --no-browser --ip=0.0.0.0
+    entrypoint: ["/home/jovyan/work/binder/entrypoint.sh"]
+    volumes:
+      - ../:/home/jovyan/work
+      - /tmp/.X11-unix:/tmp/.X11-unix:rw
+    environment:
+      - DISPLAY
+      - QT_X11_NO_MITSHM=1
+      - NVIDIA_DRIVER_CAPABILITIES=all
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+```
+</li>
+<br><br>
+
+---
+
+<a name="entry">
+<li><b><font size=+2> entrypoint.sh </font></b>
+</a>
+
+The entrypoint is usually executed when the built system should start. This will set some defaults as sourced workspaces or files launched by ros. An example for this would be the following code as a file called <b>entrypoint.sh</b>:
+
+``` 
+#!/bin/bash
+
+source ${PYCRAM_WS}/devel/setup.bash
+roscore &
+roslaunch --wait rvizweb rvizweb.launch config_file:=${PYCRAM_WS}/src/pycram/binder/rvizweb_config.json &
+roslaunch --wait pycram ik_and_description.launch &
+
+cp ${PYCRAM_WS}/src/pycram/binder/webapps.json ${PYCRAM_WS}/src/rvizweb/webapps/app.json 
+
+exec "$@"
+``` 
+
+In short this does the following instructions:
+- source pycram workspace
+- start ros-specifics such as
+  - roscore
+  - launch rvizweb with a custom config file
+  - launch the ik solver for pycram
+- copy webapps file and execute previous commands
+</li>
+</details>
+
+<br>
+
+<details><summary style="text-align: center;"><b><font size=+3>
+                        Adding Webapps     &emsp;&emsp;
+</font></b></summary>
+<br>
+This file defines the available apps for this Binderhub as a json file. The main parameters for the respective entries are:
+<p>
+ 
+- ```name```: Name of the App
+- ```title```: Title of the App
+- ```icon```: Link to a picture as svg
+- ```url```: url to the index of the build folder
+- ```start```: Defines if the app should run at start. It's optional and states ```true``` if it should.
+
+The webapps contained for this project are the following:
+
+- RvizWeb
+- XPRA
+- rosgraph
+- rosboard
+- webviz
+
+RvizWeb and XPRA are also started by default to simplify the process of running a jupyter notebook. The following is an example of the existent json file `webapps.json` which configures the described environment:
+
+```
+[
+  {
+    "name": "rvizweb",
+    "title": "Rvizweb",
+    "icon": "proxy/8001/rvizweb/webapps/r.svg",
+    "url": "proxy/8001/rvizweb/webapps/rvizweb/build/www/index.html",
+    "start": true
+  },
+  {
+    "name": "XPRA",
+    "title": "Xpra Desktop",
+    "icon": "proxy/8001/rvizweb/webapps/xpra-logo.svg",
+    "url": "xprahtml5/index.html",
+    "start": true
+  },
+  {
+    "name": "rosgraph",
+    "title": "Ros Graph",
+    "icon": "proxy/8001/rvizweb/webapps/o.svg",
+    "url": "proxy/8001/rvizweb/webapps/ros-node-graph/build/index.html"
+  },
+  {
+    "name": "rosboard",
+    "title": "ROSBoard",
+    "icon": "proxy/8001/rvizweb/webapps/s.svg",
+    "url": "proxy/18888/index.html"
+  },
+  {
+    "name": "webviz",
+    "title": "Webviz",
+    "icon": "proxy/8001/rvizweb/webapps/webviz/icon.svg",
+    "url": "proxy/8001/rvizweb/webapps/webviz/index.html"
+  }
+]
+```
+
+---
+
+<li><b><font size=+2>  Custom RvizWeb configuration </font></b>
+
+Adding an RvizWeb is relative similar to adding a local rviz configuration. Although the config file structure differ (RvizWeb uses json and not the rviz format) which is why the <b>config file needs to be created using RvizWeb</b>. When first setting up a config, this can then be copied by clicking on <b> Load Config</b>:
+
+
+<p align="center">
+  <img src="https://raw.githubusercontent.com/K3cks/pycram/binder-example/binder/Readme/rvizweb_load_options.png">
+</p>
+
+After that a window similar to the following image should open:
+
+<p align="center">
+  <img src="https://raw.githubusercontent.com/K3cks/pycram/binder-example/binder/Readme/rvizweb_config.png">
+</p>
+
+This can then be copied into a local file. <b> Delete </b> lines containing the parameters <b>url, colladaServer, and videoServer</b> as they change with every startup and will be assigned automatically. 
+
+<b> Note: When using a custom RvizWeb configuration, ensure that the name of the file match with the config file specified in the [entrypoint](#entry).</b>
+
+---
+
+</li>
+<li><b><font size=+2>XPRA </font></b>
+
+
+
+</li>
+
+</details>
+<br>
+</details>
+
+<!--------------------Tutorial------------------------>
+<details><summary style="text-align: center;"><b><font size=+4>
+                       Tutorials &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&ensp;&nbsp;&nbsp;&nbsp;
+</font></b></summary>
+
+<details open><summary style="text-align: center;"><b><font size=+3> 
+                      Pick up Example &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+</font></b></summary>
+
+A short example is shown here with Initializing a world with a robot, spawning and then picking up an object. This is written in an jupyter notebook in the file [pick-test.ipynb](https://github.com/K3cks/pycram/blob/binder-example/examples/pick-test.ipynb). There is also one cell which can create an <b> TFBroadcaster, a JointPublisher and a VisualizationMarkerPublisher</b>
+
+<li><b><font size=+2> 
+                      Initialize World, Robot and object &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+</font></b></li>
+When executing the initialization, the Bulletworld should open on XPRA and every action can be seen there as well. 
+This is seperated into 3 different cells for clarification on what each action does. Alternatively the Bulletworld can also be initialized with a Parameter <b>'DIRECT'</b> if working with XPRA is not desired. This will not open any windows and execute everything without direct visualization. Although it is possible to use the <b>TFBroadcaster, JointPublisher or VisualizationMarker to visualize </b> the current execution in RvizWeb  
+
+The code for this is seen below: 
+```
+from rospy import get_param
+from pycram.bullet_world import BulletWorld, Object
+from pycram.pose import Pose
+
+from pycram.process_module import simulated_robot, with_simulated_robot
+from pycram.language import macros, par
+from pycram.designators.location_designator import *
+from pycram.designators.action_designator import *
+from pycram.enums import Arms
+from pycram.designators.object_designator import *
+from pycram.designators.object_designator import BelieveObject
+from pycram.plan_failures import IKError
+import math
+
+try:
+    robot = get_param('/nbparam_robot')
+    environment = get_param('/nbparam_environment')
+except Exception as e:
+    robot = 'pr2'
+    environment = 'kitchen'
+    
+print(f"Robot: {robot}")
+print(f"Environment: {environment}")
+
+world = BulletWorld()
+
+# Initialize Robot
+robot = Object("pr2", "robot", robot + ".urdf")
+robot_desig = ObjectDesignatorDescription(names=["pr2"]).resolve()
+ 
+# Create Object
+milk = Object("milk", "milk", "milk.stl", pose=Pose([2, 0, 1]))
+milk_BO = BelieveObject(names=["milk"])
+```
+
+<li><b><font size=+2> 
+                      Creating Several Publisher &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+</font></b></li>
+
+In case any Publisher is wanted, it is neccessary to prepare a display for that depending on the type of Visualization is desired to use:
+
+<details><summary><b> 
+                      TFBroadcaster
+</b></summary>
+ 
+To set up the TFBroadcaster simply add the display called <b> TF </b>. If you want to visualize all tf-frames, then you do not need to add a prefix. The following picture shows the location of the TF display: 
+
+<p align="center">
+  <img src="https://raw.githubusercontent.com/K3cks/pycram/binder-example/binder/Readme/TFBroadcaster.png">
+</p>
+
+Then the following line of code adds the TFBroadcaster. As soon as this is called, it publishes <b> all </b> available tf-frames:
+<br>
+`broadcaster = TFBroadcaster()`
+
+</details>
+
+<details><summary><b> 
+                      Joint State Publisher
+</b></summary>
+To set up the Joint State Publisher for a robot add the display called <b> Robot Model </b>. The robot description should be called <b> robot_description</b>. The tf-prefix might variate, the starting prefix so far is <b> simulated/pr2_2</b>. The following picture shows the setup of this display: 
+
+<p align="center">
+  <img src="https://raw.githubusercontent.com/K3cks/pycram/binder-example/binder/Readme/JointStatePublisher.png">
+</p>
+
+Then the following line of code adds the JointStatePublisher. As soon as this is called, it publishes the joint states under the given name (here: <b> joint_states</b>)
+<br>
+`joint_publisher = JointStatePublisher("joint_states", 0.1)`
+
+</details>
+
+<details><summary><b> 
+                      VisualizationMarker
+</b></summary>
+To set up the Visualization add the disply called <b> Marker Array </b>. It is required to set a topic name which is currently <b> /viz_marker</b>. The following picture shows the setup of this display: 
+
+<p align="center">
+  <img src="https://raw.githubusercontent.com/K3cks/pycram/binder-example/binder/Readme/VisualizationMarker.png">
+</p>
+
+Then the following line of code adds the VisualizationMarker. Here all markers should be published under the given name (here: <b> /viz_marker</b>)
+<br>
+`v = VizMarkerPublisher(topic_name='viz_marker')`
+
+<b> NOTE: This is currently bugged in RvizWeb and needs further investigation. Visualizationmarker does work locally, but only shows a bugged model in RvizWeb.</b>
+
+</details>
+
+
+
+
+
+
+
