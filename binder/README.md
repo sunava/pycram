@@ -4,8 +4,6 @@
 <h3>
 
 1. [Binder](#binder)
-    1. [Official](#Official)
-    1. [Intel4coro](#intelcoro)
 2. [Project Integration](#ProjectIntegration)
     1. [Docker Foundation](#dockerbasics)
 
@@ -27,26 +25,17 @@
                       Binder 
 </h1></b></summary>
 
----
 
-<a name="Official">
-<summary style="text-align: center;"><b><h2> Official </h2></b></summary>
+> BinderHub is a kubernetes-based cloud service that allows users to share reproducible interactive computing environments from code repositories. It is the primary technology behind [mybinder.org](mybinder.org). 
 
-Explaination of official binder TBD
-
-
-<a name="intelcoro">
-<summary style="text-align: center;"><b><h2> Intel4coro </h2></b></summary>
-
-Explaination of Intel4coro TBD
+On binder it is possible to build configured projects and run those in a virtual environment. One simple way to configure projects is with Docker.
+However building projects might need a lot of resources depending on the projects size. This might lead to problems with the binder instance at [mybinder.org](mybinder.org) as the resources are limited to about 1 - 2 GB. The project [intel4coro](https://www.uni-bremen.de/zmml/projekte/intel4coro) runs a server at [binder.intel4coro](https://binder.intel4coro.de/) to launch projects that require more resources. 
 
 <!--------------------Project Integration------------------------>
 <a name="ProjectIntegration">
 <summary style="text-align: center;"><b><h1>
                       Project Integration 
 </h1></b></summary>
-
----
 
 <a name="dockerbasics">
 <summary style="text-align: center;"><b><h2> 
@@ -202,8 +191,6 @@ In short this does the following instructions:
 - copy webapps file and execute previous commands
 </li>
 
----
-
 <br>
 
 <a name="webapps">
@@ -281,7 +268,7 @@ Adding an RvizWeb is relative similar to adding a local rviz configuration. Alth
 After that a window similar to the following image should open:
 
 <p align="center">
-  <img src="https://raw.githubusercontent.com/K3cks/pycram/binder-example/binder/Readme/rvizweb_config.png">
+  <img height=500 src="https://raw.githubusercontent.com/K3cks/pycram/binder-example/binder/Readme/rvizweb_config.png">
 </p>
 
 This can then be copied into a local file. <b> Delete </b> lines containing the parameters <b>url, colladaServer, and videoServer</b> as they change with every startup and will be assigned automatically. 
@@ -292,7 +279,7 @@ This can then be copied into a local file. <b> Delete </b> lines containing the 
 
 <a name="xpra">
 <li><b><h3>XPRA </h3></b>
-
+TBD
 
 
 </li>
@@ -308,7 +295,7 @@ This can then be copied into a local file. <b> Delete </b> lines containing the 
                        Tutorials
 </h1></b></summary>
 
----
+
 
 
 <a name="pickup">
@@ -362,7 +349,7 @@ milk_BO = BelieveObject(names=["milk"])
 ```
 
 <li><b><h3> 
-                      Creating Several Publisher &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+                      Creating Several Publisher
 </h3></b></li>
 
 In case any Publisher is wanted, it is neccessary to prepare a display for that depending on the type of Visualization is desired to use:
@@ -412,6 +399,41 @@ Then the following line of code adds the VisualizationMarker. Here all markers s
 `v = VizMarkerPublisher(topic_name='viz_marker')`
 
 <b> NOTE: This is currently bugged in RvizWeb and needs further investigation. Visualizationmarker does work locally, but only shows a bugged model in RvizWeb.</b>
+
+<li><b><h3> 
+                      Navigate to Object
+</h3></b></li>
+
+The navigation to objects does not require any setup specifically for binder so there is no difference in execution:
+
+```
+with simulated_robot:
+    ParkArmsAction([Arms.BOTH]).resolve().perform()
+
+    MoveTorsoAction([0.33]).resolve().perform()
+
+    pickup_pose_knife = CostmapLocation(target=milk_BO.resolve(), reachable_for=robot_desig).resolve()
+    pickup_arm = pickup_pose_knife.reachable_arms[0]
+
+    NavigateAction(target_locations=[pickup_pose_knife.pose]).resolve().perform()
+
+```
+
+
+<li><b><h3> 
+                      Pick up object
+</h3></b></li>
+Next pick up the object with the left arm. This also does not differ from normal pycram usage:
+
+```
+with simulated_robot:
+    PickUpAction(object_designator_description=milk_BO,
+                 arms=["left"],
+                 grasps=["left", "right"]).resolve().perform()
+```
+
+
+
 
 
 
