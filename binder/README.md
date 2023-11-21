@@ -29,7 +29,22 @@
 > BinderHub is a kubernetes-based cloud service that allows users to share reproducible interactive computing environments from code repositories. It is the primary technology behind [mybinder.org](mybinder.org). 
 
 On binder it is possible to build configured projects and run those in a virtual environment. One simple way to configure projects is with Docker.
-However building projects might need a lot of resources depending on the projects size. This might lead to problems with the binder instance at [mybinder.org](mybinder.org) as the resources are limited to about 1 - 2 GB. The project [intel4coro](https://www.uni-bremen.de/zmml/projekte/intel4coro) runs a server at [binder.intel4coro](https://binder.intel4coro.de/) to launch projects that require more resources. 
+However building projects might need a lot of resources depending on the projects size. This might lead to problems with the binder instance at [mybinder.org](mybinder.org) as the resources are limited to about 1 - 2 GB. The project [intel4coro](https://www.uni-bremen.de/zmml/projekte/intel4coro) runs a server at [binder.intel4coro](https://binder.intel4coro.de/) to launch projects that require more resources. Already built projects are saved and can be launched anytime without the need to build again. However when the project slightly changed (e.g. git commits) it will need to build again.
+
+
+
+When a project is built, a link can be used to share this Hub in its default configuration:
+
+ <p align="center">
+  <img src="https://raw.githubusercontent.com/K3cks/pycram/binder-example/binder/Readme/Binder_default.png">
+</p>
+
+
+It is also possible to open a specific file by default when clicking on the link, which can be useful when sharing specific demos. To do this, right click the file that should open at startup and click <b> Copy Shareable Link </b>:
+
+ <p align="center">
+  <img src="https://raw.githubusercontent.com/K3cks/pycram/binder-example/binder/Readme/Binder_default.png">
+</p>
 
 <!--------------------Project Integration------------------------>
 <a name="ProjectIntegration">
@@ -206,6 +221,7 @@ This file defines the available apps for this Binderhub as a json file. The main
 - ```icon```: Link to a picture as svg
 - ```url```: url to the index of the build folder
 - ```start```: Defines if the app should run at start. It's optional and states ```true``` if it should.
+- ```mode```: Describe where the application window should be. Examples: ```split-left``` or ```split-right``` 
 
 The webapps contained for this project are the following:
 
@@ -224,15 +240,18 @@ RvizWeb and XPRA are also started by default to simplify the process of running 
     "title": "Rvizweb",
     "icon": "proxy/8001/rvizweb/webapps/r.svg",
     "url": "proxy/8001/rvizweb/webapps/rvizweb/build/www/index.html",
-    "start": true
+    "start": true,
+    "mode": "split-left"
   },
   {
     "name": "XPRA",
     "title": "Xpra Desktop",
     "icon": "proxy/8001/rvizweb/webapps/xpra-logo.svg",
     "url": "xprahtml5/index.html",
-    "start": true
+    "start": true,
+    "mode": "split-right"
   },
+  
   {
     "name": "rosgraph",
     "title": "Ros Graph",
@@ -279,7 +298,7 @@ This can then be copied into a local file. <b> Delete </b> lines containing the 
 
 <a name="xpra">
 <li><b><h3>XPRA </h3></b>
-TBD
+XPRA is a remote display server which can be used to demonstrate the execution when using the Bulletworld. In the shown <b>webapps</b> file, it is a starting window on the left by default
 
 
 </li>
@@ -294,8 +313,6 @@ TBD
 <summary style="text-align: center;"><b><h1>
                        Tutorials
 </h1></b></summary>
-
-
 
 
 <a name="pickup">
