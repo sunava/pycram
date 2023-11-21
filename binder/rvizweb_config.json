@@ -26,9 +26,17 @@
       "name": "Robot model",
       "options": {
         "param": "robot_description",
-        "tfPrefix": "simulated/pr2_2"
+        "tfPrefix": "simulated/pr2_1"
       },
       "type": "urdf"
+    },
+    {
+      "isShown": true,
+      "name": "Marker array",
+      "options": {
+        "topic": "/viz_marker"
+      },
+      "type": "markerArray"
     }
   ]
 }
