@@ -44,7 +44,9 @@ class RobotStateUpdater:
 
         :param msg: TransformStamped message published to the topic
         """
-        trans, rot = self.tf_listener.lookupTransform("/map", robot_description.base_frame, rospy.Time(0))
+        trans, rot = self.tf_listener.lookupTransform("/map",
+                                                      robot_description.name + "/" + robot_description.base_frame,
+                                                        rospy.Time(0))
         BulletWorld.robot.set_pose(Pose(trans, rot))
 
     def _subscribe_joint_state(self, msg: JointState) -> None:
@@ -58,7 +60,15 @@ class RobotStateUpdater:
         try:
             msg = rospy.wait_for_message(self.joint_state_topic, JointState)
             for name, position in zip(msg.name, msg.position):
-                BulletWorld.robot.set_joint_state(name, position)
+                try:
+                    # Attempt to get the joint state. This might throw a KeyError if the joint name doesn't exist
+                    if BulletWorld.robot.get_joint_state(name) is None:
+                        continue
+                    # Set the joint state if the joint exists
+                    BulletWorld.robot.set_joint_state(name, position)
+                except KeyError:
+                    # Handle the case where the joint name does not exist
+                    pass
         except AttributeError:
             pass
         

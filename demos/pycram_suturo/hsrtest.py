@@ -5,18 +5,28 @@ from pycram.designators.object_designator import *
 from pycram.designators.object_designator import BelieveObject
 import pycram.helper as helper
 import pycram.external_interfaces.giskard as giskardpy
-
+from pycram.fluent_language_misc import failure_handling
+import threading
 from pycram.ros.viz_marker_publisher import VizMarkerPublisher
-
+from pycram.plan_failures import TorsoFailure
 from pycram.language import macros, par
 import sys
+#from pycram.ros.tf_broadcaster import TFBroadcaster
+
+from pycram.ros.robot_state_updater import RobotStateUpdater
+#from pycram.ros.joint_state_publisher import JointStatePublisher
+
 print(sys.meta_path)
 world = BulletWorld("DIRECT")
 v = VizMarkerPublisher()
 
+#broadcaster = TFBroadcaster()
+#joint_publisher = JointStatePublisher("joint_states", 0.1)
+
 world.set_gravity([0, 0, -9.8])
 robot = Object("hsrb", "robot", "../../resources/" + robot_description.name + ".urdf")
 robot_desig = ObjectDesignatorDescription(names=["hsrb"]).resolve()
+robot.set_color([0.5, 0.5, 0.9, 1])
 kitchen = Object("kitchen", "environment", "kitchen.urdf")
 robot.set_joint_state(robot_description.torso_joint, 0.24)
 kitchen_desig = ObjectDesignatorDescription(names=["kitchen"])
@@ -38,9 +48,19 @@ bread_BO = BelieveObject(names=["bread"])
 cocumber_BO = BelieveObject(names=["cocumber"])
 giskardpy.init_giskard_interface()
 giskardpy.sync_worlds()
-
+RobotStateUpdater("/tf", "/giskard_joint_states")
 
 # giskardpy.achieve_joint_goal({"torso_lift_joint": 0.28})
+import random
+
+# Example usage:
+# @failure_handling(5)
+# def some_function():
+#     numerator = 10
+#     denominator = random.choice([0])  # Randomly chooses 0, 1, or 2
+#     result = numerator / denominator  # This might raise a ZeroDivisionError
+#     print(f"Result is {result}")
+#     return result
 
 
 def move_object():
@@ -51,11 +71,12 @@ def move_object():
         print("test1")
 
 
-with simulated_robot:
-    move_object()
-    # ParkArmsAction([Arms.LEFT]).resolve().perform()
+with real_robot:
+    #some_function()
+    ParkArmsAction([Arms.LEFT]).resolve().perform()
 
     MoveTorsoAction([0.33]).resolve().perform()
+    giskardpy.sync_worlds()
     grasp = robot_description.grasps.get_orientation_for_grasp("top")
     arm = "left"
     # print("pickuppose")
@@ -69,12 +90,12 @@ with simulated_robot:
                  arms=["left"],
                  grasps=["top"]).resolve().perform()
     print("park")
-
-    ParkArmsAction([Arms.LEFT]).resolve().perform()
-    original_quaternion = (0, 0, 0, 1)
-    rotation_axis = (0, 0, 1)
-    rotation_quaternion = helper.axis_angle_to_quaternion(rotation_axis, 180)
-    resulting_quaternion = helper.multiply_quaternions(original_quaternion, rotation_quaternion)
-    nav_pose = Pose([-0.3, 0.9, 0.0], resulting_quaternion)
-    NavigateAction(target_locations=[nav_pose]).resolve().perform()
-    LookAtAction(targets=[cocumber_BO.resolve().pose]).resolve().perform()
+    #
+    # ParkArmsAction([Arms.LEFT]).resolve().perform()
+    # original_quaternion = (0, 0, 0, 1)
+    # rotation_axis = (0, 0, 1)
+    # rotation_quaternion = helper.axis_angle_to_quaternion(rotation_axis, 180)
+    # resulting_quaternion = helper.multiply_quaternions(original_quaternion, rotation_quaternion)
+    # nav_pose = Pose([-0.3, 0.9, 0.0], resulting_quaternion)
+    # NavigateAction(target_locations=[nav_pose]).resolve().perform()
+    # LookAtAction(targets=[cocumber_BO.resolve().pose]).resolve().perform()
