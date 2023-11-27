@@ -17,24 +17,9 @@
     },
     {
       "isShown": true,
-      "name": "TF",
-      "options": {},
-      "type": "tf"
-    },
-    {
-      "isShown": true,
-      "name": "Robot model",
-      "options": {
-        "param": "robot_description",
-        "tfPrefix": "simulated/pr2_1"
-      },
-      "type": "urdf"
-    },
-    {
-      "isShown": true,
       "name": "Marker array",
       "options": {
-        "topic": "/viz_marker"
+        "topic": "/pycram/viz_marker"
       },
       "type": "markerArray"
     }
