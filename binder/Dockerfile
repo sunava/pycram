@@ -21,6 +21,8 @@ RUN pip install --requirement ${PYCRAM_WS}/src/pycram/requirements.txt --user
 RUN pip install --requirement ${PYCRAM_WS}/src/pycram/src/neem_interface_python/requirements.txt --user \
   && pip cache purge
 
+COPY --chown=${NB_USER}:users binder/me ${PYCRAM_WS}/src/me
+
 # Build pycram workspace
 WORKDIR  ${PYCRAM_WS}
 USER root
