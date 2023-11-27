@@ -374,12 +374,21 @@ class HSRBMoveJointsReal(ProcessModule):
         giskard.achieve_joint_goal(name_to_position)
 
 
-# class HSRBMoveGripperReal(ProcessModule):
+ class HSRBMoveGripperReal(ProcessModule):
 #     """
 #     Opens or closes the gripper of the real HSRB, gripper uses an action server for this instead of giskard
 #     """
 #
-#     def _execute(self, designator: MoveGripperMotion.Motion) -> Any:
+     def _execute(self, designator: MoveGripperMotion.Motion) -> Any:
+          giskard.allow_gripper_collision()
+          # if designator.motion == "open":
+          #   giskard.open_gripper()
+          # elif designator.motion == "neutral":
+          #   giskard.neutral_gripper()
+          # else:
+          #   giskard.close_gripper()
+
+
 #         def activate_callback():
 #             rospy.loginfo("Started gripper Movement")
 #
