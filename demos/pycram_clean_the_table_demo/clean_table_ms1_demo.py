@@ -1,4 +1,4 @@
-from pycram.process_module import simulated_robot, with_simulated_robot, real_robot, with_real_robot
+from pycram.process_module import simulated_robot, real_robot
 from pycram.designators.action_designator import *
 from pycram.enums import Arms
 from pycram.designators.object_designator import *
@@ -10,12 +10,21 @@ from pycram.ros.viz_marker_publisher import VizMarkerPublisher
 from pycram.external_interfaces import robokudo
 from pycram.designators.object_designator import *
 from pycram.enums import ObjectType
+#from pycram.ros.tf_broadcaster import TFBroadcaster
+
+from pycram.ros.robot_state_updater import RobotStateUpdater
+#from pycram.ros.joint_state_publisher import JointStatePublisher
 
 
-from pycram.language import macros, par
-import sys
+
 world = BulletWorld("DIRECT")
 v = VizMarkerPublisher()
+
+RobotStateUpdater("/tf", "/joint_states")
+#broadcaster = TFBroadcaster()
+#joint_publisher = JointStatePublisher("joint_states", 0.1)
+world.set_gravity([0, 0, -9.8])
+
 # Calculate Quaternion for a 180-degree turn of the robot
 robo_orientation = axis_angle_to_quaternion([0, 0, 1], 180)
 x = robo_orientation[0]
@@ -24,7 +33,9 @@ z = robo_orientation[2]
 w = robo_orientation[3]
 
 # Initialize objects in BulletWorld
-robot = Object("hsrb", ObjectType.ROBOT, "hsrb.urdf", pose=Pose([0.03, 1.8, 0], robo_orientation))
+#robot = Object("hsrb", "robot", "../../resources/" + robot_description.name + ".urdf", pose=Pose([0.03, 1.8, 0], robo_orientation))
+robot = Object("hsrb", ObjectType.ROBOT, "../../resources/" + "hsrb" + ".urdf", pose=Pose([0.03, 1.8, 0], robo_orientation))
+robot.set_color([0.5, 0.5, 0.9, 1])
 robot_desig = ObjectDesignatorDescription(names=["hsrb"]).resolve()
 kitchen = Object("kitchen", "environment", "kitchen.urdf")
 robot.set_joint_state(robot_description.torso_joint, 0.24)
@@ -45,13 +56,13 @@ robot_pose_list = [Pose([-0.7841, 1.8, 0.9]), Pose([-0.7841, 2.1089, 0.9]), Pose
 #
 # }
 
-
-#giskardpy.init_giskard_interface()
+giskardpy.init_giskard_interface()
 #giskardpy.sync_worlds()
 
 with simulated_robot:
     ParkArmsAction([Arms.LEFT]).resolve().perform()
     MoveTorsoAction([0.33]).resolve().perform()
+
    # NavigateAction(target_locations=[Pose([1.7, 2, 0])]).resolve().perform()
 
     # dishwasher_desig = ObjectPart(names=["dishwasher"], part_of=kitchen_desig.resolve())
@@ -60,9 +71,7 @@ with simulated_robot:
         #LookAtAction(targets=[robot_pose_list[index]]).resolve().perform()
         #object_desig = DetectAction(BelieveObject(types=[object_type_list[index])).resolve().perform()
         # dann würde hier die Liste der object_list wegfallen
-        PickUpAction(object_designator_description=object_list[index],
-                     arms=["left"],
-                     grasps=["front"]).resolve().perform()
+        PickUpAction(object_designator_description=object_list[index], arms=["left"], grasps=["front"]).resolve().perform()
         PlaceAction(object_list[index], [robot_pose_list[index]], ["left"]).resolve().perform()
         ParkArmsAction([Arms.LEFT]).resolve().perform()
         NavigateAction(target_locations=[Pose([robot_pose_list[index].pose.x, robot_pose_list[index].pose.y + 0.7, robot_pose_list[index].pose.z])]).resolve().perform()
@@ -71,6 +80,7 @@ with real_robot:
     ParkArmsAction([Arms.LEFT]).resolve().perform()
    # LookAtAction(targets=[Pose([-0.7841, 1.8, 0.9]), Pose([-0.7841, 2.1089, 0.9]), Pose([-0.7841, 2.3, 0.9]), Pose([-0.7841, 2.6, 0.9])]).resolve().perform()
     MoveTorsoAction([0.33]).resolve().perform()
+    giskardpy.sync_worlds()
     object_desig_desc = ObjectDesignatorDescription(types=["ObjectType.MILK", "ObjectType.MILK", "ObjectType.BREAKFAST_CEREAL", "ObjectType.BREAKFAST_CEREAL"])
     # gibt ein dictionary von Poses/PoseStamped?? zurück
     object_pose_list = robokudo.query(object_desig_desc)
