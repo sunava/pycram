@@ -22,6 +22,7 @@ from ..designators.motion_designator import *
 from ..enums import JointType, ObjectType
 from ..external_interfaces import giskard
 from ..external_interfaces.robokudo import query
+from giskardpy.python_interface import GiskardWrapper
 
 
 def _park_arms(arm):
@@ -374,19 +375,21 @@ class HSRBMoveJointsReal(ProcessModule):
         giskard.achieve_joint_goal(name_to_position)
 
 
- class HSRBMoveGripperReal(ProcessModule):
+class HSRBMoveGripperReal(ProcessModule):
 #     """
 #     Opens or closes the gripper of the real HSRB, gripper uses an action server for this instead of giskard
 #     """
 #
      def _execute(self, designator: MoveGripperMotion.Motion) -> Any:
-          giskard.allow_gripper_collision()
-          # if designator.motion == "open":
-          #   giskard.open_gripper()
-          # elif designator.motion == "neutral":
-          #   giskard.neutral_gripper()
-          # else:
-          #   giskard.close_gripper()
+         # if designator.allow_gripper_collision:
+         #     giskard.allow_gripper_collision(designator.arm)
+         #
+         giskard_wrapper = GiskardWrapper()
+         giskard_wrapper.change_gripper_state(designator.motion)
+
+
+
+
 
 
 #         def activate_callback():
@@ -498,11 +501,11 @@ class HSRBManager(ProcessModuleManager):
         elif ProcessModuleManager.execution_type == "real":
             return HSRBMoveJointsReal(self._move_joints_lock)
 
-    # def move_gripper(self):
-    #     if ProcessModuleManager.execution_type == "simulated":
-    #         return HSRBMoveGripper(self._move_gripper_lock)
-    #     elif ProcessModuleManager.execution_type == "real":
-    #         return HSRBMoveGripperReal(self._move_gripper_lock)
+    def move_gripper(self):
+        if ProcessModuleManager.execution_type == "simulated":
+            return HSRBMoveGripper(self._move_gripper_lock)
+        elif ProcessModuleManager.execution_type == "real":
+            return HSRBMoveGripperReal(self._move_gripper_lock)
 
     def open(self):
         if ProcessModuleManager.execution_type == "simulated":
