@@ -22,7 +22,7 @@ from ..designators.motion_designator import *
 from ..enums import JointType, ObjectType
 from ..external_interfaces import giskard
 from ..external_interfaces.robokudo import query
-from giskardpy.python_interface import GiskardWrapper
+
 
 
 def _park_arms(arm):
@@ -376,16 +376,12 @@ class HSRBMoveJointsReal(ProcessModule):
 
 
 class HSRBMoveGripperReal(ProcessModule):
-#     """
-#     Opens or closes the gripper of the real HSRB, gripper uses an action server for this instead of giskard
-#     """
-#
+     """
+     Opens or closes the gripper of the real HSRB with the help of giskard.
+     """
+
      def _execute(self, designator: MoveGripperMotion.Motion) -> Any:
-         # if designator.allow_gripper_collision:
-         #     giskard.allow_gripper_collision(designator.arm)
-         #
-         giskard_wrapper = GiskardWrapper()
-         giskard_wrapper.change_gripper_state(designator.motion)
+         giskard.achieve_gripper_motion_goal(designator.motion)
 
 
 
