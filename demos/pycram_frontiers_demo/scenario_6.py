@@ -4,8 +4,11 @@ from pycram.designators.object_designator import *
 from pycram.pose import Pose
 from pycram.bullet_world import BulletWorld, Object
 from pycram.process_module import simulated_robot, with_simulated_robot
+from pycram.ros.viz_marker_publisher import VizMarkerPublisher
 
-world = BulletWorld()
+
+world = BulletWorld("DIRECT")
+viz = VizMarkerPublisher()
 robot = Object("pr2", "robot", "pr2.urdf", pose=Pose([1, 2, 0]))
 apartment = Object("apartment", "environment", "apartment.urdf")
 
