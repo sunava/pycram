@@ -508,7 +508,7 @@ class HSRBManager(ProcessModuleManager):
             return HSRBMoveJointsReal(self._move_joints_lock)
 
     def move_gripper(self):
-        if ProcessModuleManager.execution_type == "real":
+        if ProcessModuleManager.execution_type == "simulated":
             return HSRBMoveGripper(self._move_gripper_lock)
         # elif ProcessModuleManager.execution_type == "simulated":
         #     return HSRBMoveGripperReal(self._move_gripper_lock)
