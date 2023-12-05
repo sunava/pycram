@@ -1,4 +1,4 @@
-from pycram.process_module import simulated_robot, with_simulated_robot, real_robot, with_real_robot
+from pycram.process_module import simulated_robot,  real_robot, semi_real_robot
 from pycram.designators.action_designator import *
 from pycram.enums import Arms
 from pycram.designators.object_designator import *
@@ -71,7 +71,7 @@ def move_object():
         print("test1")
 
 
-with real_robot:
+with semi_real_robot:
     #some_function()
     ParkArmsAction([Arms.LEFT]).resolve().perform()
 
