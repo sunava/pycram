@@ -43,10 +43,10 @@ class HSRBDescription(RobotDescription):
         arm_manip = ManipulatorDescription(arm_inter, tool_frame="hand_gripper_tool_frame", gripper_description=gripper)
         self.add_chain("left", arm_manip)
         self.add_static_gripper_chains("left", {"open": [0.3], "close": [0.0]})
-        self.grasps = GraspingDescription({"front": [0, 0, 0, 1],
+        self.grasps = GraspingDescription({"top": [0, 1, 0, 0],
                                            "left": [0, 0, -1, 1],
                                            "right": [0, 0, 1, 1],
-                                           "top": [0, 1, 0, 1]})
+                                           "front": [0, 1, 0, 1]})
 
 
     def get_camera_frame(self, name="head_center_camera"):

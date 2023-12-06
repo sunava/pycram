@@ -384,30 +384,6 @@ class HSRBMoveGripperReal(ProcessModule):
          giskard.achieve_gripper_motion_goal(designator.motion)
 
 
-
-
-
-
-#         def activate_callback():
-#             rospy.loginfo("Started gripper Movement")
-#
-#         def done_callback(state, result):
-#             rospy.loginfo(f"Reached goal {designator.motion}: {result.reached_goal}")
-#
-#         def feedback_callback(msg):
-#             pass
-#
-#         goal = HSRBGripperCommandGoal()
-#         goal.command.position = 0.0 if designator.motion == "close" else 0.1
-#         goal.command.max_effort = 50.0
-#         controller_topic = "r_gripper_controller/gripper_action" if designator.gripper == "right" else "l_gripper_controller/gripper_action"
-#         client = actionlib.SimpleActionClient(controller_topic, HSRBGripperCommandAction)
-#         rospy.loginfo("Waiting for action server")
-#         client.wait_for_server()
-#         client.send_goal(goal, active_cb=activate_callback, done_cb=done_callback, feedback_cb=feedback_callback)
-#         wait = client.wait_for_result()
-
-
 class HSRBOpenReal(ProcessModule):
     """
     Tries to open an already grasped container
@@ -450,11 +426,15 @@ class HSRBManager(ProcessModuleManager):
             return HSRBNavigation(self._navigate_lock)
         elif ProcessModuleManager.execution_type == "real":
             return HSRBNavigationReal(self._navigate_lock)
+        elif ProcessModuleManager.execution_type == "semi_real":
+            return HSRBNavigationReal(self._navigate_lock)
 
     def pick_up(self):
         if ProcessModuleManager.execution_type == "simulated":
             return HSRBPickUp(self._pick_up_lock)
         elif ProcessModuleManager.execution_type == "real":
+            return HSRBPickUpReal(self._pick_up_lock)
+        elif ProcessModuleManager.execution_type == "semi_real":
             return HSRBPickUpReal(self._pick_up_lock)
 
     def place(self):
@@ -462,11 +442,15 @@ class HSRBManager(ProcessModuleManager):
             return HSRBPlace(self._place_lock)
         elif ProcessModuleManager.execution_type == "real":
             return HSRBPlaceReal(self._place_lock)
+        elif ProcessModuleManager.execution_type == "semi_real":
+            return HSRBPlaceReal(self._place_lock)
 
     def looking(self):
         if ProcessModuleManager.execution_type == "simulated":
             return HSRBMoveHead(self._looking_lock)
         elif ProcessModuleManager.execution_type == "real":
+            return HSRBMoveHeadReal(self._looking_lock)
+        elif ProcessModuleManager.execution_type == "semi_real":
             return HSRBMoveHeadReal(self._looking_lock)
 
     def detecting(self):
@@ -474,11 +458,15 @@ class HSRBManager(ProcessModuleManager):
             return HSRBDetecting(self._detecting_lock)
         elif ProcessModuleManager.execution_type == "real":
             return HSRBDetectingReal(self._detecting_lock)
+        elif ProcessModuleManager.execution_type == "semi_real":
+            return HSRBDetecting(self._detecting_lock)
 
     def move_tcp(self):
         if ProcessModuleManager.execution_type == "simulated":
             return HSRBMoveTCP(self._move_tcp_lock)
         elif ProcessModuleManager.execution_type == "real":
+            return HSRBMoveTCPReal(self._move_tcp_lock)
+        elif ProcessModuleManager.execution_type == "semi_real":
             return HSRBMoveTCPReal(self._move_tcp_lock)
 
     def move_arm_joints(self):
@@ -486,9 +474,13 @@ class HSRBManager(ProcessModuleManager):
             return HSRBMoveArmJoints(self._move_arm_joints_lock)
         elif ProcessModuleManager.execution_type == "real":
             return HSRBMoveArmJointsReal(self._move_arm_joints_lock)
+        elif ProcessModuleManager.execution_type == "semi_real":
+            return HSRBMoveArmJointsReal(self._move_arm_joints_lock)
 
     def world_state_detecting(self):
         if ProcessModuleManager.execution_type == "simulated" or ProcessModuleManager.execution_type == "real":
+            return HSRBWorldStateDetecting(self._world_state_detecting_lock)
+        elif ProcessModuleManager.execution_type == "semi_real":
             return HSRBWorldStateDetecting(self._world_state_detecting_lock)
 
     def move_joints(self):
@@ -496,17 +488,23 @@ class HSRBManager(ProcessModuleManager):
             return HSRBMoveJoints(self._move_joints_lock)
         elif ProcessModuleManager.execution_type == "real":
             return HSRBMoveJointsReal(self._move_joints_lock)
+        elif ProcessModuleManager.execution_type == "semi_real":
+            return HSRBMoveJointsReal(self._move_joints_lock)
 
     def move_gripper(self):
         if ProcessModuleManager.execution_type == "simulated":
             return HSRBMoveGripper(self._move_gripper_lock)
-        elif ProcessModuleManager.execution_type == "real":
-            return HSRBMoveGripperReal(self._move_gripper_lock)
+        # elif ProcessModuleManager.execution_type == "simulated":
+        #     return HSRBMoveGripperReal(self._move_gripper_lock)
+        elif ProcessModuleManager.execution_type == "semi_real":
+            return HSRBMoveGripper(self._move_gripper_lock)
 
     def open(self):
         if ProcessModuleManager.execution_type == "simulated":
             return HSRBOpen(self._open_lock)
         elif ProcessModuleManager.execution_type == "real":
+            return HSRBOpenReal(self._open_lock)
+        elif ProcessModuleManager.execution_type == "semi_real":
             return HSRBOpenReal(self._open_lock)
 
     def close(self):
@@ -514,3 +512,6 @@ class HSRBManager(ProcessModuleManager):
             return HSRBClose(self._close_lock)
         elif ProcessModuleManager.execution_type == "real":
             return HSRBCloseReal(self._close_lock)
+        elif ProcessModuleManager.execution_type == "semi_real":
+            return HSRBCloseReal(self._close_lock)
+
