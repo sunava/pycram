@@ -24,7 +24,6 @@ from ..external_interfaces import giskard
 from ..external_interfaces.robokudo import query
 
 
-
 def _park_arms(arm):
     """
     Defines the joint poses for the parking positions of the arms of HSRB and applies them to the
@@ -90,7 +89,8 @@ class HSRBPlace(ProcessModule):
         # Transformations such that the target position is the position of the object and not the tcp
         object_pose = object.get_pose()
         local_tf = LocalTransformer()
-        tcp_to_object = local_tf.transform_pose(object_pose, robot.get_link_tf_frame(robot_description.get_tool_frame(arm)))
+        tcp_to_object = local_tf.transform_pose(object_pose,
+                                                robot.get_link_tf_frame(robot_description.get_tool_frame(arm)))
         target_diff = desig.target.to_transform("target").inverse_times(tcp_to_object.to_transform("object")).to_pose()
 
         _move_arm_tcp(target_diff, robot, arm)
@@ -186,6 +186,7 @@ class HSRBMoveJoints(ProcessModule):
     """
     Process Module for generic joint movements, is not confined to the arms but can move any joint of the robot
     """
+
     def _execute(self, desig: MoveJointsMotion.Motion):
         robot = BulletWorld.robot
         robot.set_joint_states(dict(zip(desig.names, desig.positions)))
@@ -329,11 +330,7 @@ class HSRBDetectingReal(ProcessModule):
             bowl = Object("bowl", ObjectType.BOWL, "bowl.stl", pose=obj_pose)
             return bowl
 
-
         return bullet_obj[0]
-
-
-
 
 
 class HSRBMoveTCPReal(ProcessModule):
@@ -376,12 +373,12 @@ class HSRBMoveJointsReal(ProcessModule):
 
 
 class HSRBMoveGripperReal(ProcessModule):
-     """
+    """
      Opens or closes the gripper of the real HSRB with the help of giskard.
      """
 
-     def _execute(self, designator: MoveGripperMotion.Motion) -> Any:
-         giskard.achieve_gripper_motion_goal(designator.motion)
+    def _execute(self, designator: MoveGripperMotion.Motion) -> Any:
+        giskard.achieve_gripper_motion_goal(designator.motion)
 
 
 class HSRBOpenReal(ProcessModule):
@@ -514,4 +511,3 @@ class HSRBManager(ProcessModuleManager):
             return HSRBCloseReal(self._close_lock)
         elif ProcessModuleManager.execution_type == "semi_real":
             return HSRBCloseReal(self._close_lock)
-
