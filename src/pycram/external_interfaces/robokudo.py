@@ -1,7 +1,6 @@
 import rospy
 import actionlib
 
-
 from ..designator import ObjectDesignatorDescription
 from ..pose import Pose
 from ..local_transformer import LocalTransformer
@@ -90,7 +89,7 @@ def query(object_desc: ObjectDesignatorDescription) -> ObjectDesignatorDescripti
     for i in range(0, len(query_result.res[0].pose)):
         pose = Pose.from_pose_stamped(query_result.res[0].pose[i])
         pose.frame = BulletWorld.current_bullet_world.robot.get_link_tf_frame(pose.frame)
-        source = query_result.res[0].poseSource[i]
+        source = query_result.res[0].pose_source[i]
 
         lt = LocalTransformer()
         pose = lt.transform_pose(pose, "map")
