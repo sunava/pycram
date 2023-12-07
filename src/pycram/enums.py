@@ -47,6 +47,7 @@ class ObjectType(Enum):
     """
     MILK = auto()
     SPOON = auto()
+    METALMUG = auto()
     BOWL = auto()
     BREAKFAST_CEREAL = auto()
     JEROEN_CUP = auto()

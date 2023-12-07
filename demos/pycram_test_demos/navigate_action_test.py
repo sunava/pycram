@@ -5,7 +5,7 @@ from pycram.ros.viz_marker_publisher import VizMarkerPublisher
 from pycram.designators.object_designator import *
 from pycram.enums import ObjectType
 from pycram.ros.robot_state_updater import RobotStateUpdater
-
+#07.12.23 worked with....
 
 world = BulletWorld("DIRECT")
 v = VizMarkerPublisher()
@@ -25,9 +25,9 @@ kitchen_desig = ObjectDesignatorDescription(names=["kitchen"])
 
 # Giskard initialisieren und syncen
 giskardpy.init_giskard_interface()
-giskardpy.sync_worlds()
+#giskardpy.sync_worlds()
 
-RobotStateUpdater("/tf", "/joint_states")
+#RobotStateUpdater("/tf", "/joint_states")
 
 with real_robot:
-    NavigateAction(target_locations=[Pose([2, 1.13, 0])]).resolve().perform()
+    NavigateAction(target_locations=[Pose([3.7, 1.4, 0])]).resolve().perform()

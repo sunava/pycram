@@ -44,6 +44,8 @@ def make_query_goal_msg(obj_desc: ObjectDesignatorDescription) -> 'QueryGoal':
     :param obj_desc: The PyCRAM object designator description that should be converted
     :return: The RoboKudo QueryGoal for the given object designator description
     """
+    from robokudo_msgs.msg import QueryAction, QueryGoal, QueryResult
+
     goal_msg = QueryGoal()
     goal_msg.obj.uid = str(id(obj_desc))
     goal_msg.obj.type = str(obj_desc.types[0].name) # For testing purposes
@@ -64,6 +66,8 @@ def query(object_desc: ObjectDesignatorDescription) -> ObjectDesignatorDescripti
     :return: An object designator for the found object, if there was an object that fitted the description.
     """
     init_robokudo_interface()
+    from robokudo_msgs.msg import QueryAction, QueryGoal, QueryResult
+
     global query_result
 
     def active_callback():
@@ -85,14 +89,17 @@ def query(object_desc: ObjectDesignatorDescription) -> ObjectDesignatorDescripti
     client.send_goal(object_goal, active_cb=active_callback, done_cb=done_callback, feedback_cb=feedback_callback)
     wait = client.wait_for_result()
     pose_candidates = {}
-
+    #print(query_result)
+    print(query_result.res[0])
+    #todo check if query is even filled
     for i in range(0, len(query_result.res[0].pose)):
         pose = Pose.from_pose_stamped(query_result.res[0].pose[i])
-        pose.frame = BulletWorld.current_bullet_world.robot.get_link_tf_frame(pose.frame)
-        source = query_result.res[0].pose_source[i]
+        #todo check if frame exist and if not in map
+        #pose.frame = BulletWorld.current_bullet_world.robot.get_link_tf_frame(pose.frame)
+        source = query_result.res[0].pose_source[0]
 
-        lt = LocalTransformer()
-        pose = lt.transform_pose(pose, "map")
+        #lt = LocalTransformer()
+        #pose = lt.transform_pose(pose, "map")
 
         pose_candidates[source] = pose
 

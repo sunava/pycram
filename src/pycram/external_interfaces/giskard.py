@@ -282,8 +282,8 @@ def achieve_gripper_motion_goal(motion: str):
     """
     Opens or closes the gripper
     """
+    rospy.loginfo("giskard change_gripper_state: " + motion)
     giskard_wrapper.change_gripper_state(motion)
-    giskard_wrapper.plan_and_execute()
 
 
 def allow_gripper_collision(gripper: str):
