@@ -16,7 +16,7 @@ def init_robokudo_interface():
     if is_init:
         return
     try:
-        from robokudo_msgs.msg import ObjectDesignator as robokudo_ObjetDesignator
+        from robokudo_msgs.msg import ObjectDesignator as robokudo_ObjectDesignator
         from robokudo_msgs.msg import QueryAction, QueryGoal, QueryResult
         is_init = True
         rospy.loginfo("Successfully initialized robokudo interface")
@@ -24,14 +24,14 @@ def init_robokudo_interface():
         rospy.logwarn(f"Could not import RoboKudo messages, RoboKudo interface could not be initialized")
 
 
-def msg_from_obj_desig(obj_desc: ObjectDesignatorDescription) -> 'robokudo_ObjetDesignator':
+def msg_from_obj_desig(obj_desc: ObjectDesignatorDescription) -> 'robokudo_ObjectDesignator':
     """
     Creates a RoboKudo Object designator from a PyCRAM Object Designator description
 
     :param obj_desc: The PyCRAM Object designator that should be converted
     :return: The RobotKudo Object Designator for the given PyCRAM designator
     """
-    obj_msg = robokudo_ObjetDesignator()
+    obj_msg = robokudo_ObjectDesignator()
     obj_msg.uid = str(id(obj_desc))
     obj_msg.type = obj_desc.types[0] # For testing purposes
 

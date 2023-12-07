@@ -24,6 +24,7 @@ from ..external_interfaces import giskard
 from ..external_interfaces.robokudo import query
 
 
+
 def _park_arms(arm):
     """
     Defines the joint poses for the parking positions of the arms of HSRB and applies them to the
@@ -374,30 +375,13 @@ class HSRBMoveJointsReal(ProcessModule):
         giskard.achieve_joint_goal(name_to_position)
 
 
-# class HSRBMoveGripperReal(ProcessModule):
-#     """
-#     Opens or closes the gripper of the real HSRB, gripper uses an action server for this instead of giskard
-#     """
-#
-#     def _execute(self, designator: MoveGripperMotion.Motion) -> Any:
-#         def activate_callback():
-#             rospy.loginfo("Started gripper Movement")
-#
-#         def done_callback(state, result):
-#             rospy.loginfo(f"Reached goal {designator.motion}: {result.reached_goal}")
-#
-#         def feedback_callback(msg):
-#             pass
-#
-#         goal = HSRBGripperCommandGoal()
-#         goal.command.position = 0.0 if designator.motion == "close" else 0.1
-#         goal.command.max_effort = 50.0
-#         controller_topic = "r_gripper_controller/gripper_action" if designator.gripper == "right" else "l_gripper_controller/gripper_action"
-#         client = actionlib.SimpleActionClient(controller_topic, HSRBGripperCommandAction)
-#         rospy.loginfo("Waiting for action server")
-#         client.wait_for_server()
-#         client.send_goal(goal, active_cb=activate_callback, done_cb=done_callback, feedback_cb=feedback_callback)
-#         wait = client.wait_for_result()
+class HSRBMoveGripperReal(ProcessModule):
+     """
+     Opens or closes the gripper of the real HSRB with the help of giskard.
+     """
+
+     def _execute(self, designator: MoveGripperMotion.Motion) -> Any:
+         giskard.achieve_gripper_motion_goal(designator.motion)
 
 
 class HSRBOpenReal(ProcessModule):
