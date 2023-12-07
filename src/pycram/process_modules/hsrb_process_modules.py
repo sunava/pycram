@@ -89,7 +89,8 @@ class HSRBPlace(ProcessModule):
         # Transformations such that the target position is the position of the object and not the tcp
         object_pose = object.get_pose()
         local_tf = LocalTransformer()
-        tcp_to_object = local_tf.transform_pose(object_pose, robot.get_link_tf_frame(robot_description.get_tool_frame(arm)))
+        tcp_to_object = local_tf.transform_pose(object_pose,
+                                                robot.get_link_tf_frame(robot_description.get_tool_frame(arm)))
         target_diff = desig.target.to_transform("target").inverse_times(tcp_to_object.to_transform("object")).to_pose()
 
         _move_arm_tcp(target_diff, robot, arm)
@@ -185,6 +186,7 @@ class HSRBMoveJoints(ProcessModule):
     """
     Process Module for generic joint movements, is not confined to the arms but can move any joint of the robot
     """
+
     def _execute(self, desig: MoveJointsMotion.Motion):
         robot = BulletWorld.robot
         robot.set_joint_states(dict(zip(desig.names, desig.positions)))
@@ -328,11 +330,7 @@ class HSRBDetectingReal(ProcessModule):
             bowl = Object("bowl", ObjectType.BOWL, "bowl.stl", pose=obj_pose)
             return bowl
 
-
         return bullet_obj[0]
-
-
-
 
 
 class HSRBMoveTCPReal(ProcessModule):
@@ -374,30 +372,13 @@ class HSRBMoveJointsReal(ProcessModule):
         giskard.achieve_joint_goal(name_to_position)
 
 
-# class HSRBMoveGripperReal(ProcessModule):
-#     """
-#     Opens or closes the gripper of the real HSRB, gripper uses an action server for this instead of giskard
-#     """
-#
-#     def _execute(self, designator: MoveGripperMotion.Motion) -> Any:
-#         def activate_callback():
-#             rospy.loginfo("Started gripper Movement")
-#
-#         def done_callback(state, result):
-#             rospy.loginfo(f"Reached goal {designator.motion}: {result.reached_goal}")
-#
-#         def feedback_callback(msg):
-#             pass
-#
-#         goal = HSRBGripperCommandGoal()
-#         goal.command.position = 0.0 if designator.motion == "close" else 0.1
-#         goal.command.max_effort = 50.0
-#         controller_topic = "r_gripper_controller/gripper_action" if designator.gripper == "right" else "l_gripper_controller/gripper_action"
-#         client = actionlib.SimpleActionClient(controller_topic, HSRBGripperCommandAction)
-#         rospy.loginfo("Waiting for action server")
-#         client.wait_for_server()
-#         client.send_goal(goal, active_cb=activate_callback, done_cb=done_callback, feedback_cb=feedback_callback)
-#         wait = client.wait_for_result()
+class HSRBMoveGripperReal(ProcessModule):
+    """
+     Opens or closes the gripper of the real HSRB with the help of giskard.
+     """
+
+    def _execute(self, designator: MoveGripperMotion.Motion) -> Any:
+        giskard.achieve_gripper_motion_goal(designator.motion)
 
 
 class HSRBOpenReal(ProcessModule):
@@ -530,4 +511,3 @@ class HSRBManager(ProcessModuleManager):
             return HSRBCloseReal(self._close_lock)
         elif ProcessModuleManager.execution_type == "semi_real":
             return HSRBCloseReal(self._close_lock)
-
