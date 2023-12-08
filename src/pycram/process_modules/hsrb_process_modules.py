@@ -311,24 +311,23 @@ class HSRBDetectingReal(ProcessModule):
 
     def _execute(self, designator: DetectingMotion.Motion) -> Any:
         query_result = query(ObjectDesignatorDescription(types=[designator.object_type]))
-        # print(query_result)
         obj_pose = query_result["ClusterPoseBBAnnotator"]
 
-        lt = LocalTransformer()
-        obj_pose = lt.transform_pose(obj_pose, BulletWorld.robot.get_link_tf_frame("torso_lift_link"))
-        obj_pose.orientation = [0, 0, 0, 1]
-        obj_pose.position.x += 0.05
+        #lt = LocalTransformer()
+        #obj_pose = lt.transform_pose(obj_pose, BulletWorld.robot.get_link_tf_frame("arm_lift_link"))
+        #todo do this only on cup and bowl
+        #obj_pose.orientation = [0, 0, 0, 1]
+        #todo radius /2 from object size (perception we need size/boundingbox in result)
+        #obj_pose.position.x += 0.05
 
-        bullet_obj = BulletWorld.current_bullet_world.get_objects_by_type(designator.object_type)
-        if bullet_obj:
-            bullet_obj[0].set_pose(obj_pose)
-            return bullet_obj[0]
-        elif designator.object_type == ObjectType.JEROEN_CUP:
-            cup = Object("cup", ObjectType.JEROEN_CUP, "jeroen_cup.stl", pose=obj_pose)
-            return cup
-        elif designator.object_type == ObjectType.BOWL:
-            bowl = Object("bowl", ObjectType.BOWL, "bowl.stl", pose=obj_pose)
-            return bowl
+        # bullet_obj = BulletWorld.current_bullet_world.get_objects_by_type(designator.object_type)
+        # if bullet_obj:
+        #     bullet_obj[0].set_pose(obj_pose)
+        #     return bullet_obj[0]
+        # elif designator.object_type:
+        #todo we need full result to be able to make new objects
+        objectX = Object("bowl", ObjectType.BOWL, "bowl.stl", pose=obj_pose)
+        return objectX
 
         return bullet_obj[0]
 
@@ -491,8 +490,8 @@ class HSRBManager(ProcessModuleManager):
     def move_gripper(self):
         if ProcessModuleManager.execution_type == "simulated":
             return HSRBMoveGripper(self._move_gripper_lock)
-        # elif ProcessModuleManager.execution_type == "simulated":
-        #     return HSRBMoveGripperReal(self._move_gripper_lock)
+        elif ProcessModuleManager.execution_type == "real":
+            return HSRBMoveGripperReal(self._move_gripper_lock)
         elif ProcessModuleManager.execution_type == "semi_real":
             return HSRBMoveGripper(self._move_gripper_lock)
 

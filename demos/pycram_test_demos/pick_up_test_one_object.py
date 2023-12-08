@@ -34,13 +34,8 @@ kitchen = Object("kitchen", "environment", "kitchen.urdf")
 kitchen_desig = ObjectDesignatorDescription(names=["kitchen"])
 
 milk = Object("milk", "milk", "milk.stl", pose=Pose([-2.7, 2.3, 0.43]), color=[1, 0, 0, 1])
-cereal = Object("cereal", "cereal", "breakfast_cereal.stl", pose=Pose([-2.5, 2.3, 0.43], cereal_orientation),
-                color=[0, 1, 0, 1])
-# cereal2 = Object("cereal2", "cereal", "breakfast_cereal.stl", pose=Pose([-2.9, 2.3, 0.43], cereal_orientation), color=[0, 1, 0, 1])
-# milk2 = Object("milk2", "milk", "milk.stl", pose=Pose([-2.3, 2.3, 0.43]), color=[0, 1, 0, 1])
-
 milk_desig = BelieveObject(types=["milk"])
-cereal_desig = BelieveObject(types=["cereal"])
+
 
 pub = rospy.Publisher('/talk_request', Voice, queue_size=10)
 drop_str = Voice()
@@ -53,19 +48,9 @@ giskardpy.sync_worlds()
 
 RobotStateUpdater("/tf", "/joint_states")
 
-# @with_real_robot
-# def move_and_detect(obj_type):
-#     NavigateAction(target_locations=[Pose([1.7, 2, 0])]).resolve().perform()
-#
-#     LookAtAction(targets=[pick_pose]).resolve().perform()
-#
-#     object_desig = DetectAction(BelieveObject(types=[obj_type])).resolve().perform()
-#
-#     return object_desig
-
 with semi_real_robot:
     ParkArmsAction([Arms.LEFT]).resolve().perform()
-    LookAtAction(targets=[Pose([-2.6, 2.0, 0])]).resolve().perform()
+    #LookAtAction(targets=[Pose([-2.6, 2.0, 0])]).resolve().perform()
 
     NavigateAction(target_locations=[Pose([-2.6, 0, 0], robo_orientation)]).resolve().perform()
     NavigateAction(target_locations=[Pose([-2.6, 1.5, 0], robo_orientation)]).resolve().perform()
