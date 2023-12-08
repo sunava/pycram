@@ -89,8 +89,6 @@ def query(object_desc: ObjectDesignatorDescription) -> ObjectDesignatorDescripti
     client.send_goal(object_goal, active_cb=active_callback, done_cb=done_callback, feedback_cb=feedback_callback)
     wait = client.wait_for_result()
     pose_candidates = {}
-    #print(query_result)
-    print(query_result.res[0])
     #todo check if query is even filled
     for i in range(0, len(query_result.res[0].pose)):
         pose = Pose.from_pose_stamped(query_result.res[0].pose[i])

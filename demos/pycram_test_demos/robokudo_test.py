@@ -25,13 +25,4 @@ milk = Object("milk", ObjectType.MILK, "milk.stl", pose=Pose([2.5, 2, 1.02]), co
 with real_robot:
     #todo we dont want to insert a object at all time
     object_desig = DetectAction(BelieveObject(types=[ObjectType.MILK])).resolve().perform()
-    #DetectingMotion(object_type=milk).resolve().perform()
-    #object_desig_desc = ObjectDesignatorDescription(types=[ObjectType.METALMUG])
-
-   # object_desig_desc = ObjectDesignatorDescription(
-    #    types=["ObjectType.MILK", "ObjectType.MILK", "ObjectType.BREAKFAST_CEREAL", "ObjectType.BREAKFAST_CEREAL"])
-    #time.sleep(3)
-    #object_pose_dict = robokudo.query(object_desig_desc)
-    #print(object_pose_dict)
-   #  for i in range(len(object_pose_dict["ClusterPoseBBAnotator"])):
-#         pose = Pose.from_pose_stamped(query_result.res[0].pose[i])
+    print("object desig is created")

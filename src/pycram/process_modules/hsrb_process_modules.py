@@ -311,9 +311,6 @@ class HSRBDetectingReal(ProcessModule):
 
     def _execute(self, designator: DetectingMotion.Motion) -> Any:
         query_result = query(ObjectDesignatorDescription(types=[designator.object_type]))
-        # print(query_result)
-        print("queryyyyyyyyyyyyy")
-        print(query_result)
         obj_pose = query_result["ClusterPoseBBAnnotator"]
 
         #lt = LocalTransformer()
@@ -323,14 +320,14 @@ class HSRBDetectingReal(ProcessModule):
         #todo radius /2 from object size (perception we need size/boundingbox in result)
         #obj_pose.position.x += 0.05
 
-        bullet_obj = BulletWorld.current_bullet_world.get_objects_by_type(designator.object_type)
-        if bullet_obj:
-            bullet_obj[0].set_pose(obj_pose)
-            return bullet_obj[0]
-        elif designator.object_type:
-            #todo we need full result to be able to make new objects
-            objectX = Object("bowl", ObjectType.BOWL, "bowl.stl", pose=obj_pose)
-            return objectX
+        # bullet_obj = BulletWorld.current_bullet_world.get_objects_by_type(designator.object_type)
+        # if bullet_obj:
+        #     bullet_obj[0].set_pose(obj_pose)
+        #     return bullet_obj[0]
+        # elif designator.object_type:
+        #todo we need full result to be able to make new objects
+        objectX = Object("bowl", ObjectType.BOWL, "bowl.stl", pose=obj_pose)
+        return objectX
 
         return bullet_obj[0]
 
