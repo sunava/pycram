@@ -42,9 +42,9 @@ robot.set_joint_state(robot_description.torso_joint, 0.24)
 kitchen_desig = ObjectDesignatorDescription(names=["kitchen"])
 
 
-giskardpy.init_giskard_interface()
-giskardpy.sync_worlds()
-RobotStateUpdater("/tf", "/giskard_joint_states")
+#giskardpy.init_giskard_interface()
+#giskardpy.sync_worlds()
+#RobotStateUpdater("/tf", "/giskard_joint_states")
 #/pycram/viz_marker topic bei Marker Array
 
 
@@ -63,10 +63,11 @@ def talk_request(data):
     callback function that takes the data from nlp (name and drink) and lets the robot talk
     :param data: String "name drink"
     """
-
-    name_drink = data.split()
-    talk_test.name_drink_talker(name_drink)
-    rospy.loginfo("nlp data:" + name_drink[0] + " " + name_drink[1])
+    print(data)
+    #
+    # name_drink = data.split(" ")
+    # talk_test.name_drink_talker(name_drink)
+    # rospy.loginfo("nlp data:" + name_drink[0] + " " + name_drink[1])
 
 
 
@@ -75,23 +76,23 @@ with real_robot:
     #Query to perception starts the whole demo
     #when a human is perceived the object_pose variable is filled with content
     #alternative
-    object_desig_human = ObjectDesignatorDescription(types=["ObjectType.HUMAN"])
-    object_pose = robokudo.query(object_desig_human) #kriege ich hier erst Daten, wenn Perception einen Mensch erkennt?
+    #object_desig_human = ObjectDesignatorDescription(types=["ObjectType.HUMAN"])
+    #object_pose = robokudo.query(object_desig_human) #kriege ich hier erst Daten, wenn Perception einen Mensch erkennt?
 
-    if len(object_pose) > 0:
+    #if len(object_pose) > 0:
 
         #send signal to NLP to start listening
-        rospy.init_node('node', anonymous=True)
-        rospy.loginfo("human detected")
-        pub_nlp = rospy.Publisher('/startListener', String, queue_size=10)
-        rate = rospy.Rate(10)  # 10hz
-        talk_test.talker("Hello, i am Toya and my favorite drink is oil. What about you?")
-        pub_nlp.publish("start listening")
+    rospy.loginfo("human detected")
+    pub_nlp = rospy.Publisher('/startListener', String, queue_size=10)
+    rate = rospy.Rate(10)  # 10hz
+    talk_test.talker("Hello, i am Toya and my favorite drink is oil. What about you, talk to me?")
+    rospy.sleep(2)
+    pub_nlp.publish("start listening")
 
         #Giskard Funktion hinzugefügt
         #bin aber noch auf Simons Branch, die Funktion die in der giskady.py aufgerufen sollte nicht vorhanden sein
-        giskardpy.move_head_to_human()
+        #giskardpy.move_head_to_human()
 
         #Nlp Interface, gets data in the form of "name drink"
-        rospy.Subscriber("nlp_out", String, talk_request)
+    rospy.Subscriber("nlp_out", String, talk_request)
 
