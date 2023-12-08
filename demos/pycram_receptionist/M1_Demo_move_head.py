@@ -41,12 +41,12 @@ giskard.init_giskard_interface()
 
 with real_robot:
     rospy.loginfo("human detected")
-    pub_nlp = rospy.Publisher('/robokudovanessa/query/goal', QueryActionGoal, queue_size=10)
+    pub_robokudo = rospy.Publisher('/robokudovanessa/query/goal', QueryActionGoal, queue_size=10)
     rate = rospy.Rate(10)  # 10hz
     msgs = QueryActionGoal()
     #talk_test.talker("Hello, i am Toya and my favorite drink is oil. What about you, talk to me?")
     rospy.sleep(2)
-    pub_nlp.publish(msgs)
+    pub_robokudo.publish(msgs)
 
     giskard.move_head_to_human()
 
