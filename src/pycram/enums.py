@@ -45,9 +45,10 @@ class ObjectType(Enum):
     """
     Enum for Object types to easier identify different objects
     """
+    METALMUG = auto()
+    PRINGLES = auto()
     MILK = auto()
     SPOON = auto()
-    METALMUG = auto()
     BOWL = auto()
     BREAKFAST_CEREAL = auto()
     JEROEN_CUP = auto()
