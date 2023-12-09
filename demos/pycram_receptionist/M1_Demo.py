@@ -7,7 +7,7 @@ from pycram.ros.viz_marker_publisher import VizMarkerPublisher
 from pycram.designators.location_designator import *
 from pycram.designators.object_designator import *
 from pycram.bullet_world import BulletWorld, Object
-from std_msgs.msg import String
+from std_msgs.msg import String, Bool
 import talk_actions
 
 world = BulletWorld("DIRECT")
@@ -45,18 +45,26 @@ def talk_request(data):
     callback function that takes the data from nlp (name and drink) and lets the robot talk
     :param data: String "name drink"
     """
-    print(data)
-    #
-    # name_drink = data.split(" ")
-    # talk_test.name_drink_talker(name_drink)
-    # rospy.loginfo("nlp data:" + name_drink[0] + " " + name_drink[1])
+
+    name_drink = data.split(" ")
+    talk_actions.name_drink_talker(name_drink)
+    rospy.loginfo("nlp data:" + name_drink[0] + " " + name_drink[1])
+
+
+def talk_error(data):
+
+    """
+    callback function if no name/drink was heard
+    """
+
+    error_msgs = "i could not hear you, please repeat your name and favorite drink"
+    talk_actions.talker(error_msgs)
 
 
 with real_robot:
 
     # Perception
-    # TODO: richtigen Topic Namen für Perception Node herausfinden
-    pub_robokudo = rospy.Publisher('/robokudovanessa/query/goal', QueryActionGoal, queue_size=10)
+    pub_robokudo = rospy.Publisher('/robokudo/query/goal', QueryActionGoal, queue_size=10)
     msgs = QueryActionGoal()
     rospy.sleep(2)
     for i in range(0, 5):
@@ -73,5 +81,9 @@ with real_robot:
     # keep looking at detected human
     giskardpy.move_head_to_human()
 
-    # Nlp Interface, gets data in the form of "name drink"
-    rospy.Subscriber("nlp_out", String, talk_request)
+    while not rospy.is_shutdown():
+        # failure Handling
+        rospy.Subscriber("nlp_feedback", Bool, talk_error)
+
+        # Nlp Interface, gets data in the form of "name drink"
+        rospy.Subscriber("nlp_out", String, talk_request)
