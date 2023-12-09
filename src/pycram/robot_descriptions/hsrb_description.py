@@ -46,7 +46,7 @@ class HSRBDescription(RobotDescription):
         self.grasps = GraspingDescription({"top": [0, 1, 0, 0],
                                            "left": [0, 0, -1, 1],
                                            "right": [0, 0, 1, 1],
-                                           "front": [0, 1, 0, 1]})
+                                           "front": [0, 0, 0, 1]})
 
 
     def get_camera_frame(self, name="head_center_camera"):
