@@ -4,8 +4,8 @@ from __future__ import annotations
 import numpy as np
 import pybullet as p
 import rospy
-import matplotlib.pyplot as plt
-from matplotlib import colors
+#import matplotlib.pyplot as plt
+#from matplotlib import colors
 import psutil
 import time
 from .bullet_world import BulletWorld, Use_shadow_world, Object
@@ -735,24 +735,24 @@ class SemanticCostmap(Costmap):
             return shadow_obj.get_AABB(self.link)
 
 
-cmap = colors.ListedColormap(['white', 'black', 'green', 'red', 'blue'])
-
-
-# Mainly used for debugging
-# Data is 2d array
-def plot_grid(data: np.ndarray) -> None:
-    """
-    An auxiliary method only used for debugging, it will plot a 2D numpy array using MatplotLib.
-    """
-    rows = data.shape[0]
-    cols = data.shape[1]
-    fig, ax = plt.subplots()
-    ax.imshow(data, cmap=cmap)
-    # draw gridlines
-    # ax.grid(which='major', axis='both', linestyle='-', color='k', linewidth=1)
-    ax.set_xticks(np.arange(0.5, rows, 1));
-    ax.set_yticks(np.arange(0.5, cols, 1));
-    plt.tick_params(axis='both', labelsize=0, length=0)
-    # fig.set_size_inches((8.5, 11), forward=False)
-    # plt.savefig(saveImageName + ".png", dpi=500)
-    plt.show()
+# cmap = colors.ListedColormap(['white', 'black', 'green', 'red', 'blue'])
+#
+#
+# # Mainly used for debugging
+# # Data is 2d array
+# def plot_grid(data: np.ndarray) -> None:
+#     """
+#     An auxiliary method only used for debugging, it will plot a 2D numpy array using MatplotLib.
+#     """
+#     rows = data.shape[0]
+#     cols = data.shape[1]
+#     fig, ax = plt.subplots()
+#     ax.imshow(data, cmap=cmap)
+#     # draw gridlines
+#     # ax.grid(which='major', axis='both', linestyle='-', color='k', linewidth=1)
+#     ax.set_xticks(np.arange(0.5, rows, 1));
+#     ax.set_yticks(np.arange(0.5, cols, 1));
+#     plt.tick_params(axis='both', labelsize=0, length=0)
+#     # fig.set_size_inches((8.5, 11), forward=False)
+#     # plt.savefig(saveImageName + ".png", dpi=500)
+#     plt.show()

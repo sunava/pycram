@@ -322,8 +322,8 @@ class DetectingMotion(MotionDesignatorDescription):
                     f"Could not find an object with the type {self.object_type} in the FOV of the robot")
             if ProcessModuleManager.execution_type == "real":
                 return RealObject.Object(bullet_world_object.name, bullet_world_object.type,
-                                                      bullet_world_object, bullet_world_object.get_pose())
-                
+                                         bullet_world_object, bullet_world_object.get_pose())
+
             return ObjectDesignatorDescription.Object(bullet_world_object.name, bullet_world_object.type,
                                                       bullet_world_object)
 
@@ -416,6 +416,7 @@ class WorldStateDetectingMotion(MotionDesignatorDescription):
     """
     Detects an object based on the world state.
     """
+
     @dataclasses.dataclass
     class Motion(MotionDesignatorDescription.Motion):
         # cmd: str
@@ -454,6 +455,7 @@ class MoveJointsMotion(MotionDesignatorDescription):
     """
     Moves any joint on the robot
     """
+
     @dataclasses.dataclass
     class Motion(MotionDesignatorDescription.Motion):
         # cmd: str
@@ -586,3 +588,39 @@ class ClosingMotion(MotionDesignatorDescription):
         :return: A resolved motion designator
         """
         return self.Motion(self.cmd, self.objet_part, self.arm)
+
+
+class TalkingMotion(MotionDesignatorDescription):
+    """
+    Designator for closing a container
+    """
+
+    @dataclasses.dataclass
+    class Motion(MotionDesignatorDescription.Motion):
+        cmd: str
+        """
+        Sentence what the robot should say
+        """
+
+        def perform(self):
+            pm_manager = ProcessModuleManager.get_manager()
+            return pm_manager.talk().execute(self)
+
+    def __init__(self,  cmd: str, resolver: Optional[Callable] = None):
+        """
+        Lets the robot close a container specified by the given parameter. This assumes that the handle is already grasped
+
+        :param object_part: Object designator describing the handle of the drawer
+        :param arm: Arm that should be used
+        :param resolver: An alternative resolver
+        """
+        super().__init__(resolver)
+        self.cmd: str = cmd
+
+    def ground(self) -> Motion:
+        """
+        Default resolver for opening motion designator, returns a resolved motion designator for the input parameters.
+
+        :return: A resolved motion designator
+        """
+        return self.Motion(self.cmd)
