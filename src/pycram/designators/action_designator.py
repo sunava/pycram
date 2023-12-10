@@ -697,7 +697,10 @@ class LookAtAction(ActionDesignatorDescription):
 
 class DetectAction(ActionDesignatorDescription):
     """
-    Detects an object that fits the object description and returns an object designator describing the object.
+    Detects an object that fits the object description and returns a list of an object designator describing the object.
+    If you choose technique=all, it will return a list of all objects in the field of view.
+    returns a dict of perceived_objects. You can enter it by either perceived_object_dict["cereal"].name or
+    perceived_object_dict.values())[0].name..
     """
 
     @dataclasses.dataclass
@@ -707,9 +710,16 @@ class DetectAction(ActionDesignatorDescription):
         Object designator loosely describing the object, e.g. only type. 
         """
 
+        technique: str
+        """
+        Technique means how the object should be detected, e.g. 'color', 'shape', etc. 
+        Or 'all' if all objects should be detected
+        """
+
         @with_tree
         def perform(self) -> Any:
-            return DetectingMotion(object_type=self.object_designator.type).resolve().perform()
+            return DetectingMotion(object_type=self.object_designator.type,
+                                   technique=self.technique).resolve().perform()
 
         def to_sql(self) -> Base:
             raise NotImplementedError()
@@ -717,7 +727,7 @@ class DetectAction(ActionDesignatorDescription):
         def insert(self, session: sqlalchemy.orm.session.Session, *args, **kwargs) -> Base:
             raise NotImplementedError()
 
-    def __init__(self, object_designator_description: ObjectDesignatorDescription, resolver=None):
+    def __init__(self, object_designator_description: ObjectDesignatorDescription, technique='default', resolver=None):
         """
         Tries to detect an object in the field of view (FOV) of the robot.
 
@@ -726,6 +736,7 @@ class DetectAction(ActionDesignatorDescription):
         """
         super().__init__(resolver)
         self.object_designator_description: ObjectDesignatorDescription = object_designator_description
+        self.technique: str = technique
 
     def ground(self) -> Action:
         """
@@ -733,7 +744,7 @@ class DetectAction(ActionDesignatorDescription):
 
         :return: A performable designator
         """
-        return self.Action(self.object_designator_description.resolve())
+        return self.Action(self.object_designator_description.resolve(), self.technique)
 
 
 class OpenAction(ActionDesignatorDescription):
