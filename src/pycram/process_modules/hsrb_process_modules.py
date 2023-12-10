@@ -3,6 +3,7 @@ from threading import Lock
 from typing import Any
 
 import actionlib
+from tmc_msgs.msg import Voice
 
 import pycram.bullet_world_reasoning as btr
 import numpy as np
@@ -399,6 +400,34 @@ class HSRBCloseReal(ProcessModule):
         giskard.achieve_close_container_goal(robot_description.get_tool_frame(designator.arm),
                                              designator.object_part.name)
 
+class HSRBTalkReal(ProcessModule):
+    """
+    Tries to close an already grasped container
+    """
+
+    def _execute(self, designator: TalkingMotion.Motion) -> Any:
+        pub = rospy.Publisher('/talk_request', Voice, queue_size=10)
+
+        # fill message of type Voice with required data:
+        texttospeech = Voice()
+        # language 1 = english (0 = japanese)
+        texttospeech.language = 1
+        texttospeech.sentence = designator.cmd
+
+        rospy.sleep(1)
+        pub.publish(texttospeech)
+
+class HSRBTalk(ProcessModule):
+    """
+    Tries to close an already grasped container
+    """
+
+    def _execute(self, designator: TalkingMotion.Motion) -> Any:
+        pub = rospy.Publisher('/robot_says_something', str, queue_size=10)
+        drop_str = Voice()
+        drop_str.language = 1
+        drop_str.sentence = designator.cmd
+
 
 class HSRBManager(ProcessModuleManager):
 
@@ -416,6 +445,7 @@ class HSRBManager(ProcessModuleManager):
         self._move_gripper_lock = Lock()
         self._open_lock = Lock()
         self._close_lock = Lock()
+        self._talk_lock = Lock()
 
     def navigate(self):
         if ProcessModuleManager.execution_type == "simulated":
@@ -510,3 +540,9 @@ class HSRBManager(ProcessModuleManager):
             return HSRBCloseReal(self._close_lock)
         elif ProcessModuleManager.execution_type == "semi_real":
             return HSRBCloseReal(self._close_lock)
+
+    def talk(self):
+        if ProcessModuleManager.execution_type == "real":
+            return HSRBTalkReal(self._talk_lock)
+        elif ProcessModuleManager.execution_type == "semi_real":
+            return HSRBTalkReal(self._talk_lock)
