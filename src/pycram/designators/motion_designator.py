@@ -314,20 +314,27 @@ class DetectingMotion(MotionDesignatorDescription):
         Type of the object that should be detected
         """
 
+        technique: str
+        """
+        Technique means how the object should be detected, e.g. 'color', 'shape', 'all', etc. 
+        """
+
         def perform(self):
             pm_manager = ProcessModuleManager.get_manager()
-            bullet_world_object = pm_manager.detecting().execute(self)
-            if not bullet_world_object:
-                raise PerceptionObjectNotFound(
-                    f"Could not find an object with the type {self.object_type} in the FOV of the robot")
-            if ProcessModuleManager.execution_type == "real":
-                return RealObject.Object(bullet_world_object.name, bullet_world_object.type,
-                                         bullet_world_object, bullet_world_object.get_pose())
+            bullet_world_objects = pm_manager.detecting().execute(self)
+            #return bullet_world_objects
+            if not bullet_world_objects:
+                 raise PerceptionObjectNotFound(
+                     f"Could not find an object with the type {self.object_type} in the FOV of the robot")
+            return bullet_world_objects
+            # if ProcessModuleManager.execution_type == "real":
+            #     return RealObject.Object(bullet_world_object.name, bullet_world_object.type,
+            #                              bullet_world_object, bullet_world_object.get_pose())
+            #
+            # return ObjectDesignatorDescription.Object(bullet_world_object.name, bullet_world_object.type,
+            #                                           bullet_world_object)
 
-            return ObjectDesignatorDescription.Object(bullet_world_object.name, bullet_world_object.type,
-                                                      bullet_world_object)
-
-    def __init__(self, object_type: str, resolver: Optional[Callable] = None):
+    def __init__(self, object_type: str, technique: str,  resolver: Optional[Callable] = None):
         """
         Checks for every object in the FOV of the robot if it fits the given object type. If the types match an object
         designator describing the object will be returned.
@@ -337,6 +344,7 @@ class DetectingMotion(MotionDesignatorDescription):
         """
         super().__init__(resolver)
         self.cmd: str = 'detecting'
+        self.technique: str = technique
         self.object_type: str = object_type
 
     def ground(self) -> Motion:
@@ -345,7 +353,7 @@ class DetectingMotion(MotionDesignatorDescription):
 
         :return: A resolved motion designator
         """
-        return self.Motion(self.cmd, self.object_type)
+        return self.Motion(self.cmd, self.object_type, self.technique)
 
 
 class MoveArmJointsMotion(MotionDesignatorDescription):

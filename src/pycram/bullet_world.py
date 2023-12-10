@@ -117,6 +117,15 @@ class BulletWorld:
         """
         return list(filter(lambda obj: obj.type == obj_type, self.objects))
 
+    def get_all_objets_not_robot(self) -> List[Object]:
+        """
+        Returns a list of all Objects except robot and environment.
+
+        :return: A list of all Objects except robot and environment.
+        """
+        return list(filter
+                    (lambda obj: (obj.type != ObjectType.ROBOT and obj.type != ObjectType.ENVIRONMENT), self.objects))
+
     def get_object_by_id(self, id: int) -> Object:
         """
         Returns the single Object that has the unique id.

@@ -149,11 +149,23 @@ class HSRBDetecting(ProcessModule):
         cam_frame_name = robot_description.get_camera_frame()
         # should be [0, 0, 1]
         front_facing_axis = robot_description.front_facing_axis
+        if desig.technique == 'all':
+            rospy.loginfo("Detecting all generic objects")
+            objects = BulletWorld.current_bullet_world.get_all_objets_not_robot()
+        else:
+            rospy.loginfo("Detecting specific object type")
+            objects = BulletWorld.current_bullet_world.get_objects_by_type(object_type)
+        object_dict = {}
 
-        objects = BulletWorld.current_bullet_world.get_objects_by_type(object_type)
+        perceived_objects = []
         for obj in objects:
             if btr.visible(obj, robot.get_link_pose(cam_frame_name), front_facing_axis):
-                return obj
+                perceived_objects.append(ObjectDesignatorDescription.Object(obj.name, obj.type,
+                                                                            obj))
+        # Iterate over the list of objects and store each one in the dictionary
+        for i, obj in enumerate(perceived_objects):
+            object_dict[obj.name] = obj
+        return object_dict
 
 
 class HSRBMoveTCP(ProcessModule):
@@ -294,8 +306,7 @@ class HSRBMoveHeadReal(ProcessModule):
         pose_in_tilt = local_transformer.transform_pose(target, robot.get_link_tf_frame("head_tilt_link"))
 
         new_pan = np.arctan2(pose_in_pan.position.y, pose_in_pan.position.x)
-        new_tilt = np.arctan2(pose_in_tilt.position.z, pose_in_tilt.position.x + pose_in_tilt.position.y )
-
+        new_tilt = np.arctan2(pose_in_tilt.position.z, pose_in_tilt.position.x + pose_in_tilt.position.y)
 
         current_pan = robot.get_joint_state("head_pan_joint")
         current_tilt = robot.get_joint_state("head_tilt_joint")
@@ -305,6 +316,7 @@ class HSRBMoveHeadReal(ProcessModule):
                                     "head_tilt_joint": new_tilt + current_tilt})
         giskard.achieve_joint_goal({"head_pan_joint": new_pan + current_pan,
                                     "head_tilt_joint": new_tilt + current_tilt})
+
 
 class HSRBDetectingReal(ProcessModule):
     """
