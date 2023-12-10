@@ -294,7 +294,8 @@ class HSRBMoveHeadReal(ProcessModule):
         pose_in_tilt = local_transformer.transform_pose(target, robot.get_link_tf_frame("head_tilt_link"))
 
         new_pan = np.arctan2(pose_in_pan.position.y, pose_in_pan.position.x)
-        new_tilt = np.arctan2(pose_in_tilt.position.z, pose_in_tilt.position.x ** 2 + pose_in_tilt.position.y ** 2) * -1
+        new_tilt = np.arctan2(pose_in_tilt.position.z, pose_in_tilt.position.x + pose_in_tilt.position.y )
+
 
         current_pan = robot.get_joint_state("head_pan_joint")
         current_tilt = robot.get_joint_state("head_tilt_joint")
@@ -302,7 +303,8 @@ class HSRBMoveHeadReal(ProcessModule):
         giskard.avoid_all_collisions()
         giskard.achieve_joint_goal({"head_pan_joint": new_pan + current_pan,
                                     "head_tilt_joint": new_tilt + current_tilt})
-
+        giskard.achieve_joint_goal({"head_pan_joint": new_pan + current_pan,
+                                    "head_tilt_joint": new_tilt + current_tilt})
 
 class HSRBDetectingReal(ProcessModule):
     """
@@ -314,19 +316,19 @@ class HSRBDetectingReal(ProcessModule):
         query_result = query(ObjectDesignatorDescription(types=[designator.object_type]))
         obj_pose = query_result["ClusterPoseBBAnnotator"]
 
-        #lt = LocalTransformer()
-        #obj_pose = lt.transform_pose(obj_pose, BulletWorld.robot.get_link_tf_frame("arm_lift_link"))
-        #todo do this only on cup and bowl
-        #obj_pose.orientation = [0, 0, 0, 1]
-        #todo radius /2 from object size (perception we need size/boundingbox in result)
-        #obj_pose.position.x += 0.05
+        # lt = LocalTransformer()
+        # obj_pose = lt.transform_pose(obj_pose, BulletWorld.robot.get_link_tf_frame("arm_lift_link"))
+        # todo do this only on cup and bowl
+        # obj_pose.orientation = [0, 0, 0, 1]
+        # todo radius /2 from object size (perception we need size/boundingbox in result)
+        # obj_pose.position.x += 0.05
 
         # bullet_obj = BulletWorld.current_bullet_world.get_objects_by_type(designator.object_type)
         # if bullet_obj:
         #     bullet_obj[0].set_pose(obj_pose)
         #     return bullet_obj[0]
         # elif designator.object_type:
-        #todo we need full result to be able to make new objects
+        # todo we need full result to be able to make new objects
         objectX = Object("bowl", ObjectType.BOWL, "bowl.stl", pose=obj_pose)
         return objectX
 
@@ -400,6 +402,7 @@ class HSRBCloseReal(ProcessModule):
         giskard.achieve_close_container_goal(robot_description.get_tool_frame(designator.arm),
                                              designator.object_part.name)
 
+
 class HSRBTalkReal(ProcessModule):
     """
     Tries to close an already grasped container
@@ -416,17 +419,6 @@ class HSRBTalkReal(ProcessModule):
 
         rospy.sleep(1)
         pub.publish(texttospeech)
-
-class HSRBTalk(ProcessModule):
-    """
-    Tries to close an already grasped container
-    """
-
-    def _execute(self, designator: TalkingMotion.Motion) -> Any:
-        pub = rospy.Publisher('/robot_says_something', str, queue_size=10)
-        drop_str = Voice()
-        drop_str.language = 1
-        drop_str.sentence = designator.cmd
 
 
 class HSRBManager(ProcessModuleManager):
