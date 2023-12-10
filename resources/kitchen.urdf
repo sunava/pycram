@@ -2136,7 +2136,7 @@
   </link>
   <!-- JOINTS -->
   <joint name="table_area_main_joint" type="fixed">
-    <origin rpy="0 0 3.14159265359" xyz="-2.0 2.0 0"/>
+    <origin rpy="0 0 3.14159265359" xyz="-2.7 2.55 0"/>
     <parent link="room_link"/>
     <child link="table_area_main"/>
   </joint>
