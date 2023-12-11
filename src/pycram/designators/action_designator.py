@@ -4,6 +4,8 @@ import time
 from typing import List, Optional, Any, Tuple, Union
 
 import math
+
+import rospy
 import sqlalchemy.orm
 
 from .location_designator import CostmapLocation
@@ -324,33 +326,35 @@ class PickUpAction(ActionDesignatorDescription):
             adjusted_oTm.orientation.z = ori[2]
             adjusted_oTm.orientation.w = ori[3]
 
-            # prepose depending on the gripper (its annoying we have to put pr2_1 here tbh
-            # gripper_frame = "pr2_1/l_gripper_tool_frame" if self.arm == "left" else "pr2_1/r_gripper_tool_frame"
             gripper_frame = robot.get_link_tf_frame(robot_description.get_tool_frame(self.arm))
             # First rotate the gripper, so the further calculations makes sense
-            tmp_for_rotate_pose = object.local_transformer.transform_pose(adjusted_oTm, gripper_frame)
-            tmp_for_rotate_pose.pose.position.x = 0
-            tmp_for_rotate_pose.pose.position.y = 0
-            tmp_for_rotate_pose.pose.position.z = -0.1
-            gripper_rotate_pose = object.local_transformer.transform_pose(tmp_for_rotate_pose, "map")
+            # tmp_for_rotate_pose = object.local_transformer.transform_pose(adjusted_oTm, gripper_frame)
+            # tmp_for_rotate_pose.pose.position.x = 0
+            # tmp_for_rotate_pose.pose.position.y = 0
+            # tmp_for_rotate_pose.pose.position.z = 0.1
+            # gripper_rotate_pose = object.local_transformer.transform_pose(tmp_for_rotate_pose, "map")
 
             # Perform Gripper Rotate
             # BulletWorld.current_bullet_world.add_vis_axis(gripper_rotate_pose)
             # MoveTCPMotion(gripper_rotate_pose, self.arm).resolve().perform()
+            MoveGripperMotion(motion="open", gripper=self.arm, allow_gripper_collision=False).resolve().perform()
 
             oTg = object.local_transformer.transform_pose(adjusted_oTm, gripper_frame)
-            oTg.pose.position.x -= 0.1  # in x since this is how the gripper is oriented
+            if robot.name == "hsrb":
+                oTg.pose.position.x += 0.2
+            else:
+                oTg.pose.position.x -= 0.15  # in x since this is how the gripper is oriented
             prepose = object.local_transformer.transform_pose(oTg, "map")
 
             # Perform the motion with the prepose and open gripper
             BulletWorld.current_bullet_world.add_vis_axis(prepose)
-            MoveTCPMotion(prepose, self.arm).resolve().perform()
-            MoveGripperMotion(motion="open", gripper=self.arm).resolve().perform()
-
+            MoveTCPMotion(prepose, self.arm, allow_gripper_collision=False).resolve().perform()
             # Perform the motion with the adjusted pose -> actual grasp and close gripper
+
             BulletWorld.current_bullet_world.add_vis_axis(adjusted_oTm)
             MoveTCPMotion(adjusted_oTm, self.arm).resolve().perform()
-            adjusted_oTm.pose.position.z += 0.03
+            #todo we have to adjust the poses by object size
+            #adjusted_oTm.pose.position.z += 0.03
             MoveGripperMotion(motion="close", gripper=self.arm).resolve().perform()
             tool_frame = robot_description.get_tool_frame(self.arm)
             robot.attach(object, tool_frame)
@@ -441,7 +445,7 @@ class PlaceAction(ActionDesignatorDescription):
                                                         robot_description.get_tool_frame(self.arm)))
             target_diff = self.target_location.to_transform("target").inverse_times(
                 tcp_to_object.to_transform("object")).to_pose()
-
+           # todo we need to add more collisions otherwise hsr is grumpy, but we can also use giskards place for real
             MoveTCPMotion(target_diff, self.arm).resolve().perform()
             MoveGripperMotion("open", self.arm).resolve().perform()
             BulletWorld.robot.detach(self.object_designator.bullet_world_object)
@@ -917,6 +921,7 @@ class GraspingAction(ActionDesignatorDescription):
         :return: A performable action designator that contains specific arguments
         """
         return self.Action(self.arms[0], self.object_description.resolve())
+
 
 class CuttingAction(ActionDesignatorDescription):
     """

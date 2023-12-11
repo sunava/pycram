@@ -375,7 +375,7 @@ class HSRBMoveTCPReal(ProcessModule):
         if designator.allow_gripper_collision:
             giskard.allow_gripper_collision(designator.arm)
         giskard.achieve_cartesian_goal(pose_in_map, robot_description.get_tool_frame(designator.arm),
-                                       robot_description.base_link)
+                                       "map")
 
 
 class HSRBMoveArmJointsReal(ProcessModule):
@@ -543,7 +543,7 @@ class HSRBManager(ProcessModuleManager):
         elif ProcessModuleManager.execution_type == "real":
             return HSRBMoveGripperReal(self._move_gripper_lock)
         elif ProcessModuleManager.execution_type == "semi_real":
-            return HSRBMoveGripper(self._move_gripper_lock)
+            return HSRBMoveGripperReal(self._move_gripper_lock)
 
     def open(self):
         if ProcessModuleManager.execution_type == "simulated":
