@@ -143,6 +143,19 @@ class HSRBDetecting(ProcessModule):
         if desig.technique == 'all':
             rospy.loginfo("Detecting all generic objects")
             objects = BulletWorld.current_bullet_world.get_all_objets_not_robot()
+        elif desig.technique == 'human':
+            rospy.loginfo("Fake detecting human -> spawn 0,0,0")
+            human = []
+            human.append(Object("human", ObjectType.HUMAN, "human_male.stl", pose=Pose([0, 0, 0])))
+            object_dict = {}
+
+            # Iterate over the list of objects and store each one in the dictionary
+            for i, obj in enumerate(human):
+                object_dict[obj.name] = obj
+            return object_dict
+
+            return human_pose
+
         else:
             rospy.loginfo("Detecting specific object type")
             objects = BulletWorld.current_bullet_world.get_objects_by_type(object_type)
@@ -492,7 +505,7 @@ class HSRBManager(ProcessModuleManager):
         elif ProcessModuleManager.execution_type == "real":
             return HSRBDetectingReal(self._detecting_lock)
         elif ProcessModuleManager.execution_type == "semi_real":
-            return HSRBDetectingReal(self._detecting_lock)
+            return HSRBDetecting(self._detecting_lock)
 
     def move_tcp(self):
         if ProcessModuleManager.execution_type == "simulated":
