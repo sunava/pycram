@@ -1,28 +1,19 @@
-from abc import ABC
+from threading import Lock
 from threading import Lock
 from typing import Any
 
-import actionlib
+import numpy as np
+import rospy
 from tmc_msgs.msg import Voice
 
 import pycram.bullet_world_reasoning as btr
-import numpy as np
-import time
-import rospy
-import pybullet as p
-
-from ..plan_failures import EnvironmentManipulationImpossible
-from ..robot_descriptions import robot_description
-from ..process_module import ProcessModule, ProcessModuleManager
-from ..bullet_world import BulletWorld, Object
-from ..helper import transform
-from ..external_interfaces.ik import request_ik, IKError
-from ..helper import _transform_to_torso, _apply_ik, calculate_wrist_tool_offset, inverseTimes
-from ..local_transformer import LocalTransformer
 from ..designators.motion_designator import *
 from ..enums import JointType, ObjectType
 from ..external_interfaces import giskard
-from ..external_interfaces.robokudo import query
+from ..external_interfaces.ik import request_ik
+from ..external_interfaces.robokudo import queryEmpty
+from ..helper import _apply_ik
+from ..local_transformer import LocalTransformer
 
 
 def _park_arms(arm):
@@ -160,8 +151,7 @@ class HSRBDetecting(ProcessModule):
         perceived_objects = []
         for obj in objects:
             if btr.visible(obj, robot.get_link_pose(cam_frame_name), front_facing_axis):
-                perceived_objects.append(ObjectDesignatorDescription.Object(obj.name, obj.type,
-                                                                            obj))
+                perceived_objects.append(ObjectDesignatorDescription.Object(obj.name, obj.type, obj))
         # Iterate over the list of objects and store each one in the dictionary
         for i, obj in enumerate(perceived_objects):
             object_dict[obj.name] = obj
@@ -231,8 +221,7 @@ class HSRBOpen(ProcessModule):
         _move_arm_tcp(goal_pose, BulletWorld.robot, desig.arm)
 
         desig.object_part.bullet_world_object.set_joint_state(container_joint,
-                                                              part_of_object.get_joint_limits(
-                                                                  container_joint)[1])
+                                                              part_of_object.get_joint_limits(container_joint)[1])
 
 
 class HSRBClose(ProcessModule):
@@ -251,8 +240,7 @@ class HSRBClose(ProcessModule):
         _move_arm_tcp(goal_pose, BulletWorld.robot, desig.arm)
 
         desig.object_part.bullet_world_object.set_joint_state(container_joint,
-                                                              part_of_object.get_joint_limits(
-                                                                  container_joint)[0])
+                                                              part_of_object.get_joint_limits(container_joint)[0])
 
 
 def _move_arm_tcp(target: Pose, robot: Object, arm: str) -> None:
@@ -312,10 +300,10 @@ class HSRBMoveHeadReal(ProcessModule):
         current_tilt = robot.get_joint_state("head_tilt_joint")
 
         giskard.avoid_all_collisions()
-        giskard.achieve_joint_goal({"head_pan_joint": new_pan + current_pan,
-                                    "head_tilt_joint": new_tilt + current_tilt})
-        giskard.achieve_joint_goal({"head_pan_joint": new_pan + current_pan,
-                                    "head_tilt_joint": new_tilt + current_tilt})
+        giskard.achieve_joint_goal(
+            {"head_pan_joint": new_pan + current_pan, "head_tilt_joint": new_tilt + current_tilt})
+        giskard.achieve_joint_goal(
+            {"head_pan_joint": new_pan + current_pan, "head_tilt_joint": new_tilt + current_tilt})
 
 
 class HSRBDetectingReal(ProcessModule):
@@ -325,26 +313,25 @@ class HSRBDetectingReal(ProcessModule):
     """
 
     def _execute(self, designator: DetectingMotion.Motion) -> Any:
-        query_result = query(ObjectDesignatorDescription(types=[designator.object_type]))
-        obj_pose = query_result["ClusterPoseBBAnnotator"]
+        query_result = queryEmpty(ObjectDesignatorDescription(types=[designator.object_type]))
+        perceived_objects = []
+        for i in range(0, len(query_result.res)):
+            # this has to be pose from pose stamped since we spawn the object with given header
+            obj_pose = Pose.from_pose_stamped(query_result.res[i].pose[0])
+            obj_type = query_result.res[i].type
 
-        # lt = LocalTransformer()
-        # obj_pose = lt.transform_pose(obj_pose, BulletWorld.robot.get_link_tf_frame("arm_lift_link"))
-        # todo do this only on cup and bowl
-        # obj_pose.orientation = [0, 0, 0, 1]
-        # todo radius /2 from object size (perception we need size/boundingbox in result)
-        # obj_pose.position.x += 0.05
+            # todo we need the size of the object to be able to spawn it -> todo an perception
+            Physicalobject = Object(obj_type, ObjectType.JEROEN_CUP, "jeroen_cup.stl", pose=obj_pose)
 
-        # bullet_obj = BulletWorld.current_bullet_world.get_objects_by_type(designator.object_type)
-        # if bullet_obj:
-        #     bullet_obj[0].set_pose(obj_pose)
-        #     return bullet_obj[0]
-        # elif designator.object_type:
-        # todo we need full result to be able to make new objects
-        objectX = Object("bowl", ObjectType.BOWL, "bowl.stl", pose=obj_pose)
-        return objectX
+            perceived_objects.append(
+                ObjectDesignatorDescription.Object(obj_type, ObjectType.JEROEN_CUP, Physicalobject))
 
-        return bullet_obj[0]
+        object_dict = {}
+
+        # Iterate over the list of objects and store each one in the dictionary
+        for i, obj in enumerate(perceived_objects):
+            object_dict[obj.name] = obj
+        return object_dict
 
 
 class HSRBMoveTCPReal(ProcessModule):
