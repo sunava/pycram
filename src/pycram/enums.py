@@ -55,4 +55,5 @@ class ObjectType(Enum):
     ROBOT = auto()
     ENVIRONMENT = auto()
     GENERIC_OBJECT = auto()
+    HUMAN = auto()
 
