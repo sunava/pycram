@@ -6,6 +6,8 @@ from ..pose import Pose
 from ..local_transformer import LocalTransformer
 from ..bullet_world import BulletWorld
 from ..enums import ObjectType
+from typing import Any
+from geometry_msgs.msg import PoseStamped
 
 is_init = False
 
@@ -140,3 +142,53 @@ def queryEmpty(object_desc: ObjectDesignatorDescription) -> ObjectDesignatorDesc
     # #todo check if query is even filled
 
     return query_result
+
+
+def queryHuman() -> Any:
+    """
+    Sends a query to RoboKudo to look for a Human
+    """
+    init_robokudo_interface()
+    from robokudo_msgs.msg import QueryAction, QueryGoal, QueryResult
+
+    global human_bool
+    global query_result
+    global human_pose
+    def active_callback():
+        rospy.loginfo("Send query to Robokudo to perceive a human")
+
+    def done_callback(state, result):
+        rospy.loginfo("Finished perceiving")
+        global query_result
+        query_result = result
+
+    def feedback_callback(msg):
+        rospy.loginfo("Got feedback")
+        global feedback_result
+        feedback_result = msg
+
+    def callback(pose):
+        global human_bool
+        global human_pose
+        if human_bool == False:
+            rospy.loginfo("Robokudo found a human")
+        human_bool = True
+        human_pose = pose
+
+    def listener():
+        rospy.Subscriber("/human_pose", PoseStamped, callback)
+
+
+    object_goal = goal_msg = QueryGoal()
+
+    client = actionlib.SimpleActionClient('robokudo/query', QueryAction)
+    rospy.loginfo("Waiting for action server")
+    client.wait_for_server()
+    human_bool = False
+    client.send_goal(object_goal, active_cb=active_callback, done_cb=done_callback, feedback_cb=feedback_callback)
+    listener()
+    while not human_bool:
+        rospy.loginfo_throttle(3, "Waiting for human to be detected")
+        pass
+
+    return human_pose

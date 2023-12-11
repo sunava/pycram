@@ -11,7 +11,7 @@ from ..designators.motion_designator import *
 from ..enums import JointType, ObjectType
 from ..external_interfaces import giskard
 from ..external_interfaces.ik import request_ik
-from ..external_interfaces.robokudo import queryEmpty
+from ..external_interfaces.robokudo import queryEmpty, queryHuman
 from ..helper import _apply_ik
 from ..local_transformer import LocalTransformer
 
@@ -312,8 +312,24 @@ class HSRBDetectingReal(ProcessModule):
     for perception of the environment.
     """
 
-    def _execute(self, designator: DetectingMotion.Motion) -> Any:
-        query_result = queryEmpty(ObjectDesignatorDescription(types=[designator.object_type]))
+    def _execute(self, desig: DetectingMotion.Motion) -> Any:
+        #todo at the moment perception ignores searching for a specific object type so we do as well on real
+        if desig.technique == 'human':
+            human_pose = queryHuman()
+            pose = Pose.from_pose_stamped(human_pose)
+            pose.position.z = 0
+            human = []
+            human.append(Object("human", ObjectType.HUMAN, "human_male.stl", pose=pose))
+            object_dict = {}
+
+            # Iterate over the list of objects and store each one in the dictionary
+            for i, obj in enumerate(human):
+                object_dict[obj.name] = obj
+            return object_dict
+
+            return human_pose
+
+        query_result = queryEmpty(ObjectDesignatorDescription(types=[desig.object_type]))
         perceived_objects = []
         for i in range(0, len(query_result.res)):
             # this has to be pose from pose stamped since we spawn the object with given header
@@ -476,7 +492,7 @@ class HSRBManager(ProcessModuleManager):
         elif ProcessModuleManager.execution_type == "real":
             return HSRBDetectingReal(self._detecting_lock)
         elif ProcessModuleManager.execution_type == "semi_real":
-            return HSRBDetecting(self._detecting_lock)
+            return HSRBDetectingReal(self._detecting_lock)
 
     def move_tcp(self):
         if ProcessModuleManager.execution_type == "simulated":
