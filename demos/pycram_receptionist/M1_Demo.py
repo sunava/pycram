@@ -1,11 +1,15 @@
 import rospy
 from robokudo_msgs.msg import QueryActionGoal
+
+from pycram.designators.action_designator import DetectAction
+from pycram.designators.motion_designator import TalkingMotion
 from pycram.external_interfaces import robokudo
 from pycram.process_module import simulated_robot, with_simulated_robot, real_robot, with_real_robot, semi_real_robot
 import pycram.external_interfaces.giskard as giskardpy
 from pycram.ros.viz_marker_publisher import VizMarkerPublisher
 from pycram.designators.location_designator import *
 from pycram.designators.object_designator import *
+from pycram.enums import ObjectType
 from pycram.bullet_world import BulletWorld, Object
 from std_msgs.msg import String, Bool
 import talk_actions
@@ -57,13 +61,15 @@ def talk_error(data):
     callback function if no name/drink was heard
     """
 
-    error_msgs = "i could not hear you, please repeat your name and favorite drink"
+    error_msgs = "i could not hear you, please repeat"
+    # TalkingMotion("error_msgs").resolve().perform()
     talk_actions.talker(error_msgs)
 
 
 with real_robot:
 
     # Perception
+    # DetectAction(BelieveObject(types=[ObjectType.HUMAN]), technique='human').resolve().perform()
     pub_robokudo = rospy.Publisher('/robokudo/query/goal', QueryActionGoal, queue_size=10)
     msgs = QueryActionGoal()
     rospy.sleep(2)
@@ -73,8 +79,8 @@ with real_robot:
 
     # NLP
     pub_nlp = rospy.Publisher('/startListener', String, queue_size=10)
-    rate = rospy.Rate(10)  # 10hz
     talk_actions.talker("Hello, i am Toya and my favorite drink is oil. What about you, talk to me?")
+    #TalkingMotion("Hello, i am Toya and my favorite drink is oil. What about you, talk to me?").resolve().perform()
     rospy.sleep(2)
     pub_nlp.publish("start listening")
 
