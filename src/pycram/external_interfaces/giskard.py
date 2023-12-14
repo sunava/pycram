@@ -1,5 +1,6 @@
 import rospy
 from giskard_msgs.msg import CollisionEntry, WorldBody
+from ..utilities import tf_wrapper as tf
 
 from ..pose import Pose
 from ..robot_descriptions import robot_description
@@ -44,11 +45,11 @@ def initial_adding_objects() -> None:
     """
     groups = giskard_wrapper.get_group_names()
     for obj in BulletWorld.current_bullet_world.objects:
-        if obj == BulletWorld.robot or len(obj.links) == 1:
-            continue
-        name = obj.name + "_" + str(obj.id)
-        if name not in groups:
-            spawn_object(obj)
+        if obj != BulletWorld.robot and len(obj.links) >= 1:
+            name = obj.name + "_" + str(obj.id)
+
+            if name not in groups:
+                spawn_object(obj)
 
 
 def removing_of_objects() -> None:
@@ -124,8 +125,10 @@ def spawn_urdf(name: str, urdf_path: str, pose: Pose) -> 'UpdateWorldResponse':
     urdf_string = ""
     with open(urdf_path) as f:
         urdf_string = f.read()
-
     return giskard_wrapper.add_urdf(name, urdf_string, pose)
+
+
+
 
 
 def spawn_mesh(name: str, path: str, pose: Pose) -> 'UpdateWorldResponse':
@@ -285,6 +288,7 @@ def achieve_gripper_motion_goal(motion: str):
     """
     rospy.loginfo("giskard change_gripper_state: " + motion)
     giskard_wrapper.change_gripper_state(motion)
+    #return giskard_wrapper.plan_and_execute()
 
 
 def allow_gripper_collision(gripper: str):
@@ -304,14 +308,15 @@ def allow_gripper_collision(gripper: str):
         giskard_wrapper.allow_collision("left_gripper", CollisionEntry.ALL)
 
 
+#todo niemand denkt an hsr :;(
 def add_gripper_groups() -> None:
     """
     Adds the gripper links as a group for collision avoidance.
 
     :return: Response of the RegisterGroup Service
     """
-    if "right_gripper" not in giskard_wrapper.get_group_names():
-        for gripper in ["left", "right"]:
+    if "left_gripper" not in giskard_wrapper.get_group_names():
+        for gripper in ["left"]:
             root_link = robot_description.chains[gripper].gripper.links[-1]
             giskard_wrapper.register_group(gripper + "_gripper", root_link, robot_description.name)
 
@@ -435,3 +440,12 @@ def move_head_to_human():
     """
     giskard_wrapper.continuous_pointing_head()
     giskard_wrapper.plan_and_execute(wait=False)
+
+
+
+def spawn_kitchen():
+    env_urdf = rospy.get_param('kitchen_description')
+    kitchen_pose = tf.lookup_pose('map', 'iai_kitchen/urdf_main')
+    giskard_wrapper.add_urdf(name='iai_kitchen',
+                     urdf=env_urdf,
+                     pose=kitchen_pose)
