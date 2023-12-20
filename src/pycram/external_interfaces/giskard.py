@@ -57,11 +57,12 @@ def removing_of_objects() -> None:
     Removes objects that are present in the Giskard belief state but not in the BulletWorld from the Giskard belief state.
     """
     groups = giskard_wrapper.get_group_names()
-    object_names = list(
-        map(lambda obj: object_names.name + "_" + str(obj.id), BulletWorld.current_bullet_world.objects))
-    diff = list(set(groups) - set(object_names))
-    for grp in diff:
-        giskard_wrapper.remove_group(grp)
+    if groups:
+        object_names = list(
+            map(lambda obj: object_names.name + "_" + str(obj.id), BulletWorld.current_bullet_world.objects))
+        diff = list(set(groups) - set(object_names))
+        for grp in diff:
+            giskard_wrapper.remove_group(grp)
 
 
 def sync_worlds() -> None:

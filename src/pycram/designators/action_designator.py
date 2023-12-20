@@ -350,34 +350,17 @@ class PickUpAction(ActionDesignatorDescription):
             object_pose_in_map = lt.transform_pose(adjusted_object_pose_in_map_w_gripper, "map")
             pre_object_pose_in_map = lt.transform_pose(pre_adjusted_object_pose_in_map_w_gripper, "map")
 
-            def open_gripper():
-                pub_nlp = rospy.Publisher('/hsrb/gripper_controller/grasp/goal', GripperApplyEffortActionGoal,
-                                          queue_size=10)
-                rate = rospy.Rate(10)  # 10hz
-                rospy.sleep(2)
-                msg = GripperApplyEffortActionGoal()
-                msg.goal.effort = 0.8
-                pub_nlp.publish(msg)
-
-            def close_gripper():
-                pub_nlp = rospy.Publisher('/hsrb/gripper_controller/grasp/goal', GripperApplyEffortActionGoal,
-                                          queue_size=10)
-                rate = rospy.Rate(10)  # 10hz
-                rospy.sleep(2)
-                msg = GripperApplyEffortActionGoal()
-                msg.goal.effort = -0.8
-                pub_nlp.publish(msg)
-
-            # MoveGripperMotion(motion="open", gripper=self.arm, allow_gripper_collision=True).resolve().perform()
-            open_gripper()
+            MoveGripperMotion(motion="open", gripper=self.arm, allow_gripper_collision=True).resolve().perform()
 
             MoveTCPMotion(pre_object_pose_in_map, self.arm, allow_gripper_collision=False).resolve().perform()
 
             MoveTCPMotion(object_pose_in_map, self.arm, allow_gripper_collision=True).resolve().perform()
-            close_gripper()
-            # MoveGripperMotion(motion="close", gripper=self.arm,allow_gripper_collision=True).resolve().perform()
+
+            MoveGripperMotion(motion="close", gripper=self.arm, allow_gripper_collision=True).resolve().perform()
 
             rospy.sleep(2)
+            tool_frame = robot_description.get_tool_frame(self.arm)
+            robot.attach(object=self.object_designator.bullet_world_object, link=tool_frame)
             lift_pose_in_map = object_pose_in_map
             lift_pose_in_map.pose.position.z += 0.1
             MoveTCPMotion(lift_pose_in_map, self.arm, allow_gripper_collision=True).resolve().perform()
@@ -422,7 +405,6 @@ class PickUpAction(ActionDesignatorDescription):
             # MoveGripperMotion(motion="open", gripper=self.arm, allow_gripper_collision=False).resolve().perform()
             # MoveTCPMotion(target, self.arm).resolve().perform()
             # tool_frame = robot_description.get_tool_frame(arm)
-            # robot.attach(object, tool_frame)
 
             # # Store the object's data copy at execution
             # self.object_at_execution = self.object_designator.data_copy()
@@ -561,7 +543,7 @@ class PlaceAction(ActionDesignatorDescription):
             object_pose = self.object_designator.bullet_world_object.get_pose()
             local_tf = LocalTransformer()
 
-            # Transformations such that the target position is the position of the object and not the tcp
+            #Transformations such that the target position is the position of the object and not the tcp
             tcp_to_object = local_tf.transform_pose(object_pose,
                                                     BulletWorld.robot.get_link_tf_frame(
                                                         robot_description.get_tool_frame(self.arm)))
