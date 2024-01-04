@@ -450,3 +450,8 @@ def spawn_kitchen():
     giskard_wrapper.add_urdf(name='iai_kitchen',
                      urdf=env_urdf,
                      pose=kitchen_pose)
+
+
+def place_objects(object, target):
+    # TODO: Decide placing from_above or align_vertical. Maybe using Objecttype for that?
+    giskard_wrapper.placing(context="align_vertical",goal_pose=target)
