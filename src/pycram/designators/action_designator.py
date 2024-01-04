@@ -29,7 +29,7 @@ from ..bullet_world import BulletWorld
 from ..pose import Pose
 from ..helper import multiply_quaternions, axis_angle_to_quaternion
 from ..utilities import tf_wrapper as tf
-
+from ..external_interfaces import giskard
 
 class MoveTorsoAction(ActionDesignatorDescription):
     """
@@ -558,6 +558,9 @@ class PlaceAction(ActionDesignatorDescription):
             retract_pose = target_diff
             retract_pose.position.x -= 0.07
             MoveTCPMotion(retract_pose, self.arm).resolve().perform()
+
+            # giskard.place_objects(self.object_designator, target_diff)
+            # BulletWorld.robot.detach(self.object_designator.bullet_world_object)
 
         def to_sql(self) -> ORMPlaceAction:
             return ORMPlaceAction(self.arm)
