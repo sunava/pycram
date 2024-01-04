@@ -238,11 +238,13 @@ class ParkArmsAction(ActionDesignatorDescription):
             # add park left arm if wanted
             if self.arm in [Arms.LEFT, Arms.BOTH]:
                 kwargs["left_arm_config"] = "park"
-
+                MoveArmJointsMotion(**kwargs).resolve().perform()
+                MoveTorsoAction([0.005]).resolve().perform()
             # add park right arm if wanted
             if self.arm in [Arms.RIGHT, Arms.BOTH]:
                 kwargs["right_arm_config"] = "park"
-            MoveArmJointsMotion(**kwargs).resolve().perform()
+                MoveArmJointsMotion(**kwargs).resolve().perform()
+
 
         def to_sql(self) -> ORMParkArmsAction:
             return ORMParkArmsAction(self.arm.name)
