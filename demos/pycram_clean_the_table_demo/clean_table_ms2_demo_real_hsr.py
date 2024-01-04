@@ -140,13 +140,13 @@ with semi_real_robot:
         new_pose = obj.pose
         TalkingMotion("Navigating now").resolve().perform()
         #TODO: knowledge Tischposition
-        NavigateAction(target_locations=[Pose([new_pose.position.x, 1.5, 0], object_orientation)]).resolve().perform()
-        #  NavigateAction(target_locations=[Pose([4.2, new_pose.position.y, 0])]).resolve().perform()
+        #NavigateAction(target_locations=[Pose([new_pose.position.x, 1.5, 0], object_orientation)]).resolve().perform()
+        NavigateAction(target_locations=[Pose([4.2, new_pose.position.y, 0])]).resolve().perform()
 
         TalkingMotion("Moving my arm now").resolve().perform()
         print("Object name: ", obj.name)
         # TODO: Aufruf von knowledge für Tischposition popcorn
-        target_location = Pose([new_pose.position.x, -0.35, new_pose.position.z], transport_orientation)
+        target_location = Pose([3.5, new_pose.position.y, new_pose.position.z], transport_orientation)
 
         if obj.name == "Plate":
             TalkingMotion("Can you pleas give me the last object on the table, the plate? Thanks")
@@ -154,21 +154,19 @@ with semi_real_robot:
             print("pick up plate")
             #TODO: erfasse gripper state für push down
             MoveGripperMotion("close", "left", allow_gripper_collision=True)
-            # TODO: knowledge Tischposition popcorn table
-            # TODO: Muss hsr in die richtige Richtung schauen???
-            try:
-                place_loc = CostmapLocation(target=self.target_location, reachable_for=robot_desig.resolve(),
-                                            reachable_arm=self.arm).resolve()
-            except StopIteration:
-                raise ReachabilityFailure(
-                    f"No location found from where the robot can reach the target location: {self.target_location}")
-            NavigateAction([place_loc.pose]).resolve().perform()
-            PlaceAction(obj, [target_location], ["left"]).resolve().perform()
-            ParkArmsAction([Arms.LEFT]).resolve().perform()
-        else:
-             TransportAction(obj, ["left"], [target_location], "top").resolve().perform()
-        print("placed")
-    TalkingMotion("I am done").resolve().perform()
 
+        else:
+            PickUpAction(obj, ["left"], ["top"]).resolve().perform()
+
+        rospy.sleep(5)
+        ParkArmsAction([Arms.LEFT]).resolve().perform()
+        # TODO: knowledge Tischposition popcorn table
+        # TODO: Muss hsr in die richtige Richtung schauen???
+        NavigateAction([Pose([3.6, new_pose.position.y, 0], transport_orientation)]).resolve().perform()
+        PlaceAction(obj, [target_location], ["left"]).resolve().perform()
+        ParkArmsAction([Arms.LEFT]).resolve().perform()
+        print("placed")
+
+    TalkingMotion("I am done").resolve().perform()
     print("finished")
 
