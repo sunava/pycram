@@ -542,35 +542,34 @@ class PlaceAction(ActionDesignatorDescription):
         session.commit()
         return action
 
+    def __init__(self,
+                 object_designator_description: Union[ObjectDesignatorDescription, ObjectDesignatorDescription.Object],
+                 target_locations: List[Pose],
+                 arms: List[str], resolver=None):
+        """
+        Create an Action Description to place an object
 
-def __init__(self,
-             object_designator_description: Union[ObjectDesignatorDescription, ObjectDesignatorDescription.Object],
-             target_locations: List[Pose], arms: List[str], resolver=None):
-    """
-    Create an Action Description to place an object
+        :param object_designator_description: Description of object to place.
+        :param target_locations: List of possible positions/orientations to place the object
+        :param arms: List of possible arms to use
+        :param resolver: Grounding method to resolve this designator
+        """
+        super().__init__(resolver)
+        self.object_designator_description: Union[
+            ObjectDesignatorDescription, ObjectDesignatorDescription.Object] = object_designator_description
+        self.target_locations: List[Pose] = target_locations
+        self.arms: List[str] = arms
 
-    :param object_designator_description: Description of object to place.
-    :param target_locations: List of possible positions/orientations to place the object
-    :param arms: List of possible arms to use
-    :param resolver: Grounding method to resolve this designator
-    """
-    super().__init__(resolver)
-    self.object_designator_description: Union[
-        ObjectDesignatorDescription, ObjectDesignatorDescription.Object] = object_designator_description
-    self.target_locations: List[Pose] = target_locations
-    self.arms: List[str] = arms
+    def ground(self) -> Action:
+        """
+        Default resolver that returns a performable designator with the first entries from the list of possible entries.
 
+        :return: A performable designator
+        """
+        obj_desig = self.object_designator_description if isinstance(self.object_designator_description,
+                                                                     ObjectDesignatorDescription.Object) else self.object_designator_description.resolve()
 
-def ground(self) -> Action:
-    """
-    Default resolver that returns a performable designator with the first entries from the list of possible entries.
-
-    :return: A performable designator
-    """
-    obj_desig = self.object_designator_description if isinstance(self.object_designator_description,
-                                                                 ObjectDesignatorDescription.Object) else self.object_designator_description.resolve()
-
-    return self.Action(obj_desig, self.arms[0], self.target_locations[0])
+        return self.Action(obj_desig, self.arms[0], self.target_locations[0])
 
 
 class NavigateAction(ActionDesignatorDescription):

@@ -4,6 +4,7 @@ from robokudo_msgs.msg import QueryActionGoal
 from pycram.designators.action_designator import DetectAction, LookAtAction, NavigateAction
 from pycram.designators.motion_designator import TalkingMotion, MoveMotion
 from pycram.external_interfaces import robokudo
+from pycram.helper import axis_angle_to_quaternion
 from pycram.process_module import simulated_robot, with_simulated_robot, real_robot, with_real_robot, semi_real_robot
 import pycram.external_interfaces.giskard as giskardpy
 from pycram.ros.robot_state_updater import RobotStateUpdater
@@ -15,7 +16,7 @@ from pycram.bullet_world import BulletWorld, Object
 from pycram.external_interfaces.knowrob import instances_of, get_guest_info
 from std_msgs.msg import String, Bool
 import talk_actions
-
+import pycram.external_interfaces.navigate as moveBase
 world = BulletWorld("DIRECT")
 # /pycram/viz_marker topic bei Marker Array
 v = VizMarkerPublisher()
@@ -82,43 +83,78 @@ def introduce(name1, drink1, name2, drink2):
     TalkingMotion(second)
 
 
+def demo_test(area):
+    with real_robot:
+        host = HumanDescription("Bob", fav_drink="Coffee")
+        pub_nlp = rospy.Publisher('/startListener', String, queue_size=10)
+        robot_orientation_couch = axis_angle_to_quaternion([0, 0, 1], 0)
+        pose_couch = Pose([3, 5, 0], robot_orientation_couch)
 
-with real_robot:
-    host = HumanDescription("Bob", fav_drink="Coffee")
-    pub_nlp = rospy.Publisher('/startListener', String, queue_size=10)
+        robot_orientation_from_couch = axis_angle_to_quaternion([0, 0, 1], -90)
+        pose_from_couch = Pose([4.2, 3.8, 0], robot_orientation_from_couch)
 
-    # Perception, detect first guest
-    perceived_object_dict = DetectAction(BelieveObject(types=[milk.type]), technique='human').resolve().perform()
-    while perceived_object_dict[0] is None:
-        rospy.sleep(5)
-        TalkingMotion("Please step in front of me")
-        rospy.sleep(5)
+        robot_orientation = axis_angle_to_quaternion([0, 0, 1], 90)
+        pose_kitchen_to_couch = Pose([4.2, 3, 0], robot_orientation)
 
-    rospy.loginfo("human detected")
+        pose_home =  Pose([3, 1.7, 0], robot_orientation)
 
-    # look at guest and introduction
-    giskardpy.move_head_to_human()
-    TalkingMotion("Hello, i am Toya and my favorite drink is oil. What about you, talk to me?").resolve().perform()
+        # Perception, detect first guest
+        perceived_object_dict = DetectAction(BelieveObject(types=[milk.type]), technique='human').resolve().perform()
+        #while perceived_object_dict[0] is None:
+         #   rospy.sleep(5)
+          #  TalkingMotion("Please step in front of me")
+           # rospy.sleep(5)
 
-    # reicht sleep 1?
-    rospy.sleep(2)
+        rospy.loginfo("human detected")
 
-    # signal to start listening
-    pub_nlp.publish("start listening")
+        # look at guest and introduction
+        giskardpy.move_head_to_human()
+        TalkingMotion("Hello, i am Toya and my favorite drink is oil. What about you, talk to me?").resolve().perform()
+
+        # reicht sleep 1?
+        rospy.sleep(10)
+
+        # signal to start listening
+        #pub_nlp.publish("start listening")
+
+
+        TalkingMotion("Hey i will stop looking now").resolve().perform()
+
+        # TalkingMotion("Hello, i will stop looking at you now").resolve().perform()
+        # rospy.sleep(2)
+        # rospy.loginfo("stop looking now")
+        # giskardpy.stop_looking()
+
+        rospy.loginfo("stop looking now")
+        giskardpy.stop_looking()
+        rospy.loginfo("Navigating now")
+        TalkingMotion("navigating to couch area now, pls step away").resolve().perform()
+
+
+        if area == 'to_couch':
+            NavigateAction([pose_kitchen_to_couch]).resolve().perform()
+            NavigateAction([pose_couch]).resolve().perform()
+        elif area == 'from_couch':
+            NavigateAction([pose_from_couch]).resolve().perform()
+            NavigateAction([pose_home]).resolve().perform()
+
+
+        # failure handling
+        #rospy.Subscriber("nlp_feedback", Bool, talk_error)
+
+        # receives name and drink via topic
+        # rospy.Subscriber("nlp_out", String, talk_request)
 
 
 
-    # Manipulation
-    # keep looking at detected human
-    giskardpy.move_head_to_human()
+def nav_test():
+    with real_robot:
+        robot_orientation = axis_angle_to_quaternion([0, 0, 1], 90)
+        test_pose1 = Pose([4.2, 3, 0], robot_orientation)
+        test_pose = Pose([3, 5, 0], [0, 0, 0, 1])
+        moveBase.queryPoseNav(test_pose1)
+        moveBase.queryPoseNav(test_pose)
 
-    # TalkingMotion("Hello, i will stop looking at you now").resolve().perform()
-    # rospy.sleep(2)
-    # rospy.loginfo("stop looking now")
-    # giskardpy.stop_looking()
 
-    # failure handling
-    rospy.Subscriber("nlp_feedback", Bool, talk_error)
-
-    # receives name and drink via topic
-    rospy.Subscriber("nlp_out", String, talk_request)
+demo_test('from_couch')
+#demo_test('to_couch')

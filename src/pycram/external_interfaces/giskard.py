@@ -450,6 +450,7 @@ def stop_looking():
     # endless mode shut be stopped when new command to move is used
     # moves hsr in standard position
     giskard_wrapper.take_pose("park")
+    giskard_wrapper.plan_and_execute(wait=True)
     print("hsr looks forward instead of looking at human")
 
 def spawn_kitchen():
@@ -463,9 +464,16 @@ def spawn_kitchen():
 def place_objects(object, target):
     # TODO: Decide placing from_above or align_vertical. Maybe using Objecttype for that?
     from_above_objects = ["Bowl", "Metalmug", "Spoon", "Knife", "Fork"]
+
+    context_from_above = {'action': 'placing', 'from_above': True}
+    context_default = {'action': 'placing'}
+
     if object.name in from_above_objects:
-        giskard_wrapper.placing(context="from_above",goal_pose=target)
+        giskard_wrapper.placing(context=context_from_above,goal_pose=target)
+        print("if placed")
     else:
-        giskard_wrapper.placing(context="align_vertical", goal_pose=target)
+        giskard_wrapper.placing(context=context_default, goal_pose=target)
+        print("else placed")
+    giskard_wrapper.plan_and_execute(wait=True)
     print("placed object")
    # BulletWorld.robot.detach(object.bullet_world_object)
