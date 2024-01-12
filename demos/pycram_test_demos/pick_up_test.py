@@ -22,11 +22,11 @@ milk = Object("milk", ObjectType.MILK, "milk.stl", pose=Pose([2.5, 2, 1.02]), co
 giskardpy.init_giskard_interface()
 
 with real_robot:
-    object_desig = DetectAction(BelieveObject(types=[ObjectType.MILK])).resolve().perform()
+    object_desig = DetectAction(BelieveObject(types=[ObjectType.MILK]), technique='all').resolve().perform()
 
-    PickUpAction(object_designator_description=object_desig,
+    PickUpAction(object_designator_description=object_desig["Cerealbox"],
                  arms=["left"],
-                 grasps=["top"]).resolve().perform()
+                 grasps=["front"]).resolve().perform()
 
     # PickUpAction(object_designator_description=object_desig,
     #          arms=["left"],
