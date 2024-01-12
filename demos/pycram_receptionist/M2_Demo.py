@@ -12,7 +12,7 @@ from pycram.designators.location_designator import *
 from pycram.designators.object_designator import *
 from pycram.enums import ObjectType
 from pycram.bullet_world import BulletWorld, Object
-from pycram.external_interfaces.knowrob import instances_of
+from pycram.external_interfaces.knowrob import instances_of, get_guest_info
 from std_msgs.msg import String, Bool
 import talk_actions
 
@@ -38,11 +38,11 @@ giskardpy.init_giskard_interface()
 
 class HumanDescription:
 
-    def __init__(self, name, fav_drink, shirt_color, gender):
+    def __init__(self, name, fav_drink):
         self.name = name
         self.fav_drink = fav_drink
-        self.shirt_color = shirt_color
-        self.gender = gender
+        #self.shirt_color = shirt_color
+        #self.gender = gender
         # TODO: coordinate with Perception on what is easy to implement
         # characteristics to consider: height, hair color, and age.
 
@@ -79,19 +79,20 @@ def introduce(name1, drink1, name2, drink2):
 
 
 with real_robot:
-    host = HumanDescription("Bob", fav_drink= "Coffee", gender="male", shirt_color="white")
+    host = HumanDescription("Bob", fav_drink="Coffee")
+    pub_nlp = rospy.Publisher('/startListener', String, queue_size=10)
 
-    # Perception
+    # Perception, detect first guest
     perceived_object_dict = DetectAction(BelieveObject(types=[milk.type]), technique='human').resolve().perform()
     while perceived_object_dict[0] is None:
+        rospy.sleep(5)
         TalkingMotion("Please step in front of me")
         rospy.sleep(5)
 
     rospy.loginfo("human detected")
-    pub_nlp = rospy.Publisher('/startListener', String, queue_size=10)
 
+    # look at guest and introduction
     giskardpy.move_head_to_human()
-
     TalkingMotion("Hello, i am Toya and my favorite drink is oil. What about you, talk to me?").resolve().perform()
 
     # reicht sleep 1?
@@ -99,7 +100,6 @@ with real_robot:
 
     # signal to start listening
     pub_nlp.publish("start listening")
-
     rospy.sleep(10)
 
     # TODO: knowledge interface erweitern
@@ -111,23 +111,30 @@ with real_robot:
         # TODO: NLP muss variabel ein/ausgeschaltet werden können
         # failure handling if receptionist intend was not understood
         rospy.Subscriber("nlp_feedback", Bool, talk_error)
-        TalkingMotion("please repeat")
+        #TalkingMotion("please repeat")
         rospy.sleep(10)
 
-    guest1 = HumanDescription(knowrob_call("Customer", id = 1).name, knowrob_call("Customer", id = 1).drink)
+    #save received data from guest
+    guest_data = get_guest_info(1)
+    name01 = guest_data[0]
+    drink01 = guest_data[1]
+    guest1 = HumanDescription(name=name01, fav_drink=drink01)
 
 
-    # TODO: Position der Couch herausfinden
+
+    #lead guest to living room
+    # TODO: testen, ob Position akkurat
     giskardpy.stop_looking()
+    NavigateAction([Pose([3, 5, 0], [0, 0, 1, 1])]).resolve().perform()
 
-    NavigateAction([Pose([5, 3.3, 0.8], [0, 0, 1, 1])]).resolve().perform()
-
+    # search for host in living room
     if DetectAction(BelieveObject(types=[milk.type]), technique='human').resolve().perform():
         # look at host
         giskardpy.move_head_to_human()
 
         # introduce guest and host
         introduce(host.name, host.fav_drink, guest1.name, guest1.fav_drink)
+        giskardpy.stop_looking()
 
 
 
