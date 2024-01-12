@@ -449,7 +449,7 @@ def stop_looking():
     # TODO: implement when manipulation is ready
     # endless mode shut be stopped when new command to move is used
     # moves hsr in standard position
-    giskard_wrapper.take_pose(park)
+    giskard_wrapper.take_pose("park")
     print("hsr looks forward instead of looking at human")
 
 def spawn_kitchen():
