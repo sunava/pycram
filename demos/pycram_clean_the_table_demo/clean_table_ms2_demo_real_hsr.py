@@ -24,6 +24,7 @@ transport_orientation = axis_angle_to_quaternion([0, 0, 1], 270)
 robot = Object("hsrb", ObjectType.ROBOT, "../../resources/" + "hsrb" + ".urdf")
 robot.set_color([0.5, 0.5, 0.9, 1])
 robot_desig = ObjectDesignatorDescription(names=["hsrb"]).resolve()
+robot_pose = robot.get_pose()
 
 kitchen = Object("kitchen", "environment", "kitchen.urdf")
 kitchen_desig = BelieveObject(names=["kitchen"])
@@ -116,6 +117,25 @@ def sort_obj_list(obj_dict):
         print("Objects in list: ", obj.name)
     return sorted_obj_list
 
+def try_pick_up(obj, grasps):
+    try:
+        PickUpAction(obj, ["left"], [grasps]).resolve().perform()
+    except:
+        print("try pick up again")
+        TalkingMotion("Try pick up again")
+        NavigateAction([Pose([robot_pose.position.x - 0.3, robot_pose.position.y, robot_pose.position.z],
+                             robot_pose.orientation)]).resolve().perform()
+        ParkArmsAction([Arms.LEFT]).resolve().perform()
+        object_desig = DetectAction(BelieveObject(types=[ObjectType.MILK]), technique='all').resolve().perform()
+        # TODO nur wenn key (name des vorherigen objektes) in object_desig enthalten ist
+        new_object = object_desig[obj.name]
+        try:
+            PickUpAction(new_object, ["left"], [grasps]).resolve().perform()
+
+        except:
+            TalkingMotion(f"Can you pleas give me the {obj.name} object on the table? Thanks")
+            TalkingMotion(f"Please push down my hand, when I can grab the {obj.name}.")
+
 
 with semi_real_robot:
     TalkingMotion("Starting Demo").resolve().perform()
@@ -156,7 +176,7 @@ with semi_real_robot:
             MoveGripperMotion("close", "left", allow_gripper_collision=True)
 
         else:
-            PickUpAction(obj, ["left"], ["top"]).resolve().perform()
+            try_pick_up(obj, "top")
 
         rospy.sleep(5)
         ParkArmsAction([Arms.LEFT]).resolve().perform()
