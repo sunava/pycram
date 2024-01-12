@@ -57,6 +57,11 @@ def talk_request(data: String):
     talk_actions.name_drink_talker(name_drink)
     rospy.loginfo("nlp data:" + name_drink[0] + " " + name_drink[1])
 
+    rospy.loginfo("stop looking now")
+    giskardpy.stop_looking()
+    rospy.loginfo("Navigating now")
+    NavigateAction([Pose([3, 5, 0], [0, 0, 1, 1])]).resolve().perform()
+
 
 def talk_error(data):
     """
@@ -96,52 +101,24 @@ with real_robot:
     TalkingMotion("Hello, i am Toya and my favorite drink is oil. What about you, talk to me?").resolve().perform()
 
     # reicht sleep 1?
-    rospy.sleep(1)
+    rospy.sleep(2)
 
     # signal to start listening
     pub_nlp.publish("start listening")
-    rospy.sleep(10)
-
-    # TODO: knowledge interface erweitern
-    # Idee: jeder Mensch braucht ID, diese kann ich dann hier abfragen
-    # Host schon in Liste!!, daher < 2 und nicht < 1
-    while len(instances_of("Customer")) < 2:
-
-        # TODO: funktioniert das noch mit Subscriber?
-        # TODO: NLP muss variabel ein/ausgeschaltet werden können
-        # failure handling if receptionist intend was not understood
-        rospy.Subscriber("nlp_feedback", Bool, talk_error)
-        #TalkingMotion("please repeat")
-        rospy.sleep(10)
-
-    #save received data from guest
-    guest_data = get_guest_info(1)
-    name01 = guest_data[0]
-    drink01 = guest_data[1]
-    guest1 = HumanDescription(name=name01, fav_drink=drink01)
 
 
 
-    #lead guest to living room
-    # TODO: testen, ob Position akkurat
-    giskardpy.stop_looking()
-    NavigateAction([Pose([3, 5, 0], [0, 0, 1, 1])]).resolve().perform()
+    # Manipulation
+    # keep looking at detected human
+    giskardpy.move_head_to_human()
 
-    # search for host in living room
-    if DetectAction(BelieveObject(types=[milk.type]), technique='human').resolve().perform():
-        # look at host
-        giskardpy.move_head_to_human()
+    # TalkingMotion("Hello, i will stop looking at you now").resolve().perform()
+    # rospy.sleep(2)
+    # rospy.loginfo("stop looking now")
+    # giskardpy.stop_looking()
 
-        # introduce guest and host
-        introduce(host.name, host.fav_drink, guest1.name, guest1.fav_drink)
-        giskardpy.stop_looking()
+    # failure handling
+    rospy.Subscriber("nlp_feedback", Bool, talk_error)
 
-
-
-
-
-
-
-
-
-
+    # receives name and drink via topic
+    rospy.Subscriber("nlp_out", String, talk_request)

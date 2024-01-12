@@ -442,7 +442,15 @@ def move_head_to_human():
     giskard_wrapper.continuous_pointing_head()
     giskard_wrapper.plan_and_execute(wait=False)
 
-
+def stop_looking():
+    """
+    stops the move_head_to_human function so that hsr looks forward
+    """
+    # TODO: implement when manipulation is ready
+    # endless mode shut be stopped when new command to move is used
+    # moves hsr in standard position
+    giskard_wrapper.take_pose("park")
+    print("hsr looks forward instead of looking at human")
 
 def spawn_kitchen():
     env_urdf = rospy.get_param('kitchen_description')
