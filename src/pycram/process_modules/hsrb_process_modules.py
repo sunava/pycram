@@ -290,11 +290,11 @@ class HSRBPickUpReal(ProcessModule):
 
 class HSRBPlaceReal(ProcessModule):
 
-    def _execute(self, designator: MotionDesignatorDescription.Motion) -> Any:
-        pass
-    # def _execute(self, designator: PlaceMotion.Motion) -> Any:
-    #      giskard.avoid_all_collisions()
-    #      giskard.place_objects(designator.object, designator.target)
+   # def _execute(self, designator: MotionDesignatorDescription.Motion) -> Any:
+    #    pass
+    def _execute(self, designator: PlaceMotion.Motion) -> Any:
+          giskard.avoid_all_collisions()
+          giskard.place_objects(designator.object, designator.target)
 
 
 class HSRBMoveHeadReal(ProcessModule):
