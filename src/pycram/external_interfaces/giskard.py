@@ -102,18 +102,11 @@ def initial_adding_objects() -> None:
     """
     groups = giskard_wrapper.get_group_names()
     for obj in BulletWorld.current_bullet_world.objects:
+        if obj != BulletWorld.robot and len(obj.links) >= 1:
+            name = obj.name + "_" + str(obj.id)
 
-<< << << < HEAD
-if obj is BulletWorld.robot:
-    continue
-name = obj.name + "_" + str(obj.id)
-if name not in groups:
-    spawn_object(obj) == == == =
-if obj != BulletWorld.robot and len(obj.links) >= 1:
-    name = obj.name + "_" + str(obj.id)
-
-    if name not in groups:
-        spawn_object(obj) >> >> >> > dac894abd8390784888ef84a4730c8495dc05f78
+            if name not in groups:
+                spawn_object(obj)
 
 
 @init_giskard_interface
@@ -205,16 +198,7 @@ def spawn_urdf(name: str, urdf_path: str, pose: Pose) -> 'UpdateWorldResponse':
         urdf_string = f.read()
     return giskard_wrapper.add_urdf(name, urdf_string, pose)
 
-<< << << < HEAD
-
-
 @init_giskard_interface
-
-== == == =
-
->> >> >> > dac894abd8390784888ef84a4730c8495dc05f78
-
-
 def spawn_mesh(name: str, path: str, pose: Pose) -> 'UpdateWorldResponse':
     """
     Spawns a mesh into giskard's belief state
