@@ -1,11 +1,10 @@
 from typing import Optional
 
-from sqlalchemy import ForeignKey
-from sqlalchemy.orm import Mapped, mapped_column, relationship
-
 from .base import RobotState, Designator, MapperArgsMixin, PoseMixin
 from .object_designator import ObjectMixin
 from ..enums import Arms
+from sqlalchemy.orm import Mapped, mapped_column, relationship
+from sqlalchemy import ForeignKey
 
 
 class Action(MapperArgsMixin, Designator):
@@ -60,7 +59,8 @@ class GripAction(ObjectMixin, Action):
 
     id: Mapped[int] = mapped_column(ForeignKey(f'{Action.__tablename__}.id'), primary_key=True, init=False)
     gripper: Mapped[str] = mapped_column(init=False)
-    effort: Mapped[float] = mapped_column(init=False)  # TODO grasped_object
+    effort: Mapped[float] = mapped_column(init=False)
+    # TODO grasped_object
 
 
 class PickUpAction(ObjectMixin, Action):
@@ -101,46 +101,15 @@ class OpenAction(ObjectMixin, Action):
     """ORM Class of pycram.designators.action_designator.OpenAction."""
 
     id: Mapped[int] = mapped_column(ForeignKey(f'{Action.__tablename__}.id'), primary_key=True, init=False)
-    arm: Mapped[str]  # distance: Mapped[float] = mapped_column(init=False)
+    arm: Mapped[str]
+    # distance: Mapped[float] = mapped_column(init=False)
 
 
 class CloseAction(ObjectMixin, Action):
     """ORM Class of pycram.designators.action_designator.CloseAction."""
-    __mapper_args__ = {"polymorphic_identity": __tablename__, }
+
     id: Mapped[int] = mapped_column(ForeignKey(f'{Action.__tablename__}.id'), primary_key=True, init=False)
     arm: Mapped[str]
-
-
-class CuttingAction(Action):
-    """ORM Class of pycram.designators.action_designator.PickUpAction."""
-    __tablename__ = "Cutting"
-    id = sqlalchemy.Column(sqlalchemy.types.Integer, sqlalchemy.ForeignKey("Action.id"), primary_key=True)
-    arm = sqlalchemy.Column(sqlalchemy.types.String(255))
-    grasp = sqlalchemy.Column(sqlalchemy.types.String(255))
-    object = sqlalchemy.Column(sqlalchemy.Integer, sqlalchemy.ForeignKey("Object.id"))
-
-    __mapper_args__ = {"polymorphic_identity": __tablename__, }
-
-    def __init__(self, arm: str, grasp: str):
-        super(CuttingAction, self).__init__()
-        self.arm = arm
-        self.grasp = grasp
-
-
-class MixingAction(Action):
-    """ORM Class of pycram.designators.action_designator.PickUpAction."""
-    __tablename__ = "Mixing"
-    id = sqlalchemy.Column(sqlalchemy.types.Integer, sqlalchemy.ForeignKey("Action.id"), primary_key=True)
-    arm = sqlalchemy.Column(sqlalchemy.types.String(255))
-    grasp = sqlalchemy.Column(sqlalchemy.types.String(255))
-    object = sqlalchemy.Column(sqlalchemy.Integer, sqlalchemy.ForeignKey("Object.id"))
-
-    __mapper_args__ = {"polymorphic_identity": __tablename__, }
-
-    def __init__(self, arm: str, grasp: str):
-        super(MixingAction, self).__init__()
-        self.arm = arm
-        self.grasp = grasp
 
 
 class GraspingAction(ObjectMixin, Action):

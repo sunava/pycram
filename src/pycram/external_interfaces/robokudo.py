@@ -1,11 +1,5 @@
-import sys
-from typing import Callable
-
-import rosnode
 import rospy
 import actionlib
-import rosnode
-
 
 from ..designator import ObjectDesignatorDescription
 from ..pose import Pose
@@ -15,69 +9,8 @@ from ..enums import ObjectType
 from typing import Any
 from geometry_msgs.msg import PoseStamped
 
-try:
-    from robokudo_msgs.msg import ObjectDesignator as robokudo_ObjetDesignator
-    from robokudo_msgs.msg import QueryAction, QueryGoal, QueryResult
-except ModuleNotFoundError as e:
-    rospy.logwarn(f"Could not import RoboKudo messages, RoboKudo interface could not be initialized")
+is_init = False
 
-robokudo_action_client = None
-
-
-def init_robokudo_interface(func: Callable) -> Callable:
-    """
-    Tries to import the RoboKudo messages and with that initialize the RoboKudo interface.
-    """
-    def wrapper(*args, **kwargs):
-        global robokudo_action_client
-        topics = list(map(lambda x: x[0], rospy.get_published_topics()))
-        if "robokudo_msgs" not in sys.modules:
-            rospy.logwarn("Could not initialize the RoboKudo interface since the robokudo_msgs are not imported")
-            return
-
-        if "/robokudo" in rosnode.get_node_names():
-            robokudo_action_client = create_robokudo_action_client()
-            rospy.loginfo("Successfully initialized robokudo interface")
-        else:
-            rospy.logwarn("RoboKudo is not running, could not initialize RoboKudo interface")
-            return
-
-        func(*args, **kwargs)
-    return wrapper
-
-
-
-def create_robokudo_action_client() -> Callable:
-    """
-    Creates a new action client for the RoboKudo query interface and returns a function encapsulating the action client.
-    The returned function can be called with an ObjectDesigantor as parameter and returns the result of the action client.
-
-    :return: A callable function encapsulating the action client
-    """
-    client = actionlib.SimpleActionClient('robokudo/query', QueryAction)
-    rospy.loginfo("Waiting for action server")
-    client.wait_for_server()
-
-    def action_client(object_desc):
-        global query_result
-
-        def active_callback():
-            rospy.loginfo("Send query to Robokudo")
-
-        def done_callback(state, result):
-            rospy.loginfo("Finished perceiving")
-            global query_result
-            query_result = result
-
-        def feedback_callback(msg):
-            pass
-
-        object_goal = make_query_goal_msg(object_desc)
-        client.send_goal(object_goal, active_cb=active_callback, done_cb=done_callback, feedback_cb=feedback_callback)
-        wait = client.wait_for_result()
-        return query_result
-
-    return action_client
 
 def init_robokudo_interface():
     global is_init
@@ -125,7 +58,6 @@ def make_query_goal_msg(obj_desc: ObjectDesignatorDescription) -> 'QueryGoal':
     return goal_msg
 
 
-@init_robokudo_interface
 def query(object_desc: ObjectDesignatorDescription) -> ObjectDesignatorDescription.Object:
     """
     Sends a query to RoboKudo to look for an object that fits the description given by the Object designator description.
@@ -135,12 +67,6 @@ def query(object_desc: ObjectDesignatorDescription) -> ObjectDesignatorDescripti
     :param object_desc: The object designator description which describes the object that should be perceived
     :return: An object designator for the found object, if there was an object that fitted the description.
     """
-    query_result = robokudo_action_client(object_desc)
-    pose_candidates = {}
-    if query_result.res == []:
-        rospy.logwarn("No suitable object could be found")
-        return
-
     init_robokudo_interface()
     from robokudo_msgs.msg import QueryAction, QueryGoal, QueryResult
 

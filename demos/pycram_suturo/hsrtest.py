@@ -9,9 +9,9 @@ from pycram.fluent_language_misc import failure_handling
 import threading
 from pycram.ros.viz_marker_publisher import VizMarkerPublisher
 from pycram.plan_failures import TorsoFailure
-from pycram.language import macros, par
 import sys
 #from pycram.ros.tf_broadcaster import TFBroadcaster
+
 
 from pycram.ros.robot_state_updater import RobotStateUpdater
 #from pycram.ros.joint_state_publisher import JointStatePublisher
@@ -27,7 +27,8 @@ world.set_gravity([0, 0, -9.8])
 robot = Object("hsrb", "robot", "../../resources/" + robot_description.name + ".urdf")
 robot_desig = ObjectDesignatorDescription(names=["hsrb"]).resolve()
 robot.set_color([0.5, 0.5, 0.9, 1])
-kitchen = Object("kitchen", "environment", "kitchen.urdf")
+
+kitchen = Object("kitchen", "environment", "test-room.urdf")
 robot.set_joint_state(robot_description.torso_joint, 0.24)
 kitchen_desig = ObjectDesignatorDescription(names=["kitchen"])
 spawning_poses = {
@@ -48,7 +49,7 @@ bread_BO = BelieveObject(names=["bread"])
 cocumber_BO = BelieveObject(names=["cocumber"])
 giskardpy.init_giskard_interface()
 giskardpy.sync_worlds()
-RobotStateUpdater("/tf", "/joint_states")
+RobotStateUpdater("/tf", "/giskard_joint_states")
 
 # giskardpy.achieve_joint_goal({"torso_lift_joint": 0.28})
 import random

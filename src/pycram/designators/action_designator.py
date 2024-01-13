@@ -8,7 +8,6 @@ import sqlalchemy.orm
 from typing import Any, Union
 import rospy
 
-
 from .location_designator import CostmapLocation
 from .motion_designator import *
 from .object_designator import ObjectDesignatorDescription, BelieveObject, ObjectPart
@@ -23,8 +22,7 @@ from ..orm.action_designator import (ParkArmsAction as ORMParkArmsAction, Naviga
                                      Action as ORMAction, LookAtAction as ORMLookAtAction,
                                      DetectAction as ORMDetectAction, TransportAction as ORMTransportAction,
                                      OpenAction as ORMOpenAction, CloseAction as ORMCloseAction,
-                                     GraspingAction as ORMGraspingAction, MixingAction as ORMMixingAction,
-                                     CuttingAction as ORMCuttingAction)
+                                     GraspingAction as ORMGraspingAction)
 
 from ..orm.base import Quaternion, Position, Base
 from ..plan_failures import ObjectUnfetchable, ReachabilityFailure
@@ -305,84 +303,82 @@ class PickUpAction(ActionDesignatorDescription):
 
         @with_tree
         def perform(self) -> None:
-            try:
-                lt = LocalTransformer()
 
-                if isinstance(self.object_designator, ObjectPart.Object):
-                    object_pose = self.object_designator.part_pose
-                else:
-                    object_pose = self.object_designator.bullet_world_object.get_pose()
+            lt = LocalTransformer()
 
-                BulletWorld.current_bullet_world.add_vis_axis(object_pose)
-                robot = BulletWorld.robot
-                robot_pose = robot.get_pose()
-                BulletWorld.current_bullet_world.add_vis_axis(robot_pose)
+            if isinstance(self.object_designator, ObjectPart.Object):
+                object_pose = self.object_designator.part_pose
+            else:
+                object_pose = self.object_designator.bullet_world_object.get_pose()
 
-                gripper_name = robot_description.get_tool_frame(self.arm)
-                gripper_tf = BulletWorld.robot.get_link_tf_frame(gripper_name)
-                base_tf = BulletWorld.robot.get_link_tf_frame("base_link")
-                object_pose_in_base = lt.transform_pose(object_pose, base_tf)
+            BulletWorld.current_bullet_world.add_vis_axis(object_pose)
+            robot = BulletWorld.robot
+            robot_pose = robot.get_pose()
+            BulletWorld.current_bullet_world.add_vis_axis(robot_pose)
 
-                grasp = robot_description.grasps.get_orientation_for_grasp(self.grasp)
-                adjusted_object_pose_in_map_w_gripper = object_pose_in_base.copy()
-                # pose needs to be adjusted atm cause pose on real robot is wrong
-                adjusted_object_pose_in_map_w_gripper.pose.position.x += 0.06
-                if self.grasp == "top":
-                    adjusted_object_pose_in_map_w_gripper.pose.position.z -= 0.11
-                adjusted_object_pose_in_map_w_gripper.pose.orientation.x = grasp[0]
-                adjusted_object_pose_in_map_w_gripper.pose.orientation.y = grasp[1]
-                adjusted_object_pose_in_map_w_gripper.pose.orientation.z = grasp[2]
-                adjusted_object_pose_in_map_w_gripper.pose.orientation.w = grasp[3]
+            gripper_name = robot_description.get_tool_frame(self.arm)
+            gripper_tf = BulletWorld.robot.get_link_tf_frame(gripper_name)
+            base_tf = BulletWorld.robot.get_link_tf_frame("base_link")
+            object_pose_in_base = lt.transform_pose(object_pose, base_tf)
 
-                pre_adjusted_object_pose_in_map_w_gripper = adjusted_object_pose_in_map_w_gripper
-                if self.grasp == "top":
-                    pre_adjusted_object_pose_in_map_w_gripper.pose.position.z += 0.1
-                else:
-                    pre_adjusted_object_pose_in_map_w_gripper.pose.position.x -= 0.05
+            grasp = robot_description.grasps.get_orientation_for_grasp(self.grasp)
+            adjusted_object_pose_in_map_w_gripper = object_pose_in_base.copy()
+            # pose needs to be adjusted atm cause pose on real robot is wrong
+            adjusted_object_pose_in_map_w_gripper.pose.position.x += 0.06
+            if self.grasp == "top":
+                adjusted_object_pose_in_map_w_gripper.pose.position.z -= 0.11
+            adjusted_object_pose_in_map_w_gripper.pose.orientation.x = grasp[0]
+            adjusted_object_pose_in_map_w_gripper.pose.orientation.y = grasp[1]
+            adjusted_object_pose_in_map_w_gripper.pose.orientation.z = grasp[2]
+            adjusted_object_pose_in_map_w_gripper.pose.orientation.w = grasp[3]
 
-                # todo fill this
-                # if grasp == "top":
-                #     adjusted_object_pose_in_map_w_gripper.pose.position.z += 0.03
-                # elif grasp == "front":
-                #     adjusted_object_pose_in_map_w_gripper.pose.position.x -= 0.03
-                # elif grasp == "left":
-                #     adjusted_object_pose_in_map_w_gripper.pose.position.y += 0.03
-                # elif grasp == "right":
-                #     adjusted_object_pose_in_map_w_gripper.pose.position.y -= 0.03
+            pre_adjusted_object_pose_in_map_w_gripper = adjusted_object_pose_in_map_w_gripper
+            if self.grasp == "top":
+                pre_adjusted_object_pose_in_map_w_gripper.pose.position.z += 0.1
+            else:
+                pre_adjusted_object_pose_in_map_w_gripper.pose.position.x -= 0.05
 
-                object_pose_in_map = lt.transform_pose(adjusted_object_pose_in_map_w_gripper, "map")
-                pre_object_pose_in_map = lt.transform_pose(pre_adjusted_object_pose_in_map_w_gripper, "map")
+            # todo fill this
+            # if grasp == "top":
+            #     adjusted_object_pose_in_map_w_gripper.pose.position.z += 0.03
+            # elif grasp == "front":
+            #     adjusted_object_pose_in_map_w_gripper.pose.position.x -= 0.03
+            # elif grasp == "left":
+            #     adjusted_object_pose_in_map_w_gripper.pose.position.y += 0.03
+            # elif grasp == "right":
+            #     adjusted_object_pose_in_map_w_gripper.pose.position.y -= 0.03
 
-                # TODO raise error to test failure handling
-                print("raising error")
+            object_pose_in_map = lt.transform_pose(adjusted_object_pose_in_map_w_gripper, "map")
+            pre_object_pose_in_map = lt.transform_pose(pre_adjusted_object_pose_in_map_w_gripper, "map")
 
-                MoveGripperMotion(motion="open", gripper=self.arm, allow_gripper_collision=True).resolve().perform()
+            # TODO raise error to test failure handling
+            print("raising error")
 
-                MoveTCPMotion(pre_object_pose_in_map, self.arm, allow_gripper_collision=False).resolve().perform()
+            MoveGripperMotion(motion="open", gripper=self.arm, allow_gripper_collision=True).resolve().perform()
 
-                MoveTCPMotion(object_pose_in_map, self.arm, allow_gripper_collision=True).resolve().perform()
+            MoveTCPMotion(pre_object_pose_in_map, self.arm, allow_gripper_collision=False).resolve().perform()
 
-                MoveGripperMotion(motion="close", gripper=self.arm, allow_gripper_collision=True).resolve().perform()
+            MoveTCPMotion(object_pose_in_map, self.arm, allow_gripper_collision=True).resolve().perform()
 
-                rospy.sleep(2)
-                tool_frame = robot_description.get_tool_frame(self.arm)
-                robot.attach(object=self.object_designator.bullet_world_object, link=tool_frame)
-                lift_pose_in_map = object_pose_in_map
-                lift_pose_in_map.pose.position.z += 0.1
-                MoveTCPMotion(lift_pose_in_map, self.arm, allow_gripper_collision=True).resolve().perform()
-                print("moving lift")
+            MoveGripperMotion(motion="close", gripper=self.arm, allow_gripper_collision=True).resolve().perform()
 
-            except:
-                # TODO return des Fehlers
-                print("Fehler")  # print(object_pose_in_base)  # print(object_pose_in_gripper)  # print(adjusted_object_pose_in_map_w_gripper)
+            rospy.sleep(2)
+            tool_frame = robot_description.get_tool_frame(self.arm)
+            robot.attach(object=self.object_designator.bullet_world_object, link=tool_frame)
+            lift_pose_in_map = object_pose_in_map
+            lift_pose_in_map.pose.position.z += 0.1
+            MoveTCPMotion(lift_pose_in_map, self.arm, allow_gripper_collision=True).resolve().perform()
+            print("moving lift")
 
-            # BulletWorld.current_bullet_world.add_vis_axis(object_pose_in_gripper)  # BulletWorld.current_bullet_world.add_vis_axis(adjusted_object_pose_in_map_w_gripper)  #  #  #  # pre_grasp = adjusted_object_pose_in_map_w_gripper.copy()  # pre_grasp.pose.position.x -= 10  # pre_gripper_in_map = lt.transform_pose(pre_grasp,  #                                            BulletWorld.robot.get_link_tf_frame(gripper_name))  # gripper_in_map = lt.transform_pose(adjusted_object_pose_in_map_w_gripper,  #                                        BulletWorld.robot.get_link_tf_frame(gripper_name))  #  # BulletWorld.current_bullet_world.add_vis_axis(pre_gripper_in_map)  # BulletWorld.current_bullet_world.add_vis_axis(gripper_in_map)
+        # print(object_pose_in_base)  # print(object_pose_in_gripper)  # print(adjusted_object_pose_in_map_w_gripper)
 
-            # MoveTCPMotion(pre_gripper_in_map, self.arm).resolve().perform()  # MoveGripperMotion("open", self.arm).resolve().perform()  #  # MoveTCPMotion(gripper_in_map, self.arm, allow_gripper_collision=True).resolve().perform()  # MoveGripperMotion("close", self.arm, allow_gripper_collision=True).resolve().perform()
+        # BulletWorld.current_bullet_world.add_vis_axis(object_pose_in_gripper)  # BulletWorld.current_bullet_world.add_vis_axis(adjusted_object_pose_in_map_w_gripper)  #  #  #  # pre_grasp = adjusted_object_pose_in_map_w_gripper.copy()  # pre_grasp.pose.position.x -= 10  # pre_gripper_in_map = lt.transform_pose(pre_grasp,  #                                            BulletWorld.robot.get_link_tf_frame(gripper_name))  # gripper_in_map = lt.transform_pose(adjusted_object_pose_in_map_w_gripper,  #                                        BulletWorld.robot.get_link_tf_frame(gripper_name))  #  # BulletWorld.current_bullet_world.add_vis_axis(pre_gripper_in_map)  # BulletWorld.current_bullet_world.add_vis_axis(gripper_in_map)
 
-            # self.object_at_execution = self.object_designator.data_copy()  # robot = BulletWorld.robot  # # Retrieve object and robot from designators  # object = self.object_designator.bullet_world_object  # grasp = robot_description.grasps.get_orientation_for_grasp(self.grasp)  # target = object.get_pose()  # target.orientation.x = grasp[0]  # target.orientation.y = grasp[1]  # target.orientation.z = grasp[2]  # target.orientation.w = grasp[3]  #  # arm = self.arm  # MoveGripperMotion(motion="open", gripper=self.arm, allow_gripper_collision=False).resolve().perform()  # MoveTCPMotion(target, self.arm).resolve().perform()  # tool_frame = robot_description.get_tool_frame(arm)
+        # MoveTCPMotion(pre_gripper_in_map, self.arm).resolve().perform()  # MoveGripperMotion("open", self.arm).resolve().perform()  #  # MoveTCPMotion(gripper_in_map, self.arm, allow_gripper_collision=True).resolve().perform()  # MoveGripperMotion("close", self.arm, allow_gripper_collision=True).resolve().perform()
 
-            # # Store the object's data copy at execution  # self.object_at_execution = self.object_designator.data_copy()  # robot = BulletWorld.robot  # # Retrieve object and robot from designators  # object = self.object_designator.bullet_world_object  # # Get grasp orientation and target pose  # grasp = robot_description.grasps.get_orientation_for_grasp(self.grasp)  # # oTm = Object Pose in Frame map  # oTm = object.get_pose()  #  #  #  # # Transform the object pose to the object frame, basically the origin of the object frame  # mTo = object.local_transformer.transform_to_object_frame(oTm, object)  # # Adjust the pose according to the special knowledge of the object designator  # adjusted_pose = self.object_designator.special_knowledge_adjustment_pose(self.grasp, mTo)  # # Transform the adjusted pose to the map frame  # adjusted_oTm = object.local_transformer.transform_pose(adjusted_pose, "map")  # # multiplying the orientation therefore "rotating" it, to get the correct orientation of the gripper  # ori = multiply_quaternions([adjusted_oTm.orientation.x, adjusted_oTm.orientation.y,  #                             adjusted_oTm.orientation.z, adjusted_oTm.orientation.w],  #                            grasp)  #  # # Set the orientation of the object pose by grasp in MAP  # adjusted_oTm.orientation.x = ori[0]  # adjusted_oTm.orientation.y = ori[1]  # adjusted_oTm.orientation.z = ori[2]  # adjusted_oTm.orientation.w = ori[3]  #  # gripper_frame = robot.get_link_tf_frame(robot_description.get_tool_frame(self.arm))  #  #  # # Perform Gripper Rotate  # # BulletWorld.current_bullet_world.add_vis_axis(gripper_rotate_pose)  # # MoveTCPMotion(gripper_rotate_pose, self.arm).resolve().perform()  # MoveGripperMotion(motion="open", gripper=self.arm, allow_gripper_collision=False).resolve().perform()  #  # oTg = object.local_transformer.transform_pose(adjusted_oTm, gripper_frame)  # if robot.name == "hsrb":  #     oTg.pose.position.x += 0.2  # else:  #     oTg.pose.position.x -= 0.15  # in x since this is how the gripper is oriented  # prepose = object.local_transformer.transform_pose(oTg, "map")  #  # # Perform the motion with the prepose and open gripper  # BulletWorld.current_bullet_world.add_vis_axis(prepose)  # MoveTCPMotion(prepose, self.arm, allow_gripper_collision=False).resolve().perform()  # # Perform the motion with the adjusted pose -> actual grasp and close gripper  #  # BulletWorld.current_bullet_world.add_vis_axis(adjusted_oTm)  # MoveTCPMotion(adjusted_oTm, self.arm).resolve().perform()  # # todo we have to adjust the poses by object size  # # adjusted_oTm.pose.position.z += 0.03  # MoveGripperMotion(motion="close", gripper=self.arm).resolve().perform()  # tool_frame = robot_description.get_tool_frame(self.arm)  # robot.attach(object, tool_frame)  #  # # Lift object  # BulletWorld.current_bullet_world.add_vis_axis(adjusted_oTm)  # MoveTCPMotion(adjusted_oTm, self.arm).resolve().perform()  #  # # Remove the vis axis from the world  # BulletWorld.current_bullet_world.remove_vis_axis()
+        # self.object_at_execution = self.object_designator.data_copy()  # robot = BulletWorld.robot  # # Retrieve object and robot from designators  # object = self.object_designator.bullet_world_object  # grasp = robot_description.grasps.get_orientation_for_grasp(self.grasp)  # target = object.get_pose()  # target.orientation.x = grasp[0]  # target.orientation.y = grasp[1]  # target.orientation.z = grasp[2]  # target.orientation.w = grasp[3]  #  # arm = self.arm  # MoveGripperMotion(motion="open", gripper=self.arm, allow_gripper_collision=False).resolve().perform()  # MoveTCPMotion(target, self.arm).resolve().perform()  # tool_frame = robot_description.get_tool_frame(arm)
+
+        # # Store the object's data copy at execution  # self.object_at_execution = self.object_designator.data_copy()  # robot = BulletWorld.robot  # # Retrieve object and robot from designators  # object = self.object_designator.bullet_world_object  # # Get grasp orientation and target pose  # grasp = robot_description.grasps.get_orientation_for_grasp(self.grasp)  # # oTm = Object Pose in Frame map  # oTm = object.get_pose()  #  #  #  # # Transform the object pose to the object frame, basically the origin of the object frame  # mTo = object.local_transformer.transform_to_object_frame(oTm, object)  # # Adjust the pose according to the special knowledge of the object designator  # adjusted_pose = self.object_designator.special_knowledge_adjustment_pose(self.grasp, mTo)  # # Transform the adjusted pose to the map frame  # adjusted_oTm = object.local_transformer.transform_pose(adjusted_pose, "map")  # # multiplying the orientation therefore "rotating" it, to get the correct orientation of the gripper  # ori = multiply_quaternions([adjusted_oTm.orientation.x, adjusted_oTm.orientation.y,  #                             adjusted_oTm.orientation.z, adjusted_oTm.orientation.w],  #                            grasp)  #  # # Set the orientation of the object pose by grasp in MAP  # adjusted_oTm.orientation.x = ori[0]  # adjusted_oTm.orientation.y = ori[1]  # adjusted_oTm.orientation.z = ori[2]  # adjusted_oTm.orientation.w = ori[3]  #  # gripper_frame = robot.get_link_tf_frame(robot_description.get_tool_frame(self.arm))  #  #  # # Perform Gripper Rotate  # # BulletWorld.current_bullet_world.add_vis_axis(gripper_rotate_pose)  # # MoveTCPMotion(gripper_rotate_pose, self.arm).resolve().perform()  # MoveGripperMotion(motion="open", gripper=self.arm, allow_gripper_collision=False).resolve().perform()  #  # oTg = object.local_transformer.transform_pose(adjusted_oTm, gripper_frame)  # if robot.name == "hsrb":  #     oTg.pose.position.x += 0.2  # else:  #     oTg.pose.position.x -= 0.15  # in x since this is how the gripper is oriented  # prepose = object.local_transformer.transform_pose(oTg, "map")  #  # # Perform the motion with the prepose and open gripper  # BulletWorld.current_bullet_world.add_vis_axis(prepose)  # MoveTCPMotion(prepose, self.arm, allow_gripper_collision=False).resolve().perform()  # # Perform the motion with the adjusted pose -> actual grasp and close gripper  #  # BulletWorld.current_bullet_world.add_vis_axis(adjusted_oTm)  # MoveTCPMotion(adjusted_oTm, self.arm).resolve().perform()  # # todo we have to adjust the poses by object size  # # adjusted_oTm.pose.position.z += 0.03  # MoveGripperMotion(motion="close", gripper=self.arm).resolve().perform()  # tool_frame = robot_description.get_tool_frame(self.arm)  # robot.attach(object, tool_frame)  #  # # Lift object  # BulletWorld.current_bullet_world.add_vis_axis(adjusted_oTm)  # MoveTCPMotion(adjusted_oTm, self.arm).resolve().perform()  #  # # Remove the vis axis from the world  # BulletWorld.current_bullet_world.remove_vis_axis()
 
         def to_sql(self) -> ORMPickUpAction:
             return ORMPickUpAction(self.arm, self.grasp)
@@ -546,7 +542,6 @@ class PlaceAction(ActionDesignatorDescription):
                 lift_pose_in_map.pose.position.z += 0.1
                 MoveTCPMotion(lift_pose_in_map, self.arm, allow_gripper_collision=True).resolve().perform()
                 print("moving lift")
-
 
     def to_sql(self) -> ORMPlaceAction:
         return ORMPlaceAction(self.arm)
@@ -949,7 +944,6 @@ class CloseAction(ActionDesignatorDescription):
         def insert(self, session: sqlalchemy.orm.session.Session, *args, **kwargs) -> ORMCloseAction:
             action = super().insert(session)
 
-
             op = self.object_designator.insert(session)
             action.object_id = op.id
 
@@ -1177,11 +1171,11 @@ class CuttingAction(ActionDesignatorDescription):
                 BulletWorld.current_bullet_world.add_vis_axis(lift_pose)
                 MoveTCPMotion(lift_pose, self.arm).resolve().perform()
 
-        def to_sql(self) -> ORMCuttingAction:
-            """
-            Convert the action to a corresponding SQL representation for storage.
-            """
-            return ORMCuttingAction(self.arm, self.grasp)
+        # def to_sql(self) -> ORMCuttingAction:
+        #     """
+        #     Convert the action to a corresponding SQL representation for storage.
+        #     """
+        #     return ORMCuttingAction(self.arm, self.grasp)
 
         def insert(self, session: sqlalchemy.orm.session.Session, **kwargs):
             """
@@ -1325,11 +1319,11 @@ class MixingAction(ActionDesignatorDescription):
                 # BulletWorld.current_bullet_world.add_vis_axis(lift_pose)
                 MoveTCPMotion(lift_pose, self.arm).resolve().perform()
 
-        def to_sql(self) -> ORMMixingAction:
-            """
-            Convert the action to a corresponding SQL representation for storage.
-            """
-            return ORMMixingAction(self.arm, self.grasp)
+        # def to_sql(self) -> ORMMixingAction:
+        #     """
+        #     Convert the action to a corresponding SQL representation for storage.
+        #     """
+        #     return ORMMixingAction(self.arm, self.grasp)
 
         def insert(self, session: sqlalchemy.orm.session.Session, **kwargs):
             """
