@@ -1,16 +1,17 @@
 import numpy as np
 import sqlalchemy.orm
 import sqlalchemy.sql
-
+from tf import transformations
 import pycram.designators.location_designator
 import pycram.task
 from pycram.costmaps import OccupancyCostmap
-from pycram.orm.action_designator import PickUpAction
-from pycram.orm.object_designator import ObjectDesignator
-from pycram.orm.base import Position, RobotState
+from pycram.orm.action_designator import PickUpAction, Action
+from pycram.orm.object_designator import Object
+from pycram.orm.base import Position, RobotState, Designator, Base
 from pycram.orm.task import TaskTreeNode, Code
 from .jpt_location import JPTCostmapLocation
-import tf
+from ... import orm
+from ...pose import Pose
 
 
 class DatabaseCostmapLocation(pycram.designators.location_designator.CostmapLocation):
@@ -42,38 +43,24 @@ class DatabaseCostmapLocation(pycram.designators.location_designator.CostmapLoca
         robot_pos = sqlalchemy.orm.aliased(Position)
         object_pos = sqlalchemy.orm.aliased(Position)
 
-        # create subqueries, such that filters are executed before joins
-        # filter for successful tasks
-        filtered_tasks = self.session.query(TaskTreeNode.code).filter(TaskTreeNode.status == "SUCCEEDED").subquery()
-
-        # remove all no operation codes
-        filtered_code = self.session.query(Code.id, Code.designator).filter(Code.designator != None).subquery()
-
-        # join task and code
-        filtered_code = self.session.query(filtered_code.c.designator).\
-            join(filtered_tasks, filtered_tasks.c.code == filtered_code.c.id).subquery()
-
-        # filter all objects that have the same type as the target
-        filtered_objects = self.session.query(ObjectDesignator).filter(ObjectDesignator.type == self.target.type).\
-            subquery()
-
-        query = self.session.query(PickUpAction.arm, PickUpAction.grasp,
-                                   RobotState.torso_height, robot_pos.x, robot_pos.y, ). \
-            join(filtered_code, filtered_code.c.designator == PickUpAction.id). \
-            join(PickUpAction, PickUpAction.id == filtered_code.c.designator). \
-            join(RobotState, RobotState.id == PickUpAction.robot_state). \
-            join(robot_pos, RobotState.position == robot_pos.id). \
-            join(filtered_objects, filtered_objects.c.id == PickUpAction.object). \
-            join(object_pos, filtered_objects.c.position == object_pos.id)
-
+        # query all relative robot positions in regard to an objects position
+        # make sure to order the joins() correctly
+        query = (self.session.query(PickUpAction.arm, PickUpAction.grasp, RobotState.torso_height, Position.x,
+                                    Position.y).join(TaskTreeNode.code)
+                                               .join(Code.designator.of_type(PickUpAction))
+                                               .join(PickUpAction.robot_state)
+                                               .join(RobotState.pose)
+                                               .join(orm.base.Pose.position)
+                                               .join(PickUpAction.object).filter(Object.type == self.target.type)
+                                                                         .filter(TaskTreeNode.status == "SUCCEEDED"))
 
         # create Occupancy costmap for the target object
-        position, orientation = self.target.get_position_and_orientation()
+        position, orientation = self.target.pose.to_list()
         position = list(position)
         position[-1] = 0
 
         ocm = OccupancyCostmap(distance_to_obstacle=0.3, from_ros=False, size=200, resolution=0.02,
-                               origin=(position, orientation))
+                               origin=Pose(position, orientation))
         # ocm.visualize()
 
         # working on a copy of the costmap, since found rectangles are deleted
@@ -116,12 +103,12 @@ class DatabaseCostmapLocation(pycram.designators.location_designator.CostmapLoca
         :param sample: The database row.
         :return: The costmap location
         """
-        target_x, target_y, target_z = self.target.pose
+        target_x, target_y, target_z = self.target.pose.position_as_list()
         pose = [target_x + sample.x, target_y + sample.y, 0]
         angle = np.arctan2(pose[1] - target_y, pose[0] - target_x) + np.pi
-        orientation = list(tf.transformations.quaternion_from_euler(0, 0, angle, axes="sxyz"))
+        orientation = list(transformations.quaternion_from_euler(0, 0, angle, axes="sxyz"))
 
-        result = JPTCostmapLocation.Location((pose, orientation), sample.arm, sample.torso_height, sample.grasp)
+        result = JPTCostmapLocation.Location(Pose(pose, orientation), sample.arm, sample.torso_height, sample.grasp)
         return result
 
     def __iter__(self) -> JPTCostmapLocation.Location:
