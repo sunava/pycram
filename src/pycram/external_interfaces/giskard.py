@@ -9,6 +9,9 @@ import urdf_parser_py
 
 import traceback
 
+from giskard_msgs.msg import CollisionEntry, WorldBody
+from ..utilities import tf_wrapper as tf
+
 from ..pose import Pose
 from ..robot_descriptions import robot_description
 from ..bullet_world import BulletWorld, Object
@@ -99,11 +102,18 @@ def initial_adding_objects() -> None:
     """
     groups = giskard_wrapper.get_group_names()
     for obj in BulletWorld.current_bullet_world.objects:
-        if obj is BulletWorld.robot:
-            continue
-        name = obj.name + "_" + str(obj.id)
-        if name not in groups:
-            spawn_object(obj)
+
+<< << << < HEAD
+if obj is BulletWorld.robot:
+    continue
+name = obj.name + "_" + str(obj.id)
+if name not in groups:
+    spawn_object(obj) == == == =
+if obj != BulletWorld.robot and len(obj.links) >= 1:
+    name = obj.name + "_" + str(obj.id)
+
+    if name not in groups:
+        spawn_object(obj) >> >> >> > dac894abd8390784888ef84a4730c8495dc05f78
 
 
 @init_giskard_interface
@@ -112,11 +122,12 @@ def removing_of_objects() -> None:
     Removes objects that are present in the Giskard belief state but not in the BulletWorld from the Giskard belief state.
     """
     groups = giskard_wrapper.get_group_names()
-    object_names = list(
-        map(lambda obj: object_names.name + "_" + str(obj.id), BulletWorld.current_bullet_world.objects))
-    diff = list(set(groups) - set(object_names))
-    for grp in diff:
-        giskard_wrapper.remove_group(grp)
+    if groups:
+        object_names = list(
+            map(lambda obj: object_names.name + "_" + str(obj.id), BulletWorld.current_bullet_world.objects))
+        diff = list(set(groups) - set(object_names))
+        for grp in diff:
+            giskard_wrapper.remove_group(grp)
 
 
 @init_giskard_interface
@@ -192,11 +203,18 @@ def spawn_urdf(name: str, urdf_path: str, pose: Pose) -> 'UpdateWorldResponse':
     urdf_string = ""
     with open(urdf_path) as f:
         urdf_string = f.read()
-
     return giskard_wrapper.add_urdf(name, urdf_string, pose)
+
+<< << << < HEAD
 
 
 @init_giskard_interface
+
+== == == =
+
+>> >> >> > dac894abd8390784888ef84a4730c8495dc05f78
+
+
 def spawn_mesh(name: str, path: str, pose: Pose) -> 'UpdateWorldResponse':
     """
     Spawns a mesh into giskard's belief state
@@ -245,14 +263,16 @@ def _manage_par_motion_goals(goal_func, *args) -> Optional['MoveResult']:
                                                                         par_value_pair["tip_link"])
                         if set(chain).intersection(used_joints) != set():
                             giskard_wrapper.cmd_seq = tmp
-                            raise AttributeError(f"The joint(s) {set(chain).intersection(used_joints)} is used by multiple Designators")
+                            raise AttributeError(
+                                f"The joint(s) {set(chain).intersection(used_joints)} is used by multiple Designators")
                         else:
                             [used_joints.add(joint) for joint in chain]
-                            
+
                     elif "goal_state" in par_value_pair.keys():
                         if set(par_value_pair["goal_state"].keys()).intersection(used_joints) != set():
                             giskard_wrapper.cmd_seq = tmp
-                            raise AttributeError(f"The joint(s) {set(par_value_pair['goal_state'].keys()).intersection(used_joints)} is used by multiple Designators")
+                            raise AttributeError(
+                                f"The joint(s) {set(par_value_pair['goal_state'].keys()).intersection(used_joints)} is used by multiple Designators")
                         else:
                             [used_joints.add(joint) for joint in par_value_pair["goal_state"].keys()]
 
@@ -302,8 +322,8 @@ def achieve_cartesian_goal(goal_pose: Pose, tip_link: str, root_link: str) -> 'M
     :return: MoveResult message for this goal
     """
     sync_worlds()
-    par_return = _manage_par_motion_goals(giskard_wrapper.set_cart_goal, _pose_to_pose_stamped(goal_pose),
-                                          tip_link, root_link)
+    par_return = _manage_par_motion_goals(giskard_wrapper.set_cart_goal, _pose_to_pose_stamped(goal_pose), tip_link,
+                                          root_link)
     if par_return:
         return par_return
 
@@ -313,8 +333,7 @@ def achieve_cartesian_goal(goal_pose: Pose, tip_link: str, root_link: str) -> 'M
 
 @init_giskard_interface
 @thread_safe
-def achieve_straight_cartesian_goal(goal_pose: Pose, tip_link: str,
-                                    root_link: str) -> 'MoveResult':
+def achieve_straight_cartesian_goal(goal_pose: Pose, tip_link: str, root_link: str) -> 'MoveResult':
     """
     Takes a cartesian position and tries to move the tip_link to this position in a straight line, using the chain
     defined by tip_link and root_link.
@@ -369,8 +388,7 @@ def achieve_straight_translation_goal(goal_point: List[float], tip_link: str, ro
     :return: MoveResult message for this goal
     """
     sync_worlds()
-    par_return = _manage_par_motion_goals(giskard_wrapper.set_straight_translation_goal,
-                                          make_point_stamped(goal_point),
+    par_return = _manage_par_motion_goals(giskard_wrapper.set_straight_translation_goal, make_point_stamped(goal_point),
                                           tip_link, root_link)
     if par_return:
         return par_return
@@ -392,8 +410,8 @@ def achieve_rotation_goal(quat: List[float], tip_link: str, root_link: str) -> '
     :return: MoveResult message for this goal
     """
     sync_worlds()
-    par_return = _manage_par_motion_goals(giskard_wrapper.set_rotation_goal, make_quaternion_stamped(quat),
-                                          tip_link, root_link)
+    par_return = _manage_par_motion_goals(giskard_wrapper.set_rotation_goal, make_quaternion_stamped(quat), tip_link,
+                                          root_link)
     if par_threads:
         return par_return
 
@@ -421,8 +439,7 @@ def achieve_align_planes_goal(goal_normal: List[float], tip_link: str, tip_norma
     if par_return:
         return par_return
 
-    giskard_wrapper.set_align_planes_goal(make_vector_stamped(goal_normal), tip_link,
-                                          make_vector_stamped(tip_normal),
+    giskard_wrapper.set_align_planes_goal(make_vector_stamped(goal_normal), tip_link, make_vector_stamped(tip_normal),
                                           root_link)
     return giskard_wrapper.plan_and_execute()
 
@@ -467,6 +484,13 @@ def achieve_close_container_goal(tip_link: str, environment_link: str) -> 'MoveR
 
 
 # Managing collisions
+def achieve_gripper_motion_goal(motion: str):
+    """
+    Opens or closes the gripper
+    """
+    rospy.loginfo("giskard change_gripper_state: " + motion)
+    giskard_wrapper.change_gripper_state(motion)  # return giskard_wrapper.plan_and_execute()
+
 
 @init_giskard_interface
 def allow_gripper_collision(gripper: str) -> None:
@@ -499,15 +523,22 @@ def add_gripper_groups() -> None:
 
     :return: Response of the RegisterGroup Service
     """
-    with giskard_lock:
-        for name in giskard_wrapper.get_group_names():
-            if "gripper" in name:
-                return
 
-        for name, description in robot_description.chains.items():
-            if isinstance(description, ManipulatorDescription):
-                root_link = robot_description.chains[name].gripper.links[-1]
-                giskard_wrapper.register_group(name + "_gripper", root_link, robot_description.name)
+<< << << < HEAD
+with giskard_lock:
+    for name in giskard_wrapper.get_group_names():
+        if "gripper" in name:
+            return == == == =
+if "left_gripper" not in giskard_wrapper.get_group_names():
+    for gripper in ["left"]:
+        root_link = robot_description.chains[gripper].gripper.links[-1]
+        giskard_wrapper.register_group(gripper + "_gripper", root_link,
+                                       robot_description.name) >> >> >> > dac894abd8390784888ef84a4730c8495dc05f78
+
+for name, description in robot_description.chains.items():
+    if isinstance(description, ManipulatorDescription):
+        root_link = robot_description.chains[name].gripper.links[-1]
+        giskard_wrapper.register_group(name + "_gripper", root_link, robot_description.name)
 
 
 @init_giskard_interface
@@ -625,3 +656,50 @@ def _pose_to_pose_stamped(pose: Pose) -> PoseStamped:
     ps.header = pose.header
 
     return ps
+
+<< << << < HEAD == == == =
+
+def move_head_to_human():
+    """
+    continously moves head in direction of perceived human
+    """
+    giskard_wrapper.continuous_pointing_head()
+    giskard_wrapper.plan_and_execute(wait=False)
+
+
+def stop_looking():
+    """
+    stops the move_head_to_human function so that hsr looks forward
+    """
+    # TODO: implement when manipulation is ready
+    # endless mode shut be stopped when new command to move is used
+    # moves hsr in standard position
+    giskard_wrapper.take_pose("park")
+    giskard_wrapper.plan_and_execute(wait=True)
+    print("hsr looks forward instead of looking at human")
+
+
+def spawn_kitchen():
+    env_urdf = rospy.get_param('kitchen_description')
+    kitchen_pose = tf.lookup_pose('map', 'iai_kitchen/urdf_main')
+    giskard_wrapper.add_urdf(name='iai_kitchen', urdf=env_urdf, pose=kitchen_pose)
+
+
+def place_objects(object, target):
+    # TODO: Decide placing from_above or align_vertical. Maybe using Objecttype for that?
+    from_above_objects = ["Bowl", "Metalmug", "Spoon", "Knife", "Fork"]
+
+    context_from_above = {'action': 'placing', 'from_above': True}
+    context_default = {'action': 'placing'}
+
+    if object.name in from_above_objects:
+        giskard_wrapper.placing(context=context_from_above, goal_pose=target)
+        print("if placed")
+    else:
+        giskard_wrapper.placing(context=context_default, goal_pose=target)
+        print("else placed")
+    giskard_wrapper.plan_and_execute(wait=True)
+    print("placed object")
+
+# BulletWorld.robot.detach(object.bullet_world_object)
+>> >> >> > dac894abd8390784888ef84a4730c8495dc05f78

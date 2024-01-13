@@ -1,28 +1,20 @@
-from abc import ABC
+from threading import Lock
 from threading import Lock
 from typing import Any
 
-import actionlib
+import numpy as np
+import rospy
+from tmc_msgs.msg import Voice
 
 import pycram.bullet_world_reasoning as btr
-import numpy as np
-import time
-import rospy
-import pybullet as p
-
-from ..plan_failures import EnvironmentManipulationImpossible
-from ..robot_descriptions import robot_description
-from ..process_module import ProcessModule, ProcessModuleManager
-from ..bullet_world import BulletWorld, Object
-from ..helper import transform
-from ..external_interfaces.ik import request_ik, IKError
-from ..helper import _transform_to_torso, _apply_ik, calculate_wrist_tool_offset, inverseTimes
-from ..local_transformer import LocalTransformer
 from ..designators.motion_designator import *
 from ..enums import JointType, ObjectType
 from ..external_interfaces import giskard
-from ..external_interfaces.robokudo import query
-
+from ..external_interfaces.ik import request_ik
+from ..external_interfaces.robokudo import queryEmpty, queryHuman
+from ..helper import _apply_ik
+from ..local_transformer import LocalTransformer
+from ..external_interfaces.navigate import queryPoseNav
 
 def _park_arms(arm):
     """
@@ -89,7 +81,8 @@ class HSRBPlace(ProcessModule):
         # Transformations such that the target position is the position of the object and not the tcp
         object_pose = object.get_pose()
         local_tf = LocalTransformer()
-        tcp_to_object = local_tf.transform_pose(object_pose, robot.get_link_tf_frame(robot_description.get_tool_frame(arm)))
+        tcp_to_object = local_tf.transform_pose(object_pose,
+                                                robot.get_link_tf_frame(robot_description.get_tool_frame(arm)))
         target_diff = desig.target.to_transform("target").inverse_times(tcp_to_object.to_transform("object")).to_pose()
 
         _move_arm_tcp(target_diff, robot, arm)
@@ -141,17 +134,43 @@ class HSRBDetecting(ProcessModule):
     """
 
     def _execute(self, desig: DetectingMotion.Motion):
+        rospy.loginfo("Detecting technique: {}".format(desig.technique))
         robot = BulletWorld.robot
         object_type = desig.object_type
         # Should be "wide_stereo_optical_frame"
         cam_frame_name = robot_description.get_camera_frame()
         # should be [0, 0, 1]
         front_facing_axis = robot_description.front_facing_axis
+        if desig.technique == 'all':
+            rospy.loginfo("Fake detecting all generic objects")
+            objects = BulletWorld.current_bullet_world.get_all_objets_not_robot()
+        elif desig.technique == 'human':
+            rospy.loginfo("Fake detecting human -> spawn 0,0,0")
+            human = []
+            human.append(Object("human", ObjectType.HUMAN, "human_male.stl", pose=Pose([0, 0, 0])))
+            object_dict = {}
 
-        objects = BulletWorld.current_bullet_world.get_objects_by_type(object_type)
+            # Iterate over the list of objects and store each one in the dictionary
+            for i, obj in enumerate(human):
+                object_dict[obj.name] = obj
+            return object_dict
+
+        else:
+            rospy.loginfo("Fake -> Detecting specific object type")
+            objects = BulletWorld.current_bullet_world.get_objects_by_type(object_type)
+
+        object_dict = {}
+
+        perceived_objects = []
         for obj in objects:
             if btr.visible(obj, robot.get_link_pose(cam_frame_name), front_facing_axis):
-                return obj
+                perceived_objects.append(ObjectDesignatorDescription.Object(obj.name, obj.type, obj))
+        # Iterate over the list of objects and store each one in the dictionary
+        for i, obj in enumerate(perceived_objects):
+            object_dict[obj.name] = obj
+
+        rospy.loginfo("returning dict objects")
+        return object_dict
 
 
 class HSRBMoveTCP(ProcessModule):
@@ -185,6 +204,7 @@ class HSRBMoveJoints(ProcessModule):
     """
     Process Module for generic joint movements, is not confined to the arms but can move any joint of the robot
     """
+
     def _execute(self, desig: MoveJointsMotion.Motion):
         robot = BulletWorld.robot
         robot.set_joint_states(dict(zip(desig.names, desig.positions)))
@@ -216,8 +236,7 @@ class HSRBOpen(ProcessModule):
         _move_arm_tcp(goal_pose, BulletWorld.robot, desig.arm)
 
         desig.object_part.bullet_world_object.set_joint_state(container_joint,
-                                                              part_of_object.get_joint_limits(
-                                                                  container_joint)[1])
+                                                              part_of_object.get_joint_limits(container_joint)[1])
 
 
 class HSRBClose(ProcessModule):
@@ -236,8 +255,7 @@ class HSRBClose(ProcessModule):
         _move_arm_tcp(goal_pose, BulletWorld.robot, desig.arm)
 
         desig.object_part.bullet_world_object.set_joint_state(container_joint,
-                                                              part_of_object.get_joint_limits(
-                                                                  container_joint)[0])
+                                                              part_of_object.get_joint_limits(container_joint)[0])
 
 
 def _move_arm_tcp(target: Pose, robot: Object, arm: str) -> None:
@@ -261,8 +279,8 @@ class HSRBNavigationReal(ProcessModule):
 
     def _execute(self, designator: MoveMotion.Motion) -> Any:
         rospy.logdebug(f"Sending goal to giskard to Move the robot")
-        giskard.achieve_cartesian_goal(designator.target, robot_description.base_link, "map")
-
+        #giskard.achieve_cartesian_goal(designator.target, robot_description.base_link, "map")
+        queryPoseNav(designator.target)
 
 class HSRBPickUpReal(ProcessModule):
 
@@ -272,8 +290,11 @@ class HSRBPickUpReal(ProcessModule):
 
 class HSRBPlaceReal(ProcessModule):
 
-    def _execute(self, designator: MotionDesignatorDescription.Motion) -> Any:
-        pass
+   # def _execute(self, designator: MotionDesignatorDescription.Motion) -> Any:
+    #    pass
+    def _execute(self, designator: PlaceMotion.Motion) -> Any:
+          giskard.avoid_all_collisions()
+          giskard.place_objects(designator.object, designator.target)
 
 
 class HSRBMoveHeadReal(ProcessModule):
@@ -291,14 +312,16 @@ class HSRBMoveHeadReal(ProcessModule):
         pose_in_tilt = local_transformer.transform_pose(target, robot.get_link_tf_frame("head_tilt_link"))
 
         new_pan = np.arctan2(pose_in_pan.position.y, pose_in_pan.position.x)
-        new_tilt = np.arctan2(pose_in_tilt.position.z, pose_in_tilt.position.x ** 2 + pose_in_tilt.position.y ** 2) * -1
+        new_tilt = np.arctan2(pose_in_tilt.position.z, pose_in_tilt.position.x + pose_in_tilt.position.y)
 
         current_pan = robot.get_joint_state("head_pan_joint")
         current_tilt = robot.get_joint_state("head_tilt_joint")
 
         giskard.avoid_all_collisions()
-        giskard.achieve_joint_goal({"head_pan_joint": new_pan + current_pan,
-                                    "head_tilt_joint": new_tilt + current_tilt})
+        giskard.achieve_joint_goal(
+            {"head_pan_joint": new_pan + current_pan, "head_tilt_joint": new_tilt + current_tilt})
+        giskard.achieve_joint_goal(
+            {"head_pan_joint": new_pan + current_pan, "head_tilt_joint": new_tilt + current_tilt})
 
 
 class HSRBDetectingReal(ProcessModule):
@@ -307,32 +330,44 @@ class HSRBDetectingReal(ProcessModule):
     for perception of the environment.
     """
 
-    def _execute(self, designator: DetectingMotion.Motion) -> Any:
-        query_result = query(ObjectDesignatorDescription(types=[designator.object_type]))
-        # print(query_result)
-        obj_pose = query_result["ClusterPoseBBAnnotator"]
+    def _execute(self, desig: DetectingMotion.Motion) -> Any:
+        # todo at the moment perception ignores searching for a specific object type so we do as well on real
+        if desig.technique == 'human':
+            human_pose = queryHuman()
+            pose = Pose.from_pose_stamped(human_pose)
+            pose.position.z = 0
+            human = []
+            human.append(Object("human", ObjectType.HUMAN, "human_male.stl", pose=pose))
+            object_dict = {}
 
-        lt = LocalTransformer()
-        obj_pose = lt.transform_pose(obj_pose, BulletWorld.robot.get_link_tf_frame("torso_lift_link"))
-        obj_pose.orientation = [0, 0, 0, 1]
-        obj_pose.position.x += 0.05
+            # Iterate over the list of objects and store each one in the dictionary
+            for i, obj in enumerate(human):
+                object_dict[obj.name] = obj
+            return object_dict
 
-        bullet_obj = BulletWorld.current_bullet_world.get_objects_by_type(designator.object_type)
-        if bullet_obj:
-            bullet_obj[0].set_pose(obj_pose)
-            return bullet_obj[0]
-        elif designator.object_type == ObjectType.JEROEN_CUP:
-            cup = Object("cup", ObjectType.JEROEN_CUP, "jeroen_cup.stl", pose=obj_pose)
-            return cup
-        elif designator.object_type == ObjectType.BOWL:
-            bowl = Object("bowl", ObjectType.BOWL, "bowl.stl", pose=obj_pose)
-            return bowl
+            return human_pose
 
+        query_result = queryEmpty(ObjectDesignatorDescription(types=[desig.object_type]))
+        perceived_objects = []
+        for i in range(0, len(query_result.res)):
+            # this has to be pose from pose stamped since we spawn the object with given header
+            obj_pose = Pose.from_pose_stamped(query_result.res[i].pose[0])
+            # obj_pose_tmp = query_result.res[i].pose[0]
+            obj_type = query_result.res[i].type
+            # print(obj_pose)
+            # print(obj_pose_tmp)
+            # todo we need the size of the object to be able to spawn it -> todo an perception
+            Physicalobject = Object(obj_type, ObjectType.BREAKFAST_CEREAL, "milk.stl", pose=obj_pose)
 
-        return bullet_obj[0]
+            perceived_objects.append(
+                ObjectDesignatorDescription.Object(obj_type, ObjectType.BREAKFAST_CEREAL, Physicalobject))
 
+        object_dict = {}
 
-
+        # Iterate over the list of objects and store each one in the dictionary
+        for i, obj in enumerate(perceived_objects):
+            object_dict[obj.name] = obj
+        return object_dict
 
 
 class HSRBMoveTCPReal(ProcessModule):
@@ -347,7 +382,7 @@ class HSRBMoveTCPReal(ProcessModule):
         if designator.allow_gripper_collision:
             giskard.allow_gripper_collision(designator.arm)
         giskard.achieve_cartesian_goal(pose_in_map, robot_description.get_tool_frame(designator.arm),
-                                       robot_description.base_link)
+                                       "map")
 
 
 class HSRBMoveArmJointsReal(ProcessModule):
@@ -374,30 +409,13 @@ class HSRBMoveJointsReal(ProcessModule):
         giskard.achieve_joint_goal(name_to_position)
 
 
-# class HSRBMoveGripperReal(ProcessModule):
-#     """
-#     Opens or closes the gripper of the real HSRB, gripper uses an action server for this instead of giskard
-#     """
-#
-#     def _execute(self, designator: MoveGripperMotion.Motion) -> Any:
-#         def activate_callback():
-#             rospy.loginfo("Started gripper Movement")
-#
-#         def done_callback(state, result):
-#             rospy.loginfo(f"Reached goal {designator.motion}: {result.reached_goal}")
-#
-#         def feedback_callback(msg):
-#             pass
-#
-#         goal = HSRBGripperCommandGoal()
-#         goal.command.position = 0.0 if designator.motion == "close" else 0.1
-#         goal.command.max_effort = 50.0
-#         controller_topic = "r_gripper_controller/gripper_action" if designator.gripper == "right" else "l_gripper_controller/gripper_action"
-#         client = actionlib.SimpleActionClient(controller_topic, HSRBGripperCommandAction)
-#         rospy.loginfo("Waiting for action server")
-#         client.wait_for_server()
-#         client.send_goal(goal, active_cb=activate_callback, done_cb=done_callback, feedback_cb=feedback_callback)
-#         wait = client.wait_for_result()
+class HSRBMoveGripperReal(ProcessModule):
+    """
+     Opens or closes the gripper of the real HSRB with the help of giskard.
+     """
+
+    def _execute(self, designator: MoveGripperMotion.Motion) -> Any:
+        giskard.achieve_gripper_motion_goal(designator.motion)
 
 
 class HSRBOpenReal(ProcessModule):
@@ -420,6 +438,24 @@ class HSRBCloseReal(ProcessModule):
                                              designator.object_part.name)
 
 
+class HSRBTalkReal(ProcessModule):
+    """
+    Tries to close an already grasped container
+    """
+
+    def _execute(self, designator: TalkingMotion.Motion) -> Any:
+        pub = rospy.Publisher('/talk_request', Voice, queue_size=10)
+
+        # fill message of type Voice with required data:
+        texttospeech = Voice()
+        # language 1 = english (0 = japanese)
+        texttospeech.language = 1
+        texttospeech.sentence = designator.cmd
+
+        rospy.sleep(1)
+        pub.publish(texttospeech)
+
+
 class HSRBManager(ProcessModuleManager):
 
     def __init__(self):
@@ -436,11 +472,14 @@ class HSRBManager(ProcessModuleManager):
         self._move_gripper_lock = Lock()
         self._open_lock = Lock()
         self._close_lock = Lock()
+        self._talk_lock = Lock()
 
     def navigate(self):
         if ProcessModuleManager.execution_type == "simulated":
             return HSRBNavigation(self._navigate_lock)
         elif ProcessModuleManager.execution_type == "real":
+            return HSRBNavigationReal(self._navigate_lock)
+        elif ProcessModuleManager.execution_type == "semi_real":
             return HSRBNavigationReal(self._navigate_lock)
 
     def pick_up(self):
@@ -448,11 +487,15 @@ class HSRBManager(ProcessModuleManager):
             return HSRBPickUp(self._pick_up_lock)
         elif ProcessModuleManager.execution_type == "real":
             return HSRBPickUpReal(self._pick_up_lock)
+        elif ProcessModuleManager.execution_type == "semi_real":
+            return HSRBPickUpReal(self._pick_up_lock)
 
     def place(self):
         if ProcessModuleManager.execution_type == "simulated":
             return HSRBPlace(self._place_lock)
         elif ProcessModuleManager.execution_type == "real":
+            return HSRBPlaceReal(self._place_lock)
+        elif ProcessModuleManager.execution_type == "semi_real":
             return HSRBPlaceReal(self._place_lock)
 
     def looking(self):
@@ -460,17 +503,23 @@ class HSRBManager(ProcessModuleManager):
             return HSRBMoveHead(self._looking_lock)
         elif ProcessModuleManager.execution_type == "real":
             return HSRBMoveHeadReal(self._looking_lock)
+        elif ProcessModuleManager.execution_type == "semi_real":
+            return HSRBMoveHeadReal(self._looking_lock)
 
     def detecting(self):
         if ProcessModuleManager.execution_type == "simulated":
             return HSRBDetecting(self._detecting_lock)
         elif ProcessModuleManager.execution_type == "real":
             return HSRBDetectingReal(self._detecting_lock)
+        elif ProcessModuleManager.execution_type == "semi_real":
+            return HSRBDetecting(self._detecting_lock)
 
     def move_tcp(self):
         if ProcessModuleManager.execution_type == "simulated":
             return HSRBMoveTCP(self._move_tcp_lock)
         elif ProcessModuleManager.execution_type == "real":
+            return HSRBMoveTCPReal(self._move_tcp_lock)
+        elif ProcessModuleManager.execution_type == "semi_real":
             return HSRBMoveTCPReal(self._move_tcp_lock)
 
     def move_arm_joints(self):
@@ -478,9 +527,13 @@ class HSRBManager(ProcessModuleManager):
             return HSRBMoveArmJoints(self._move_arm_joints_lock)
         elif ProcessModuleManager.execution_type == "real":
             return HSRBMoveArmJointsReal(self._move_arm_joints_lock)
+        elif ProcessModuleManager.execution_type == "semi_real":
+            return HSRBMoveArmJointsReal(self._move_arm_joints_lock)
 
     def world_state_detecting(self):
         if ProcessModuleManager.execution_type == "simulated" or ProcessModuleManager.execution_type == "real":
+            return HSRBWorldStateDetecting(self._world_state_detecting_lock)
+        elif ProcessModuleManager.execution_type == "semi_real":
             return HSRBWorldStateDetecting(self._world_state_detecting_lock)
 
     def move_joints(self):
@@ -488,17 +541,23 @@ class HSRBManager(ProcessModuleManager):
             return HSRBMoveJoints(self._move_joints_lock)
         elif ProcessModuleManager.execution_type == "real":
             return HSRBMoveJointsReal(self._move_joints_lock)
+        elif ProcessModuleManager.execution_type == "semi_real":
+            return HSRBMoveJointsReal(self._move_joints_lock)
 
-    # def move_gripper(self):
-    #     if ProcessModuleManager.execution_type == "simulated":
-    #         return HSRBMoveGripper(self._move_gripper_lock)
-    #     elif ProcessModuleManager.execution_type == "real":
-    #         return HSRBMoveGripperReal(self._move_gripper_lock)
+    def move_gripper(self):
+        if ProcessModuleManager.execution_type == "simulated":
+            return HSRBMoveGripper(self._move_gripper_lock)
+        elif ProcessModuleManager.execution_type == "real":
+            return HSRBMoveGripperReal(self._move_gripper_lock)
+        elif ProcessModuleManager.execution_type == "semi_real":
+            return HSRBMoveGripperReal(self._move_gripper_lock)
 
     def open(self):
         if ProcessModuleManager.execution_type == "simulated":
             return HSRBOpen(self._open_lock)
         elif ProcessModuleManager.execution_type == "real":
+            return HSRBOpenReal(self._open_lock)
+        elif ProcessModuleManager.execution_type == "semi_real":
             return HSRBOpenReal(self._open_lock)
 
     def close(self):
@@ -506,3 +565,11 @@ class HSRBManager(ProcessModuleManager):
             return HSRBClose(self._close_lock)
         elif ProcessModuleManager.execution_type == "real":
             return HSRBCloseReal(self._close_lock)
+        elif ProcessModuleManager.execution_type == "semi_real":
+            return HSRBCloseReal(self._close_lock)
+
+    def talk(self):
+        if ProcessModuleManager.execution_type == "real":
+            return HSRBTalkReal(self._talk_lock)
+        elif ProcessModuleManager.execution_type == "semi_real":
+            return HSRBTalkReal(self._talk_lock)

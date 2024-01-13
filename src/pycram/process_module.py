@@ -78,6 +78,7 @@ class RealRobot:
         with real_robot:
             some designators
     """
+
     def __init__(self):
         self.pre: str = ""
 
@@ -112,6 +113,7 @@ class SimulatedRobot:
         with simulated_robot:
             some designators
     """
+
     def __init__(self):
         self.pre: str = ""
 
@@ -122,6 +124,41 @@ class SimulatedRobot:
         """
         self.pre = ProcessModuleManager.execution_type
         ProcessModuleManager.execution_type = "simulated"
+
+    def __exit__(self, type, value, traceback):
+        """
+        Exit method for the 'with' scope, sets the :py:attr:`~ProcessModuleManager.execution_type` to the previously
+        used one.
+        """
+        ProcessModuleManager.execution_type = self.pre
+
+    def __call__(self):
+        return self
+
+
+class SemiRealRobot:
+    """
+    Management class for executing designators on the semi-real robot. This is intended to be used in a with environment.
+    When importing this class an instance is imported instead.
+
+    Example:
+
+    .. code-block:: python
+
+        with semi_real_robot:
+            some designators
+    """
+
+    def __init__(self):
+        self.pre: str = ""
+
+    def __enter__(self):
+        """
+        Entering function for 'with' scope, saves the previously set :py:attr:`~ProcessModuleManager.execution_type` and
+        sets it to 'semi_real'
+        """
+        self.pre = ProcessModuleManager.execution_type
+        ProcessModuleManager.execution_type = "semi_real"
 
     def __exit__(self, type, value, traceback):
         """
@@ -149,6 +186,7 @@ def with_real_robot(func: Callable) -> Callable:
     :param func: Function this decorator is annotating
     :return: The decorated function wrapped into the decorator
     """
+
     def wrapper(*args, **kwargs):
         pre = ProcessModuleManager.execution_type
         ProcessModuleManager.execution_type = "real"
@@ -174,6 +212,7 @@ def with_simulated_robot(func: Callable) -> Callable:
     :param func: Function this decorator is annotating
     :return: The decorated function wrapped into the decorator
     """
+
     def wrapper(*args, **kwargs):
         pre = ProcessModuleManager.execution_type
         ProcessModuleManager.execution_type = "simulated"
@@ -187,7 +226,7 @@ def with_simulated_robot(func: Callable) -> Callable:
 # These are imported, so they don't have to be initialized when executing with
 simulated_robot = SimulatedRobot()
 real_robot = RealRobot()
-
+semi_real_robot = SemiRealRobot()
 
 class ProcessModuleManager(ABC):
     """

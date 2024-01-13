@@ -55,7 +55,7 @@ class BulletWorld:
 
     # Check is for sphinx autoAPI to be able to work in a CI workflow
     if rosgraph.is_master_online():  # and "/pycram" not in rosnode.get_node_names():
-        rospy.init_node('pycram')
+        rospy.init_node('pycram_vanessa')
 
     def __init__(self, type: str = "GUI", is_shadow_world: bool = False):
         """
@@ -116,6 +116,15 @@ class BulletWorld:
         :return: A list of all Objects that have the type 'obj_type'.
         """
         return list(filter(lambda obj: obj.type == obj_type, self.objects))
+
+    def get_all_objets_not_robot(self) -> List[Object]:
+        """
+        Returns a list of all Objects except robot and environment.
+
+        :return: A list of all Objects except robot and environment.
+        """
+        return list(filter
+                    (lambda obj: (obj.type != ObjectType.ROBOT and obj.type != ObjectType.ENVIRONMENT), self.objects))
 
     def get_object_by_id(self, id: int) -> Object:
         """

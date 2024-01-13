@@ -1,16 +1,21 @@
-import dataclasses
 import itertools
-import time
-from typing import List, Optional, Any, Tuple, Union
+from typing import Any, Union
 
+import itertools
 import math
-
 import rospy
 import sqlalchemy.orm
+from typing import Any, Union
+import rospy
+
 
 from .location_designator import CostmapLocation
 from .motion_designator import *
 from .object_designator import ObjectDesignatorDescription, BelieveObject, ObjectPart
+from ..bullet_world import BulletWorld
+from ..designator import ActionDesignatorDescription
+from ..enums import Arms
+from ..helper import multiply_quaternions, axis_angle_to_quaternion
 from ..local_transformer import LocalTransformer
 from ..orm.action_designator import (ParkArmsAction as ORMParkArmsAction, NavigateAction as ORMNavigateAction,
                                      PickUpAction as ORMPickUpAction, PlaceAction as ORMPlaceAction,
@@ -21,15 +26,11 @@ from ..orm.action_designator import (ParkArmsAction as ORMParkArmsAction, Naviga
                                      GraspingAction as ORMGraspingAction, MixingAction as ORMMixingAction,
                                      CuttingAction as ORMCuttingAction)
 
-from ..orm.base import Quaternion, Position, Base, RobotState, ProcessMetaData
+from ..orm.base import Quaternion, Position, Base
 from ..plan_failures import ObjectUnfetchable, ReachabilityFailure
+from ..pose import Pose
 from ..robot_descriptions import robot_description
 from ..task import with_tree
-from ..enums import Arms
-from ..designator import ActionDesignatorDescription
-from ..bullet_world import BulletWorld
-from ..pose import Pose
-from ..helper import multiply_quaternions, axis_angle_to_quaternion
 
 
 class MoveTorsoAction(ActionDesignatorDescription):
@@ -238,11 +239,12 @@ class ParkArmsAction(ActionDesignatorDescription):
             # add park left arm if wanted
             if self.arm in [Arms.LEFT, Arms.BOTH]:
                 kwargs["left_arm_config"] = "park"
-
+                MoveArmJointsMotion(**kwargs).resolve().perform()
+                MoveTorsoAction([0.005]).resolve().perform()
             # add park right arm if wanted
             if self.arm in [Arms.RIGHT, Arms.BOTH]:
                 kwargs["right_arm_config"] = "park"
-            MoveArmJointsMotion(**kwargs).resolve().perform()
+                MoveArmJointsMotion(**kwargs).resolve().perform()
 
         def to_sql(self) -> ORMParkArmsAction:
             return ORMParkArmsAction(self.arm.name)
@@ -545,22 +547,34 @@ class PlaceAction(ActionDesignatorDescription):
                 MoveTCPMotion(lift_pose_in_map, self.arm, allow_gripper_collision=True).resolve().perform()
                 print("moving lift")
 
-        def to_sql(self) -> ORMPlaceAction:
-            return ORMPlaceAction(self.arm)
 
-        def insert(self, session, *args, **kwargs) -> ORMPlaceAction:
-            action = super().insert(session)
+    def to_sql(self) -> ORMPlaceAction:
+        return ORMPlaceAction(self.arm)
 
-            od = self.object_designator.insert(session)
-            action.object_id = od.id
+    def insert(self, session, *args, **kwargs) -> ORMPlaceAction:
+        action = super().insert(session)
 
-            pose = self.target_location.insert(session)
-            action.pose_id = pose.id
+        if self.object_designator:
+            od = self.object_designator.insert(session, )
+            action.object = od.id
+        else:
+            action.object = None
 
-            session.add(action)
+        if self.target_location:
+            position = Position(*self.target_location.position_as_list())
+            orientation = Quaternion(*self.target_location.orientation_as_list())
+            session.add(position)
+            session.add(orientation)
             session.commit()
+            action.position = position.id
+            action.orientation = orientation.id
+        else:
+            action.position = None
+            action.orientation = None
 
-            return action
+        session.add(action)
+        session.commit()
+        return action
 
     def __init__(self,
                  object_designator_description: Union[ObjectDesignatorDescription, ObjectDesignatorDescription.Object],
@@ -784,7 +798,10 @@ class LookAtAction(ActionDesignatorDescription):
 
 class DetectAction(ActionDesignatorDescription):
     """
-    Detects an object that fits the object description and returns an object designator describing the object.
+    Detects an object that fits the object description and returns a list of an object designator describing the object.
+    If you choose technique=all, it will return a list of all objects in the field of view.
+    returns a dict of perceived_objects. You can enter it by either perceived_object_dict["cereal"].name or
+    perceived_object_dict.values())[0].name..
     """
 
     @dataclasses.dataclass
@@ -794,9 +811,16 @@ class DetectAction(ActionDesignatorDescription):
         Object designator loosely describing the object, e.g. only type. 
         """
 
+        technique: str
+        """
+        Technique means how the object should be detected, e.g. 'color', 'shape', etc. 
+        Or 'all' if all objects should be detected
+        """
+
         @with_tree
         def perform(self) -> Any:
-            return DetectingMotion(object_type=self.object_designator.type).resolve().perform()
+            return DetectingMotion(object_type=self.object_designator.type,
+                                   technique=self.technique).resolve().perform()
 
         def to_sql(self) -> ORMDetectAction:
             return ORMDetectAction()
@@ -812,7 +836,7 @@ class DetectAction(ActionDesignatorDescription):
 
             return action
 
-    def __init__(self, object_designator_description: ObjectDesignatorDescription, resolver=None):
+    def __init__(self, object_designator_description: ObjectDesignatorDescription, technique, resolver=None):
         """
         Tries to detect an object in the field of view (FOV) of the robot.
 
@@ -821,6 +845,7 @@ class DetectAction(ActionDesignatorDescription):
         """
         super().__init__(resolver)
         self.object_designator_description: ObjectDesignatorDescription = object_designator_description
+        self.technique: str = technique
 
     def ground(self) -> Action:
         """
@@ -828,7 +853,8 @@ class DetectAction(ActionDesignatorDescription):
 
         :return: A performable designator
         """
-        return self.Action(self.object_designator_description.resolve())
+
+        return self.Action(self.object_designator_description.resolve(), self.technique)
 
 
 class OpenAction(ActionDesignatorDescription):
@@ -922,6 +948,7 @@ class CloseAction(ActionDesignatorDescription):
 
         def insert(self, session: sqlalchemy.orm.session.Session, *args, **kwargs) -> ORMCloseAction:
             action = super().insert(session)
+
 
             op = self.object_designator.insert(session)
             action.object_id = op.id

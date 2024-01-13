@@ -236,7 +236,7 @@ class MoveTCPMotion(MotionDesignatorDescription):
         self.cmd: str = 'move-tcp'
         self.target: Pose = target
         self.arm: Optional[str] = arm
-        self.allow_gripper_collision = allow_gripper_collision
+        self.allow_gripper_collision = True
 
     def ground(self) -> Motion:
         """
@@ -328,7 +328,7 @@ class MoveGripperMotion(MotionDesignatorDescription):
         @with_tree
         def perform(self):
             pm_manager = ProcessModuleManager.get_manager()
-            return pm_manager.move_gripper().execute(self)
+            return (pm_manager.move_gripper().execute(self))
 
         def to_sql(self) -> ORMMoveGripperMotion:
             return ORMMoveGripperMotion(self.motion, self.gripper, self.allow_gripper_collision)
@@ -376,31 +376,27 @@ class DetectingMotion(MotionDesignatorDescription):
         """
         Type of the object that should be detected
         """
+        technique: str
+        """
+        Technique means how the object should be detected, e.g. 'color', 'shape', 'all', etc. 
+        """
 
-        @with_tree
         def perform(self):
             pm_manager = ProcessModuleManager.get_manager()
-            bullet_world_object = pm_manager.detecting().execute(self)
-            if not bullet_world_object:
-                raise PerceptionObjectNotFound(
-                    f"Could not find an object with the type {self.object_type} in the FOV of the robot")
-            if ProcessModuleManager.execution_type == "real":
-                return RealObject.Object(bullet_world_object.name, bullet_world_object.type,
-                                                      bullet_world_object, bullet_world_object.get_pose())
+            bullet_world_objects = pm_manager.detecting().execute(self)
+            #return bullet_world_objects
+            if not bullet_world_objects:
+                 raise PerceptionObjectNotFound(
+                     f"Could not find an object with the type {self.object_type} in the FOV of the robot")
+            return bullet_world_objects
+            # if ProcessModuleManager.execution_type == "real":
+            #     return RealObject.Object(bullet_world_object.name, bullet_world_object.type,
+            #                              bullet_world_object, bullet_world_object.get_pose())
+            #
+            # return ObjectDesignatorDescription.Object(bullet_world_object.name, bullet_world_object.type,
+            #                                           bullet_world_object)
 
-            return ObjectDesignatorDescription.Object(bullet_world_object.name, bullet_world_object.type,
-                                                      bullet_world_object)
-
-        def to_sql(self) -> ORMDetectingMotion:
-            return ORMDetectingMotion(self.object_type)
-
-        def insert(self, session: Session, *args, **kwargs) -> ORMDetectingMotion:
-            motion = super().insert(session)
-            session.add(motion)
-            session.commit()
-            return motion
-
-    def __init__(self, object_type: str, resolver: Optional[Callable] = None):
+    def __init__(self, object_type: str, technique: str,  resolver: Optional[Callable] = None):
         """
         Checks for every object in the FOV of the robot if it fits the given object type. If the types match an object
         designator describing the object will be returned.
@@ -410,6 +406,7 @@ class DetectingMotion(MotionDesignatorDescription):
         """
         super().__init__(resolver)
         self.cmd: str = 'detecting'
+        self.technique: str = technique
         self.object_type: str = object_type
 
     def ground(self) -> Motion:
@@ -418,7 +415,7 @@ class DetectingMotion(MotionDesignatorDescription):
 
         :return: A resolved motion designator
         """
-        return self.Motion(self.cmd, self.object_type)
+        return self.Motion(self.cmd, self.object_type, self.technique)
 
 
 class MoveArmJointsMotion(MotionDesignatorDescription):
@@ -489,6 +486,7 @@ class WorldStateDetectingMotion(MotionDesignatorDescription):
     """
     Detects an object based on the world state.
     """
+
     @dataclasses.dataclass
     class Motion(MotionDesignatorDescription.Motion):
         # cmd: str
@@ -527,6 +525,7 @@ class MoveJointsMotion(MotionDesignatorDescription):
     """
     Moves any joint on the robot
     """
+
     @dataclasses.dataclass
     class Motion(MotionDesignatorDescription.Motion):
         # cmd: str
@@ -570,7 +569,7 @@ class MoveJointsMotion(MotionDesignatorDescription):
             lower, upper = BulletWorld.robot.get_joint_limits(self.names[i])
             if self.positions[i] < lower or self.positions[i] > upper:
                 raise DesignatorError(
-                    f"[Motion Designator][Move Joints] The given configuration for the Joint {self.names[i]} violates its limits")
+                    f"[Motion Designator][Move Joints] The given configuration for the Joint {self.names[i]} violates its limits: (lower = {lower}, upper = {upper})")
         return self.Motion(self.cmd, self.names, self.positions)
 
 
@@ -689,3 +688,39 @@ class ClosingMotion(MotionDesignatorDescription):
         :return: A resolved motion designator
         """
         return self.Motion(self.cmd, self.objet_part, self.arm)
+
+
+class TalkingMotion(MotionDesignatorDescription):
+    """
+    Designator for closing a container
+    """
+
+    @dataclasses.dataclass
+    class Motion(MotionDesignatorDescription.Motion):
+        cmd: str
+        """
+        Sentence what the robot should say
+        """
+
+        def perform(self):
+            pm_manager = ProcessModuleManager.get_manager()
+            return pm_manager.talk().execute(self)
+
+    def __init__(self,  cmd: str, resolver: Optional[Callable] = None):
+        """
+        Lets the robot close a container specified by the given parameter. This assumes that the handle is already grasped
+
+        :param object_part: Object designator describing the handle of the drawer
+        :param arm: Arm that should be used
+        :param resolver: An alternative resolver
+        """
+        super().__init__(resolver)
+        self.cmd: str = cmd
+
+    def ground(self) -> Motion:
+        """
+        Default resolver for opening motion designator, returns a resolved motion designator for the input parameters.
+
+        :return: A resolved motion designator
+        """
+        return self.Motion(self.cmd)
