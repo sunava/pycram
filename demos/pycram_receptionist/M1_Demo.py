@@ -1,7 +1,6 @@
 import rospy
 from geometry_msgs.msg import PoseStamped
 from robokudo_msgs.msg import QueryActionGoal
-
 from pycram.designators.action_designator import DetectAction, LookAtAction
 from pycram.designators.motion_designator import TalkingMotion
 from pycram.external_interfaces import robokudo
@@ -31,7 +30,7 @@ milk = Object("Milkpack", "milk", "milk.stl", pose=Pose([-2.7, 2.3, 0.43]), colo
 
 giskardpy.init_giskard_interface()
 # giskardpy.sync_worlds()
-#RobotStateUpdater("/tf", "/joint_states")
+# RobotStateUpdater("/tf", "/joint_states")
 
 
 class HumanDescription:
@@ -63,35 +62,34 @@ def talk_error(data):
 
     error_msgs = "i could not hear you, please repeat"
     TalkingMotion(error_msgs).resolve().perform()
-    #talk_actions.talker(error_msgs)
     pub_nlp.publish("start listening")
 
 
 with real_robot:
+
     # Perception
-
+    DetectAction(BelieveObject(types=[milk.type]), technique='human').resolve().perform()
+    # TODO: switch Publisher with DetectAction
     # DetectAction(BelieveObject(types=[milk.type]), technique='human').resolve().perform()
-
     pub_robokudo = rospy.Publisher('/robokudo/query/goal', QueryActionGoal, queue_size=10)
     msgs = QueryActionGoal()
     rospy.sleep(2)
     pub_robokudo.publish(msgs)
-
     rospy.loginfo("human detected")
 
-    # # NLP
+    # NLP
     pub_nlp = rospy.Publisher('/startListener', String, queue_size=10)
-    #talk_actions.talker("Hello, i am Toya and my favorite drink is oil. What about you, talk to me?")
     TalkingMotion("Hello, i am Toya and my favorite drink is oil. What about you, talk to me?").resolve().perform()
     rospy.sleep(2)
+    # signal to start listening
     pub_nlp.publish("start listening")
 
+    # Manipulation
     # keep looking at detected human
     giskardpy.move_head_to_human()
 
-#
-# # failure Handling
+    # failure handling
     rospy.Subscriber("nlp_feedback", Bool, talk_error)
-#
-# # Nlp Interface, gets data in the form of "name drink"
+
+    # receives name and drink via topic
     rospy.Subscriber("nlp_out", String, talk_request)

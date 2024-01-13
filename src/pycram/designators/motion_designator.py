@@ -275,7 +275,7 @@ class MoveGripperMotion(MotionDesignatorDescription):
 
         def perform(self):
             pm_manager = ProcessModuleManager.get_manager()
-            return pm_manager.move_gripper().execute(self)
+            return (pm_manager.move_gripper().execute(self))
 
     def __init__(self, motion: str, gripper: str, resolver: Optional[Callable] = None,
                  allow_gripper_collision: Optional[bool] = None):
@@ -507,7 +507,7 @@ class MoveJointsMotion(MotionDesignatorDescription):
             lower, upper = BulletWorld.robot.get_joint_limits(self.names[i])
             if self.positions[i] < lower or self.positions[i] > upper:
                 raise DesignatorError(
-                    f"[Motion Designator][Move Joints] The given configuration for the Joint {self.names[i]} violates its limits")
+                    f"[Motion Designator][Move Joints] The given configuration for the Joint {self.names[i]} violates its limits: (lower = {lower}, upper = {upper})")
         return self.Motion(self.cmd, self.names, self.positions)
 
 

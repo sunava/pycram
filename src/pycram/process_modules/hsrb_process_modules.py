@@ -14,7 +14,7 @@ from ..external_interfaces.ik import request_ik
 from ..external_interfaces.robokudo import queryEmpty, queryHuman
 from ..helper import _apply_ik
 from ..local_transformer import LocalTransformer
-
+from ..external_interfaces.navigate import queryPoseNav
 
 def _park_arms(arm):
     """
@@ -279,8 +279,8 @@ class HSRBNavigationReal(ProcessModule):
 
     def _execute(self, designator: MoveMotion.Motion) -> Any:
         rospy.logdebug(f"Sending goal to giskard to Move the robot")
-        giskard.achieve_cartesian_goal(designator.target, robot_description.base_link, "map")
-
+        #giskard.achieve_cartesian_goal(designator.target, robot_description.base_link, "map")
+        queryPoseNav(designator.target)
 
 class HSRBPickUpReal(ProcessModule):
 
@@ -290,8 +290,11 @@ class HSRBPickUpReal(ProcessModule):
 
 class HSRBPlaceReal(ProcessModule):
 
-    def _execute(self, designator: MotionDesignatorDescription.Motion) -> Any:
-        pass
+   # def _execute(self, designator: MotionDesignatorDescription.Motion) -> Any:
+    #    pass
+    def _execute(self, designator: PlaceMotion.Motion) -> Any:
+          giskard.avoid_all_collisions()
+          giskard.place_objects(designator.object, designator.target)
 
 
 class HSRBMoveHeadReal(ProcessModule):
@@ -328,7 +331,7 @@ class HSRBDetectingReal(ProcessModule):
     """
 
     def _execute(self, desig: DetectingMotion.Motion) -> Any:
-        #todo at the moment perception ignores searching for a specific object type so we do as well on real
+        # todo at the moment perception ignores searching for a specific object type so we do as well on real
         if desig.technique == 'human':
             human_pose = queryHuman()
             pose = Pose.from_pose_stamped(human_pose)
@@ -349,10 +352,10 @@ class HSRBDetectingReal(ProcessModule):
         for i in range(0, len(query_result.res)):
             # this has to be pose from pose stamped since we spawn the object with given header
             obj_pose = Pose.from_pose_stamped(query_result.res[i].pose[0])
-            #obj_pose_tmp = query_result.res[i].pose[0]
+            # obj_pose_tmp = query_result.res[i].pose[0]
             obj_type = query_result.res[i].type
-            #print(obj_pose)
-            #print(obj_pose_tmp)
+            # print(obj_pose)
+            # print(obj_pose_tmp)
             # todo we need the size of the object to be able to spawn it -> todo an perception
             Physicalobject = Object(obj_type, ObjectType.BREAKFAST_CEREAL, "milk.stl", pose=obj_pose)
 
