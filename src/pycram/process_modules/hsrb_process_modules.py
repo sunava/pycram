@@ -14,7 +14,7 @@ from ..external_interfaces.ik import request_ik
 from ..external_interfaces.robokudo import queryEmpty, queryHuman
 from ..helper import _apply_ik
 from ..local_transformer import LocalTransformer
-
+from ..external_interfaces.navigate import queryPoseNav
 
 def _park_arms(arm):
     """
@@ -279,8 +279,8 @@ class HSRBNavigationReal(ProcessModule):
 
     def _execute(self, designator: MoveMotion.Motion) -> Any:
         rospy.logdebug(f"Sending goal to giskard to Move the robot")
-        giskard.achieve_cartesian_goal(designator.target, robot_description.base_link, "map")
-
+        #giskard.achieve_cartesian_goal(designator.target, robot_description.base_link, "map")
+        queryPoseNav(designator.target)
 
 class HSRBPickUpReal(ProcessModule):
 
