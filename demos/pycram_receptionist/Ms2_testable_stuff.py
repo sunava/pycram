@@ -156,12 +156,12 @@ def nav_test():
         moveBase.queryPoseNav(test_pose)
 
 
-<<<<<<< HEAD
+
 demo_test('from_couch')
 #demo_test('to_couch')
-=======
+
     # receives name and drink via topic
-    rospy.Subscriber("nlp_out", String, talk_request)
+    #rospy.Subscriber("nlp_out", String, talk_request)
 
 
 
@@ -173,4 +173,4 @@ demo_test('from_couch')
 #starten
 #6. rosrun robokudo main.py _ae=humandetection_demo_ros_pkg=milestone1 -> Perception
 #7. run demo in Pycharm -> Planning
->>>>>>> 567084bfb083315b55e7ef1f9203594285899a13
+
