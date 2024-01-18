@@ -477,10 +477,10 @@ class PlaceAction(ActionDesignatorDescription):
             adjusted_object_pose_in_map_w_gripper.pose.position.x += 0.06
             if grasp == "top":
                 adjusted_object_pose_in_map_w_gripper.pose.position.z -= 0.11
-                adjusted_object_pose_in_map_w_gripper.pose.orientation.x = grasp[0]
-                adjusted_object_pose_in_map_w_gripper.pose.orientation.y = grasp[1]
-                adjusted_object_pose_in_map_w_gripper.pose.orientation.z = grasp[2]
-                adjusted_object_pose_in_map_w_gripper.pose.orientation.w = grasp[3]
+            adjusted_object_pose_in_map_w_gripper.pose.orientation.x = grasp[0]
+            adjusted_object_pose_in_map_w_gripper.pose.orientation.y = grasp[1]
+            adjusted_object_pose_in_map_w_gripper.pose.orientation.z = grasp[2]
+            adjusted_object_pose_in_map_w_gripper.pose.orientation.w = grasp[3]
 
             pre_adjusted_object_pose_in_map_w_gripper = adjusted_object_pose_in_map_w_gripper
             if grasp == "top":
@@ -520,7 +520,7 @@ class PlaceAction(ActionDesignatorDescription):
 
             rospy.sleep(2)
             tool_frame = robot_description.get_tool_frame(self.arm)
-            robot.detach(object=self.object_designator.bullet_world_object, link=tool_frame)
+            robot.detach(object=self.object_designator.bullet_world_object)
             lift_pose_in_map = object_pose_in_map
             lift_pose_in_map.pose.position.z += 0.1
             lift_pose_in_map.pose.position.x -= 0.1
@@ -576,6 +576,17 @@ class PlaceAction(ActionDesignatorDescription):
      self.target_locations: List[Pose] = target_locations
      self.arms: List[str] = arms
      self.grasps: List[str] = grasps
+
+    def ground(self) -> Action:
+     """
+     Default resolver that returns a performable designator with the first entries from the list of possible entries.
+
+     :return: A performable designator
+     """
+     obj_desig = self.object_designator_description if isinstance(self.object_designator_description,
+                                                                 ObjectDesignatorDescription.Object) else self.object_designator_description.resolve()
+
+     return self.Action(obj_desig, self.arms[0], self.target_locations[0], self.grasps[0])
 
 
 class NavigateAction(ActionDesignatorDescription):
