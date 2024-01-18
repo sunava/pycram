@@ -53,10 +53,10 @@ with real_robot:
     giskardpy.initial_adding_objects()
     giskardpy.spawn_kitchen()
 
-    try_pick_up(object_desig["Cerealbox"], "front")
+    #try_pick_up(object_desig["Cerealbox"], "front")
     #todo: macht avoid collision oder allow ueberhaupt was? muessten wir testen
-    giskardpy.place_objects(object_desig["Cerealbox"],[Pose([4.82,1.8,0.74])])
+    #giskardpy.place_objects(object_desig["Cerealbox"],[Pose([4.82,1.8,0.73])])
     #todo: in dem designator noch pose bearbeiten jenachdem welches object_desig reinkommt bei cereal großen z bei spoon minimal z
     # und atm ist nur front place drin neues argument how to place
 
-    #PlaceAction(object_desig["Cerealbox"], [Pose([4.92,1.8,0.74])], ["left"]).resolve().perform()
+    PlaceAction(object_desig["Cerealbox"], [Pose([4.92,1.8,0.74])], ["left"]).resolve().perform()

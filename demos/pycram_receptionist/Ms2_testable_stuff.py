@@ -156,5 +156,7 @@ def nav_test():
         moveBase.queryPoseNav(test_pose)
 
 
+
 demo_test('from_couch')
 #demo_test('to_couch')
+

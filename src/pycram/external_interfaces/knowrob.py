@@ -137,9 +137,9 @@ def get_guest_info(id: int):
     try:
         #TODO: Service class herausfinden
         info_service = rospy.ServiceProxy('name_server', List)
-        name = info_service(id)
+        guest_data = info_service(id) #guest_data = List der Form ["name", "drink"]
         drink = info_service(id)
-        return [name, drink]
+        return guest_data
     except rospy.ServiceException as e:
         print("Service call failed")
         
