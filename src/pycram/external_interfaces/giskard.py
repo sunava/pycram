@@ -47,10 +47,11 @@ def initial_adding_objects() -> None:
     groups = giskard_wrapper.get_group_names()
     for obj in BulletWorld.current_bullet_world.objects:
         if obj != BulletWorld.robot and len(obj.links) >= 1:
-            name = obj.name + "_" + str(obj.id)
+            if obj.name != 'floor':
+                name = obj.name + "_" + str(obj.id)
 
-            if name not in groups:
-                spawn_object(obj)
+                if name not in groups:
+                    spawn_object(obj)
 
 
 def removing_of_objects() -> None:
@@ -77,7 +78,8 @@ def sync_worlds() -> None:
     bullet_object_names = set()
     for obj in BulletWorld.current_bullet_world.objects:
         if obj.name != robot_description.name and len(obj.links) != 1:
-            bullet_object_names.add(obj.name + "_" + str(obj.id))
+            if obj.name != 'floor':
+                bullet_object_names.add(obj.name + "_" + str(obj.id))
 
     giskard_object_names = set(giskard_wrapper.get_group_names())
     robot_name = {robot_description.name}
@@ -450,6 +452,7 @@ def stop_looking():
     # endless mode shut be stopped when new command to move is used
     # moves hsr in standard position
     giskard_wrapper.take_pose("park")
+    giskard_wrapper.plan_and_execute(wait=True)
     print("hsr looks forward instead of looking at human")
 
 
