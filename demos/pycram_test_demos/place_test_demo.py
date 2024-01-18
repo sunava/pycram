@@ -27,21 +27,25 @@ RobotStateUpdater("/tf", "/giskard_joint_states")
 def try_pick_up(obj, grasps):
     try:
         PickUpAction(obj, ["left"], [grasps]).resolve().perform()
-    except:
+    except (EnvironmentUnreachable, GripperClosedCompletely):
         print("try pick up again")
         TalkingMotion("Try pick up again")
         NavigateAction([Pose([robot_pose.position.x - 0.3, robot_pose.position.y, robot_pose.position.z],
                              robot_pose.orientation)]).resolve().perform()
         ParkArmsAction([Arms.LEFT]).resolve().perform()
-        object_desig = DetectAction(BelieveObject(types=[ObjectType.MILK]), technique='all').resolve().perform()
-        # TODO nur wenn key (name des vorherigen objektes) in object_desig enthalten ist
-        new_object = object_desig[obj.name]
+        if EnvironmentUnreachable:
+             object_desig = DetectAction(BelieveObject(types=[ObjectType.MILK]), technique='all').resolve().perform()
+             # TODO nur wenn key (name des vorherigen objektes) in object_desig enthalten ist
+             new_object = object_desig[obj.name]
+        else:
+             new_object = obj
         try:
             PickUpAction(new_object, ["left"], [grasps]).resolve().perform()
 
         except:
             TalkingMotion(f"Can you pleas give me the {obj.name} object on the table? Thanks")
             TalkingMotion(f"Please push down my hand, when I can grab the {obj.name}.")
+
 
 with real_robot:
     ParkArmsAction([Arms.LEFT]).resolve().perform()
@@ -59,4 +63,4 @@ with real_robot:
     #todo: in dem designator noch pose bearbeiten jenachdem welches object_desig reinkommt bei cereal großen z bei spoon minimal z
     # und atm ist nur front place drin neues argument how to place
 
-    PlaceAction(object_desig["Cerealbox"], [Pose([4.92,1.8,0.74])], ["left"]).resolve().perform()
+    PlaceAction(object_desig["Cerealbox"], [Pose([4.92,1.8,0.74])], ["left"], ["front"]).resolve().perform()

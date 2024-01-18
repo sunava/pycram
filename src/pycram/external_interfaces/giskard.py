@@ -36,6 +36,7 @@ def init_giskard_interface():
     except ModuleNotFoundError as e:
         rospy.logwarn("Failed to import Giskard messages, giskard interface could not be initialized")
 
+
 # Believe state management between pycram and giskard
 
 
@@ -129,9 +130,6 @@ def spawn_urdf(name: str, urdf_path: str, pose: Pose) -> 'UpdateWorldResponse':
     with open(urdf_path) as f:
         urdf_string = f.read()
     return giskard_wrapper.add_urdf(name, urdf_string, pose)
-
-
-
 
 
 def spawn_mesh(name: str, path: str, pose: Pose) -> 'UpdateWorldResponse':
@@ -291,7 +289,7 @@ def achieve_gripper_motion_goal(motion: str):
     """
     rospy.loginfo("giskard change_gripper_state: " + motion)
     giskard_wrapper.change_gripper_state(motion)
-    #return giskard_wrapper.plan_and_execute()
+    # return giskard_wrapper.plan_and_execute()
 
 
 def allow_gripper_collision(gripper: str):
@@ -311,7 +309,7 @@ def allow_gripper_collision(gripper: str):
         giskard_wrapper.allow_collision("left_gripper", CollisionEntry.ALL)
 
 
-#todo niemand denkt an hsr :;(
+# todo niemand denkt an hsr :;(
 def add_gripper_groups() -> None:
     """
     Adds the gripper links as a group for collision avoidance.
@@ -437,12 +435,14 @@ def _pose_to_pose_stamped(pose: Pose) -> PoseStamped:
 
     return ps
 
+
 def move_head_to_human():
     """
     continously moves head in direction of perceived human
     """
     giskard_wrapper.continuous_pointing_head()
     giskard_wrapper.plan_and_execute(wait=False)
+
 
 def stop_looking():
     """
@@ -455,20 +455,23 @@ def stop_looking():
     giskard_wrapper.plan_and_execute(wait=True)
     print("hsr looks forward instead of looking at human")
 
+
 def spawn_kitchen():
     env_urdf = rospy.get_param('kitchen_description')
     kitchen_pose = tf.lookup_pose('map', 'iai_kitchen/urdf_main')
     giskard_wrapper.add_urdf(name='iai_kitchen',
-                     urdf=env_urdf,
-                     pose=kitchen_pose)
+                             urdf=env_urdf,
+                             pose=kitchen_pose)
 
 
-def place_objects(object, target):
+def place_objects(object, target, grasp):
     # TODO: Decide placing from_above or align_vertical. Maybe using Objecttype for that?
     from_above_objects = ["Bowl", "Metalmug", "Spoon", "Knife", "Fork"]
-    if object.name in from_above_objects:
-        giskard_wrapper.placing(context="from_above",goal_pose=target)
+
+    if grasp == "top":
+        giskard_wrapper.placing(context="from_above", goal_pose=target)
     else:
         giskard_wrapper.placing(context="align_vertical", goal_pose=target)
+
     print("placed object")
-   # BulletWorld.robot.detach(object.bullet_world_object)
+
