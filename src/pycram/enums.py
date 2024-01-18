@@ -57,3 +57,13 @@ class ObjectType(Enum):
     GENERIC_OBJECT = auto()
     HUMAN = auto()
 
+
+class State(Enum):
+    """
+    Enumeration which describes the result of a language expression.
+    """
+    SUCCEEDED = 1
+    FAILED = 0
+    RUNNING = 2
+    INTERRUPTED = 3
+

@@ -157,6 +157,7 @@ def nav_test():
 
 
 
+
 demo_test('from_couch')
 #demo_test('to_couch')
 
@@ -173,4 +174,5 @@ demo_test('from_couch')
 #starten
 #6. rosrun robokudo main.py _ae=humandetection_demo_ros_pkg=milestone1 -> Perception
 #7. run demo in Pycharm -> Planning
+
 

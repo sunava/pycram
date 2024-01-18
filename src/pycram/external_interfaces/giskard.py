@@ -46,10 +46,11 @@ def initial_adding_objects() -> None:
     groups = giskard_wrapper.get_group_names()
     for obj in BulletWorld.current_bullet_world.objects:
         if obj != BulletWorld.robot and len(obj.links) >= 1:
-            name = obj.name + "_" + str(obj.id)
+            if obj.name != 'floor':
+                name = obj.name + "_" + str(obj.id)
 
-            if name not in groups:
-                spawn_object(obj)
+                if name not in groups:
+                    spawn_object(obj)
 
 
 def removing_of_objects() -> None:
@@ -76,7 +77,8 @@ def sync_worlds() -> None:
     bullet_object_names = set()
     for obj in BulletWorld.current_bullet_world.objects:
         if obj.name != robot_description.name and len(obj.links) != 1:
-            bullet_object_names.add(obj.name + "_" + str(obj.id))
+            if obj.name != 'floor':
+                bullet_object_names.add(obj.name + "_" + str(obj.id))
 
     giskard_object_names = set(giskard_wrapper.get_group_names())
     robot_name = {robot_description.name}
@@ -464,16 +466,9 @@ def spawn_kitchen():
 def place_objects(object, target):
     # TODO: Decide placing from_above or align_vertical. Maybe using Objecttype for that?
     from_above_objects = ["Bowl", "Metalmug", "Spoon", "Knife", "Fork"]
-
-    context_from_above = {'action': 'placing', 'from_above': True}
-    context_default = {'action': 'placing'}
-
     if object.name in from_above_objects:
-        giskard_wrapper.placing(context=context_from_above,goal_pose=target)
-        print("if placed")
+        giskard_wrapper.placing(context="from_above",goal_pose=target)
     else:
-        giskard_wrapper.placing(context=context_default, goal_pose=target)
-        print("else placed")
-    giskard_wrapper.plan_and_execute(wait=True)
+        giskard_wrapper.placing(context="align_vertical", goal_pose=target)
     print("placed object")
    # BulletWorld.robot.detach(object.bullet_world_object)
