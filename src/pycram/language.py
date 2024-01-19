@@ -1,6 +1,7 @@
 # used for delayed evaluation of typing until python 3.11 becomes mainstream
 from __future__ import annotations
 
+import queue
 import time
 from typing import Iterable, Optional, Callable, Dict, Any, List, Union
 from anytree import NodeMixin, Node, PreOrderIter, RenderTree
@@ -261,6 +262,8 @@ class Monitor(Language):
         """
         super().__init__(None, None)
         self.kill_event = threading.Event()
+        self.exception_queue = queue.Queue()
+
         if callable(condition):
             self.condition = Fluent(condition)
         elif isinstance(condition, Fluent):
@@ -275,20 +278,30 @@ class Monitor(Language):
 
         :return: The result of the attached language expression
         """
+
         def check_condition():
-            while not self.condition.get_value() and not self.kill_event.is_set():
+            while not self.kill_event.is_set():
+                try:
+                    if self.condition.get_value():
+                        for child in self.children:
+                            child.interrupt()
+                        raise PlanFailure("Condition met in Monitor")
+                except Exception as e:
+                    self.exception_queue.put(e)  # Put the exception in the queue
+                    return
                 time.sleep(0.1)
-            if self.kill_event.is_set():
-                return
-            for child in self.children:
-                child.interrupt()
 
         t = threading.Thread(target=check_condition)
         t.start()
-        res = self.children[0].perform()
-        self.kill_event.set()
-        t.join()
-        return res
+        try:
+            res = self.children[0].perform()
+            if not self.exception_queue.empty():
+                print("Raising PlanFailure")
+                raise self.exception_queue.get()
+            return res
+        finally:
+            self.kill_event.set()
+            t.join()
 
     def interrupt(self) -> None:
         """
