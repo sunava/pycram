@@ -1,13 +1,38 @@
+import rospy
+from std_msgs.msg import String
+
+from pycram.external_interfaces.knowrob import instances_of, get_guest_info
 import random
 
-def get_list(name: str, drink: str):
-    id = random.randint(1,100)
-    data_list = [name, drink, id]
-    return data_list
+def client_call(id):
+    rospy.init_node("client_node")
+    rospy.wait_for_service("serviceName")
+    rate = rospy.Rate(1)
+    while not rospy.s_shutdown():
+        try:
+            service_variable = rospy.ServiceProxy("SeviceName", Type)
+            respone = service_variable(parameterForService)
+            rate.sleep()
+        except rospy.ServiceExcepion as e:
+            print("Service call failed")
+
+
+def get_guest_info(id: int):
+    """
+    function that uses Knowledge Service to get Name and drink from new guest via ID
+    """
+
+    #TODO: Service für Name und Getränk mit ID einbauen, wenn dieser fertig
+    rospy.wait_for_service('id_server')
+    try:
+        #TODO: Service class herausfinden
+        info_service = rospy.ServiceProxy('id_server', String)
+        guest_data = info_service(id) #guest_data = List der Form ["name", "drink"]
+        return guest_data
+    except rospy.ServiceException as e:
+        print("Service call failed")
 
 
 if __name__ == '__main__':
-    name = input("please enter name: ")
-    drink = input("please enter drink: ")
-    data_list = get_list(name, drink)
-    print("hey " + data_list[0]+ " your drink is: " + data_list[1] + " and your id is: " + str(data_list[2]))
+   print("starte test")
+   print(get_guest_info(2))
