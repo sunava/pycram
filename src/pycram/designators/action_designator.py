@@ -57,14 +57,13 @@ class MoveTorsoAction(ActionDesignatorDescription):
             session.commit()
             return action
 
-    def __init__(self, positions: List[float], resolver=None):
+    def __init__(self, positions: List[float]):
         """
         Create a designator description to move the torso of the robot up and down.
 
         :param positions: List of possible positions of the robots torso, possible position is a float of height in metres
-        :param resolver: An optional resolver that returns a performable designator for a designator description.
         """
-        super().__init__(resolver)
+        super().__init__()
         self.positions: List[float] = positions
 
     def ground(self) -> Action:
@@ -114,15 +113,14 @@ class SetGripperAction(ActionDesignatorDescription):
             session.commit()
             return action
 
-    def __init__(self, grippers: List[str], motions: List[str], resolver=None):
+    def __init__(self, grippers: List[str], motions: List[str]):
         """
         Sets the gripper state, the desired state is given with the motion. Motion can either be 'open' or 'close'.
 
         :param grippers: A list of possible grippers
         :param motions: A list of possible motions
-        :param resolver: An alternative resolver that returns a performable designator for a designator description
         """
-        super().__init__(resolver)
+        super().__init__()
         self.grippers: List[str] = grippers
         self.motions: List[str] = motions
 
@@ -166,9 +164,8 @@ class ReleaseAction(ActionDesignatorDescription):
         def insert(self, session: sqlalchemy.orm.session.Session, *args, **kwargs) -> Base:
             raise NotImplementedError()
 
-    def __init__(self, grippers: List[str], object_designator_description: ObjectDesignatorDescription,
-                 resolver=None):
-        super().__init__(resolver)
+    def __init__(self, grippers: List[str], object_designator_description: ObjectDesignatorDescription):
+        super().__init__()
         self.grippers: List[str] = grippers
         self.object_designator_description = object_designator_description
 
@@ -204,8 +201,8 @@ class GripAction(ActionDesignatorDescription):
             raise NotImplementedError()
 
     def __init__(self, grippers: List[str], object_designator_description: ObjectDesignatorDescription,
-                 efforts: List[float], resolver=None):
-        super().__init__(resolver)
+                 efforts: List[float]):
+        super().__init__()
         self.grippers: List[str] = grippers
         self.object_designator_description: ObjectDesignatorDescription = object_designator_description
         self.efforts: List[float] = efforts
@@ -250,14 +247,13 @@ class ParkArmsAction(ActionDesignatorDescription):
             session.commit()
             return action
 
-    def __init__(self, arms: List[Arms], resolver=None):
+    def __init__(self, arms: List[Arms]):
         """
         Moves the arms in the pre-defined parking position. Arms are taken from pycram.enum.Arms
 
         :param arms: A list of possible arms, that could be used
-        :param resolver: An optional resolver that returns a performable designator from the designator description
         """
-        super().__init__(resolver)
+        super().__init__()
         self.arms: List[Arms] = arms
 
     def ground(self) -> Action:
@@ -379,7 +375,7 @@ class PickUpAction(ActionDesignatorDescription):
             return action
 
     def __init__(self, object_designator_description:  Union[ObjectDesignatorDescription, ObjectDesignatorDescription.Object],
-                 arms: List[str], grasps: List[str], resolver=None):
+                 arms: List[str], grasps: List[str]):
         """
         Lets the robot pick up an object. The description needs an object designator describing the object that should be
         picked up, an arm that should be used as well as the grasp from which side the object should be picked up.
@@ -387,9 +383,8 @@ class PickUpAction(ActionDesignatorDescription):
         :param object_designator_description: List of possible object designator
         :param arms: List of possible arms that could be used
         :param grasps: List of possible grasps for the object
-        :param resolver: An optional resolver that returns a performable designator with elements from the lists of possible paramter
         """
-        super().__init__(resolver)
+        super().__init__()
         self.object_designator_description: Union[
             ObjectDesignatorDescription, ObjectDesignatorDescription.Object] = object_designator_description
         self.arms: List[str] = arms
@@ -468,7 +463,7 @@ class PlaceAction(ActionDesignatorDescription):
     def __init__(self,
                  object_designator_description: Union[ObjectDesignatorDescription, ObjectDesignatorDescription.Object],
                  target_locations: List[Pose],
-                 arms: List[str], resolver=None):
+                 arms: List[str]):
         """
         Create an Action Description to place an object
 
@@ -477,7 +472,7 @@ class PlaceAction(ActionDesignatorDescription):
         :param arms: List of possible arms to use
         :param resolver: Grounding method to resolve this designator
         """
-        super().__init__(resolver)
+        super().__init__()
         self.object_designator_description: Union[
             ObjectDesignatorDescription, ObjectDesignatorDescription.Object] = object_designator_description
         self.target_locations: List[Pose] = target_locations
@@ -525,14 +520,13 @@ class NavigateAction(ActionDesignatorDescription):
 
             return action
 
-    def __init__(self, target_locations: List[Pose], resolver=None):
+    def __init__(self, target_locations: List[Pose]):
         """
         Navigates the robot to a location.
 
         :param target_locations: A list of possible target locations for the navigation.
-        :param resolver: An alternative resolver that creates a performable designator from the list of possible parameter
         """
-        super().__init__(resolver)
+        super().__init__()
         self.target_locations: List[Pose] = target_locations
 
     def ground(self) -> Action:
@@ -613,16 +607,15 @@ class TransportAction(ActionDesignatorDescription):
     def __init__(self,
                  object_designator_description: Union[ObjectDesignatorDescription, ObjectDesignatorDescription.Object],
                  arms: List[str],
-                 target_locations: List[Pose], resolver=None):
+                 target_locations: List[Pose]):
         """
         Designator representing a pick and place plan.
 
         :param object_designator_description: Object designator description or a specified Object designator that should be transported
         :param arms: A List of possible arms that could be used for transporting
         :param target_locations: A list of possible target locations for the object to be placed
-        :param resolver: An alternative resolver that returns a performable designator for the list of possible parameter
         """
-        super().__init__(resolver)
+        super().__init__()
         self.object_designator_description: Union[
             ObjectDesignatorDescription, ObjectDesignatorDescription.Object] = object_designator_description
         self.arms: List[str] = arms
@@ -670,14 +663,13 @@ class LookAtAction(ActionDesignatorDescription):
             session.commit()
             return action
 
-    def __init__(self, targets: List[Pose], resolver=None):
+    def __init__(self, targets: List[Pose]):
         """
         Moves the head of the robot such that it points towards the given target location.
 
         :param targets: A list of possible locations to look at
-        :param resolver: An alternative resolver that returns a performable designator for a list of possible target locations
         """
-        super().__init__(resolver)
+        super().__init__()
         self.targets: List[Pose] = targets
 
     def ground(self) -> Action:
@@ -719,14 +711,13 @@ class DetectAction(ActionDesignatorDescription):
 
             return action
 
-    def __init__(self, object_designator_description: ObjectDesignatorDescription, resolver=None):
+    def __init__(self, object_designator_description: ObjectDesignatorDescription):
         """
         Tries to detect an object in the field of view (FOV) of the robot.
 
         :param object_designator_description: Object designator describing the object
-        :param resolver: An alternative resolver
         """
-        super().__init__(resolver)
+        super().__init__()
         self.object_designator_description: ObjectDesignatorDescription = object_designator_description
 
     def ground(self) -> Action:
@@ -777,15 +768,14 @@ class OpenAction(ActionDesignatorDescription):
 
             return action
 
-    def __init__(self, object_designator_description: ObjectPart, arms: List[str], resolver=None):
+    def __init__(self, object_designator_description: ObjectPart, arms: List[str]):
         """
         Moves the arm of the robot to open a container.
 
         :param object_designator_description: Object designator describing the handle that should be used to open
         :param arms: A list of possible arms that should be used
-        :param resolver: A alternative resolver that returns a performable designator for the lists of possible parameter.
         """
-        super().__init__(resolver)
+        super().__init__()
         self.object_designator_description: ObjectPart = object_designator_description
         self.arms: List[str] = arms
 
@@ -838,8 +828,7 @@ class CloseAction(ActionDesignatorDescription):
 
             return action
 
-    def __init__(self, object_designator_description: ObjectPart, arms: List[str],
-                 resolver=None):
+    def __init__(self, object_designator_description: ObjectPart, arms: List[str]):
         """
         Attempts to close an open container
 
@@ -847,7 +836,7 @@ class CloseAction(ActionDesignatorDescription):
         :param arms: A list of possible arms to use
         :param resolver: An alternative resolver that returns a performable designator for the list of possible parameter
         """
-        super().__init__(resolver)
+        super().__init__()
         self.object_designator_description: ObjectPart = object_designator_description
         self.arms: List[str] = arms
 
@@ -911,17 +900,15 @@ class GraspingAction(ActionDesignatorDescription):
 
             return action
 
-    def __init__(self, arms: List[str], object_description: Union[ObjectDesignatorDescription, ObjectPart],
-                 resolver: Callable = None):
+    def __init__(self, arms: List[str], object_description: Union[ObjectDesignatorDescription, ObjectPart]):
         """
         Will try to grasp the object described by the given description. Grasping is done by moving into a pre grasp
         position 10 cm before the object, opening the gripper, moving to the object and then closing the gripper.
 
         :param arms: List of Arms that should be used for grasping
         :param object_description: Description of the object that should be grasped
-        :param resolver: An alternative resolver to get a specified designator from the designator description
         """
-        super().__init__(resolver)
+        super().__init__()
         self.arms: List[str] = arms
         self.object_description: ObjectDesignatorDescription = object_description
 
