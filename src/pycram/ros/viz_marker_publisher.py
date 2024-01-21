@@ -101,6 +101,7 @@ class VizMarkerPublisher:
                 marker_array.markers.append(msg)
         return marker_array
 
+
     def _stop_publishing(self) -> None:
         """
         Stops the publishing of the Visualization Marker update by setting the kill event and collecting the thread.

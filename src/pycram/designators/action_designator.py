@@ -297,59 +297,64 @@ class PickUpAction(ActionDesignatorDescription):
 
         @with_tree
         def perform(self) -> None:
-
             lt = LocalTransformer()
+            robot = BulletWorld.robot
+            # Retrieve object and robot from designators
+            object = self.object_designator.bullet_world_object
+            # oTm = Object Pose in Frame map
+            oTm = object.get_pose()
 
-            if isinstance(self.object_designator, ObjectPart.Object):
-                object_pose = self.object_designator.part_pose
-            else:
-                object_pose = self.object_designator.bullet_world_object.get_pose()
+            # Special knowledge for grasping like bowls or knifes is defined in the object desigantor not in the
+            # action desigs this call delivers the adjusted pose, or the same pose if no special knowledge is available
+            special_pose = self.object_designator.special_knowledge_adjustment_pose(self.grasp, oTm)
+            mTo = lt.transform_pose(special_pose, "map")
 
-            base_tf = BulletWorld.robot.get_link_tf_frame("base_link")
-            grasp = robot_description.grasps.get_orientation_for_grasp(self.grasp)
-            # Adjust the pose according to the special knowledge of the object designator
-            adjusted_object_pose = self.object_designator.special_knowledge_adjustment_pose(self.grasp, object_pose)
-            object_pose_in_base = lt.transform_pose(adjusted_object_pose, base_tf)
+            # Get grasp orientation and target pose
+            grasp_rotation = robot_description.grasps.get_orientation_for_grasp(self.grasp)
 
-            # todo maybe we need to insert this again, since ose needs to be adjusted atm cause pose on real robot is wrong
-            # adjusted_object_pose_in_map_w_gripper.pose.position.x += 0.06
+            # multiplying the orientation therefore "rotating" it, to get the correct orientation of the gripper
+            ori = multiply_quaternions([mTo.orientation.x, mTo.orientation.y,
+                                        mTo.orientation.z, mTo.orientation.w],
+                                       grasp_rotation)
 
-            adjusted_object_pose_in_map_w_gripper = object_pose_in_base.copy()
-            # if self.grasp == "top":
-            #     adjusted_object_pose_in_map_w_gripper.pose.position.z -= 0.03
-            adjusted_object_pose_in_map_w_gripper.pose.orientation.x = grasp[0]
-            adjusted_object_pose_in_map_w_gripper.pose.orientation.y = grasp[1]
-            adjusted_object_pose_in_map_w_gripper.pose.orientation.z = grasp[2]
-            adjusted_object_pose_in_map_w_gripper.pose.orientation.w = grasp[3]
+            # Set the orientation of the object pose by grasp in MAP
+            mTo.orientation.x = ori[0]
+            mTo.orientation.y = ori[1]
+            mTo.orientation.z = ori[2]
+            mTo.orientation.w = ori[3]
 
-            pre_adjusted_object_pose_in_map_w_gripper = adjusted_object_pose_in_map_w_gripper.copy()
+            adjusted_oTb = lt.transform_pose(mTo, robot.get_link_tf_frame("base_link"))
             if self.grasp == "top":
-                pre_adjusted_object_pose_in_map_w_gripper.pose.position.z += 0.1
+                adjusted_oTb.pose.position.z += 0.03
+                adjusted_oTb.pose.position.x += -0.03
             elif self.grasp == "front":
-                pre_adjusted_object_pose_in_map_w_gripper.pose.position.x -= 0.1
+                adjusted_oTb.pose.position.x += -0.03
+            pre_pose = lt.transform_pose(adjusted_oTb, "map")
 
-            object_pose_in_map = lt.transform_pose(adjusted_object_pose_in_map_w_gripper, "map")
-            pre_object_pose_in_map = lt.transform_pose(pre_adjusted_object_pose_in_map_w_gripper, "map")
+            rospy.logwarn("Moving to pre_pose")
+            MoveGripperMotion(motion="open", gripper=self.arm).resolve().perform()
+            BulletWorld.current_bullet_world.add_vis_axis(pre_pose)
+            MoveTCPMotion(pre_pose, self.arm).resolve().perform()
 
-            MoveGripperMotion(motion="open", gripper=self.arm, allow_gripper_collision=False).resolve().perform()
-
-            BulletWorld.current_bullet_world.add_vis_axis(pre_object_pose_in_map)
-            MoveTCPMotion(pre_object_pose_in_map, self.arm, allow_gripper_collision=False).resolve().perform()
-
-            BulletWorld.current_bullet_world.add_vis_axis(object_pose_in_map)
-            MoveTCPMotion(object_pose_in_map, self.arm, allow_gripper_collision=False).resolve().perform()
+            rospy.logwarn("Moving to pose")
+            # Perform the motion with the adjusted pose -> actual grasp and close gripper
+            BulletWorld.current_bullet_world.add_vis_axis(mTo)
+            MoveTCPMotion(mTo, self.arm).resolve().perform()
 
             rospy.sleep(2)
             tool_frame = robot_description.get_tool_frame(self.arm)
-            BulletWorld.robot.attach(object=self.object_designator.bullet_world_object, link=tool_frame)
+            robot.attach(object, tool_frame)
 
-            MoveGripperMotion(motion="close", gripper=self.arm, allow_gripper_collision=True).resolve().perform()
+            MoveGripperMotion(motion="close", gripper=self.arm).resolve().perform()
 
-            lift_pose_in_map = object_pose_in_map
-            lift_pose_in_map.pose.position.z += 0.1
+            rospy.logwarn("Lifting")
+            # Lift object
+            mTo.pose.position.z += 0.03
+            BulletWorld.current_bullet_world.add_vis_axis(mTo)
+            MoveTCPMotion(mTo, self.arm).resolve().perform()
 
-            BulletWorld.current_bullet_world.add_vis_axis(lift_pose_in_map)
-            MoveTCPMotion(lift_pose_in_map, self.arm, allow_gripper_collision=True).resolve().perform()
+            # Remove the vis axis from the world
+            BulletWorld.current_bullet_world.remove_vis_axis()
 
         def to_sql(self) -> ORMPickUpAction:
             return ORMPickUpAction(self.arm, self.grasp)
@@ -426,56 +431,62 @@ class PlaceAction(ActionDesignatorDescription):
         @with_tree
         def perform(self) -> None:
             lt = LocalTransformer()
+            robot = BulletWorld.robot
+            # Retrieve object and robot from designators
 
-            base_tf = BulletWorld.robot.get_link_tf_frame("base_link")
-            grasp = robot_description.grasps.get_orientation_for_grasp(self.grasp)
+            # Special knowledge for grasping like bowls or knifes is defined in the object desigantor not in the
+            # action desigs this call delivers the adjusted pose, or the same pose if no special knowledge is available
+            special_pose = self.object_designator.special_knowledge_adjustment_pose(self.grasp, self.target_location)
+            mTo = lt.transform_pose(special_pose, "map")
 
-            object_pose_in_base = lt.transform_pose(self.target_location, base_tf)
+            # Get grasp orientation and target pose
+            grasp_rotation = robot_description.grasps.get_orientation_for_grasp(self.grasp)
 
-            # todo maybe we need to insert this again, since ose needs to be adjusted atm cause pose on real robot is wrong
-            # adjusted_object_pose_in_map_w_gripper.pose.position.x += 0.06
+            # multiplying the orientation therefore "rotating" it, to get the correct orientation of the gripper
+            ori = multiply_quaternions([mTo.orientation.x, mTo.orientation.y,
+                                        mTo.orientation.z, mTo.orientation.w],
+                                       grasp_rotation)
 
-            adjusted_object_pose_in_map_w_gripper = object_pose_in_base.copy()
-            # if self.grasp == "top":
-            #     adjusted_object_pose_in_map_w_gripper.pose.position.z -= 0.03
-            adjusted_object_pose_in_map_w_gripper.pose.orientation.x = grasp[0]
-            adjusted_object_pose_in_map_w_gripper.pose.orientation.y = grasp[1]
-            adjusted_object_pose_in_map_w_gripper.pose.orientation.z = grasp[2]
-            adjusted_object_pose_in_map_w_gripper.pose.orientation.w = grasp[3]
+            # Set the orientation of the object pose by grasp in MAP
+            mTo.orientation.x = ori[0]
+            mTo.orientation.y = ori[1]
+            mTo.orientation.z = ori[2]
+            mTo.orientation.w = ori[3]
 
-            pre_adjusted_object_pose_in_map_w_gripper = adjusted_object_pose_in_map_w_gripper.copy()
+            adjusted_oTb = lt.transform_pose(mTo, robot.get_link_tf_frame("base_link"))
             if self.grasp == "top":
-                pre_adjusted_object_pose_in_map_w_gripper.pose.position.z += 0.1
+                adjusted_oTb.pose.position.z += 0.03
+                adjusted_oTb.pose.position.x += -0.03
             elif self.grasp == "front":
-                pre_adjusted_object_pose_in_map_w_gripper.pose.position.x -= 0.1
+                adjusted_oTb.pose.position.x += -0.03
+            pre_pose = lt.transform_pose(adjusted_oTb, "map")
 
-            object_pose_in_map = lt.transform_pose(adjusted_object_pose_in_map_w_gripper, "map")
-            pre_object_pose_in_map = lt.transform_pose(pre_adjusted_object_pose_in_map_w_gripper, "map")
+            rospy.logwarn("Moving to pre_pose")
+            BulletWorld.current_bullet_world.add_vis_axis(pre_pose)
+            MoveTCPMotion(pre_pose, self.arm).resolve().perform()
 
-
-            BulletWorld.current_bullet_world.add_vis_axis(pre_object_pose_in_map)
-            MoveTCPMotion(pre_object_pose_in_map, self.arm, allow_gripper_collision=False).resolve().perform()
-
-            BulletWorld.current_bullet_world.add_vis_axis(object_pose_in_map)
-            MoveTCPMotion(object_pose_in_map, self.arm, allow_gripper_collision=False).resolve().perform()
+            rospy.logwarn("Moving to pose")
+            # Perform the motion with the adjusted pose -> actual grasp and close gripper
+            BulletWorld.current_bullet_world.add_vis_axis(mTo)
+            MoveTCPMotion(mTo, self.arm).resolve().perform()
 
             rospy.sleep(2)
-
             tool_frame = robot_description.get_tool_frame(self.arm)
-            BulletWorld.robot.detach(object=self.object_designator.bullet_world_object)
+            robot.detach(self.object_designator.bullet_world_object)
 
-            MoveGripperMotion(motion="open", gripper=self.arm, allow_gripper_collision=True).resolve().perform()
+            MoveGripperMotion(motion="open", gripper=self.arm).resolve().perform()
 
-            lift_pose_in_map = object_pose_in_map
-            lift_pose_in_map.pose.position.z += 0.1
+            rospy.logwarn("Lifting")
+            # Lift object
+            mTo.pose.position.z += 0.03
+            BulletWorld.current_bullet_world.add_vis_axis(mTo)
+            MoveTCPMotion(mTo, self.arm).resolve().perform()
 
-            BulletWorld.current_bullet_world.add_vis_axis(lift_pose_in_map)
-            MoveTCPMotion(lift_pose_in_map, self.arm, allow_gripper_collision=True).resolve().perform()
-
+            # Remove the vis axis from the world
+            BulletWorld.current_bullet_world.remove_vis_axis()
 
         def to_sql(self) -> ORMPlaceAction:
-             return ORMPlaceAction(self.arm)
-
+            return ORMPlaceAction(self.arm)
 
         def insert(self, session, *args, **kwargs) -> ORMPlaceAction:
             action = super().insert(session)

@@ -16,7 +16,7 @@ world = BulletWorld("DIRECT")
 v = VizMarkerPublisher()
 robot = Object("hsrb", ObjectType.ROBOT, "hsrb.urdf", pose=Pose([1, 2, 0]))
 
-apartment = Object("kitchen", ObjectType.ENVIRONMENT, "kitchen.urdf")
+apartment = Object("kitchen", ObjectType.ENVIRONMENT, "test-room.urdf")
 giskardpy.init_giskard_interface()
 giskardpy.sync_worlds()
 
@@ -66,5 +66,5 @@ with semi_real_robot:
     giskardpy.remove_object(dict_desig["cereal"].bullet_world_object)
     ParkArmsAction([Arms.LEFT]).resolve().perform()
 
-
+    print("done")
     # #todo parkarms does not move the torso atm

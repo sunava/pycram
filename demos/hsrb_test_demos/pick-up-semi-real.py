@@ -11,12 +11,12 @@ from pycram.enums import ObjectType
 from pycram.ros.robot_state_updater import RobotStateUpdater
 from pycram.ros.viz_marker_publisher import VizMarkerPublisher
 import pycram.external_interfaces.giskard as giskardpy
-
+from geometry_msgs.msg import Point
 # Initialize the Bullet world for simulation
 world = BulletWorld("DIRECT")
 
 # Visualization Marker Publisher for ROS
-viz_marker_publisher = VizMarkerPublisher()
+v = VizMarkerPublisher()
 
 # Initialize Giskard interface for motion planning
 giskardpy.init_giskard_interface()
@@ -26,22 +26,21 @@ robot = Object("hsrb", ObjectType.ROBOT, "hsrb.urdf", pose=Pose([1, 2, 0]))
 robot.set_color([0.5, 0.5, 0.9, 1])
 
 # Create environmental objects
-apartment = Object("kitchen", ObjectType.ENVIRONMENT, "test-room.urdf")
+#apartment = Object("kitchen", ObjectType.ENVIRONMENT, "test-room.urdf")
 
 # Define orientation for objects
 object_orientation = axis_angle_to_quaternion([0, 0, 1], 0)
 
 # Define a breakfast cereal object
-breakfast_cereal = Object("breakfast_cereal", "breakfast_cereal", "breakfast_cereal.stl", pose=Pose([4.8, 2.6, 0.97]),
-                          color=[0, 1, 0, 1])
+breakfast_cereal = Object("breakfast_cereal", "breakfast_cereal", "breakfast_cereal.stl", pose=Pose([4.8, 2.6, 0.87]),color=[0, 1, 0, 1])
 # fork = Object("Fork", "fork", "spoon.stl", pose=Pose([-2.8, 2.3, 0.368], object_orientation), color=[1, 0, 0, 1])
 # spoon = Object("Spoon", "spoon", "spoon.stl", pose=Pose([-2.5, 2.3, 0.368], object_orientation), color=[0, 1, 0, 1])
 # metalmug = Object("Metalmug", "metalmug", "bowl.stl", pose=Pose([-3.1, 2.3, 0.39]), color=[0, 1, 0, 1])
 # plate = Object("Plate", "plate", "board.stl", pose=Pose([-2.2, 2.3, 0.368], object_orientation), color=[0, 1, 0, 1])
-# bowl = Object("Bowl", "bowl", "bowl.stl", pose=Pose([4.8, 2.6, 0.77]), color=[0, 1, 0, 1])
+#bowl = Object("bowl", "bowl", "bowl.stl", pose=Pose([4.8, 2.6, 0.87]), color=[0, 1, 0, 1])
 
 # Set the world's gravity
-world.set_gravity([0.0, 0.0, 9.81])
+#world.set_gravity([0.0, 0.0, 9.81])
 
 # Update robot state
 RobotStateUpdater("/tf", "/giskard_joint_states")
