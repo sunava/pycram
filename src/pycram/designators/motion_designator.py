@@ -236,7 +236,7 @@ class MoveTCPMotion(MotionDesignatorDescription):
         self.cmd: str = 'move-tcp'
         self.target: Pose = target
         self.arm: Optional[str] = arm
-        self.allow_gripper_collision = True
+        self.allow_gripper_collision = allow_gripper_collision
 
     def ground(self) -> Motion:
         """

@@ -427,6 +427,8 @@ class HSRBMoveGripperReal(ProcessModule):
      """
 
     def _execute(self, designator: MoveGripperMotion.Motion) -> Any:
+        if designator.allow_gripper_collision:
+            giskard.allow_gripper_collision("left")
         giskard.achieve_gripper_motion_goal(designator.motion)
 
 
