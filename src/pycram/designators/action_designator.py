@@ -272,7 +272,6 @@ class PickUpAction(ActionDesignatorDescription):
 
     @dataclasses.dataclass
     class Action(ActionDesignatorDescription.Action):
-
         object_designator: ObjectDesignatorDescription.Object
         """
         Object designator describing the object that should be picked up
@@ -332,12 +331,12 @@ class PickUpAction(ActionDesignatorDescription):
             tmp_for_rotate_pose.pose.position.z = -0.1
             gripper_rotate_pose = object.local_transformer.transform_pose(tmp_for_rotate_pose, "map")
 
-            #Perform Gripper Rotate
+            # Perform Gripper Rotate
             # BulletWorld.current_bullet_world.add_vis_axis(gripper_rotate_pose)
             # MoveTCPMotion(gripper_rotate_pose, self.arm).resolve().perform()
 
             oTg = object.local_transformer.transform_pose(adjusted_oTm, gripper_frame)
-            oTg.pose.position.x -= 0.07 # in x since this is how the gripper is oriented
+            oTg.pose.position.x -= 0.07  # in x since this is how the gripper is oriented
             prepose = object.local_transformer.transform_pose(oTg, "map")
 
             # Perform the motion with the prepose and open gripper
@@ -374,7 +373,8 @@ class PickUpAction(ActionDesignatorDescription):
 
             return action
 
-    def __init__(self, object_designator_description:  Union[ObjectDesignatorDescription, ObjectDesignatorDescription.Object],
+    def __init__(self,
+                 object_designator_description: Union[ObjectDesignatorDescription, ObjectDesignatorDescription.Object],
                  arms: List[str], grasps: List[str]):
         """
         Lets the robot pick up an object. The description needs an object designator describing the object that should be
@@ -409,7 +409,6 @@ class PlaceAction(ActionDesignatorDescription):
 
     @dataclasses.dataclass
     class Action(ActionDesignatorDescription.Action):
-
         object_designator: ObjectDesignatorDescription.Object
         """
         Object designator describing the object that should be place
@@ -438,8 +437,8 @@ class PlaceAction(ActionDesignatorDescription):
             MoveTCPMotion(target_diff, self.arm).resolve().perform()
             MoveGripperMotion("open", self.arm).resolve().perform()
             BulletWorld.robot.detach(self.object_designator.bullet_world_object)
-            retract_pose = local_tf.transform_pose(target_diff,BulletWorld.robot.get_link_tf_frame(
-                                                        robot_description.get_tool_frame(self.arm)))
+            retract_pose = local_tf.transform_pose(target_diff, BulletWorld.robot.get_link_tf_frame(
+                robot_description.get_tool_frame(self.arm)))
             retract_pose.position.x -= 0.07
             MoveTCPMotion(retract_pose, self.arm).resolve().perform()
 
