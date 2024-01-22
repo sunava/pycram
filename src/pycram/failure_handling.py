@@ -137,19 +137,41 @@ class RetryMonitor(FailureHandling):
 
         Raises:
             PlanFailure: If all retry attempts fail.
+
+        Returns:
+            The state of the execution performed, as well as a flattened list of the results, in the correct order
         """
+
+        def reset_interrupted(child):
+            if hasattr(child, "interrupted"):
+                child.interrupted = False
+            for sub_child in getattr(child, "children", []):
+                reset_interrupted(sub_child)
+
+        def flatten(result):
+            flattened_list = []
+            for item in result:
+                if isinstance(item, list):
+                    flattened_list.extend(item)
+                elif isinstance(item, tuple):
+                    flattened_list.append(item)
+                else:
+                    flattened_list.append(item)
+            return flattened_list
+
+        status, res = None, None
         with self.lock:
             tries = 0
             while True:
-                self.designator_description.interrupted = False
                 self.designator_description.kill_event.clear()
+                self.designator_description.interrupted = False
                 for child in self.designator_description.children:
-                    if child.interrupted:
-                        child.interrupted = False
+                    reset_interrupted(child)
                 try:
-                    self.designator_description.perform()
+                    status, res = self.designator_description.perform()
                     break
                 except PlanFailure as e:
                     tries += 1
                     if tries >= self.max_tries:
                         raise e
+        return status, flatten(res)
