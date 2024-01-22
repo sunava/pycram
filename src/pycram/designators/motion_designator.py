@@ -52,14 +52,13 @@ class MoveMotion(MotionDesignatorDescription):
 
             return motion
 
-    def __init__(self, target: Pose, resolver: Callable = None):
+    def __init__(self, target: Pose):
         """
         Navigates to robot to the given target
 
         :param target: Position and Orientation of the navigation goal
-        :param resolver: A method with which to resolve the description
         """
-        super().__init__(resolver)
+        super().__init__()
         self.cmd: str = "navigate"
         self.target: Pose = target
 
@@ -99,8 +98,7 @@ class PickUpMotion(MotionDesignatorDescription):
             pm_manager = ProcessModuleManager.get_manager()
             return pm_manager.pick_up().execute(self)
 
-    def __init__(self, object_desig: ObjectDesignatorDescription.Object, grasp: str = None, arm: str = None,
-                 resolver: Callable = None):
+    def __init__(self, object_desig: ObjectDesignatorDescription.Object, grasp: str = None, arm: str = None):
         """
         Motion designator implementation of the robot picking up an object. The robot will move its arm to the position
         of the object and attach the object to the gripper of the robot.
@@ -108,9 +106,8 @@ class PickUpMotion(MotionDesignatorDescription):
         :param object_desig: Object designator of the object to be picked up
         :param grasp: From which direction the object should be picked up
         :param arm: Which arm should be used for picking up
-        :param resolver: Alternative resolver that produces a resolved and performable motion deisgnator
         """
-        super().__init__(resolver)
+        super().__init__()
         self.cmd: str = 'pick-up'
         self.object_desig: ObjectDesignatorDescription.Object = object_desig
         self.arm: Optional[str] = arm
@@ -155,7 +152,7 @@ class PlaceMotion(MotionDesignatorDescription):
             return pm_manager.place().execute(self)
 
     def __init__(self, object_desig: ObjectDesignatorDescription.Object, target: Pose,
-                 arm: Optional[str] = None, resolver: Optional[Callable] = None):
+                 arm: Optional[str] = None):
         """
         Places the object in object_desig at the position in target. If an arm is given then the arm is used, otherwise
         arm defaults to ``'left'``
@@ -163,9 +160,8 @@ class PlaceMotion(MotionDesignatorDescription):
         :param object_desig: Object designator describing the object to be placed
         :param target: The target pose on which to place the object
         :param arm: An arm to use for placing
-        :param resolver: An alternative resolver that resolves the list of parameters to a resolved motion designator.
         """
-        super().__init__(resolver)
+        super().__init__()
         self.cmd: str = 'place'
         self.object_desig: ObjectDesignatorDescription.Object = object_desig
         self.target: Pose = target
@@ -222,17 +218,15 @@ class MoveTCPMotion(MotionDesignatorDescription):
 
             return motion
 
-    def __init__(self, target: Pose, arm: Optional[str] = None,
-                 resolver: Optional[Callable] = None, allow_gripper_collision: Optional[bool] = None):
+    def __init__(self, target: Pose, arm: Optional[str] = None, allow_gripper_collision: Optional[bool] = None):
         """
         Moves the TCP of the given arm to the given target pose.
 
         :param target: Target pose for the TCP
         :param arm: Arm that should be moved
-        :param resolver: Alternative resolver which returns a resolved motion designator
         :param allow_gripper_collision: If the gripper should be allowed to collide with something, only used on the real robot
         """
-        super().__init__(resolver)
+        super().__init__()
         self.cmd: str = 'move-tcp'
         self.target: Pose = target
         self.arm: Optional[str] = arm
@@ -277,17 +271,15 @@ class LookingMotion(MotionDesignatorDescription):
 
             return motion
 
-    def __init__(self, target: Optional[Pose] = None, object: Optional[ObjectDesignatorDescription.Object] = None,
-                 resolver: Optional[Callable] = None):
+    def __init__(self, target: Optional[Pose] = None, object: Optional[ObjectDesignatorDescription.Object] = None):
         """
         Moves the head of the robot such that the camera points towards the given location. If ``target`` and ``object``
         are given ``target`` will be preferred.
 
         :param target: Position and orientation of the target
         :param object: An Object in the BulletWorld
-        :param resolver: Alternative resolver that returns a resolved motion designator for parameter
         """
-        super().__init__(resolver)
+        super().__init__()
         self.cmd: str = 'looking'
         self.target: Optional[Pose] = target
         self.object: Object = object.bullet_world_object if object else object
@@ -340,16 +332,14 @@ class MoveGripperMotion(MotionDesignatorDescription):
             session.commit()
             return motion
 
-    def __init__(self, motion: str, gripper: str, resolver: Optional[Callable] = None,
-                 allow_gripper_collision: Optional[bool] = None):
+    def __init__(self, motion: str, gripper: str, allow_gripper_collision: Optional[bool] = None):
         """
         Moves the gripper into a given position.
 
         :param motion: Which motion to perform
         :param gripper: Name of the gripper that should be moved
-        :param resolver: An alternative resolver that resolves the parameter to a motion designator
         """
-        super().__init__(resolver)
+        super().__init__()
         self.cmd: str = 'move-gripper'
         self.motion: str = motion
         self.gripper: str = gripper
@@ -400,15 +390,14 @@ class DetectingMotion(MotionDesignatorDescription):
             session.commit()
             return motion
 
-    def __init__(self, object_type: str, resolver: Optional[Callable] = None):
+    def __init__(self, object_type: str):
         """
         Checks for every object in the FOV of the robot if it fits the given object type. If the types match an object
         designator describing the object will be returned.
 
         :param object_type: Type of the object which should be detected
-        :param resolver: An alternative resolver which returns a resolved motion designator
         """
-        super().__init__(resolver)
+        super().__init__()
         self.cmd: str = 'detecting'
         self.object_type: str = object_type
 
@@ -443,8 +432,7 @@ class MoveArmJointsMotion(MotionDesignatorDescription):
             return pm_manager.move_arm_joints().execute(self)
 
     def __init__(self, left_arm_config: Optional[str] = None, right_arm_config: Optional[str] = None,
-                 left_arm_poses: Optional[dict] = None, right_arm_poses: Optional[dict] = None,
-                 resolver: Optional[Callable] = None):
+                 left_arm_poses: Optional[dict] = None, right_arm_poses: Optional[dict] = None):
         """
         Moves the arm joints, target positions can be either be pre-defined configurations (like 'park') or a dictionary
         with joint names as keys and joint positions as values. If a configuration and a dictionary are given the
@@ -454,9 +442,8 @@ class MoveArmJointsMotion(MotionDesignatorDescription):
         :param right_arm_config: Target configuration for the right arm
         :param left_arm_poses: Target Dict for the left arm
         :param right_arm_poses: Target Dict for the right arm
-        :param resolver: An alternative resolver that returns a resolved motion designator for the given parameters.
         """
-        super().__init__(resolver)
+        super().__init__()
         self.cmd = 'move-arm-joints'
         self.left_arm_config: str = left_arm_config
         self.right_arm_config: str = right_arm_config
@@ -501,15 +488,14 @@ class WorldStateDetectingMotion(MotionDesignatorDescription):
             pm_manager = ProcessModuleManager.get_manager()
             return pm_manager.world_state_detecting().execute(self)
 
-    def __init__(self, object_type: str, resolver: Optional[Callable] = None):
+    def __init__(self, object_type: str):
         """
         Tries to find an object using the belief state (BulletWorld), if there is an object in the belief state matching
         the given object type an object designator will be returned.
 
         :param object_type: The object type which should be detected
-        :param resolver: An alternative resolver that returns a resolved motion designator for the input parameter
         """
-        super().__init__(resolver)
+        super().__init__()
         self.cmd: str = 'world-state-detecting'
         self.object_type: str = object_type
 
@@ -543,16 +529,15 @@ class MoveJointsMotion(MotionDesignatorDescription):
             pm_manager = ProcessModuleManager.get_manager()
             return pm_manager.move_joints().execute(self)
 
-    def __init__(self, names: List[str], positions: List[float], resolver: Optional[Callable] = None):
+    def __init__(self, names: List[str], positions: List[float]):
         """
         Moves the joints given by the list of names to the positions given by the list of positions. The index of a
         joint name should correspond to the index of the target position.
 
         :param names: List of joint names that should be moved
         :param positions: List of joint positions that the joints should be moved in
-        :param resolver: An alternative resolver that resolves the input parameters to a performable motion designator.
         """
-        super().__init__(resolver)
+        super().__init__()
         self.cmd: str = "move-joints"
         self.names: List[str] = names
         self.positions: List[float] = positions
@@ -610,16 +595,15 @@ class OpeningMotion(MotionDesignatorDescription):
 
             return motion
 
-    def __init__(self, object_part: ObjectPart.Object, arm: str, resolver: Optional[Callable] = None):
+    def __init__(self, object_part: ObjectPart.Object, arm: str):
         """
         Lets the robot open a container specified by the given parameter. This motion designator assumes that the handle
         is already grasped.
 
         :param object_part: Object designator describing the handle of the drawer
         :param arm: Arm that should be used
-        :param resolver: An alternative resolver
         """
-        super().__init__(resolver)
+        super().__init__()
         self.cmd: str = 'open'
         self.objet_part = object_part
         self.arm: str = arm
@@ -669,15 +653,14 @@ class ClosingMotion(MotionDesignatorDescription):
 
             return motion
 
-    def __init__(self, object_part: ObjectPart.Object, arm: str, resolver: Optional[Callable] = None):
+    def __init__(self, object_part: ObjectPart.Object, arm: str):
         """
         Lets the robot close a container specified by the given parameter. This assumes that the handle is already grasped
 
         :param object_part: Object designator describing the handle of the drawer
         :param arm: Arm that should be used
-        :param resolver: An alternative resolver
         """
-        super().__init__(resolver)
+        super().__init__()
         self.cmd: str = 'close'
         self.objet_part = object_part
         self.arm: str = arm
