@@ -61,7 +61,7 @@ def removing_of_objects() -> None:
     groups = giskard_wrapper.get_group_names()
     if groups:
         object_names = list(
-            map(lambda obj: object_names.name + "_" + str(obj.id), BulletWorld.current_bullet_world.objects))
+            map(lambda obj: obj.name + "_" + str(obj.id), BulletWorld.current_bullet_world.objects))
         diff = list(set(groups) - set(object_names))
         for grp in diff:
             giskard_wrapper.remove_group(grp)
@@ -105,8 +105,11 @@ def spawn_object(object: Object) -> None:
 
     :param object: BulletWorld object that should be spawned
     """
-    spawn_urdf(object.name + "_" + str(object.id), object.path, object.get_pose())
-
+    if hasattr(object, "path"):
+        spawn_urdf(object.name + "_" + str(object.id), object.path, object.get_pose())
+    else:
+        geom = object.customGeom["size"]
+        spawn_box(object.name + "_" + str(object.id), geom, object.get_pose())
 
 def remove_object(object: Object) -> 'UpdateWorldResponse':
     """
@@ -143,6 +146,17 @@ def spawn_mesh(name: str, path: str, pose: Pose) -> 'UpdateWorldResponse':
     """
     return giskard_wrapper.add_mesh(name, path, pose)
 
+
+def spawn_box(name: str, size: tuple, pose: Pose) -> 'UpdateWorldResponse':
+    """
+    Spawns a mesh into giskard's belief state
+
+    :param name: Name of the mesh
+    :param path: Path to the mesh file
+    :param pose: Pose in which the mesh should be spawned
+    :return: An UpdateWorldResponse message
+    """
+    return giskard_wrapper.add_box(name, size, pose)
 
 # Sending Goals to Giskard
 
@@ -289,6 +303,7 @@ def achieve_gripper_motion_goal(motion: str):
     """
     rospy.loginfo("giskard change_gripper_state: " + motion)
     giskard_wrapper.change_gripper_state(motion)
+
     # return giskard_wrapper.plan_and_execute()
 
 
@@ -468,8 +483,14 @@ def place_objects(object, target, grasp):
     # TODO: Decide placing from_above or align_vertical. Maybe using Objecttype for that?
     from_above_objects = ["Bowl", "Metalmug", "Spoon", "Knife", "Fork"]
 
-    if grasp == "top":
-        giskard_wrapper.placing(context="from_above", goal_pose=target)
+
+    context_from_above = {'action': 'placing', 'from_above': True}
+    context_default = {'action': 'placing'}
+
+    if object.name in from_above_objects:
+        giskard_wrapper.placing(context=context_from_above, goal_pose=target)
+        print("if placed")
+
     else:
         giskard_wrapper.placing(context="align_vertical", goal_pose=target)
 

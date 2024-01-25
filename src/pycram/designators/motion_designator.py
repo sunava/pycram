@@ -238,7 +238,7 @@ class MoveTCPMotion(MotionDesignatorDescription):
         self.cmd: str = 'move-tcp'
         self.target: Pose = target
         self.arm: Optional[str] = arm
-        self.allow_gripper_collision = True
+        self.allow_gripper_collision = allow_gripper_collision
 
     def ground(self) -> Motion:
         """
@@ -374,13 +374,14 @@ class DetectingMotion(MotionDesignatorDescription):
     @dataclasses.dataclass
     class Motion(MotionDesignatorDescription.Motion):
         # cmd: str
-        object_type: str
-        """
-        Type of the object that should be detected
-        """
         technique: str
         """
         Technique means how the object should be detected, e.g. 'color', 'shape', 'all', etc. 
+        """
+
+        object_type: Optional[str]
+        """
+        Type of the object that should be detected
         """
 
         def perform(self):
@@ -398,7 +399,7 @@ class DetectingMotion(MotionDesignatorDescription):
             # return ObjectDesignatorDescription.Object(bullet_world_object.name, bullet_world_object.type,
             #                                           bullet_world_object)
 
-    def __init__(self, object_type: str, technique: str,  resolver: Optional[Callable] = None):
+    def __init__(self, technique: str,  resolver: Optional[Callable] = None, object_type: Optional[str] = None):
         """
         Checks for every object in the FOV of the robot if it fits the given object type. If the types match an object
         designator describing the object will be returned.
@@ -409,7 +410,7 @@ class DetectingMotion(MotionDesignatorDescription):
         super().__init__(resolver)
         self.cmd: str = 'detecting'
         self.technique: str = technique
-        self.object_type: str = object_type
+        self.object_type: Optional[str] = object_type
 
     def ground(self) -> Motion:
         """
