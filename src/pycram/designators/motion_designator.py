@@ -148,6 +148,7 @@ class PlaceMotion(MotionDesignatorDescription):
         """
         Arm that is currently holding the object
         """
+        grasp : str
 
         @with_tree
         def perform(self):
@@ -155,7 +156,7 @@ class PlaceMotion(MotionDesignatorDescription):
             return pm_manager.place().execute(self)
 
     def __init__(self, object_desig: ObjectDesignatorDescription.Object, target: Pose,
-                 arm: Optional[str] = None, resolver: Optional[Callable] = None):
+                 arm: Optional[str] = None, grasp: str = "front", resolver: Optional[Callable] = None):
         """
         Places the object in object_desig at the position in target. If an arm is given then the arm is used, otherwise
         arm defaults to ``'left'``
@@ -170,6 +171,7 @@ class PlaceMotion(MotionDesignatorDescription):
         self.object_desig: ObjectDesignatorDescription.Object = object_desig
         self.target: Pose = target
         self.arm: str = arm
+        self.grasp: str = grasp
 
     def ground(self) -> Motion:
         """
@@ -179,7 +181,7 @@ class PlaceMotion(MotionDesignatorDescription):
         :return: A resolved performable motion designator
         """
         arm = "left" if not self.arm else self.arm
-        return self.Motion(self.cmd, self.object_desig, self.target, arm)
+        return self.Motion(self.cmd, self.object_desig, self.target, arm, self.grasp)
 
 
 class MoveTCPMotion(MotionDesignatorDescription):

@@ -126,6 +126,7 @@ with real_robot:
     # TODO: testen, ob Position akkurat
     giskardpy.stop_looking()
     NavigateAction([Pose([3, 5, 0], [0, 0, 1, 1])]).resolve().perform()
+    #NavigateAction(target_locations=[Pose([3, 5, 0])]).resolve().perform() ??
 
     # search for host in living room
     if DetectAction(BelieveObject(types=[milk.type]), technique='human').resolve().perform():

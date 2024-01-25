@@ -156,5 +156,23 @@ def nav_test():
         moveBase.queryPoseNav(test_pose)
 
 
+
+
 demo_test('from_couch')
 #demo_test('to_couch')
+
+    # receives name and drink via topic
+    #rospy.Subscriber("nlp_out", String, talk_request)
+
+
+
+#1. rasa run --enable-api -> start Rasa Server
+#2. python3 activate_language_processing.py -> NLP
+#3. roslaunch suturo_bringup suturo_bringup.launch -> Map
+#4. roslaunch_hsr_velocity_controller unloas_my_controller.launch
+#5. roslaunch giskardpy giskardpy_hsr_real_vel.launch -> Giskard
+#starten
+#6. rosrun robokudo main.py _ae=humandetection_demo_ros_pkg=milestone1 -> Perception
+#7. run demo in Pycharm -> Planning
+
+

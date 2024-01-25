@@ -1,4 +1,6 @@
 import time
+from math import sqrt
+
 from pycram.designators.location_designator import AccessingLocation
 from pycram.process_module import real_robot, semi_real_robot, with_real_robot
 from pycram.designators.action_designator import *
@@ -24,6 +26,7 @@ transport_orientation = axis_angle_to_quaternion([0, 0, 1], 270)
 robot = Object("hsrb", ObjectType.ROBOT, "../../resources/" + "hsrb" + ".urdf")
 robot.set_color([0.5, 0.5, 0.9, 1])
 robot_desig = ObjectDesignatorDescription(names=["hsrb"]).resolve()
+robot_pose = robot.get_pose()
 
 kitchen = Object("kitchen", "environment", "kitchen.urdf")
 kitchen_desig = BelieveObject(names=["kitchen"])
@@ -93,12 +96,56 @@ def sort_obj_list(obj_dict):
         print("Objects in list: ", obj.name)
     return sorted_obj_list
 
+def sort_objects(obj_dict):
+    sorted_objects= []
+    object_tuples = []
+    wished_sorted_obj_list = ["Bowl", "Metalmug", "Fork", "Spoon", "Plate"]
+    for value in obj_dict.values():
+        distance = sqrt(pow((value.pose.position.x - robot_pose.position.x), 2) +
+                     pow((value.pose.position.y - robot_pose.position.y), 2) +
+                     pow((value.pose.position.z - robot_pose.position.z), 2))
+
+        print(f"object name: {value.name} and distance: {distance}")
+        object_tuples.append((value, distance))
+    sorted_object_list = sorted(object_tuples, key= lambda distance: distance[1])
+    for (object, distance) in sorted_object_list:
+        if object.name in wished_sorted_obj_list:
+             sorted_objects.append(object)
+
+    test_list = []
+    for test_object in sorted_objects:
+         test_list.append(test_object.name)
+    print(test_list)
+
+    return sorted_objects
+
+def try_pick_up(obj, grasps):
+    try:
+        PickUpAction(obj, ["left"], [grasps]).resolve().perform()
+    except (EnvironmentUnreachable, GripperClosedCompletely):
+        print("try pick up again")
+        TalkingMotion("Try pick up again")
+        NavigateAction([Pose([robot_pose.position.x - 0.3, robot_pose.position.y, robot_pose.position.z],
+                             robot_pose.orientation)]).resolve().perform()
+        ParkArmsAction([Arms.LEFT]).resolve().perform()
+        if EnvironmentUnreachable:
+             object_desig = DetectAction(BelieveObject(types=[ObjectType.MILK]), technique='all').resolve().perform()
+             # TODO nur wenn key (name des vorherigen objektes) in object_desig enthalten ist
+             new_object = object_desig[obj.name]
+        else:
+             new_object = obj
+        try:
+            PickUpAction(new_object, ["left"], [grasps]).resolve().perform()
+
+        except:
+            TalkingMotion(f"Can you pleas give me the {obj.name} object on the table? Thanks")
+            TalkingMotion(f"Please push down my hand, when I can grab the {obj.name}.")
 
 with semi_real_robot:
     TalkingMotion("Starting Demo").resolve().perform()
 
     # TODO: Öffnen von Geschirrspüler handle_desig wirft Fehler
-   # handle_desig = ObjectPart(names=["kitchen_2/sink_area_dish_washer_door"], part_of=kitchen_desig.resolve()).resolve()
+    # handle_desig = ObjectPart(names=["kitchen_2/sink_area_dish_washer_door"], part_of=kitchen_desig.resolve()).resolve()
     # print(f"handle_desig: {handle_desig}")
     # dishwasher_open_loc = AccessingLocation(handle_desig=handle_desig, robot_desig=robot_desig).resolve()
     #
@@ -108,7 +155,7 @@ with semi_real_robot:
     # print("open dishwasher")
 
     object_desig = move_and_detect()
-    sorted_obj = sort_obj_list(object_desig)
+    sorted_obj = sort_objects(object_desig)
 
     for obj in sorted_obj:
         new_pose = obj.pose
@@ -122,12 +169,16 @@ with semi_real_robot:
         target_location = Pose([new_pose.position.x, -0.35, new_pose.position.z], transport_orientation)
 
         if obj.name == "Plate":
+            MoveGripperMotion("open", "left")
             TalkingMotion("Can you pleas give me the last object on the table, the plate? Thanks")
             TalkingMotion("Please push down my hand, when I can grab the plate.")
             print("picked up plate")
-            PickUpAction(obj, ["left"], ["front"]).resolve().perform()
+            time.sleep(5)
+            MoveGripperMotion("close", "left")
+        elif obj.name == "Metalmug":
+            try_pick_up(obj, "front")
         else:
-            PickUpAction(obj, ["left"], ["top"]).resolve().perform()
+            try_pick_up(obj, "top")
 
         rospy.sleep(5)
         ParkArmsAction([Arms.LEFT]).resolve().perform()

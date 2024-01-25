@@ -479,9 +479,10 @@ def spawn_kitchen():
                              pose=kitchen_pose)
 
 
-def place_objects(object, target):
+def place_objects(object, target, grasp):
     # TODO: Decide placing from_above or align_vertical. Maybe using Objecttype for that?
     from_above_objects = ["Bowl", "Metalmug", "Spoon", "Knife", "Fork"]
+
 
     context_from_above = {'action': 'placing', 'from_above': True}
     context_default = {'action': 'placing'}
@@ -489,9 +490,9 @@ def place_objects(object, target):
     if object.name in from_above_objects:
         giskard_wrapper.placing(context=context_from_above, goal_pose=target)
         print("if placed")
+
     else:
-        giskard_wrapper.placing(context=context_default, goal_pose=target)
-        print("else placed")
-    giskard_wrapper.plan_and_execute(wait=True)
+        giskard_wrapper.placing(context="align_vertical", goal_pose=target)
+
     print("placed object")
-# BulletWorld.robot.detach(object.bullet_world_object)
+

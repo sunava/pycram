@@ -307,7 +307,7 @@ class HSRBPlaceReal(ProcessModule):
     #    pass
     def _execute(self, designator: PlaceMotion.Motion) -> Any:
           giskard.avoid_all_collisions()
-          giskard.place_objects(designator.object, designator.target)
+          giskard.place_objects(designator.object, designator.target, designator.grasp)
 
 
 class HSRBMoveHeadReal(ProcessModule):
