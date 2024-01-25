@@ -22,6 +22,7 @@ import rosnode
 import atexit
 
 import urdf_parser_py.urdf
+from betterpybullet import Vector3
 from geometry_msgs.msg import Quaternion, Point, TransformStamped
 from urdf_parser_py.urdf import URDF
 
@@ -757,7 +758,8 @@ class Object:
                  world: BulletWorld = None,
                  color: Optional[List[float]] = [1, 1, 1, 1],
                  ignoreCachedFiles: Optional[bool] = False,
-                 id: Optional[int] = None):
+                 id: Optional[int] = None,
+                 customGeom: Optional[Dict[str, List[float]]] = None):
         """
         The constructor loads the urdf file into the given BulletWorld, if no BulletWorld is specified the
         :py:attr:`~BulletWorld.current_bullet_world` will be used. It is also possible to load .obj and .stl file into the BulletWorld.
@@ -778,21 +780,31 @@ class Object:
         self.name: str = name
         self.type: str = type
         self.color: List[float] = color
+        self._current_link_poses = {}
+        self._current_link_transforms = {}
+        self._current_joint_states = {}
+
         pose_in_map = self.local_transformer.transform_pose(pose, "map")
         position, orientation = pose_in_map.to_list()
-        if not path and id:
-            self.id = id
-        if path:
-            self.id, self.path = _load_object(name, path, position, orientation, self.world, color, ignoreCachedFiles)
-            self.joints: Dict[str, int] = self._joint_or_link_name_to_id("joint")
-
         self.attachments: Dict[Object, List] = {}
         self.cids: Dict[Object, int] = {}
         self.original_pose = pose_in_map
-        self.links: Dict[str, int] = self._joint_or_link_name_to_id("link")
-        if path:
-            self.tf_frame = ("shadow/" if self.world.is_shadow_world else "") + self.name + "_" + str(self.id)
+        self.customGeom = customGeom
+        if not path and id:
+            self.id = id
+            self.links: Dict[str, int] = {'new_link': -1}
+            self.link_to_geometry = {'new_link': self.customGeom}
 
+        if path:
+            self.id, self.path = _load_object(name, path, position, orientation, self.world, color, ignoreCachedFiles)
+            self.links: Dict[str, int] = self._joint_or_link_name_to_id("link")
+            self.joints: Dict[str, int] = self._joint_or_link_name_to_id("joint")
+
+        self.tf_frame = ("shadow/" if self.world.is_shadow_world else "") + self.name + "_" + str(self.id)
+
+
+
+        if path:
             # This means "world" is not the shadow world since it has a reference to a shadow world
             if self.world.shadow_world != None:
                 self.world.world_sync.add_obj_queue.put(
@@ -804,19 +816,15 @@ class Object:
                     BulletWorld.robot = self
 
             self.links[self.urdf_object.get_root()] = -1
+            self.link_to_geometry = self._get_geometry_for_link()
+            self._init_current_joint_states()
 
         self._current_pose = pose_in_map
-        self._current_link_poses = {}
-        self._current_link_transforms = {}
-        self._current_joint_states = {}
-        if path:
-            self._init_current_joint_states()
-            self._update_link_poses()
+        self._update_link_poses()
+
 
         self.base_origin_shift = np.array(position) - np.array(self.get_base_origin().position_as_list())
         self.local_transformer.update_transforms_for_object(self)
-        if path:
-         self.link_to_geometry = self._get_geometry_for_link()
 
         self.world.objects.append(self)
 
@@ -1440,14 +1448,20 @@ class Object:
         Updates the cached poses and transforms for each link of this Object
         """
         for link_name in self.links.keys():
-            if link_name == self.urdf_object.get_root():
+            if hasattr(self, "urdf_object"):
+                if link_name == self.urdf_object.get_root():
+                    self._current_link_poses[link_name] = self._current_pose
+                    self._current_link_transforms[link_name] = self._current_pose.to_transform(self.tf_frame)
+                else:
+                    self._current_link_poses[link_name] = Pose(*p.getLinkState(self.id, self.links[link_name],
+                                                                               physicsClientId=self.world.client_id)[
+                                                                4:6])
+                    self._current_link_transforms[link_name] = self._current_link_poses[link_name].to_transform(
+                        self.get_link_tf_frame(link_name))
+            else:
                 self._current_link_poses[link_name] = self._current_pose
                 self._current_link_transforms[link_name] = self._current_pose.to_transform(self.tf_frame)
-            else:
-                self._current_link_poses[link_name] = Pose(*p.getLinkState(self.id, self.links[link_name],
-                                                                           physicsClientId=self.world.client_id)[4:6])
-                self._current_link_transforms[link_name] = self._current_link_poses[link_name].to_transform(
-                    self.get_link_tf_frame(link_name))
+
 
     def _init_current_joint_states(self) -> None:
         """
