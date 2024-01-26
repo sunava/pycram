@@ -99,11 +99,11 @@ def demo_test(area):
         pose_home =  Pose([3, 1.7, 0], robot_orientation)
 
         # Perception, detect first guest
-        perceived_object_dict = DetectAction(BelieveObject(types=[milk.type]), technique='human').resolve().perform()
-        #while perceived_object_dict[0] is None:
-         #   rospy.sleep(5)
-          #  TalkingMotion("Please step in front of me")
-           # rospy.sleep(5)
+        while not DetectAction(BelieveObject(types=[milk.type]), technique='human').resolve().perform():
+            #TODO: funktioniert Designator in While Bedingung???
+            TalkingMotion("Please step in front of me").resolve.perform()
+            rospy.sleep(5)
+
 
         rospy.loginfo("human detected")
 
@@ -112,18 +112,14 @@ def demo_test(area):
         TalkingMotion("Hello, i am Toya and my favorite drink is oil. What about you, talk to me?").resolve().perform()
 
         # reicht sleep 1?
-        rospy.sleep(10)
+        rospy.sleep(1)
 
         # signal to start listening
-        #pub_nlp.publish("start listening")
-
+        pub_nlp.publish("start listening")
+        #TODO: How to erst weiter machen, wenn Knowledge Daten geschickt hat
 
         TalkingMotion("Hey i will stop looking now").resolve().perform()
 
-        # TalkingMotion("Hello, i will stop looking at you now").resolve().perform()
-        # rospy.sleep(2)
-        # rospy.loginfo("stop looking now")
-        # giskardpy.stop_looking()
 
         rospy.loginfo("stop looking now")
         giskardpy.stop_looking()
@@ -158,7 +154,7 @@ def nav_test():
 
 
 
-demo_test('from_couch')
+#demo_test('from_couch')
 #demo_test('to_couch')
 
     # receives name and drink via topic

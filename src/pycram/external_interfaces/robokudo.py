@@ -192,3 +192,16 @@ def queryHuman() -> Any:
         pass
 
     return human_pose
+
+def stop_queryHuman() -> Any:
+    """
+       Sends a query to RoboKudo to stop look for a Human
+    """
+    init_robokudo_interface()
+    from robokudo_msgs.msg import QueryAction
+
+    client = actionlib.SimpleActionClient('robokudo/query', QueryAction)
+    rospy.loginfo("Waiting for action server")
+    client.wait_for_server()
+    client.cancel_goal()
+    rospy.loginfo("cancelled current goal")
