@@ -98,8 +98,12 @@ def demo_test(area):
 
         pose_home =  Pose([3, 1.7, 0], robot_orientation)
 
+        DetectAction(technique='default', state='start').resolve().perform()
         # Perception, detect first guest
-        while not DetectAction(BelieveObject(types=[milk.type]), technique='human').resolve().perform():
+        #todo richtigen fluent erstellen
+        fluentvariable = True
+        while not fluentvariable:
+
             #TODO: funktioniert Designator in While Bedingung???
             TalkingMotion("Please step in front of me").resolve.perform()
             rospy.sleep(5)

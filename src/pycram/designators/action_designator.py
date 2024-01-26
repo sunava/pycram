@@ -735,6 +735,8 @@ class DetectAction(ActionDesignatorDescription):
         Object designator loosely describing the object, e.g. only type. 
         """
 
+        state: Optional[str] = None
+
         @with_tree
         def perform(self) -> Any:
             return DetectingMotion(technique=self.technique).resolve().perform()
@@ -754,7 +756,7 @@ class DetectAction(ActionDesignatorDescription):
             return action
 
     def __init__(self, technique, resolver=None,
-                 object_designator_description: Optional[ObjectDesignatorDescription] = None):
+                 object_designator_description: Optional[ObjectDesignatorDescription] = None, state: Optional[str] = None):
         """
         Tries to detect an object in the field of view (FOV) of the robot.
 
@@ -764,6 +766,7 @@ class DetectAction(ActionDesignatorDescription):
         super().__init__(resolver)
         self.technique: str = technique
         self.object_designator_description: Optional[ObjectDesignatorDescription] = object_designator_description
+        self.state: Optional[str] = state
 
     def ground(self) -> Action:
         """

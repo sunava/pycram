@@ -189,13 +189,14 @@ def queryHuman() -> Any:
     listener()
     while not human_bool:
         rospy.loginfo_throttle(3, "Waiting for human to be detected")
+        #TODO: Roboter sprechen lassen? "please step in front of me"
         pass
 
     return human_pose
 
 def stop_queryHuman() -> Any:
     """
-       Sends a query to RoboKudo to stop look for a Human
+       Sends a query to RoboKudo to stop human detection
     """
     init_robokudo_interface()
     from robokudo_msgs.msg import QueryAction
