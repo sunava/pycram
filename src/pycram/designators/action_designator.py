@@ -423,11 +423,10 @@ class PlaceAction(ActionDesignatorDescription):
         """
         Pose in the world at which the object should be placed
         """
-        grasps: List[str]
+
         @with_tree
         def perform(self) -> None:
             lt = LocalTransformer()
-
             robot = BulletWorld.robot
             # Retrieve object and robot from designators
             object = self.object_designator.bullet_world_object
@@ -444,32 +443,6 @@ class PlaceAction(ActionDesignatorDescription):
 
             rospy.logwarn("Placing now")
             MoveTCPMotion(oTmG, self.arm).resolve().perform()
-
-
-    def to_sql(self) -> ORMPlaceAction:
-        return ORMPlaceAction(self.arm)
-
-    def insert(self, session, *args, **kwargs) -> ORMPlaceAction:
-        action = super().insert(session)
-
-        if self.object_designator:
-            od = self.object_designator.insert(session, )
-            action.object = od.id
-        else:
-            action.object = None
-
-        if self.target_location:
-            position = Position(*self.target_location.position_as_list())
-            orientation = Quaternion(*self.target_location.orientation_as_list())
-            session.add(position)
-            session.add(orientation)
-            session.commit()
-            action.position = position.id
-            action.orientation = orientation.id
-        else:
-            action.position = None
-            action.orientation = None
-
 
             tool_frame = robot_description.get_tool_frame(self.arm)
             special_knowledge_offset = lt.transform_pose(oTmG, robot.get_link_tf_frame(tool_frame))
@@ -517,7 +490,6 @@ class PlaceAction(ActionDesignatorDescription):
             session.commit()
             return action
 
-
     def __init__(self,
                  object_designator_description: Union[ObjectDesignatorDescription, ObjectDesignatorDescription.Object],
                  arms: List[str], grasps: List[str], target_locations: List[Pose], resolver=None):
@@ -542,11 +514,10 @@ class PlaceAction(ActionDesignatorDescription):
         """
         Default resolver, returns a performable designator with the first entries from the lists of possible parameter.
 
-
-     :return: A performable designator
-     """
-     obj_desig = self.object_designator_description if isinstance(self.object_designator_description,
-                                                                 ObjectDesignatorDescription.Object) else self.object_designator_description.resolve()
+        :return: A performable designator
+        """
+        obj_desig = self.object_designator_description if isinstance(self.object_designator_description,
+                                                                     ObjectDesignatorDescription.Object) else self.object_designator_description.resolve()
 
         return self.Action(obj_desig, self.arms[0], self.grasps[0], self.target_locations[0])
 
