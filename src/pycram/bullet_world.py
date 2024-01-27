@@ -734,6 +734,7 @@ class Object:
                  pose: Pose = None,
                  world: BulletWorld = None,
                  color: Optional[List[float]] = [1, 1, 1, 1],
+                 size: str = "Normal",
                  ignoreCachedFiles: Optional[bool] = False):
         """
         The constructor loads the urdf file into the given BulletWorld, if no BulletWorld is specified the
@@ -746,6 +747,7 @@ class Object:
         :param pose: The pose at which the Object should be spawned
         :param world: The BulletWorld in which the object should be spawned, if no world is specified the :py:attr:`~BulletWorld.current_bullet_world` will be used
         :param color: The color with which the object should be spawned.
+        :param size: String of size associated with this object
         :param ignoreCachedFiles: If true the file will be spawned while ignoring cached files.
         """
         if not pose:
@@ -754,6 +756,7 @@ class Object:
         self.local_transformer = LocalTransformer()
         self.name: str = name
         self.type: str = type
+        self.size: str = size
         self.color: List[float] = color
         pose_in_map = self.local_transformer.transform_pose(pose, "map")
         position, orientation = pose_in_map.to_list()
@@ -769,7 +772,8 @@ class Object:
         # This means "world" is not the shadow world since it has a reference to a shadow world
         if self.world.shadow_world != None:
             self.world.world_sync.add_obj_queue.put(
-                [name, type, path, position, orientation, self.world.shadow_world, color, self])
+                [name, type, path, position, orientation, self.world.shadow_world, color, size,
+                 self])
 
         with open(self.path) as f:
             self.urdf_object = URDF.from_xml_string(f.read())
