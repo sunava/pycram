@@ -303,8 +303,10 @@ class PickUpAction(ActionDesignatorDescription):
             object = self.object_designator.bullet_world_object
             # oTm = Object Pose in Frame map
             oTm = object.get_pose()
-
+            execute = True
             if self.grasp == "top":
+                if self.object_designator.type == "Cutlery":
+                    oTm.pose.position.z = 0.718
                 oTm.pose.position.z += 0.04
 
             grasp_rotation = robot_description.grasps.get_orientation_for_grasp(self.grasp)
@@ -315,21 +317,31 @@ class PickUpAction(ActionDesignatorDescription):
             rospy.logwarn("Opening Gripper")
             MoveGripperMotion(motion="open", gripper=self.arm).resolve().perform()
             rospy.logwarn("Picking now")
-            MoveTCPMotion(oTmG, self.arm).resolve().perform()
+            BulletWorld.current_bullet_world.add_vis_axis(oTmG)
+            if execute:
+                MoveTCPMotion(oTmG, self.arm).resolve().perform()
 
             tool_frame = robot_description.get_tool_frame(self.arm)
             special_knowledge_offset = lt.transform_pose(oTmG, robot.get_link_tf_frame(tool_frame))
             if robot.name == "hsrb":
                 if self.grasp == "top":
-                    special_knowledge_offset.pose.position.y += 0.04
-                    if self.object_designator.name == "Bowl":
+                    if self.object_designator.type == "Bowl":
+                        special_knowledge_offset.pose.position.y += 0.04
                         special_knowledge_offset.pose.position.x += 0.015
+                    if self.object_designator.type == "Cutlery":
+                        print(f"Cutlery erkannt, rechne +x")
+                        print(special_knowledge_offset.pose.position.x)
+                        special_knowledge_offset.pose.position.x -= 0.11
+                        print(special_knowledge_offset.pose.position.x)
+
 
             push_base = special_knowledge_offset
             if robot.name == "hsrb":
                 z = 0.03
                 if self.grasp == "top":
-                    z = 0.07
+                    z = 0.039
+                    if self.object_designator.type == "Bowl":
+                        z = 0.07
                 push_base.pose.position.z += z
             # todo: make this for other robots
             push_baseTm = lt.transform_pose(push_base, "map")
@@ -337,10 +349,14 @@ class PickUpAction(ActionDesignatorDescription):
 
             if self.grasp == "top":
                 rospy.logwarn("Offset now")
-                MoveTCPMotion(special_knowledge_offsetTm, self.arm).resolve().perform()
+                BulletWorld.current_bullet_world.add_vis_axis(special_knowledge_offsetTm)
+                if execute:
+                    MoveTCPMotion(special_knowledge_offsetTm, self.arm).resolve().perform()
 
-            rospy.logwarn("Pushing now")
-            MoveTCPMotion(push_baseTm, self.arm).resolve().perform()
+                rospy.logwarn("Pushing now")
+                BulletWorld.current_bullet_world.add_vis_axis(push_baseTm)
+                if execute:
+                    MoveTCPMotion(push_baseTm, self.arm).resolve().perform()
 
             rospy.logwarn("Close Gripper")
             MoveGripperMotion(motion="close", gripper=self.arm).resolve().perform()
@@ -348,9 +364,9 @@ class PickUpAction(ActionDesignatorDescription):
             rospy.logwarn("Lifting now")
             liftingTm = push_baseTm
             liftingTm.pose.position.z += 0.03
-            MoveTCPMotion(liftingTm, self.arm).resolve().perform()
-
-  
+            BulletWorld.current_bullet_world.add_vis_axis(liftingTm)
+            if execute:
+                MoveTCPMotion(liftingTm, self.arm).resolve().perform()
 
         def to_sql(self) -> ORMPickUpAction:
             return ORMPickUpAction(self.arm, self.grasp)
@@ -520,7 +536,6 @@ class PlaceAction(ActionDesignatorDescription):
                                                                      ObjectDesignatorDescription.Object) else self.object_designator_description.resolve()
 
         return self.Action(obj_desig, self.arms[0], self.grasps[0], self.target_locations[0])
-
 
 
 class NavigateAction(ActionDesignatorDescription):
@@ -735,6 +750,8 @@ class DetectAction(ActionDesignatorDescription):
         Object designator loosely describing the object, e.g. only type. 
         """
 
+        state: Optional[str] = None
+
         @with_tree
         def perform(self) -> Any:
             return DetectingMotion(technique=self.technique).resolve().perform()
@@ -754,7 +771,7 @@ class DetectAction(ActionDesignatorDescription):
             return action
 
     def __init__(self, technique, resolver=None,
-                 object_designator_description: Optional[ObjectDesignatorDescription] = None):
+                 object_designator_description: Optional[ObjectDesignatorDescription] = None, state: Optional[str] = None):
         """
         Tries to detect an object in the field of view (FOV) of the robot.
 
@@ -764,6 +781,7 @@ class DetectAction(ActionDesignatorDescription):
         super().__init__(resolver)
         self.technique: str = technique
         self.object_designator_description: Optional[ObjectDesignatorDescription] = object_designator_description
+        self.state: Optional[str] = state
 
     def ground(self) -> Action:
         """
