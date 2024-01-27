@@ -4,6 +4,7 @@ from typing import Any
 
 import numpy as np
 import rospy
+from tmc_control_msgs.msg import GripperApplyEffortActionGoal
 from tmc_msgs.msg import Voice
 
 import pycram.bullet_world_reasoning as btr
@@ -11,7 +12,7 @@ from ..designators.motion_designator import *
 from ..enums import JointType, ObjectType
 from ..external_interfaces import giskard
 from ..external_interfaces.ik import request_ik
-from ..external_interfaces.robokudo import queryEmpty, queryHuman
+from ..external_interfaces.robokudo import queryEmpty, queryHuman, stop_queryHuman
 from ..helper import _apply_ik
 from ..local_transformer import LocalTransformer
 from ..external_interfaces.navigate import queryPoseNav
@@ -306,7 +307,7 @@ class HSRBPlaceReal(ProcessModule):
     #    pass
     def _execute(self, designator: PlaceMotion.Motion) -> Any:
           giskard.avoid_all_collisions()
-          giskard.place_objects(designator.object, designator.target)
+          giskard.place_objects(designator.object, designator.target, designator.grasp)
 
 
 class HSRBMoveHeadReal(ProcessModule):
@@ -344,7 +345,7 @@ class HSRBDetectingReal(ProcessModule):
 
     def _execute(self, desig: DetectingMotion.Motion) -> Any:
         # todo at the moment perception ignores searching for a specific object type so we do as well on real
-        if desig.technique == 'human':
+        if desig.technique == 'human' and (desig.state == "start" or desig.state == None):
             human_pose = queryHuman()
             pose = Pose.from_pose_stamped(human_pose)
             pose.position.z = 0
@@ -358,21 +359,66 @@ class HSRBDetectingReal(ProcessModule):
             return object_dict
 
             return human_pose
+        elif desig.technique == 'human' and desig.state == "stop":
+            stop_queryHuman()
+            return None
+
 
         query_result = queryEmpty(ObjectDesignatorDescription(types=[desig.object_type]))
         perceived_objects = []
         for i in range(0, len(query_result.res)):
             # this has to be pose from pose stamped since we spawn the object with given header
             obj_pose = Pose.from_pose_stamped(query_result.res[i].pose[0])
+            #obj_pose.orientation = [0, 0, 0, 1]
             # obj_pose_tmp = query_result.res[i].pose[0]
             obj_type = query_result.res[i].type
-            # print(obj_pose)
-            # print(obj_pose_tmp)
-            # todo we need the size of the object to be able to spawn it -> todo an perception
-            Physicalobject = Object(obj_type, ObjectType.BREAKFAST_CEREAL, "milk.stl", pose=obj_pose)
+            obj_size = query_result.res[i].size
+            obj_color = query_result.res[i].color[0]
+            color_switch = {
+                "red": [1, 0, 0, 1],
+                "green": [0, 1, 0, 1],
+                "blue": [0, 0, 1, 1],
+                "black": [0, 0, 0, 1],
+                "white": [1, 1, 1, 1],
+                # add more colors if needed
+            }
+            color = color_switch.get(obj_color)
+            if color is None:
+                color = [0, 0, 0, 1]
 
-            perceived_objects.append(
-                ObjectDesignatorDescription.Object(obj_type, ObjectType.BREAKFAST_CEREAL, Physicalobject))
+            # atm this is the string size that describes the object but it is not the shape size thats why string
+            def extract_xyz_values(input_string):
+                # Split the input string by commas and colon to separate key-value pairs
+                key_value_pairs = input_string.split(', ')
+
+                # Initialize variables to store the X, Y, and Z values
+                x_value = None
+                y_value = None
+                z_value = None
+
+                # Iterate through the key-value pairs to extract the values
+                for pair in key_value_pairs:
+                    key, value = pair.split(': ')
+                    if key == 'x':
+                        x_value = float(value)
+                    elif key == 'y':
+                        y_value = float(value)
+                    elif key == 'z':
+                        z_value = float(value)
+
+                return x_value, y_value, z_value
+
+            x, y, z = extract_xyz_values(obj_size)
+            size = (x, z/2, y)
+            size_box = (x/2, z/2, y/2)
+            hard_size= (0.02, 0.02, 0.03)
+            id = BulletWorld.current_bullet_world.add_rigid_box(obj_pose, hard_size, color)
+            box_object = Object(obj_type + "_" + str(rospy.get_time()), obj_type, pose=obj_pose, color=color, id=id,
+                                customGeom={"size": [hard_size[0], hard_size[1], hard_size[2]]})
+            box_object.set_pose(obj_pose)
+            box_desig = ObjectDesignatorDescription.Object(box_object.name, box_object.type, box_object)
+
+            perceived_objects.append(box_desig)
 
         object_dict = {}
 
@@ -390,7 +436,7 @@ class HSRBMoveTCPReal(ProcessModule):
     def _execute(self, designator: MoveTCPMotion.Motion) -> Any:
         lt = LocalTransformer()
         pose_in_map = lt.transform_pose(designator.target, "map")
-
+        giskard.avoid_all_collisions()
         if designator.allow_gripper_collision:
             giskard.allow_gripper_collision(designator.arm)
         giskard.achieve_cartesian_goal(pose_in_map, robot_description.get_tool_frame(designator.arm),
@@ -427,7 +473,27 @@ class HSRBMoveGripperReal(ProcessModule):
      """
 
     def _execute(self, designator: MoveGripperMotion.Motion) -> Any:
-        giskard.achieve_gripper_motion_goal(designator.motion)
+        if (designator.motion == "open"):
+            pub_gripper = rospy.Publisher('/hsrb/gripper_controller/grasp/goal', GripperApplyEffortActionGoal,
+                                          queue_size=10)
+            rate = rospy.Rate(10)
+            rospy.sleep(2)
+            msg = GripperApplyEffortActionGoal()  # sprechen joint gripper_controll_manager an, indem wir goal publishen type den giskard fürs greifen erwartet
+            msg.goal.effort = 0.8
+            pub_gripper.publish(msg)
+
+        elif (designator.motion == "close"):
+            pub_gripper = rospy.Publisher('/hsrb/gripper_controller/grasp/goal', GripperApplyEffortActionGoal,
+                                          queue_size=10)
+            rate = rospy.Rate(10)
+            rospy.sleep(2)
+            msg = GripperApplyEffortActionGoal()
+            msg.goal.effort = -0.8
+            pub_gripper.publish(msg)
+
+        # if designator.allow_gripper_collision:
+        #     giskard.allow_gripper_collision("left")
+        # giskard.achieve_gripper_motion_goal(designator.motion)
 
 
 class HSRBOpenReal(ProcessModule):

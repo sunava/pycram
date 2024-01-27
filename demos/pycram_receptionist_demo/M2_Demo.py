@@ -1,20 +1,15 @@
 import rospy
-from geometry_msgs.msg import PoseStamped
-from robokudo_msgs.msg import QueryActionGoal
-from pycram.designators.action_designator import DetectAction, LookAtAction, NavigateAction
-from pycram.designators.motion_designator import TalkingMotion, MoveMotion
-from pycram.external_interfaces import robokudo
-from pycram.process_module import simulated_robot, with_simulated_robot, real_robot, with_real_robot, semi_real_robot
+from pycram.designators.action_designator import DetectAction, NavigateAction
+from pycram.designators.motion_designator import TalkingMotion
+from pycram.process_module import real_robot
 import pycram.external_interfaces.giskard as giskardpy
-from pycram.ros.robot_state_updater import RobotStateUpdater
 from pycram.ros.viz_marker_publisher import VizMarkerPublisher
 from pycram.designators.location_designator import *
 from pycram.designators.object_designator import *
-from pycram.enums import ObjectType
 from pycram.bullet_world import BulletWorld, Object
 from pycram.external_interfaces.knowrob import instances_of, get_guest_info
 from std_msgs.msg import String, Bool
-import talk_actions
+from demos.pycram_receptionist_demo.deprecated import talk_actions
 
 world = BulletWorld("DIRECT")
 # /pycram/viz_marker topic bei Marker Array
@@ -126,6 +121,7 @@ with real_robot:
     # TODO: testen, ob Position akkurat
     giskardpy.stop_looking()
     NavigateAction([Pose([3, 5, 0], [0, 0, 1, 1])]).resolve().perform()
+    #NavigateAction(target_locations=[Pose([3, 5, 0])]).resolve().perform() ??
 
     # search for host in living room
     if DetectAction(BelieveObject(types=[milk.type]), technique='human').resolve().perform():

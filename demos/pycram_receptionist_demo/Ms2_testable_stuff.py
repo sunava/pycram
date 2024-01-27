@@ -1,21 +1,15 @@
 import rospy
-from geometry_msgs.msg import PoseStamped
-from robokudo_msgs.msg import QueryActionGoal
-from pycram.designators.action_designator import DetectAction, LookAtAction, NavigateAction
-from pycram.designators.motion_designator import TalkingMotion, MoveMotion
-from pycram.external_interfaces import robokudo
+from pycram.designators.action_designator import DetectAction, NavigateAction
+from pycram.designators.motion_designator import TalkingMotion
 from pycram.helper import axis_angle_to_quaternion
-from pycram.process_module import simulated_robot, with_simulated_robot, real_robot, with_real_robot, semi_real_robot
+from pycram.process_module import real_robot
 import pycram.external_interfaces.giskard as giskardpy
-from pycram.ros.robot_state_updater import RobotStateUpdater
 from pycram.ros.viz_marker_publisher import VizMarkerPublisher
 from pycram.designators.location_designator import *
 from pycram.designators.object_designator import *
-from pycram.enums import ObjectType
 from pycram.bullet_world import BulletWorld, Object
-from pycram.external_interfaces.knowrob import instances_of, get_guest_info
-from std_msgs.msg import String, Bool
-import talk_actions
+from std_msgs.msg import String
+from demos.pycram_receptionist_demo.deprecated import talk_actions
 import pycram.external_interfaces.navigate as moveBase
 world = BulletWorld("DIRECT")
 # /pycram/viz_marker topic bei Marker Array
@@ -98,12 +92,16 @@ def demo_test(area):
 
         pose_home =  Pose([3, 1.7, 0], robot_orientation)
 
+        DetectAction(technique='default', state='start').resolve().perform()
         # Perception, detect first guest
-        perceived_object_dict = DetectAction(BelieveObject(types=[milk.type]), technique='human').resolve().perform()
-        #while perceived_object_dict[0] is None:
-         #   rospy.sleep(5)
-          #  TalkingMotion("Please step in front of me")
-           # rospy.sleep(5)
+        #todo richtigen fluent erstellen
+        fluentvariable = True
+        while not fluentvariable:
+
+            #TODO: funktioniert Designator in While Bedingung???
+            TalkingMotion("Please step in front of me").resolve.perform()
+            rospy.sleep(5)
+
 
         rospy.loginfo("human detected")
 
@@ -112,18 +110,14 @@ def demo_test(area):
         TalkingMotion("Hello, i am Toya and my favorite drink is oil. What about you, talk to me?").resolve().perform()
 
         # reicht sleep 1?
-        rospy.sleep(10)
+        rospy.sleep(1)
 
         # signal to start listening
-        #pub_nlp.publish("start listening")
-
+        pub_nlp.publish("start listening")
+        #TODO: How to erst weiter machen, wenn Knowledge Daten geschickt hat
 
         TalkingMotion("Hey i will stop looking now").resolve().perform()
 
-        # TalkingMotion("Hello, i will stop looking at you now").resolve().perform()
-        # rospy.sleep(2)
-        # rospy.loginfo("stop looking now")
-        # giskardpy.stop_looking()
 
         rospy.loginfo("stop looking now")
         giskardpy.stop_looking()
@@ -156,5 +150,23 @@ def nav_test():
         moveBase.queryPoseNav(test_pose)
 
 
-demo_test('from_couch')
+
+
+#demo_test('from_couch')
 #demo_test('to_couch')
+
+    # receives name and drink via topic
+    #rospy.Subscriber("nlp_out", String, talk_request)
+
+
+
+#1. rasa run --enable-api -> start Rasa Server
+#2. python3 activate_language_processing.py -> NLP
+#3. roslaunch suturo_bringup suturo_bringup.launch -> Map
+#4. roslaunch_hsr_velocity_controller unloas_my_controller.launch
+#5. roslaunch giskardpy giskardpy_hsr_real_vel.launch -> Giskard
+#starten
+#6. rosrun robokudo main.py _ae=humandetection_demo_ros_pkg=milestone1 -> Perception
+#7. run demo in Pycharm -> Planning
+
+
