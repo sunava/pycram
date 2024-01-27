@@ -115,7 +115,7 @@ class Language(NodeMixin):
     def __rshift__(self, other: Language):
         """
         Operator for Monitors, this always makes the Monitor the parent of the other expression.
-        
+
         :param other: Another Language expression
         :return: The Monitor which is now the new root node.
         """
@@ -544,8 +544,8 @@ class TryAll(Language):
                 state = State.FAILED
                 break
             t = threading.Thread(target=lambda: lang_call(child, index))
-            t.start()
             self.threads.append(t)
+            t.start()
         for thread in self.threads:
             thread.join()
         with results_lock:
@@ -591,14 +591,20 @@ class Code(Language):
         self.kwargs: Dict[str, Any] = kwargs
         self.perform = self.execute
 
-    def execute(self) -> Tuple[State, Tuple[Any]]:
+    def execute(self) -> Any:
         """
         Execute the code with its arguments
 
         :returns: State.SUCCEEDED, and anything that the function associated with this object will return.
         """
-        return State.SUCCEEDED, self.function(**self.kwargs)
+        child_state = State.SUCCEEDED
+        ret_val = self.function(**self.kwargs)
+        if isinstance(ret_val, tuple):
+            child_state, child_result = ret_val
+        else:
+            child_result = ret_val
+
+        return child_state, child_result
 
     def interrupt(self) -> None:
         raise NotImplementedError
-
