@@ -383,6 +383,7 @@ class DetectingMotion(MotionDesignatorDescription):
         """
         Type of the object that should be detected
         """
+        state: Optional[str] = None
 
         def perform(self):
             pm_manager = ProcessModuleManager.get_manager()
@@ -399,7 +400,7 @@ class DetectingMotion(MotionDesignatorDescription):
             # return ObjectDesignatorDescription.Object(bullet_world_object.name, bullet_world_object.type,
             #                                           bullet_world_object)
 
-    def __init__(self, technique: str,  resolver: Optional[Callable] = None, object_type: Optional[str] = None):
+    def __init__(self, technique: str,  resolver: Optional[Callable] = None, object_type: Optional[str] = None, state: Optional[str] = None):
         """
         Checks for every object in the FOV of the robot if it fits the given object type. If the types match an object
         designator describing the object will be returned.
@@ -411,6 +412,7 @@ class DetectingMotion(MotionDesignatorDescription):
         self.cmd: str = 'detecting'
         self.technique: str = technique
         self.object_type: Optional[str] = object_type
+        self.state: Optional[str] = state
 
     def ground(self) -> Motion:
         """
@@ -418,8 +420,7 @@ class DetectingMotion(MotionDesignatorDescription):
 
         :return: A resolved motion designator
         """
-        return self.Motion(self.cmd, self.object_type, self.technique)
-
+        return self.Motion(self.cmd, self.object_type,self.technique, self.state)
 
 class MoveArmJointsMotion(MotionDesignatorDescription):
     """

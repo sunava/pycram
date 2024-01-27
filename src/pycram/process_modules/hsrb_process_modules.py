@@ -12,7 +12,7 @@ from ..designators.motion_designator import *
 from ..enums import JointType, ObjectType
 from ..external_interfaces import giskard
 from ..external_interfaces.ik import request_ik
-from ..external_interfaces.robokudo import queryEmpty, queryHuman
+from ..external_interfaces.robokudo import queryEmpty, queryHuman, stop_queryHuman
 from ..helper import _apply_ik
 from ..local_transformer import LocalTransformer
 from ..external_interfaces.navigate import queryPoseNav
@@ -345,7 +345,7 @@ class HSRBDetectingReal(ProcessModule):
 
     def _execute(self, desig: DetectingMotion.Motion) -> Any:
         # todo at the moment perception ignores searching for a specific object type so we do as well on real
-        if desig.technique == 'human':
+        if desig.technique == 'human' and (desig.state == "start" or desig.state == None):
             human_pose = queryHuman()
             pose = Pose.from_pose_stamped(human_pose)
             pose.position.z = 0
@@ -359,6 +359,10 @@ class HSRBDetectingReal(ProcessModule):
             return object_dict
 
             return human_pose
+        elif desig.technique == 'human' and desig.state == "stop":
+            stop_queryHuman()
+            return None
+
 
         query_result = queryEmpty(ObjectDesignatorDescription(types=[desig.object_type]))
         perceived_objects = []
