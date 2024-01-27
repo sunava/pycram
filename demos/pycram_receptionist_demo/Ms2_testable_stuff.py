@@ -1,21 +1,15 @@
 import rospy
-from geometry_msgs.msg import PoseStamped
-from robokudo_msgs.msg import QueryActionGoal
-from pycram.designators.action_designator import DetectAction, LookAtAction, NavigateAction
-from pycram.designators.motion_designator import TalkingMotion, MoveMotion
-from pycram.external_interfaces import robokudo
+from pycram.designators.action_designator import DetectAction, NavigateAction
+from pycram.designators.motion_designator import TalkingMotion
 from pycram.helper import axis_angle_to_quaternion
-from pycram.process_module import simulated_robot, with_simulated_robot, real_robot, with_real_robot, semi_real_robot
+from pycram.process_module import real_robot
 import pycram.external_interfaces.giskard as giskardpy
-from pycram.ros.robot_state_updater import RobotStateUpdater
 from pycram.ros.viz_marker_publisher import VizMarkerPublisher
 from pycram.designators.location_designator import *
 from pycram.designators.object_designator import *
-from pycram.enums import ObjectType
 from pycram.bullet_world import BulletWorld, Object
-from pycram.external_interfaces.knowrob import instances_of, get_guest_info
-from std_msgs.msg import String, Bool
-import talk_actions
+from std_msgs.msg import String
+from demos.pycram_receptionist_demo.deprecated import talk_actions
 import pycram.external_interfaces.navigate as moveBase
 world = BulletWorld("DIRECT")
 # /pycram/viz_marker topic bei Marker Array
