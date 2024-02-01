@@ -1,6 +1,7 @@
+from math import sqrt
+
 import rospy
 from tmc_control_msgs.msg import GripperApplyEffortActionGoal
-
 from pycram.designators.action_designator import *
 from pycram.designators.location_designator import *
 from pycram.designators.object_designator import *
@@ -46,6 +47,7 @@ giskardpy.init_giskard_interface()
 #giskardpy.removing_of_objects()
 #giskardpy.sync_worlds()
 robot.set_color([0.5, 0.5, 0.9, 1])
+robot_pose = robot.get_pose()
 
 # Create environmental objects
 apartment = Object("kitchen", ObjectType.ENVIRONMENT, "couch-kitchen.urdf")
@@ -64,6 +66,50 @@ object_orientation = axis_angle_to_quaternion([0, 0, 1], 180)
 # Set the world's gravity
 #world.set_gravity([0.0, 0.0, 9.81])
 
+def sort_objects(obj_dict, wished_sorted_obj_list):
+    sorted_objects= []
+    object_tuples = []
+    for value in obj_dict.values():
+        distance = sqrt(pow((value.pose.position.x - robot_pose.position.x), 2) +
+                     pow((value.pose.position.y - robot_pose.position.y), 2) +
+                     pow((value.pose.position.z - robot_pose.position.z), 2))
+
+        print(f"object name: {value.name} and distance: {distance}")
+        object_tuples.append((value, distance))
+    sorted_object_list = sorted(object_tuples, key= lambda distance: distance[1])
+
+    for (object, distance) in sorted_object_list:
+        if object.type in wished_sorted_obj_list:
+             sorted_objects.append(object)
+
+    test_list = []
+    for test_object in sorted_objects:
+         test_list.append(test_object.name)
+    print(test_list)
+
+    return sorted_objects
+
+def try_pick_up(obj, grasps):
+    try:
+        PickUpAction(obj, ["left"], [grasps]).resolve().perform()
+    except (EnvironmentUnreachable, GripperClosedCompletely):
+        print("try pick up again")
+        TalkingMotion("Try pick up again")
+        NavigateAction([Pose([robot_pose.position.x - 0.3, robot_pose.position.y, robot_pose.position.z],
+                             robot_pose.orientation)]).resolve().perform()
+        ParkArmsAction([Arms.LEFT]).resolve().perform()
+        if EnvironmentUnreachable:
+             object_desig = DetectAction(BelieveObject(types=[ObjectType.MILK]), technique='all').resolve().perform()
+             # TODO nur wenn key (name des vorherigen objektes) in object_desig enthalten ist
+             new_object = object_desig[obj.name]
+        else:
+             new_object = obj
+        try:
+            PickUpAction(new_object, ["left"], [grasps]).resolve().perform()
+
+        except:
+            TalkingMotion(f"Can you pleas give me the {obj.name} object on the table? Thanks")
+            TalkingMotion(f"Please push down my hand, when I can grab the {obj.name}.")
 
 # Main interaction sequence with semi-real robot
 with ((real_robot)):
@@ -71,6 +117,7 @@ with ((real_robot)):
     TalkingMotion("Starting demo").resolve().perform()
     MoveGripperMotion(motion="open", gripper="left").resolve().perform()
     ParkArmsAction([Arms.LEFT]).resolve().perform()
+
     TalkingMotion("Navigating").resolve().perform()
     NavigateAction(target_locations=[Pose([1.6, 1.8, 0], [0,0,1,0])]).resolve().perform()
     #popcorntable
@@ -78,24 +125,50 @@ with ((real_robot)):
     LookAtAction(targets=[Pose([0.8, 1.8, 0.21], object_orientation)]).resolve().perform()
     TalkingMotion("Perceiving").resolve().perform()
     object_desig = DetectAction(technique='default').resolve().perform()
-    object_dict = object_desig[1]
+    wished_sorted_obj_list = ["Bowl", "Metalmug", "Fork", "Spoon", "Plate", "Cerealbox", "Milkpack"]
+    sorted_obj = sort_objects(object_desig, wished_sorted_obj_list)
 
-    for key, value in object_dict.items():
-        if (object_dict[key].type == "Spoon"
-                or object_dict[key].type == "Fork"
-                or object_dict[key].type == "Knife"
-                or object_dict[key].type == "Plasticknife"):
-            object_dict[key].type = "Cutlery"
+    for value in sorted_obj:
+        cutlery = ["Spoon","Fork","Knife","Plasticknife"]
+        grasp = "front"
+        if (value.type in cutlery):
+            value.type = "Cutlery"
+
+        if value.type in ["Bowl","Cutlery"]:
             grasp = "top"
+
+        if value.type == "Plate":
+            MoveGripperMotion("open", "left")
+            TalkingMotion("Can you pleas give me the last object on the table, the plate? Thanks")
+            TalkingMotion("Please push down my hand, when I can grab the plate.")
+            print("picked up plate")
+            time.sleep(5)
+            MoveGripperMotion("close", "left")
+        else:
             TalkingMotion("Picking Up with: " + grasp).resolve().perform()
-            PickUpAction(object_dict[key], ["left"], [grasp]).resolve().perform()
-            ParkArmsAction([Arms.LEFT]).resolve().perform()
-            TalkingMotion("Navigating").resolve().perform()
-            NavigateAction(target_locations=[Pose([1.6, 1.8, 0], [0,0,0,1])]).resolve().perform()
-            NavigateAction(target_locations=[Pose([4.1, 2, 0], [0, 0, 0, 1])]).resolve().perform()
-            TalkingMotion("Placing").resolve().perform()
-            PlaceAction(object_dict[key], ["left"], [grasp], [Pose([4.9, 2.15, 0.80])]).resolve().perform()
-            ParkArmsAction([Arms.LEFT]).resolve().perform()
+            try_pick_up(value, grasp)
+
+        ParkArmsAction([Arms.LEFT]).resolve().perform()
+        TalkingMotion("Navigating").resolve().perform()
+        NavigateAction(target_locations=[Pose([1.6, 1.8, 0], [0, 0, 0, 1])]).resolve().perform()
+        NavigateAction(target_locations=[Pose([4.1, 2, 0], [0, 0, 0, 1])]).resolve().perform()
+        TalkingMotion("Placing").resolve().perform()
+        #Todo: Objekte in z unterscheiden
+        if value.type == "Cutlery":
+            z = 0.8
+        elif value.type == "Bowl":
+            z = 0.84
+        elif value.type == "Metalmug":
+            z = 0.84
+        elif value.type == "Milkpack":
+            z = 0.88
+        elif value.type == "Cerealbox":
+            z = 0.9
+        PlaceAction(value, ["left"], [grasp], [Pose([4.9, value.pose.position.y, z])]).resolve().perform()
+        ParkArmsAction([Arms.LEFT]).resolve().perform()
+        TalkingMotion("Navigating").resolve().perform()
+        NavigateAction(target_locations=[Pose([4.1, 2, 0], [0, 0, 1, 0])]).resolve().perform()
+        NavigateAction(target_locations=[Pose([1.6, 1.8, 0], [0, 0, 1, 0])]).resolve().perform()
 
     rospy.loginfo("Done!")
     TalkingMotion("Done").resolve().perform()
