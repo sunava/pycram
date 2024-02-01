@@ -45,25 +45,6 @@ pose_home = Pose([3, 1.7, 0], robot_orientation)
 pub_nlp = rospy.Publisher('/startListener', String, queue_size=10)
 
 
-class HumanDescription:
-
-    def __init__(self, name, fav_drink: Optional = None):
-        # TODO: coordinate with Perception on what is easy to implement
-        # characteristics to consider: height, hair color, and age.
-        self.human_pose = Fluent()
-        self.name = name
-        self.fav_drink = fav_drink  # self.shirt_color = shirt_color  # self.gender = gender
-
-        self.human_pose_sub = rospy.Subscriber("/human_pose", String, self.human_pose_cb)
-
-    def human_pose_cb(self, HumanPoseMsg):
-        self.human_pose.set_value(HumanPoseMsg.data)
-
-    def set_name(self, new_name):
-        self.name = new_name
-
-
-
 def demo_test(area):
     with real_robot:
         guest1 = HumanDescription("guest1")
