@@ -68,8 +68,8 @@ def introduce(name1, drink1, name2, drink2):
     """
     first="Hey" + name2 + " This is " + name1 + "and the favorite drink of your guest is " + drink1
     second = name1 + "This is " + name2 + "his favorite drink is " + drink2
-    TalkingMotion(first)
-    TalkingMotion(second)
+    TalkingMotion(first).resolve.perform()
+    TalkingMotion(second).resolve.perform()
 
 
 
