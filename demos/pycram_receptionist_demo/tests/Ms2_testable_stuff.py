@@ -13,7 +13,7 @@ from pycram.ros.viz_marker_publisher import VizMarkerPublisher
 from pycram.designators.location_designator import *
 from pycram.designators.object_designator import *
 from pycram.bullet_world import BulletWorld, Object
-from std_msgs.msg import String
+from std_msgs.msg import String, Bool
 from demos.pycram_receptionist_demo.deprecated import talk_actions
 import pycram.external_interfaces.navigate as moveBase
 
@@ -44,22 +44,7 @@ pose_home = Pose([3, 1.7, 0], robot_orientation)
 pub_nlp = rospy.Publisher('/startListener', String, queue_size=10)
 
 
-class HumanDescription:
 
-    def __init__(self, name, fav_drink: Optional = None):
-        # TODO: coordinate with Perception on what is easy to implement
-        # characteristics to consider: height, hair color, and age.
-        self.human_pose = Fluent()
-        self.name = name
-        self.fav_drink = fav_drink  # self.shirt_color = shirt_color  # self.gender = gender
-
-        self.human_pose_sub = rospy.Subscriber("/human_pose", String, self.human_pose_cb)
-
-    def human_pose_cb(self, HumanPoseMsg):
-        self.human_pose.set_value(HumanPoseMsg.data)
-
-    def set_name(self, new_name):
-        self.name = new_name
 
 
 
@@ -86,19 +71,32 @@ def demo_test(area):
 
         # signal to start listening
         pub_nlp.publish("start listening")
+        #wait for human to say something
         rospy.sleep(5)
 
-        guest_data = get_guest_info(1)
+        # TODO: might not work, if so use version from Ms1 in comments
+        guest_data = get_guest_info(1) # guest_data format is = ["name", "drink"]
         while guest_data == "No name saved under this ID!":
             talk_error("no name")
             guest_data = get_guest_info(1)
             rospy.sleep(3)
 
+        # failure handling
+        # rospy.Subscriber("nlp_feedback", Bool, talk_error)
 
+        # receives name and drink via topic
+        # rospy.Subscriber("nlp_out", String, talk_request)
+        guest1.set_name(guest_data[0])
+        talk_request(guest_data)
 
-
+        # lead human to living room
         rospy.loginfo("stop looking now")
         giskardpy.stop_looking()
+
+        # stop perceiving human
+        # TODO: test on real robot if perception actually stops
+        DetectAction(technique='human', state='stop').resolve().perform()
+
         rospy.loginfo("Navigating now")
         TalkingMotion("navigating to couch area now, pls step away").resolve().perform()
 
@@ -109,11 +107,9 @@ def demo_test(area):
             NavigateAction([pose_from_couch]).resolve().perform()
             NavigateAction([pose_home]).resolve().perform()
 
-        # failure handling
-        # rospy.Subscriber("nlp_feedback", Bool, talk_error)
+        TalkingMotion("End of demo").resolve().perform()
 
-        # receives name and drink via topic
-        # rospy.Subscriber("nlp_out", String, talk_request)
+
 
 
 def nav_test():
@@ -124,18 +120,6 @@ def nav_test():
         moveBase.queryPoseNav(test_pose1)
         moveBase.queryPoseNav(test_pose)
 
-# demo_test('from_couch')
+
+demo_test('from_couch')
 # demo_test('to_couch')
-
-# receives name and drink via topic
-# rospy.Subscriber("nlp_out", String, talk_request)
-
-
-# 1. rasa run --enable-api -> start Rasa Server
-# 2. python3 activate_language_processing.py -> NLP
-# 3. roslaunch suturo_bringup suturo_bringup.launch -> Map
-# 4. roslaunch_hsr_velocity_controller unloas_my_controller.launch
-# 5. roslaunch giskardpy giskardpy_hsr_real_vel.launch -> Giskard
-# starten
-# 6. rosrun robokudo main.py _ae=humandetection_demo_ros_pkg=milestone1 -> Perception
-# 7. run demo in Pycharm -> Planning

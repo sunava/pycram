@@ -66,34 +66,26 @@ class HumanDescription:
 
 def demo_test(area):
     with real_robot:
-        host = HumanDescription("Bob", fav_drink="Coffee")
         guest1 = HumanDescription("guest1")
-
-        # Perception, detect first guest -> First detect guest, then listen
-        DetectAction(technique='human', state='start').resolve().perform()
-
-        # While loop, human is detected
-        while not guest1.human_pose:
-            TalkingMotion("Please step in front of me").resolve.perform()
-            rospy.sleep(5)
 
         rospy.loginfo("human detected")
 
-        # look at guest and introduction
-        giskardpy.move_head_to_human()
         TalkingMotion("Hello, i am Toya and my favorite drink is oil. What about you, talk to me?").resolve().perform()
 
-        rospy.sleep(1)
-
         # signal to start listening
+        rospy.sleep(1)
         pub_nlp.publish("start listening")
         rospy.sleep(5)
 
+        # TODO: test on real HSR
         guest_data = get_guest_info(1)
         while guest_data == "No name saved under this ID!":
             talk_error("no name")
             guest_data = get_guest_info(1)
             rospy.sleep(3)
+
+        talk_request(guest_data)
+        TalkingMotion("End of Knowledge Test").resolve.perform()
 
 
 def get_guest_info_old(id):
