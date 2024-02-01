@@ -274,7 +274,11 @@ class ParkArmsAction(ActionDesignatorDescription):
 
 class PickUpAction(ActionDesignatorDescription):
     """
-    Designator to let the robot pick up an object.
+    A class representing a designator for a pick-up action, allowing a robot to pick up a specified object.
+
+    This class encapsulates the details of the pick-up action, including the object to be picked up, the arm to be used,
+    and the grasp type. It defines the sequence of operations for the robot to execute the pick-up action, such as opening
+    the gripper, moving to the object, closing the gripper, and lifting the object.
     """
 
     @dataclasses.dataclass
@@ -292,37 +296,57 @@ class PickUpAction(ActionDesignatorDescription):
 
         grasp: str
         """
-        The grasp that should be used. For example, 'left' or 'right'
+        The grasp that should be used. For example, 'top' or 'front'
         """
 
         @with_tree
         def perform(self) -> None:
+            # Initialize the local transformer and robot reference
+
             lt = LocalTransformer()
             robot = BulletWorld.robot
             # Retrieve object and robot from designators
             object = self.object_designator.bullet_world_object
-            # oTm = Object Pose in Frame map
+            # Calculate the object's pose in the map frame
             oTm = object.get_pose()
             execute = True
+
+            # Adjust object pose for top-grasping, if applicable
             if self.grasp == "top":
+                # Handle special cases for certain object types (e.g., Cutlery, Bowl)
+                # Note: This includes hardcoded adjustments and should ideally be generalized
                 if self.object_designator.type == "Cutlery":
+                    # todo: this z is the popcorn-table height, we need to define location to get that z otherwise it
+                    #  is hardcoded
                     oTm.pose.position.z = 0.718
                 oTm.pose.position.z += 0.04
 
+            # Determine the grasp orientation and transform the pose to the base link frame
             grasp_rotation = robot_description.grasps.get_orientation_for_grasp(self.grasp)
             oTb = lt.transform_pose(oTm, robot.get_link_tf_frame("base_link"))
+            # Set pose to the grasp rotation
             oTb.orientation = grasp_rotation
+            # Transform the pose to the map frame
             oTmG = lt.transform_pose(oTb, "map")
 
+            # Open the gripper before picking up the object
             rospy.logwarn("Opening Gripper")
             MoveGripperMotion(motion="open", gripper=self.arm).resolve().perform()
-            rospy.logwarn("Picking now")
+
+            # Move to the pre-grasp position and visualize the action
+            rospy.logwarn("Picking up now")
             BulletWorld.current_bullet_world.add_vis_axis(oTmG)
+            # Execute Bool, because sometimes u only want to visualize the poses to test things
             if execute:
                 MoveTCPMotion(oTmG, self.arm).resolve().perform()
 
+            # Calculate and apply any special knowledge offsets based on the robot and object type
+            # Note: This currently includes robot-specific logic that should be generalized
             tool_frame = robot_description.get_tool_frame(self.arm)
             special_knowledge_offset = lt.transform_pose(oTmG, robot.get_link_tf_frame(tool_frame))
+
+            # todo: this is for hsrb only at the moment we will need a function that returns us special knowledge
+            #  depending on robot
             if robot.name == "hsrb":
                 if self.grasp == "top":
                     if self.object_designator.type == "Bowl":
@@ -334,8 +358,9 @@ class PickUpAction(ActionDesignatorDescription):
                         special_knowledge_offset.pose.position.x -= 0.11
                         print(special_knowledge_offset.pose.position.x)
 
-
             push_base = special_knowledge_offset
+            # todo: this is for hsrb only at the moment we will need a function that returns us special knowledge
+            #  depending on robot if we dont generlize this we will have a big list in the end of all robots
             if robot.name == "hsrb":
                 z = 0.03
                 if self.grasp == "top":
@@ -343,10 +368,11 @@ class PickUpAction(ActionDesignatorDescription):
                     if self.object_designator.type == "Bowl":
                         z = 0.07
                 push_base.pose.position.z += z
-            # todo: make this for other robots
             push_baseTm = lt.transform_pose(push_base, "map")
             special_knowledge_offsetTm = lt.transform_pose(push_base, "map")
 
+            # Grasping from the top inherently requires calculating an offset, whereas front grasping involves
+            # slightly pushing the object forward.
             if self.grasp == "top":
                 rospy.logwarn("Offset now")
                 BulletWorld.current_bullet_world.add_vis_axis(special_knowledge_offsetTm)
@@ -358,6 +384,7 @@ class PickUpAction(ActionDesignatorDescription):
                 if execute:
                     MoveTCPMotion(push_baseTm, self.arm).resolve().perform()
 
+            # Finalize the pick-up by closing the gripper and lifting the object
             rospy.logwarn("Close Gripper")
             MoveGripperMotion(motion="close", gripper=self.arm).resolve().perform()
 
@@ -461,8 +488,7 @@ class PlaceAction(ActionDesignatorDescription):
             MoveTCPMotion(oTmG, self.arm).resolve().perform()
 
             tool_frame = robot_description.get_tool_frame(self.arm)
-            special_knowledge_offset = lt.transform_pose(oTmG, robot.get_link_tf_frame(tool_frame))
-            push_base = special_knowledge_offset
+            push_base = lt.transform_pose(oTmG, robot.get_link_tf_frame(tool_frame))
             if robot.name == "hsrb":
                 z = 0.03
                 if self.grasp == "top":
@@ -470,7 +496,6 @@ class PlaceAction(ActionDesignatorDescription):
                 push_base.pose.position.z += z
             # todo: make this for other robots
             push_baseTm = lt.transform_pose(push_base, "map")
-            special_knowledge_offsetTm = lt.transform_pose(push_base, "map")
 
             rospy.logwarn("Pushing now")
             MoveTCPMotion(push_baseTm, self.arm).resolve().perform()
@@ -731,10 +756,7 @@ class LookAtAction(ActionDesignatorDescription):
 
 class DetectAction(ActionDesignatorDescription):
     """
-    Detects an object that fits the object description and returns a list of an object designator describing the object.
-    If you choose technique=all, it will return a list of all objects in the field of view.
-    returns a dict of perceived_objects. You can enter it by either perceived_object_dict["cereal"].name or
-    perceived_object_dict.values())[0].name..
+    Detects an object with given technique.
     """
 
     @dataclasses.dataclass
@@ -750,9 +772,19 @@ class DetectAction(ActionDesignatorDescription):
         Object designator loosely describing the object, e.g. only type. 
         """
 
+        state: Optional[str] = None
+        """
+        The state instructs our perception system to either start or stop the search for an object or human.
+        """
+
         @with_tree
         def perform(self) -> Any:
-            return DetectingMotion(technique=self.technique).resolve().perform()
+            if self.object_designator:
+                object_type = self.object_designator.type
+            else:
+                object_type = None
+            return DetectingMotion(technique=self.technique, object_type=object_type,
+                                   state=self.state).resolve().perform()
 
         def to_sql(self) -> ORMDetectAction:
             return ORMDetectAction()
@@ -769,16 +801,20 @@ class DetectAction(ActionDesignatorDescription):
             return action
 
     def __init__(self, technique, resolver=None,
-                 object_designator_description: Optional[ObjectDesignatorDescription] = None):
+                 object_designator_description: Optional[ObjectDesignatorDescription] = None,
+                 state: Optional[str] = None):
         """
         Tries to detect an object in the field of view (FOV) of the robot.
 
+        :param technique: Technique means how the object should be detected, e.g. 'color', 'shape', etc.
         :param object_designator_description: Object designator describing the object
+        :param state: The state instructs our perception system to either start or stop the search for an object or human.
         :param resolver: An alternative resolver
         """
         super().__init__(resolver)
         self.technique: str = technique
         self.object_designator_description: Optional[ObjectDesignatorDescription] = object_designator_description
+        self.state: Optional[str] = state
 
     def ground(self) -> Action:
         """

@@ -148,7 +148,7 @@ class PlaceMotion(MotionDesignatorDescription):
         """
         Arm that is currently holding the object
         """
-        grasp : str
+        grasp: str
 
         @with_tree
         def perform(self):
@@ -384,33 +384,34 @@ class DetectingMotion(MotionDesignatorDescription):
         Type of the object that should be detected
         """
 
+        state: Optional[str] = None
+        """
+        The state instructs our perception system to either start or stop the search for an object or human.
+        """
+
         def perform(self):
             pm_manager = ProcessModuleManager.get_manager()
             bullet_world_objects = pm_manager.detecting().execute(self)
-            #return bullet_world_objects
             if not bullet_world_objects:
-                 raise PerceptionObjectNotFound(
-                     f"Could not find an object with the type {self.object_type} in the FOV of the robot")
+                raise PerceptionObjectNotFound(
+                    f"Could not find an object with the type {self.object_type} in the FOV of the robot")
             return bullet_world_objects
-            # if ProcessModuleManager.execution_type == "real":
-            #     return RealObject.Object(bullet_world_object.name, bullet_world_object.type,
-            #                              bullet_world_object, bullet_world_object.get_pose())
-            #
-            # return ObjectDesignatorDescription.Object(bullet_world_object.name, bullet_world_object.type,
-            #                                           bullet_world_object)
 
-    def __init__(self, technique: str,  resolver: Optional[Callable] = None, object_type: Optional[str] = None):
+    def __init__(self, technique: str, resolver: Optional[Callable] = None, object_type: Optional[str] = None,
+                 state: Optional[str] = None):
         """
-        Checks for every object in the FOV of the robot if it fits the given object type. If the types match an object
-        designator describing the object will be returned.
+        Detects an object in the FOV of the robot. If an object type is given then the object will be searched for 
 
+        :param technique: Technique that should be used for detecting, e.g. 'color', 'shape', 'all', etc.
         :param object_type: Type of the object which should be detected
+        :param state The state instructs our perception system to either start or stop the search for an object or human.
         :param resolver: An alternative resolver which returns a resolved motion designator
         """
         super().__init__(resolver)
         self.cmd: str = 'detecting'
         self.technique: str = technique
         self.object_type: Optional[str] = object_type
+        self.state: Optional[str] = state
 
     def ground(self) -> Motion:
         """
@@ -418,7 +419,7 @@ class DetectingMotion(MotionDesignatorDescription):
 
         :return: A resolved motion designator
         """
-        return self.Motion(self.cmd, self.object_type, self.technique)
+        return self.Motion(self.cmd, self.technique, self.object_type, self.state)
 
 
 class MoveArmJointsMotion(MotionDesignatorDescription):
@@ -709,7 +710,7 @@ class TalkingMotion(MotionDesignatorDescription):
             pm_manager = ProcessModuleManager.get_manager()
             return pm_manager.talk().execute(self)
 
-    def __init__(self,  cmd: str, resolver: Optional[Callable] = None):
+    def __init__(self, cmd: str, resolver: Optional[Callable] = None):
         """
         Lets the robot close a container specified by the given parameter. This assumes that the handle is already grasped
 
