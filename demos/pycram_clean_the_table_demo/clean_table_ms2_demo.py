@@ -191,7 +191,7 @@ with semi_real_robot:
         NavigateAction(
             target_locations=[Pose([new_pose.position.x, 0.5, 0], transport_orientation)]).resolve().perform()
 
-        PlaceAction(obj, [target_location], ["left"], ["front"]).resolve().perform()
+        PlaceAction(obj,  ["left"], ["front"], [target_location]).resolve().perform()
         ParkArmsAction([Arms.LEFT]).resolve().perform()
         print("placed")
     TalkingMotion("I am done").resolve().perform()
