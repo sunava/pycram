@@ -69,16 +69,18 @@ object_orientation = axis_angle_to_quaternion([0, 0, 1], 180)
 def sort_objects(obj_dict, wished_sorted_obj_list):
     sorted_objects= []
     object_tuples = []
-    for value in obj_dict.values():
-        distance = sqrt(pow((value.pose.position.x - robot_pose.position.x), 2) +
-                     pow((value.pose.position.y - robot_pose.position.y), 2) +
-                     pow((value.pose.position.z - robot_pose.position.z), 2))
+    dictionary = obj_dict[1]
+    for value in dictionary.values():
+         distance = sqrt(pow((value.pose.position.x - robot.get_pose().position.x), 2) +
+                     pow((value.pose.position.y - robot.get_pose().position.y), 2) +
+                     pow((value.pose.position.z - robot.get_pose().position.z), 2))
 
-        print(f"object name: {value.name} and distance: {distance}")
-        object_tuples.append((value, distance))
+         print(f"object name: {value.name} and distance: {distance}")
+         object_tuples.append((value, distance))
     sorted_object_list = sorted(object_tuples, key= lambda distance: distance[1])
 
     for (object, distance) in sorted_object_list:
+        #todo: reminder types are written with small letter and names now with big beginning letter
         if object.type in wished_sorted_obj_list:
              sorted_objects.append(object)
 
@@ -95,8 +97,8 @@ def try_pick_up(obj, grasps):
     except (EnvironmentUnreachable, GripperClosedCompletely):
         print("try pick up again")
         TalkingMotion("Try pick up again")
-        NavigateAction([Pose([robot_pose.position.x - 0.3, robot_pose.position.y, robot_pose.position.z],
-                             robot_pose.orientation)]).resolve().perform()
+        NavigateAction([Pose([robot.get_pose().position.x - 0.3, robot.get_pose().position.y, robot.get_pose().position.z],
+                             robot.get_pose().orientation)]).resolve().perform()
         ParkArmsAction([Arms.LEFT]).resolve().perform()
         if EnvironmentUnreachable:
              object_desig = DetectAction(BelieveObject(types=[ObjectType.MILK]), technique='all').resolve().perform()
@@ -125,19 +127,19 @@ with ((real_robot)):
     LookAtAction(targets=[Pose([0.8, 1.8, 0.21], object_orientation)]).resolve().perform()
     TalkingMotion("Perceiving").resolve().perform()
     object_desig = DetectAction(technique='default').resolve().perform()
-    wished_sorted_obj_list = ["Bowl", "Metalmug", "Fork", "Spoon", "Plate", "Cerealbox", "Milkpack"]
+    wished_sorted_obj_list = ["bowl", "metalmug", "fork", "spoon", "plate", "cerealbox", "milkpack"]
     sorted_obj = sort_objects(object_desig, wished_sorted_obj_list)
 
     for value in sorted_obj:
-        cutlery = ["Spoon","Fork","Knife","Plasticknife"]
+        cutlery = ["spoon","fork","knife","plasticknife"]
         grasp = "front"
         if (value.type in cutlery):
-            value.type = "Cutlery"
+            value.type = "cutlery"
 
-        if value.type in ["Bowl","Cutlery"]:
+        if value.type in ["bowl","cutlery"]:
             grasp = "top"
 
-        if value.type == "Plate":
+        if value.type == "plate":
             MoveGripperMotion("open", "left")
             TalkingMotion("Can you pleas give me the last object on the table, the plate? Thanks")
             TalkingMotion("Please push down my hand, when I can grab the plate.")
@@ -154,15 +156,15 @@ with ((real_robot)):
         NavigateAction(target_locations=[Pose([4.1, 2, 0], [0, 0, 0, 1])]).resolve().perform()
         TalkingMotion("Placing").resolve().perform()
         #Todo: Objekte in z unterscheiden
-        if value.type == "Cutlery":
+        if value.type == "cutlery":
             z = 0.8
-        elif value.type == "Bowl":
+        elif value.type == "bowl":
             z = 0.84
-        elif value.type == "Metalmug":
+        elif value.type == "metalmug":
             z = 0.84
-        elif value.type == "Milkpack":
+        elif value.type == "milkpack":
             z = 0.88
-        elif value.type == "Cerealbox":
+        elif value.type == "cerealbox":
             z = 0.9
         PlaceAction(value, ["left"], [grasp], [Pose([4.9, value.pose.position.y, z])]).resolve().perform()
         ParkArmsAction([Arms.LEFT]).resolve().perform()
