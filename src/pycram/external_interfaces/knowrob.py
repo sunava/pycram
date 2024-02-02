@@ -131,6 +131,8 @@ def knowrob_string_to_pose(pose_as_string: str) -> List[float]:
 def get_guest_info(id):
     """
     function that uses Knowledge Service to get Name and drink from new guest via ID
+    :param id: integer for person
+    :return: ["name", " drink"]
     """
 
     rospy.wait_for_service('name_server')
@@ -142,7 +144,3 @@ def get_guest_info(id):
     except rospy.ServiceException as e:
         print("Service call failed")
 
-
-
-
-        
