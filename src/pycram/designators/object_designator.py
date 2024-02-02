@@ -212,3 +212,10 @@ class HumanDescription:
         :param new_name: new name of human
         """
         self.name = new_name
+
+    def set_drink(self, new_drink):
+        """
+        function for changing/setting favorite drink of human
+        :param new_drink: name of drink
+        """
+        self.name = new_drink

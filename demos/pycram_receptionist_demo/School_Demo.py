@@ -4,6 +4,7 @@ from pycram.designators.motion_designator import TalkingMotion
 from pycram.process_module import real_robot
 import pycram.external_interfaces.giskard as giskardpy
 from pycram.ros.viz_marker_publisher import VizMarkerPublisher
+from demos.pycram_receptionist_demo.utils.misc import *
 from pycram.designators.location_designator import *
 from pycram.designators.object_designator import *
 from pycram.bullet_world import BulletWorld, Object
@@ -29,36 +30,6 @@ giskardpy.init_giskard_interface()
 # RobotStateUpdater("/tf", "/joint_states")
 
 
-class HumanDescription:
-
-    def __init__(self, name, fav_drink, shirt_color, gender):
-        self.name = name
-        self.fav_drink = fav_drink
-        self.shirt_color = shirt_color
-        self.gender = gender
-        # TODO: coordinate with Perception on what is easy to implement
-        # characteristics to consider: height, hair color, and age.
-
-
-def talk_request(data: String):
-    """
-    callback function that takes the data from nlp (name and drink) and lets the robot talk
-    :param data: String "name drink"
-    """
-
-    name_drink = data.data.split(" ")
-    talk_actions.name_drink_talker(name_drink)
-    rospy.loginfo("nlp data:" + name_drink[0] + " " + name_drink[1])
-
-
-def talk_error(data):
-    """
-    callback function if no name/drink was heard
-    """
-
-    error_msgs = "i could not hear you, please repeat"
-    TalkingMotion(error_msgs).resolve().perform()
-    pub_nlp.publish("start listening")
 
 
 with real_robot:
@@ -69,7 +40,7 @@ with real_robot:
     pose_couch = Pose([3, 5, 0], robot_orientation_couch)
 
     # Perception
-    DetectAction(technique='default', state='start').resolve().perform()
+    DetectAction(technique='human', state='start').resolve().perform()
     rospy.sleep(2)
     rospy.loginfo("human detected")
 
@@ -88,6 +59,7 @@ with real_robot:
     rospy.Subscriber("nlp_feedback", Bool, talk_error)
 
     # receives name and drink via topic
+    # TODO: test if NLP changes somthing or if this still works
     rospy.Subscriber("nlp_out", String, talk_request)
 
     TalkingMotion("please follow me into the living room").resolve.perform()

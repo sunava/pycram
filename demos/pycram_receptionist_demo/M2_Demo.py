@@ -10,7 +10,7 @@ from pycram.designators.object_designator import *
 from pycram.bullet_world import BulletWorld, Object
 from pycram.external_interfaces.knowrob import instances_of, get_guest_info
 from std_msgs.msg import String, Bool
-from demos.pycram_receptionist_demo.deprecated import talk_actions
+from pycram.helper import axis_angle_to_quaternion
 
 world = BulletWorld("DIRECT")
 # /pycram/viz_marker topic bei Marker Array
@@ -33,14 +33,20 @@ giskardpy.init_giskard_interface()
 
 
 with real_robot:
+
+    # Variables
+    robot_orientation = axis_angle_to_quaternion([0, 0, 1], 90)
+    pose_kitchen_to_couch = Pose([4.2, 3, 0], robot_orientation)
+    robot_orientation_couch = axis_angle_to_quaternion([0, 0, 1], 0)
+    pose_couch = Pose([3, 5, 0], robot_orientation_couch)
     host = HumanDescription("Bob", fav_drink="Coffee")
+    guest1 = HumanDescription("x")
     pub_nlp = rospy.Publisher('/startListener', String, queue_size=10)
 
     # Perception, detect first guest
-    perceived_object_dict = DetectAction(BelieveObject(types=[milk.type]), technique='human').resolve().perform()
-    while perceived_object_dict[0] is None:
-        rospy.sleep(5)
-        TalkingMotion("Please step in front of me")
+    DetectAction(technique='human', state='start').resolve().perform()
+    while not guest1.human_pose:
+        TalkingMotion("Please step in front of me").resolve.perform()
         rospy.sleep(5)
 
     rospy.loginfo("human detected")
@@ -56,33 +62,25 @@ with real_robot:
     pub_nlp.publish("start listening")
     rospy.sleep(10)
 
-    # TODO: knowledge interface erweitern
-    # Idee: jeder Mensch braucht ID, diese kann ich dann hier abfragen
-    # Host schon in Liste!!, daher < 2 und nicht < 1
-    while len(instances_of("Customer")) < 2:
-
-        # TODO: funktioniert das noch mit Subscriber?
-        # TODO: NLP muss variabel ein/ausgeschaltet werden können
-        # failure handling if receptionist intend was not understood
-        rospy.Subscriber("nlp_feedback", Bool, talk_error)
-        #TalkingMotion("please repeat")
-        rospy.sleep(10)
-
-    #save received data from guest
+    # get data from Knowledge
+    # TODO: test on real HSR
     guest_data = get_guest_info(1)
-    name01 = guest_data[0]
-    drink01 = guest_data[1]
-    guest1 = HumanDescription(name=name01, fav_drink=drink01)
+    while guest_data == "No name saved under this ID!":
+        talk_error("no name")
+        guest_data = get_guest_info(1)
+        rospy.sleep(3)
 
+    guest1.set_name(guest_data[0])
+    guest1.set_drink(guest_data[1])
+    talk_request(guest_data)
 
-
-    #lead guest to living room
+    # lead guest to living room
     giskardpy.stop_looking()
-    NavigateAction([Pose([3, 5, 0], [0, 0, 1, 1])]).resolve().perform()
-    #NavigateAction(target_locations=[Pose([3, 5, 0])]).resolve().perform() ??
+    NavigateAction([pose_kitchen_to_couch]).resolve().perform()
+    NavigateAction([pose_couch]).resolve().perform()
 
     # search for host in living room
-    if DetectAction(BelieveObject(types=[milk.type]), technique='human').resolve().perform():
+    if DetectAction(technique='human', state='start').resolve().perform():
         # look at host
         giskardpy.move_head_to_human()
 
