@@ -26,13 +26,45 @@ robot.set_color([0.5, 0.5, 0.9, 1])
 # carefull that u spawn the correct kitchen
 kitchen = Object("kitchen", "environment", "kitchen.urdf")
 giskardpy.init_giskard_interface()
-RobotStateUpdater("/tf", "/giskard_joint_states")
+#RobotStateUpdater("/tf", "/giskard_joint_states")
 
 def test():
     with real_robot:
+        rospy.loginfo("human detected")
+        x = 2
+        for i in range(10):
+            x = x * 3
+            print("...................... nothing" )
+
         DetectAction(technique='human', state='start').resolve().perform()
 
         rospy.loginfo("human detected")
+        x = 2
+        for i in range(10):
+           x = x*3
+           print("---------- " + "start")
+
+        DetectAction(technique='human', state='stop').resolve().perform()
+
+        rospy.loginfo("stoped detecting")
+        print("end of old test")
+
+        rospy.loginfo("human detected")
+        x = 2
+        for i in range(10):
+            x = x * 3
+            print("############ " + "stop")
+
+        DetectAction(technique='human', state='start').resolve().perform()
+
+        print("------------------------------- start")
+
+        DetectAction(technique='human', state='stop').resolve().perform()
+
+        print("------------------------------- stop")
+
+
+
 
 
 

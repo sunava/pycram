@@ -18,9 +18,6 @@ def talk_request(name_drink: List):
     rospy.loginfo("nlp data:" + name_drink[0] + " " + name_drink[1])
 
 
-
-
-
 def talk_error(data):
     """
     callback function if no name/drink was heard
@@ -31,7 +28,6 @@ def talk_error(data):
     pub_nlp.publish("start listening")
 
 
-@deprecated(reason="Newst version uses the knowledge interface")
 def introduce(name1, drink1, name2, drink2):
     """
     Text for robot to introduce two people to each other
@@ -40,3 +36,6 @@ def introduce(name1, drink1, name2, drink2):
     second = name1 + "This is " + name2 + "his favorite drink is " + drink2
     TalkingMotion(first).resolve.perform()
     TalkingMotion(second).resolve.perform()
+
+
+
