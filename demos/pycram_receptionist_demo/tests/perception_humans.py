@@ -30,30 +30,19 @@ giskardpy.init_giskard_interface()
 
 def test():
     with real_robot:
-        rospy.loginfo("human detected")
-        x = 2
-        for i in range(10):
-            x = x * 3
-            print("...................... nothing" )
+        print("...................... nothing" )
 
         DetectAction(technique='human', state='start').resolve().perform()
 
         rospy.loginfo("human detected")
-        x = 2
-        for i in range(10):
-           x = x*3
-           print("---------- " + "start")
+
+        print("---------- " + "start")
 
         DetectAction(technique='human', state='stop').resolve().perform()
 
-        rospy.loginfo("stoped detecting")
-        print("end of old test")
+        print("------------------------------- stop")
+        rospy.loginfo("should have stopped. /human_pose gets no msgs anymore")
 
-        rospy.loginfo("human detected")
-        x = 2
-        for i in range(10):
-            x = x * 3
-            print("############ " + "stop")
 
         DetectAction(technique='human', state='start').resolve().perform()
 
