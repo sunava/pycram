@@ -248,6 +248,7 @@ class ParkArmsAction(ActionDesignatorDescription):
             return ORMParkArmsAction(self.arm.name)
 
         def insert(self, session: sqlalchemy.orm.session.Session, **kwargs) -> ORMParkArmsAction:
+            print("in insert parkArms")
             action = super().insert(session)
             session.add(action)
             session.commit()
@@ -270,6 +271,8 @@ class ParkArmsAction(ActionDesignatorDescription):
         :return: A performable designator
         """
         return self.Action(self.arms[0])
+
+
 
 
 class PickUpAction(ActionDesignatorDescription):
@@ -350,8 +353,12 @@ class PickUpAction(ActionDesignatorDescription):
             if robot.name == "hsrb":
                 if self.grasp == "top":
                     if self.object_designator.type == "Bowl":
-                        special_knowledge_offset.pose.position.y += 0.04
-                        special_knowledge_offset.pose.position.x += 0.015
+                        print(f"x_pose: {special_knowledge_offset.pose.position.x}")
+                        print(f"y_pose: {special_knowledge_offset.pose.position.y}")
+                        special_knowledge_offset.pose.position.y += 0.05
+                        special_knowledge_offset.pose.position.x -= 0.022
+                        print(f"x_pose_after: {special_knowledge_offset.pose.position.x}")
+                        print(f"y_pose_after: {special_knowledge_offset.pose.position.y}")
                     if self.object_designator.type == "Cutlery":
                         print(f"Cutlery erkannt, rechne +x")
                         print(special_knowledge_offset.pose.position.x)
@@ -366,23 +373,24 @@ class PickUpAction(ActionDesignatorDescription):
                 if self.grasp == "top":
                     z = 0.039
                     if self.object_designator.type == "Bowl":
-                        z = 0.07
+                        z = 0.05
                 push_base.pose.position.z += z
             push_baseTm = lt.transform_pose(push_base, "map")
             special_knowledge_offsetTm = lt.transform_pose(push_base, "map")
 
             # Grasping from the top inherently requires calculating an offset, whereas front grasping involves
             # slightly pushing the object forward.
-            if self.grasp == "top":
-                rospy.logwarn("Offset now")
-                BulletWorld.current_bullet_world.add_vis_axis(special_knowledge_offsetTm)
-                if execute:
-                    MoveTCPMotion(special_knowledge_offsetTm, self.arm).resolve().perform()
+            # if self.grasp == "top":
+            rospy.logwarn("Offset now")
+            BulletWorld.current_bullet_world.add_vis_axis(special_knowledge_offsetTm)
+            if execute:
+                MoveTCPMotion(special_knowledge_offsetTm, self.arm).resolve().perform()
 
-                rospy.logwarn("Pushing now")
-                BulletWorld.current_bullet_world.add_vis_axis(push_baseTm)
-                if execute:
-                    MoveTCPMotion(push_baseTm, self.arm).resolve().perform()
+            rospy.logwarn("Pushing now")
+            BulletWorld.current_bullet_world.add_vis_axis(push_baseTm)
+            if execute:
+                print("push!!!")
+                MoveTCPMotion(push_baseTm, self.arm).resolve().perform()
 
             # Finalize the pick-up by closing the gripper and lifting the object
             rospy.logwarn("Close Gripper")
@@ -477,7 +485,7 @@ class PlaceAction(ActionDesignatorDescription):
             oTm = self.target_location
 
             if self.grasp == "top":
-                oTm.pose.position.z += 0.04
+                oTm.pose.position.z += 0.05
 
             grasp_rotation = robot_description.grasps.get_orientation_for_grasp(self.grasp)
             oTb = lt.transform_pose(oTm, robot.get_link_tf_frame("base_link"))
@@ -502,6 +510,13 @@ class PlaceAction(ActionDesignatorDescription):
 
             rospy.logwarn("Close Gripper")
             MoveGripperMotion(motion="open", gripper=self.arm).resolve().perform()
+
+            rospy.logwarn("Lifting now")
+            liftingTm = push_baseTm
+            liftingTm.pose.position.z += 0.042
+            BulletWorld.current_bullet_world.add_vis_axis(liftingTm)
+
+            MoveTCPMotion(liftingTm, self.arm).resolve().perform()
 
         def to_sql(self) -> ORMPlaceAction:
             return ORMPlaceAction(self.arm)
@@ -561,6 +576,59 @@ class PlaceAction(ActionDesignatorDescription):
                                                                      ObjectDesignatorDescription.Object) else self.object_designator_description.resolve()
 
         return self.Action(obj_desig, self.arms[0], self.grasps[0], self.target_locations[0])
+
+
+class PlaceGivenObjAction(ActionDesignatorDescription):
+    """
+    arm movement of the robot for placing human given objects.
+    """
+    #Todo: erweitern ums placing
+
+    @dataclasses.dataclass
+    class Action(ActionDesignatorDescription.Action):
+        arm: Arms
+        """
+        Entry from the enum for which arm should be parked
+        """
+
+        @with_tree
+        def perform(self) -> None:
+            # create the keyword arguments
+            kwargs = dict()
+
+            # add park left arm if wanted
+            if self.arm in [Arms.LEFT, Arms.BOTH]:
+                kwargs["left_arm_config"] = "place_human_given_obj"
+                MoveArmJointsMotion(**kwargs).resolve().perform()
+                print("moveArmJointsMotion in Designator")
+                MoveTorsoAction([0.4]).resolve().perform()
+
+        # def to_sql(self) -> ORMParkArmsAction:
+        #     return None #ORMParkArmsAction(self.arm.name)
+
+       #  def insert(self, session: sqlalchemy.orm.session.Session, **kwargs) -> ORMParkArmsAction:
+        #     action = super().insert(session)
+        #     session.add(action)
+        #     session.commit()
+        #     return action
+
+    def __init__(self, arms: List[Arms], resolver=None):
+        """
+        Moves the arms in the pre-defined parking position. Arms are taken from pycram.enum.Arms
+
+        :param arms: A list of possible arms, that could be used
+        :param resolver: An optional resolver that returns a performable designator from the designator description
+        """
+        super().__init__(resolver)
+        self.arms: List[Arms] = arms
+
+    def ground(self) -> Action:
+        """
+        Default resolver that returns a performable designator with the first element of the list of possible arms
+
+        :return: A performable designator
+        """
+        return self.Action(self.arms[0])
 
 
 class NavigateAction(ActionDesignatorDescription):

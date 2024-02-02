@@ -2,6 +2,7 @@ import rospy
 from pycram.designators.action_designator import DetectAction, NavigateAction
 from pycram.designators.motion_designator import TalkingMotion
 from pycram.process_module import real_robot
+from demos.pycram_receptionist_demo.utils.misc import *
 import pycram.external_interfaces.giskard as giskardpy
 from pycram.ros.viz_marker_publisher import VizMarkerPublisher
 from pycram.designators.location_designator import *
@@ -29,48 +30,6 @@ giskardpy.init_giskard_interface()
 
 # giskardpy.sync_worlds()
 # RobotStateUpdater("/tf", "/joint_states")
-
-
-class HumanDescription:
-
-    def __init__(self, name, fav_drink):
-        self.name = name
-        self.fav_drink = fav_drink
-        #self.shirt_color = shirt_color
-        #self.gender = gender
-        # TODO: coordinate with Perception on what is easy to implement
-        # characteristics to consider: height, hair color, and age.
-
-
-def talk_request(data: String):
-    """
-    callback function that takes the data from nlp (name and drink) and lets the robot talk
-    :param data: String "name drink"
-    """
-
-    name_drink = data.data.split(" ")
-    talk_actions.name_drink_talker(name_drink)
-    rospy.loginfo("nlp data:" + name_drink[0] + " " + name_drink[1])
-
-
-def talk_error(data):
-    """
-    callback function if no name/drink was heard
-    """
-
-    error_msgs = "i could not hear you, please repeat"
-    TalkingMotion(error_msgs).resolve().perform()
-    pub_nlp.publish("start listening")
-
-def introduce(name1, drink1, name2, drink2):
-    """
-    Text for robot to introduce two people to each other
-    """
-    first="Hey" + name2 + " This is " + name1 + "and the favorite drink of your guest is " + drink1
-    second = name1 + "This is " + name2 + "his favorite drink is " + drink2
-    TalkingMotion(first)
-    TalkingMotion(second)
-
 
 
 with real_robot:
@@ -118,7 +77,6 @@ with real_robot:
 
 
     #lead guest to living room
-    # TODO: testen, ob Position akkurat
     giskardpy.stop_looking()
     NavigateAction([Pose([3, 5, 0], [0, 0, 1, 1])]).resolve().perform()
     #NavigateAction(target_locations=[Pose([3, 5, 0])]).resolve().perform() ??
