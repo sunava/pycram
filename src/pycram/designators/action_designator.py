@@ -1,4 +1,5 @@
 import itertools
+import time
 from typing import Any, Union
 
 import itertools
@@ -238,6 +239,7 @@ class ParkArmsAction(ActionDesignatorDescription):
             if self.arm in [Arms.LEFT, Arms.BOTH]:
                 kwargs["left_arm_config"] = "park"
                 MoveArmJointsMotion(**kwargs).resolve().perform()
+                #MoveTorsoAction([0.005]).resolve().perform()
                 MoveTorsoAction([0.2]).resolve().perform()
             # add park right arm if wanted
             if self.arm in [Arms.RIGHT, Arms.BOTH]:
@@ -402,6 +404,8 @@ class PickUpAction(ActionDesignatorDescription):
             BulletWorld.current_bullet_world.add_vis_axis(liftingTm)
             if execute:
                 MoveTCPMotion(liftingTm, self.arm).resolve().perform()
+            tool_frame = robot_description.get_tool_frame(self.arm)
+            robot.attach(object=self.object_designator.bullet_world_object, link=tool_frame)
 
         def to_sql(self) -> ORMPickUpAction:
             return ORMPickUpAction(self.arm, self.grasp)
@@ -459,7 +463,7 @@ class PlaceAction(ActionDesignatorDescription):
     class Action(ActionDesignatorDescription.Action):
         object_designator: ObjectDesignatorDescription.Object
         """
-        Object designator describing the object that should be place
+        Object designator describing the object that should be placed
         """
         arm: str
         """
@@ -550,8 +554,8 @@ class PlaceAction(ActionDesignatorDescription):
                  object_designator_description: Union[ObjectDesignatorDescription, ObjectDesignatorDescription.Object],
                  arms: List[str], grasps: List[str], target_locations: List[Pose], resolver=None):
         """
-        Lets the robot pick up an object. The description needs an object designator describing the object that should be
-        picked up, an arm that should be used as well as the grasp from which side the object should be picked up.
+        Lets the robot place an object. The description needs an object designator describing the object that should be
+        placed, an arm that should be used as well as the grasp from which side the object was picked up.
 
         :param object_designator_description: List of possible object designator
         :param arms: List of possible arms that could be used
@@ -580,47 +584,70 @@ class PlaceAction(ActionDesignatorDescription):
 
 class PlaceGivenObjAction(ActionDesignatorDescription):
     """
-    arm movement of the robot for placing human given objects.
+    Arm movement of the robot for placing human given objects.
     """
     #Todo: erweitern ums placing
 
     @dataclasses.dataclass
     class Action(ActionDesignatorDescription.Action):
-        arm: Arms
+        object_designator: ObjectDesignatorDescription.Object
         """
-        Entry from the enum for which arm should be parked
+        Object designator describing the object that should be placed
+        """
+
+        arm: str
+        """
+        Arm that is currently holding the object
+        """
+
+        target_location: Pose
+        """
+        Pose in the world at which the object should be placed
         """
 
         @with_tree
         def perform(self) -> None:
-            # create the keyword arguments
-            kwargs = dict()
+             # navigate close to the table
+             self.target_location.pose.position.x = 4.08
+            # self.target_location.pose.position.y = 2.6
+             # because its the left arm of the hsr subtract from y position
+             self.target_location.pose.position.y -= 0.14
+             self.target_location.pose.position.z = 0
+             NavigateAction([self.target_location]).resolve().perform()
 
-            # add park left arm if wanted
-            if self.arm in [Arms.LEFT, Arms.BOTH]:
-                kwargs["left_arm_config"] = "place_human_given_obj"
-                MoveArmJointsMotion(**kwargs).resolve().perform()
-                print("moveArmJointsMotion in Designator")
-                MoveTorsoAction([0.4]).resolve().perform()
+             # create the keyword arguments
+             kwargs = dict()
 
-        # def to_sql(self) -> ORMParkArmsAction:
-        #     return None #ORMParkArmsAction(self.arm.name)
+             # taking in the predefined arm position for placing
+             if self.arm in ["left", "both"]:
+                  MoveTorsoAction([0.4]).resolve().perform()
+                  kwargs["left_arm_config"] = "place_human_given_obj"
+                  MoveArmJointsMotion(**kwargs).resolve().perform()
+                  print("moveArmJointsMotion in Designator")
 
-       #  def insert(self, session: sqlalchemy.orm.session.Session, **kwargs) -> ORMParkArmsAction:
-        #     action = super().insert(session)
-        #     session.add(action)
-        #     session.commit()
-        #     return action
 
-    def __init__(self, arms: List[Arms], resolver=None):
+             rospy.logwarn("Open Gripper")
+             MoveGripperMotion(motion="open", gripper=self.arm).resolve().perform()
+          #  robot.detach(object=self.object_designator.bullet_world_object)
+
+    def __init__(self,
+                 object_designator_description: Union[ObjectDesignatorDescription, ObjectDesignatorDescription.Object],
+                 arms: List[str], target_locations: List[Pose], resolver=None):
         """
-        Moves the arms in the pre-defined parking position. Arms are taken from pycram.enum.Arms
+        Lets the robot place a human given object. The description needs an object designator describing the object that should be
+        placed, an arm that should be used as well as the target location where the object should be placed.
 
-        :param arms: A list of possible arms, that could be used
-        :param resolver: An optional resolver that returns a performable designator from the designator description
+        :param object_designator_description: List of possible object designator
+        :param arms: List of possible arms that could be used
+        :param target_locations: List of possible target locations for the object to be placed
+        :param resolver: An optional resolver that returns a performable designator with elements from the lists of possible paramter
         """
         super().__init__(resolver)
-        self.arms: List[Arms] = arms
+        self.object_designator_description: Union[
+            ObjectDesignatorDescription, ObjectDesignatorDescription.Object] = object_designator_description
+        self.arms: List[str] = arms
+        self.target_locations: List[Pose] = target_locations
+
 
     def ground(self) -> Action:
         """
@@ -628,7 +655,10 @@ class PlaceGivenObjAction(ActionDesignatorDescription):
 
         :return: A performable designator
         """
-        return self.Action(self.arms[0])
+        obj_desig = self.object_designator_description if isinstance(self.object_designator_description,
+                                                                     ObjectDesignatorDescription.Object) else self.object_designator_description.resolve()
+
+        return self.Action(obj_desig, self.arms[0], self.target_locations[0])
 
 
 class NavigateAction(ActionDesignatorDescription):
