@@ -361,7 +361,7 @@ class HSRBDetectingReal(ProcessModule):
             return human_pose
         elif desig.technique == 'human' and desig.state == "stop":
             stop_queryHuman()
-            return None
+            return "stopped"
 
 
         query_result = queryEmpty(ObjectDesignatorDescription(types=[desig.object_type]))

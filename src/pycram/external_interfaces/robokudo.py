@@ -204,5 +204,5 @@ def stop_queryHuman() -> Any:
     client = actionlib.SimpleActionClient('robokudo/query', QueryAction)
     rospy.loginfo("Waiting for action server")
     client.wait_for_server()
-    client.cancel_goal()
+    client.cancel_all_goals()
     rospy.loginfo("cancelled current goal")
