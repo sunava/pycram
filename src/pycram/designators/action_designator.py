@@ -943,7 +943,7 @@ class DetectAction(ActionDesignatorDescription):
             return action
 
     def __init__(self, technique, resolver=None,
-                 object_designator_description: Optional[ObjectDesignatorDescription] = None,
+                 object_designator: Optional[ObjectDesignatorDescription] = None,
                  state: Optional[str] = None):
         """
         Tries to detect an object in the field of view (FOV) of the robot.
@@ -955,7 +955,7 @@ class DetectAction(ActionDesignatorDescription):
         """
         super().__init__(resolver)
         self.technique: str = technique
-        self.object_designator_description: Optional[ObjectDesignatorDescription] = object_designator_description
+        self.object_designator: Optional[ObjectDesignatorDescription] = object_designator
         self.state: Optional[str] = state
 
     def ground(self) -> Action:
@@ -965,7 +965,7 @@ class DetectAction(ActionDesignatorDescription):
         :return: A performable designator
         """
 
-        return self.Action(self.technique)
+        return self.Action(technique=self.technique, object_designator=self.object_designator, state=self.state)
 
 
 class OpenAction(ActionDesignatorDescription):
