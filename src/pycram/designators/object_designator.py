@@ -3,6 +3,8 @@ from typing import List, Union, Optional, Callable, Tuple, Iterable
 
 import rospy
 import sqlalchemy.orm
+from geometry_msgs.msg import PoseStamped
+
 from ..bullet_world import BulletWorld, Object as BulletWorldObject
 from ..designator import DesignatorDescription, ObjectDesignatorDescription
 from ..orm.base import ProcessMetaData
@@ -196,7 +198,7 @@ class HumanDescription:
         self.name = name
         self.fav_drink = fav_drink  # self.shirt_color = shirt_color  # self.gender = gender
 
-        self.human_pose_sub = rospy.Subscriber("/human_pose", String, self.human_pose_cb)
+        self.human_pose_sub = rospy.Subscriber("/human_pose", PoseStamped, self.human_pose_cb)
 
     def human_pose_cb(self, HumanPoseMsg):
         """
@@ -204,7 +206,8 @@ class HumanDescription:
         sets the attribute human_pose when someone (e.g. Perception/Robokudo) publishes on the topic
         :param HumanPoseMsg: received message
         """
-        self.human_pose.set_value(HumanPoseMsg.data)
+        rospy.loginfo("in callback")
+        self.human_pose.set_value(True)
 
     def set_name(self, new_name):
         """

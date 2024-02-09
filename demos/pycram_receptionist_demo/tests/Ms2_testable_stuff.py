@@ -48,15 +48,17 @@ def demo_test(area):
     with real_robot:
         print("start demo")
         host = HumanDescription("Bob", fav_drink="Coffee")
+        host.human_pose.set_value(False)
         guest1 = HumanDescription("guest1")
+        guest1.human_pose.set_value(False)
 
         # Perception, detect first guest
         DetectAction(technique='human', state='start').resolve().perform()
 
         # While loop, human is detected
-        #while not guest1.human_pose:
-        #    TalkingMotion("Please step in front of me").resolve.perform()
-        #    rospy.sleep(5)
+        while not guest1.human_pose.get_value():
+            TalkingMotion("Please step in front of me").resolve.perform()
+            rospy.sleep(5)
 
         rospy.loginfo("human detected")
 
@@ -97,6 +99,8 @@ def demo_test(area):
 
         # stop perceiving human
         DetectAction(technique='human', state='stop').resolve().perform()
+        guest1.human_pose.set_value(False)
+        host.human_pose.set_value(False)
 
         rospy.loginfo("Navigating now")
         TalkingMotion("navigating to couch area now, please step away").resolve().perform()
