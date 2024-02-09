@@ -69,20 +69,35 @@ object_orientation = axis_angle_to_quaternion([0, 0, 1], 180)
 def sort_objects(obj_dict, wished_sorted_obj_list):
     sorted_objects= []
     object_tuples = []
-    dictionary = obj_dict[1]
-    for value in dictionary.values():
-         distance = sqrt(pow((value.pose.position.x - robot.get_pose().position.x), 2) +
-                     pow((value.pose.position.y - robot.get_pose().position.y), 2) +
-                     pow((value.pose.position.z - robot.get_pose().position.z), 2))
+    isPlate = True
+    isAdded = False
+    #print(f"gefundene liste: {obj_dict}")
+    first, *remaining = obj_dict
+    print(f"type: {type(remaining)} and type of obj_dict: {type(obj_dict)}")
+    robot_pose = robot.get_pose()
+    for dict in remaining:
+        for value in dict.values():
+            print(f"value type: {type(value)}")
+            distance = sqrt(pow((value.pose.position.x - robot_pose.position.x), 2) +
+                         pow((value.pose.position.y - robot_pose.position.y), 2) +
+                         pow((value.pose.position.z - robot_pose.position.z), 2))
 
-         print(f"object name: {value.name} and distance: {distance}")
-         object_tuples.append((value, distance))
+            print(f"object name: {value.name} and distance: {distance}")
+
+            if isPlate or value.type != "Metalplate":
+                object_tuples.append((value, distance))
+                if value.type == "Metalplate":
+                     isPlate = False
+
     sorted_object_list = sorted(object_tuples, key= lambda distance: distance[1])
 
     for (object, distance) in sorted_object_list:
         #todo: reminder types are written with small letter and names now with big beginning letter
         if object.type in wished_sorted_obj_list:
-             sorted_objects.append(object)
+            if object.type == "Metalplate":
+                sorted_objects.insert(0, object)
+            else:
+                sorted_objects.append(object)
 
     test_list = []
     for test_object in sorted_objects:
@@ -127,25 +142,29 @@ with ((real_robot)):
     LookAtAction(targets=[Pose([0.8, 1.8, 0.21], object_orientation)]).resolve().perform()
     TalkingMotion("Perceiving").resolve().perform()
     object_desig = DetectAction(technique='default').resolve().perform()
-    wished_sorted_obj_list = ["bowl", "metalmug", "fork", "spoon", "plate", "cerealbox", "milkpack"]
+    wished_sorted_obj_list = ["Bowl", "Metalmug", "Fork", "Spoon", "Metalplate", "Cerealbox", "Milkpack"]
     sorted_obj = sort_objects(object_desig, wished_sorted_obj_list)
 
+    y_pos = 1.66
     for value in sorted_obj:
-        cutlery = ["spoon","fork","knife","plasticknife"]
+        NavigateAction(target_locations=[Pose([1.6, value.pose.position.y, 0], [0, 0, 1, 0])]).resolve().perform()
+        print("first navigation")
+        cutlery = ["Spoon","Fork","Knife","Plasticknife"]
         grasp = "front"
         if (value.type in cutlery):
-            value.type = "cutlery"
+            value.type = "Cutlery"
 
-        if value.type in ["bowl","cutlery"]:
+        if value.type in ["Bowl","Cutlery"]:
             grasp = "top"
 
-        if value.type == "plate":
-            MoveGripperMotion("open", "left")
-            TalkingMotion("Can you pleas give me the last object on the table, the plate? Thanks")
-            TalkingMotion("Please push down my hand, when I can grab the plate.")
+        if value.type == "Metalplate":
+            print("MetalPlate!!!!!!!!!!!!!!!!!!")
+            MoveGripperMotion("open", "left").resolve().perform()
+            TalkingMotion("Can you pleas give me the last object on the table, the plate? Thanks").resolve().perform()
+            TalkingMotion("Please push down my hand, when I can grab the plate.").resolve().perform()
             print("picked up plate")
-            time.sleep(5)
-            MoveGripperMotion("close", "left")
+            time.sleep(3)
+            MoveGripperMotion("close", "left").resolve().perform()
         else:
             TalkingMotion("Picking Up with: " + grasp).resolve().perform()
             try_pick_up(value, grasp)
@@ -153,24 +172,30 @@ with ((real_robot)):
         ParkArmsAction([Arms.LEFT]).resolve().perform()
         TalkingMotion("Navigating").resolve().perform()
         NavigateAction(target_locations=[Pose([1.6, 1.8, 0], [0, 0, 0, 1])]).resolve().perform()
-        NavigateAction(target_locations=[Pose([4.1, 2, 0], [0, 0, 0, 1])]).resolve().perform()
+        NavigateAction(target_locations=[Pose([4.1, y_pos, 0], [0, 0, 0, 1])]).resolve().perform()
         TalkingMotion("Placing").resolve().perform()
         #Todo: Objekte in z unterscheiden
-        if value.type == "cutlery":
+        if value.type == "Cutlery":
             z = 0.8
-        elif value.type == "bowl":
+        elif value.type == "Bowl":
             z = 0.84
-        elif value.type == "metalmug":
+        elif value.type == "Metalmug":
             z = 0.84
-        elif value.type == "milkpack":
+        elif value.type == "Milkpack":
             z = 0.88
-        elif value.type == "cerealbox":
+        elif value.type == "Cerealbox":
             z = 0.9
-        PlaceAction(value, ["left"], [grasp], [Pose([4.9, value.pose.position.y, z])]).resolve().perform()
+        if value.type == "Metalplate":
+            PlaceGivenObjAction(["left"], [Pose([4.86, y_pos, 0])]).resolve().perform()
+        else:
+            PlaceAction(value, ["left"], [grasp], [Pose([4.9, y_pos, z])]).resolve().perform()
         ParkArmsAction([Arms.LEFT]).resolve().perform()
         TalkingMotion("Navigating").resolve().perform()
         NavigateAction(target_locations=[Pose([4.1, 2, 0], [0, 0, 1, 0])]).resolve().perform()
-        NavigateAction(target_locations=[Pose([1.6, 1.8, 0], [0, 0, 1, 0])]).resolve().perform()
+        if value.type == "Metalplate":
+            y_pos += 0.3
+        else:
+            y_pos += 0.16
 
     rospy.loginfo("Done!")
     TalkingMotion("Done").resolve().perform()
