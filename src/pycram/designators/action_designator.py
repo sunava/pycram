@@ -362,10 +362,12 @@ class PickUpAction(ActionDesignatorDescription):
                         print(f"x_pose_after: {special_knowledge_offset.pose.position.x}")
                         print(f"y_pose_after: {special_knowledge_offset.pose.position.y}")
                     if self.object_designator.type == "Cutlery":
-                        print(f"Cutlery erkannt, rechne +x")
+                        print(f"Cutlery erkannt, rechne -x")
                         print(special_knowledge_offset.pose.position.x)
                         special_knowledge_offset.pose.position.x -= 0.11
                         print(special_knowledge_offset.pose.position.x)
+                    if self.object_designator.type == "Fork":
+                        special_knowledge_offset.pose.position.x -= 0.02
 
             push_base = special_knowledge_offset
             # todo: this is for hsrb only at the moment we will need a function that returns us special knowledge
@@ -484,7 +486,7 @@ class PlaceAction(ActionDesignatorDescription):
             lt = LocalTransformer()
             robot = BulletWorld.robot
             # Retrieve object and robot from designators
-            object = self.object_designator.bullet_world_object
+           # object = self.object_designator.bullet_world_object
             # oTm = Object Pose in Frame map
             oTm = self.target_location
 
@@ -503,8 +505,13 @@ class PlaceAction(ActionDesignatorDescription):
             push_base = lt.transform_pose(oTmG, robot.get_link_tf_frame(tool_frame))
             if robot.name == "hsrb":
                 z = 0.03
+                x = 0.05
                 if self.grasp == "top":
-                    z = 0.07
+                    z = 0.07 # 0.07
+                # if self.object_designator.type == "Metalmug":
+                #      x = 0.045
+                #      z = 0.095
+               # push_base.pose.position.x -= x
                 push_base.pose.position.z += z
             # todo: make this for other robots
             push_baseTm = lt.transform_pose(push_base, "map")
@@ -517,7 +524,7 @@ class PlaceAction(ActionDesignatorDescription):
 
             rospy.logwarn("Lifting now")
             liftingTm = push_baseTm
-            liftingTm.pose.position.z += 0.042
+            liftingTm.pose.position.z += 0.045
             BulletWorld.current_bullet_world.add_vis_axis(liftingTm)
 
             MoveTCPMotion(liftingTm, self.arm).resolve().perform()
@@ -590,7 +597,7 @@ class PlaceGivenObjAction(ActionDesignatorDescription):
 
     @dataclasses.dataclass
     class Action(ActionDesignatorDescription.Action):
-        object_designator: ObjectDesignatorDescription.Object
+       # object_designator: ObjectDesignatorDescription.Object
         """
         Object designator describing the object that should be placed
         """
@@ -607,31 +614,68 @@ class PlaceGivenObjAction(ActionDesignatorDescription):
 
         @with_tree
         def perform(self) -> None:
+            lt = LocalTransformer()
+            robot = BulletWorld.robot
+            # Retrieve object and robot from designators
+           # object = self.object_designator.bullet_world_object
+
+            # self.target_location.pose.position.x = 4.86
+            # self.target_location.pose.position.y = 2.2
+            self.target_location.pose.position.z = 0.9
+
+            # oTm = Object Pose in Frame map
+            oTm = self.target_location
+
+            grasp_rotation = robot_description.grasps.get_orientation_for_grasp("front")
+            oTb = lt.transform_pose(oTm, robot.get_link_tf_frame("base_link"))
+            oTb.orientation = grasp_rotation
+            oTmG = lt.transform_pose(oTb, "map")
+
+            rospy.logwarn("Placing now")
+            MoveTCPMotion(oTmG, self.arm).resolve().perform()
+
+            print(f" wrist_flex: {robot.get_joint_state('wrist_flex_joint')}")
+            MoveTorsoAction([0.62]).resolve().perform()
+
+            MoveJointsMotion(["arm_roll_joint"], [0]).resolve().perform()
+
+            MoveJointsMotion(["wrist_roll_joint"], [-1.5]).resolve().perform()
+            MoveJointsMotion(["wrist_flex_joint"], [-0.5]).resolve().perform()
+            MoveJointsMotion(["arm_flex_joint"], [-1.8]).resolve().perform()
+            NavigateAction([Pose([robot.get_pose().position.x, robot.get_pose().position.y, 0])]).resolve().perform()
+
+            print(f" wrist_roll: {robot.get_joint_state('wrist_roll_joint')}")
+            MoveGripperMotion(motion="open", gripper="left").resolve().perform()
+           # MoveTorsoAction([0.4]).resolve().perform()
+            NavigateAction([Pose([robot.get_pose().position.x - 0.1, robot.get_pose().position.y, 0])]).resolve().perform()
+
+
+            #NavigateAction([Pose([robot.get_pose().position.x - 0.1, robot.get_pose().position.y, 0])]).resolve().perform()
+
              # navigate close to the table
-             self.target_location.pose.position.x = 4.08
-            # self.target_location.pose.position.y = 2.6
-             # because its the left arm of the hsr subtract from y position
-             self.target_location.pose.position.y -= 0.14
-             self.target_location.pose.position.z = 0
-             NavigateAction([self.target_location]).resolve().perform()
-
-             # create the keyword arguments
-             kwargs = dict()
-
-             # taking in the predefined arm position for placing
-             if self.arm in ["left", "both"]:
-                  MoveTorsoAction([0.4]).resolve().perform()
-                  kwargs["left_arm_config"] = "place_human_given_obj"
-                  MoveArmJointsMotion(**kwargs).resolve().perform()
-                  print("moveArmJointsMotion in Designator")
-
-
-             rospy.logwarn("Open Gripper")
-             MoveGripperMotion(motion="open", gripper=self.arm).resolve().perform()
+            #  self.target_location.pose.position.x = 4.08
+            # # self.target_location.pose.position.y = 2.6
+            #  # because its the left arm of the hsr subtract from y position
+            #  self.target_location.pose.position.y -= 0.14
+            #  self.target_location.pose.position.z = 0
+            #  NavigateAction([self.target_location]).resolve().perform()
+            #
+            #  # create the keyword arguments
+            #  kwargs = dict()
+            #
+            #  # taking in the predefined arm position for placing
+            #  if self.arm in ["left", "both"]:
+            #       MoveTorsoAction([0.4]).resolve().perform()
+            #       kwargs["left_arm_config"] = "place_human_given_obj"
+            #       MoveArmJointsMotion(**kwargs).resolve().perform()
+            #       print("moveArmJointsMotion in Designator")
+            #
+            #
+            #  rospy.logwarn("Open Gripper")
+            #  MoveGripperMotion(motion="open", gripper=self.arm).resolve().perform()
           #  robot.detach(object=self.object_designator.bullet_world_object)
 
     def __init__(self,
-                 object_designator_description: Union[ObjectDesignatorDescription, ObjectDesignatorDescription.Object],
                  arms: List[str], target_locations: List[Pose], resolver=None):
         """
         Lets the robot place a human given object. The description needs an object designator describing the object that should be
@@ -643,8 +687,8 @@ class PlaceGivenObjAction(ActionDesignatorDescription):
         :param resolver: An optional resolver that returns a performable designator with elements from the lists of possible paramter
         """
         super().__init__(resolver)
-        self.object_designator_description: Union[
-            ObjectDesignatorDescription, ObjectDesignatorDescription.Object] = object_designator_description
+       # self.object_designator_description: Union[
+           # ObjectDesignatorDescription, ObjectDesignatorDescription.Object] = object_designator_description
         self.arms: List[str] = arms
         self.target_locations: List[Pose] = target_locations
 
@@ -655,10 +699,10 @@ class PlaceGivenObjAction(ActionDesignatorDescription):
 
         :return: A performable designator
         """
-        obj_desig = self.object_designator_description if isinstance(self.object_designator_description,
-                                                                     ObjectDesignatorDescription.Object) else self.object_designator_description.resolve()
+       # obj_desig = self.object_designator_description if isinstance(self.object_designator_description,
+                                                                  #   ObjectDesignatorDescription.Object) else self.object_designator_description.resolve()
 
-        return self.Action(obj_desig, self.arms[0], self.target_locations[0])
+        return self.Action(self.arms[0], self.target_locations[0])
 
 
 class NavigateAction(ActionDesignatorDescription):
