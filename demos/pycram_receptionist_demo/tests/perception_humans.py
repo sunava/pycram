@@ -38,19 +38,21 @@ def test():
 
         print("---------- " + "start")
 
-        DetectAction(technique='human', state='stop').resolve().perform()
+        rospy.loginfo("sleeping now")
 
-        print("------------------------------- stop")
-        rospy.loginfo("should have stopped. /human_pose gets no msgs anymore")
+        rospy.sleep(10)
 
-
-        DetectAction(technique='human', state='start').resolve().perform()
-
-        print("------------------------------- start")
+        rospy.loginfo("sleep done stopping now")
 
         DetectAction(technique='human', state='stop').resolve().perform()
 
         print("------------------------------- stop")
+
+        print("end")
+
+
+
+
 
 
 

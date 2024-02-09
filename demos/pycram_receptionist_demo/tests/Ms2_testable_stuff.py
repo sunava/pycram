@@ -44,16 +44,12 @@ pose_home = Pose([3, 1.7, 0], robot_orientation)
 pub_nlp = rospy.Publisher('/startListener', String, queue_size=10)
 
 
-
-
-
-
 def demo_test(area):
     with real_robot:
         host = HumanDescription("Bob", fav_drink="Coffee")
         guest1 = HumanDescription("guest1")
 
-        # Perception, detect first guest -> First detect guest, then listen
+        # Perception, detect first guest
         DetectAction(technique='human', state='start').resolve().perform()
 
         # While loop, human is detected
@@ -87,18 +83,22 @@ def demo_test(area):
         # receives name and drink via topic
         # rospy.Subscriber("nlp_out", String, talk_request)
         guest1.set_name(guest_data[0])
+        guest1.set_drink(guest_data[1])
         talk_request(guest_data)
+
+        # TODO: does the rest of the code waits for talk_request to be executed?
+        # if not sleep has to stay
+        rospy.sleep(2)
 
         # lead human to living room
         rospy.loginfo("stop looking now")
         giskardpy.stop_looking()
 
         # stop perceiving human
-        # TODO: test on real robot if perception actually stops
         DetectAction(technique='human', state='stop').resolve().perform()
 
         rospy.loginfo("Navigating now")
-        TalkingMotion("navigating to couch area now, pls step away").resolve().perform()
+        TalkingMotion("navigating to couch area now, please step away").resolve().perform()
 
         if area == 'to_couch':
             NavigateAction([pose_kitchen_to_couch]).resolve().perform()
