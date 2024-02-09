@@ -116,7 +116,7 @@ def try_pick_up(obj, grasps):
                              robot.get_pose().orientation)]).resolve().perform()
         ParkArmsAction([Arms.LEFT]).resolve().perform()
         if EnvironmentUnreachable:
-             object_desig = DetectAction(BelieveObject(types=[ObjectType.MILK]), technique='all').resolve().perform()
+             object_desig = DetectAction(technique='default').resolve().perform()
              # TODO nur wenn key (name des vorherigen objektes) in object_desig enthalten ist
              new_object = object_desig[obj.name]
         else:
@@ -166,6 +166,9 @@ with ((real_robot)):
             time.sleep(3)
             MoveGripperMotion("close", "left").resolve().perform()
         else:
+            if value.type == "Cutlery" and value.pose.position.x + 0.08 >= table_pose:
+                table_pose = 1.04
+                value.pose.position.x -= 0.08
             TalkingMotion("Picking Up with: " + grasp).resolve().perform()
             try_pick_up(value, grasp)
 
