@@ -116,7 +116,7 @@ def try_pick_up(obj, grasps):
                              robot.get_pose().orientation)]).resolve().perform()
         ParkArmsAction([Arms.LEFT]).resolve().perform()
         if EnvironmentUnreachable:
-             object_desig = DetectAction(BelieveObject(types=[ObjectType.MILK]), technique='all').resolve().perform()
+             object_desig = DetectAction(technique='default').resolve().perform()
              # TODO nur wenn key (name des vorherigen objektes) in object_desig enthalten ist
              new_object = object_desig[obj.name]
         else:
@@ -160,18 +160,22 @@ with ((real_robot)):
         if value.type == "Metalplate":
             print("MetalPlate!!!!!!!!!!!!!!!!!!")
             MoveGripperMotion("open", "left").resolve().perform()
-            TalkingMotion("Can you pleas give me the last object on the table, the plate? Thanks").resolve().perform()
-            TalkingMotion("Please push down my hand, when I can grab the plate.").resolve().perform()
+            TalkingMotion("Can you pleas give me the plate on the table.").resolve().perform()
+           # TalkingMotion("Please push down my hand, when I can grab the plate.").resolve().perform()
             print("picked up plate")
             time.sleep(3)
             MoveGripperMotion("close", "left").resolve().perform()
         else:
+            table_pose = 1.04
+            if sorted_obj[0].type == "Cutlery" and sorted_obj[0].pose.position.x + 0.05 >= table_pose:
+                print("adjusted x!!!!")
+                sorted_obj[0].pose.position.x -= 0.1
             TalkingMotion("Picking Up with: " + grasp).resolve().perform()
             try_pick_up(value, grasp)
 
         ParkArmsAction([Arms.LEFT]).resolve().perform()
         TalkingMotion("Navigating").resolve().perform()
-        NavigateAction(target_locations=[Pose([1.6, 1.8, 0], [0, 0, 0, 1])]).resolve().perform()
+        NavigateAction(target_locations=[Pose([1.8, 1.8, 0], [0, 0, 0, 1])]).resolve().perform() # 1.6 für x
         NavigateAction(target_locations=[Pose([4.1, y_pos, 0], [0, 0, 0, 1])]).resolve().perform()
         TalkingMotion("Placing").resolve().perform()
         #Todo: Objekte in z unterscheiden
@@ -180,7 +184,7 @@ with ((real_robot)):
         elif value.type == "Bowl":
             z = 0.84
         elif value.type == "Metalmug":
-            z = 0.84
+            z = 0.8
         elif value.type == "Milkpack":
             z = 0.88
         elif value.type == "Cerealbox":
@@ -191,7 +195,7 @@ with ((real_robot)):
             PlaceAction(value, ["left"], [grasp], [Pose([4.9, y_pos, z])]).resolve().perform()
         ParkArmsAction([Arms.LEFT]).resolve().perform()
         TalkingMotion("Navigating").resolve().perform()
-        NavigateAction(target_locations=[Pose([4.1, 2, 0], [0, 0, 1, 0])]).resolve().perform()
+        NavigateAction(target_locations=[Pose([3.9, 2, 0], [0, 0, 1, 0])]).resolve().perform() # 4.1 für x
         if value.type == "Metalplate":
             y_pos += 0.3
         else:
