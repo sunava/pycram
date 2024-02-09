@@ -46,6 +46,7 @@ pub_nlp = rospy.Publisher('/startListener', String, queue_size=10)
 
 def demo_test(area):
     with real_robot:
+        print("start demo")
         host = HumanDescription("Bob", fav_drink="Coffee")
         guest1 = HumanDescription("guest1")
 
@@ -53,9 +54,9 @@ def demo_test(area):
         DetectAction(technique='human', state='start').resolve().perform()
 
         # While loop, human is detected
-        while not guest1.human_pose:
-            TalkingMotion("Please step in front of me").resolve.perform()
-            rospy.sleep(5)
+        #while not guest1.human_pose:
+        #    TalkingMotion("Please step in front of me").resolve.perform()
+        #    rospy.sleep(5)
 
         rospy.loginfo("human detected")
 
@@ -121,5 +122,5 @@ def nav_test():
         moveBase.queryPoseNav(test_pose)
 
 
-demo_test('from_couch')
-# demo_test('to_couch')
+#demo_test('from_couch')
+demo_test('to_couch')
