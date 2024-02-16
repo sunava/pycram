@@ -1,7 +1,7 @@
 import logging
 import os
 import sys
-from std_srvs.srv import IsKnown
+from knowledge_msgs.srv import IsKnown
 import rospy
 import rosservice
 
@@ -139,7 +139,7 @@ def get_guest_info(id):
     try:
         info_service = rospy.ServiceProxy('name_server', IsKnown)
         guest_data = info_service(id) #guest_data = "name, drink"
-        result = guest_data.split(',') #result = ["name", " drink"]
+        result = str(guest_data).split(',') #result = ["name", " drink"]
         return result
     except rospy.ServiceException as e:
         print("Service call failed")

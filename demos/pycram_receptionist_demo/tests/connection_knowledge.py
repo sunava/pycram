@@ -63,7 +63,7 @@ def demo_test():
         print("guest data: " + str(guest_data))
         while guest_data == "No name saved under this ID!":
             talk_error("no name")
-            guest_data = get_guest_info(1)
+            guest_data = get_guest_info("1.0")
             rospy.sleep(3)
 
         talk_request(guest_data)

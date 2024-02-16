@@ -206,8 +206,10 @@ class HumanDescription:
         sets the attribute human_pose when someone (e.g. Perception/Robokudo) publishes on the topic
         :param HumanPoseMsg: received message
         """
-        rospy.loginfo("in callback")
+
         self.human_pose.set_value(True)
+        rospy.loginfo("done cb")
+        rospy.sleep(10)
 
     def set_name(self, new_name):
         """
