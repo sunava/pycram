@@ -357,27 +357,27 @@ class PickUpAction(ActionDesignatorDescription):
                     if self.object_designator.type == "Bowl":
                         print(f"x_pose: {special_knowledge_offset.pose.position.x}")
                         print(f"y_pose: {special_knowledge_offset.pose.position.y}")
-                        special_knowledge_offset.pose.position.y += 0.05
-                        special_knowledge_offset.pose.position.x -= 0.022
+                        special_knowledge_offset.pose.position.y += 0.06
+                        special_knowledge_offset.pose.position.x -= 0.03 # 0.022
                         print(f"x_pose_after: {special_knowledge_offset.pose.position.x}")
                         print(f"y_pose_after: {special_knowledge_offset.pose.position.y}")
                     if self.object_designator.type == "Cutlery":
                         print(f"Cutlery erkannt, rechne -x")
                         print(special_knowledge_offset.pose.position.x)
-                        special_knowledge_offset.pose.position.x -= 0.11
+                        special_knowledge_offset.pose.position.x -= 0.115 # 0.11 before, fork needs more
                         print(special_knowledge_offset.pose.position.x)
-                    if self.object_designator.type == "Fork":
-                        special_knowledge_offset.pose.position.x -= 0.02
+                    # if self.object_designator.type == "Fork":
+                    #     special_knowledge_offset.pose.position.x -= 0.02
 
             push_base = special_knowledge_offset
             # todo: this is for hsrb only at the moment we will need a function that returns us special knowledge
             #  depending on robot if we dont generlize this we will have a big list in the end of all robots
             if robot.name == "hsrb":
-                z = 0.03
+                z = 0.04
                 if self.grasp == "top":
                     z = 0.039
                     if self.object_designator.type == "Bowl":
-                        z = 0.05
+                        z = 0.045 # 0.05
                 push_base.pose.position.z += z
             push_baseTm = lt.transform_pose(push_base, "map")
             special_knowledge_offsetTm = lt.transform_pose(push_base, "map")
@@ -505,13 +505,8 @@ class PlaceAction(ActionDesignatorDescription):
             push_base = lt.transform_pose(oTmG, robot.get_link_tf_frame(tool_frame))
             if robot.name == "hsrb":
                 z = 0.03
-                x = 0.05
                 if self.grasp == "top":
-                    z = 0.07 # 0.07
-                # if self.object_designator.type == "Metalmug":
-                #      x = 0.045
-                #      z = 0.095
-               # push_base.pose.position.x -= x
+                    z = 0.07
                 push_base.pose.position.z += z
             # todo: make this for other robots
             push_baseTm = lt.transform_pose(push_base, "map")
@@ -524,7 +519,7 @@ class PlaceAction(ActionDesignatorDescription):
 
             rospy.logwarn("Lifting now")
             liftingTm = push_baseTm
-            liftingTm.pose.position.z += 0.045
+            liftingTm.pose.position.z += 0.08
             BulletWorld.current_bullet_world.add_vis_axis(liftingTm)
 
             MoveTCPMotion(liftingTm, self.arm).resolve().perform()
@@ -635,13 +630,14 @@ class PlaceGivenObjAction(ActionDesignatorDescription):
             MoveTCPMotion(oTmG, self.arm).resolve().perform()
 
             print(f" wrist_flex: {robot.get_joint_state('wrist_flex_joint')}")
-            MoveTorsoAction([0.62]).resolve().perform()
+            MoveTorsoAction([0.62]).resolve().perform() # 0.62
 
             MoveJointsMotion(["arm_roll_joint"], [0]).resolve().perform()
 
             MoveJointsMotion(["wrist_roll_joint"], [-1.5]).resolve().perform()
             MoveJointsMotion(["wrist_flex_joint"], [-0.5]).resolve().perform()
             MoveJointsMotion(["arm_flex_joint"], [-1.8]).resolve().perform()
+            MoveJointsMotion(["wrist_flex_joint"], [-0.8]).resolve().perform()
             NavigateAction([Pose([robot.get_pose().position.x, robot.get_pose().position.y, 0])]).resolve().perform()
 
             print(f" wrist_roll: {robot.get_joint_state('wrist_roll_joint')}")

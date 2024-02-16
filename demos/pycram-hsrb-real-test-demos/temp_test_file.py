@@ -61,19 +61,75 @@ object_orientation = axis_angle_to_quaternion([0, 0, 1], 180)
 #breakfast_cereal = Object("breakfast_cereal", "breakfast_cereal", "breakfast_cereal.stl", pose=Pose([4.8, 2.6, 0.87]),color=[0, 1, 0, 1])
 # fork = Object("Fork", "fork", "spoon.stl", pose=Pose([-2.8, 2.3, 0.368], object_orientation), color=[1, 0, 0, 1])
 # spoon = Object("Spoon", "spoon", "spoon.stl", pose=Pose([-2.5, 2.3, 0.368], object_orientation), color=[0, 1, 0, 1])
-# metalmug = Object("Metalmug", "metalmug", "bowl.stl", pose=Pose([-3.1, 2.3, 0.39]), color=[0, 1, 0, 1])
+#metalmug = ObjectDesignatorDescription(["Metalmug"], ["Metalmug"]).resolve()
 # plate = Object("Plate", "plate", "board.stl", pose=Pose([-2.2, 2.3, 0.368], object_orientation), color=[0, 1, 0, 1])
 #bowl = Object("bowl", "bowl", "bowl.stl", pose=Pose([4.8, 2.6, 0.87]), color=[0, 1, 0, 1])
 
 # Set the world's gravity
 #world.set_gravity([0.0, 0.0, 9.81])
+def sort_objects(obj_dict, wished_sorted_obj_list):
+    sorted_objects= []
+    object_tuples = []
+    isPlate = True
+    isAdded = False
+    #print(f"gefundene liste: {obj_dict}")
+    first, *remaining = obj_dict
+    print(f"type: {type(remaining)} and type of obj_dict: {type(obj_dict)}")
+    robot_pose = robot.get_pose()
+    for dict in remaining:
+        for value in dict.values():
+            print(f"value type: {type(value)}")
+            distance = sqrt(pow((value.pose.position.x - robot_pose.position.x), 2) +
+                         pow((value.pose.position.y - robot_pose.position.y), 2) +
+                         pow((value.pose.position.z - robot_pose.position.z), 2))
+
+            print(f"object name: {value.name} and distance: {distance}")
+
+            if isPlate or value.type != "Metalplate":
+                object_tuples.append((value, distance))
+                if value.type == "Metalplate":
+                     isPlate = False
+
+    sorted_object_list = sorted(object_tuples, key= lambda distance: distance[1])
+
+    for (object, distance) in sorted_object_list:
+        #todo: reminder types are written with small letter and names now with big beginning letter
+        if object.type in wished_sorted_obj_list:
+            if object.type == "Metalplate":
+                sorted_objects.insert(0, object)
+            else:
+                sorted_objects.append(object)
+
+    test_list = []
+    for test_object in sorted_objects:
+         test_list.append(test_object.name)
+    print(test_list)
+
+    return sorted_objects
+
 
 with ((real_robot)):
     rospy.loginfo("Starting demo")
     TalkingMotion("Starting demo").resolve().perform()
     print(f"{robot.get_joint_limits('arm_lift_joint')}")
-    MoveGripperMotion(motion="open", gripper="left").resolve().perform()
+    #NavigateAction(target_locations=[Pose([1.6, 1.8, 0], [0, 0, 1, 0])]).resolve().perform()
     ParkArmsAction([Arms.LEFT]).resolve().perform()
+    #TalkingMotion("Perceiving").resolve().perform()
+   # LookAtAction(targets=[Pose([0.8, 1.8, 0.21], object_orientation)]).resolve().perform()
+   # object_desig = DetectAction(technique='default').resolve().perform()
+   # wished_sorted_obj_list = ["Bowl", "Metalmug", "Fork", "Spoon", "Metalplate", "Cerealbox", "Milkpack"]
+   # sorted_obj = sort_objects(object_desig, wished_sorted_obj_list)
+   # TalkingMotion("Picking up").resolve().perform()
+    MoveGripperMotion(motion="open", gripper="left").resolve().perform()
+    cutlery = ["Spoon", "Fork", "Knife", "Plasticknife"]
+   # if (sorted_obj[0].type in cutlery):
+   #      sorted_obj[0].type = "Cutlery"
+  #  table_pose = 1.04
+ #   if sorted_obj[0].type == "Cutlery" and sorted_obj[0].pose.position.x + 0.05 >= table_pose:
+  #      print("adjusted x!!!!")
+  #      sorted_obj[0].pose.position.x -= 0.1
+   # MoveGripperMotion(motion="open", gripper="left").resolve().perform()
+   # PickUpAction(sorted_obj[0],["left"],["top"]).resolve().perform()
    # ParkArmsAction([Arms.LEFT]).resolve().perform()
    # MoveTorsoAction([0.2]).resolve().perform()
     print(f" arm_flex: {robot.get_joint_state('arm_flex_joint')}")
@@ -90,12 +146,17 @@ with ((real_robot)):
     print(f"print all: {robot.get_complete_joint_state()}")
 
     #MoveGripperMotion(motion="open", gripper="left").resolve().perform()
-    TalkingMotion("Moving now").resolve().perform()
-    PlaceGivenObjAction([Arms.LEFT]).resolve().perform()
-
-    TalkingMotion("Grab object now!").resolve().perform()
-    time.sleep(5)
+    TalkingMotion("Grabing now").resolve().perform()
+    time.sleep(2)
     MoveGripperMotion(motion="close", gripper="left").resolve().perform()
+    PlaceGivenObjAction(["left"],[Pose([0,0,0])]).resolve().perform()
+   # if sorted_obj[0].type == "Metalmug":
+   #     z = 0.81
+  #  pose = Pose([0.94, 1.68, z])
+    #PlaceAction(sorted_obj[0], ["left"], ["top"], [pose]).resolve().perform()
+   # TalkingMotion("Grab object now!").resolve().perform()
+   # time.sleep(5)
+   # MoveGripperMotion(motion="close", gripper="left").resolve().perform()
     print(f" arm_lift2: {robot.get_joint_state('arm_lift_joint')}")
     print("finished")
 

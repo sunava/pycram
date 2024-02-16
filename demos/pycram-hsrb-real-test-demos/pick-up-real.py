@@ -55,6 +55,11 @@ apartment = Object("kitchen", ObjectType.ENVIRONMENT, "couch-kitchen.urdf")
 # Define orientation for objects
 object_orientation = axis_angle_to_quaternion([0, 0, 1], 180)
 
+# Wished objects for the Demo
+#wished_sorted_obj_list = ["Bowl", "Metalmug", "Fork", "Spoon", "Metalplate", "Cerealbox", "Milkpack"]
+
+global y_pos
+y_pos = 1.66
 # Define a breakfast cereal object
 #breakfast_cereal = Object("breakfast_cereal", "breakfast_cereal", "breakfast_cereal.stl", pose=Pose([4.8, 2.6, 0.87]),color=[0, 1, 0, 1])
 # fork = Object("Fork", "fork", "spoon.stl", pose=Pose([-2.8, 2.3, 0.368], object_orientation), color=[1, 0, 0, 1])
@@ -128,62 +133,47 @@ def try_pick_up(obj, grasps):
             TalkingMotion(f"Can you pleas give me the {obj.name} object on the table? Thanks")
             TalkingMotion(f"Please push down my hand, when I can grab the {obj.name}.")
 
-# Main interaction sequence with semi-real robot
-with ((real_robot)):
-    rospy.loginfo("Starting demo")
-    TalkingMotion("Starting demo").resolve().perform()
-    MoveGripperMotion(motion="open", gripper="left").resolve().perform()
-    ParkArmsAction([Arms.LEFT]).resolve().perform()
+def pickUp_and_place_objects(sorted_obj):
 
-    TalkingMotion("Navigating").resolve().perform()
-    NavigateAction(target_locations=[Pose([1.6, 1.8, 0], [0,0,1,0])]).resolve().perform()
-    #popcorntable
-    LookAtAction(targets=[Pose([0.8, 1.8, 0.21], object_orientation)]).resolve().perform()
-    LookAtAction(targets=[Pose([0.8, 1.8, 0.21], object_orientation)]).resolve().perform()
-    TalkingMotion("Perceiving").resolve().perform()
-    object_desig = DetectAction(technique='default').resolve().perform()
-    wished_sorted_obj_list = ["Bowl", "Metalmug", "Fork", "Spoon", "Metalplate", "Cerealbox", "Milkpack"]
-    sorted_obj = sort_objects(object_desig, wished_sorted_obj_list)
-
-    y_pos = 1.66
     for value in sorted_obj:
         NavigateAction(target_locations=[Pose([1.6, value.pose.position.y, 0], [0, 0, 1, 0])]).resolve().perform()
         print("first navigation")
-        cutlery = ["Spoon","Fork","Knife","Plasticknife"]
+        cutlery = ["Spoon", "Fork", "Knife", "Plasticknife"]
         grasp = "front"
         if (value.type in cutlery):
             value.type = "Cutlery"
 
-        if value.type in ["Bowl","Cutlery"]:
+        if value.type in ["Bowl", "Cutlery"]:
             grasp = "top"
 
         if value.type == "Metalplate":
             print("MetalPlate!!!!!!!!!!!!!!!!!!")
             MoveGripperMotion("open", "left").resolve().perform()
-            TalkingMotion("Can you pleas give me the last object on the table, the plate? Thanks").resolve().perform()
-            TalkingMotion("Please push down my hand, when I can grab the plate.").resolve().perform()
+            TalkingMotion("Can you pleas give me the plate on the table.").resolve().perform()
+            # TalkingMotion("Please push down my hand, when I can grab the plate.").resolve().perform()
             print("picked up plate")
             time.sleep(3)
             MoveGripperMotion("close", "left").resolve().perform()
         else:
-            if value.type == "Cutlery" and value.pose.position.x + 0.08 >= table_pose:
-                table_pose = 1.04
-                value.pose.position.x -= 0.08
+            table_pose = 1.04
+            if sorted_obj[0].type == "Cutlery" and sorted_obj[0].pose.position.x + 0.05 >= table_pose:
+                print("adjusted x!!!!")
+                sorted_obj[0].pose.position.x -= 0.1
             TalkingMotion("Picking Up with: " + grasp).resolve().perform()
             try_pick_up(value, grasp)
 
         ParkArmsAction([Arms.LEFT]).resolve().perform()
         TalkingMotion("Navigating").resolve().perform()
-        NavigateAction(target_locations=[Pose([1.6, 1.8, 0], [0, 0, 0, 1])]).resolve().perform()
+        NavigateAction(target_locations=[Pose([1.8, 1.8, 0], [0, 0, 0, 1])]).resolve().perform()  # 1.6 für x
         NavigateAction(target_locations=[Pose([4.1, y_pos, 0], [0, 0, 0, 1])]).resolve().perform()
         TalkingMotion("Placing").resolve().perform()
-        #Todo: Objekte in z unterscheiden
+        # Todo: Objekte in z unterscheiden
         if value.type == "Cutlery":
             z = 0.8
         elif value.type == "Bowl":
             z = 0.84
         elif value.type == "Metalmug":
-            z = 0.84
+            z = 0.8
         elif value.type == "Milkpack":
             z = 0.88
         elif value.type == "Cerealbox":
@@ -194,11 +184,81 @@ with ((real_robot)):
             PlaceAction(value, ["left"], [grasp], [Pose([4.9, y_pos, z])]).resolve().perform()
         ParkArmsAction([Arms.LEFT]).resolve().perform()
         TalkingMotion("Navigating").resolve().perform()
-        NavigateAction(target_locations=[Pose([4.1, 2, 0], [0, 0, 1, 0])]).resolve().perform()
+        NavigateAction(target_locations=[Pose([3.9, 2, 0], [0, 0, 1, 0])]).resolve().perform()  # 4.1 für x
         if value.type == "Metalplate":
             y_pos += 0.3
         else:
             y_pos += 0.16
+
+def navigate_and_detect():
+    TalkingMotion("Navigating").resolve().perform()
+    NavigateAction(target_locations=[Pose([1.6, 1.8, 0], [0, 0, 1, 0])]).resolve().perform()
+    # popcorntable
+    LookAtAction(targets=[Pose([0.8, 1.8, 0.21], object_orientation)]).resolve().perform()
+    LookAtAction(targets=[Pose([0.8, 1.8, 0.21], object_orientation)]).resolve().perform()
+    TalkingMotion("Perceiving").resolve().perform()
+    object_desig = DetectAction(technique='default').resolve().perform()
+
+    return object_desig
+
+
+# Main interaction sequence with semi-real robot
+with ((real_robot)):
+    rospy.loginfo("Starting demo")
+    TalkingMotion("Starting demo").resolve().perform()
+    MoveGripperMotion(motion="open", gripper="left").resolve().perform()
+    ParkArmsAction([Arms.LEFT]).resolve().perform()
+
+    object_desig = navigate_and_detect()
+    wished_sorted_obj_list = ["Metalmug", "Metalplate"]
+
+    sorted_obj = sort_objects(object_desig, wished_sorted_obj_list)
+
+    pickUp_and_place_objects(sorted_obj)
+    new_sorted_obj = []
+    print(f"length of sorted obj: {len(sorted_obj)}")
+    if len(sorted_obj) < len(wished_sorted_obj_list):
+        try:
+            new_object_desig = navigate_and_detect()
+            print("first Check")
+            print(new_object_desig)
+            new_sorted_obj = sort_objects(new_object_desig, wished_sorted_obj_list)
+            pickUp_and_place_objects(new_sorted_obj)
+        except PerceptionObjectNotFound:
+            new_sorted_obj = []
+
+    final_sorted_obj = sorted_obj + new_sorted_obj
+
+    print(f"sorted obj: {sorted_obj}")
+    print(f"new sorted obj: {new_sorted_obj}")
+    print(f"final sorted obj: {final_sorted_obj}")
+    if len(final_sorted_obj) < len(wished_sorted_obj_list):
+        print("second Check")
+        for name in wished_sorted_obj_list:
+            for value in final_sorted_obj:
+                if name == value.type:
+                    wished_sorted_obj_list.remove(name)
+        for name in wished_sorted_obj_list:
+            TalkingMotion(f"Can you pleas give me the {name} object on the table? Thanks")
+            rospy.sleep(1)
+            #TalkingMotion(f"Please push down my hand, when I can grab the {name}.")
+            time.sleep(3)
+            MoveGripperMotion("close", "left").resolve().perform()
+
+            ParkArmsAction([Arms.LEFT]).resolve().perform()
+            TalkingMotion("Navigating").resolve().perform()
+            NavigateAction(target_locations=[Pose([1.8, 1.8, 0], [0, 0, 0, 1])]).resolve().perform()  # 1.6 für x
+            NavigateAction(target_locations=[Pose([4.1, y_pos, 0], [0, 0, 0, 1])]).resolve().perform()
+            TalkingMotion("Placing").resolve().perform()
+            # TODO: PlaceGivenObjAction in ActionDesignator für die anderen Objekte anpassen
+            PlaceGivenObjAction(["left"], [Pose([4.86, y_pos, 0])]).resolve().perform()
+            ParkArmsAction([Arms.LEFT]).resolve().perform()
+            TalkingMotion("Navigating").resolve().perform()
+            NavigateAction(target_locations=[Pose([3.9, 2, 0], [0, 0, 1, 0])]).resolve().perform()  # 4.1 für x
+            if name == "Metalplate":
+                y_pos += 0.3
+            else:
+                y_pos += 0.16
 
     rospy.loginfo("Done!")
     TalkingMotion("Done").resolve().perform()

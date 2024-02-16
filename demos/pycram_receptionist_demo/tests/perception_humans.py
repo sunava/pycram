@@ -30,9 +30,25 @@ giskardpy.init_giskard_interface()
 
 def test():
     with real_robot:
-        print("...................... nothing" )
+        guest1 = HumanDescription("x")
+       # print("...................... nothing" )
+        guest1.human_pose.set_value(False)
+        if not guest1.human_pose.get_value():
+            print("wrong? " + str(guest1.human_pose))
 
+        if guest1.human_pose.get_value():
+            print("right? " + str(guest1.human_pose))
+
+        print("----------------------------------")
         DetectAction(technique='human', state='start').resolve().perform()
+
+        if not guest1.human_pose.get_value():
+            print("wrong? " + str(guest1.human_pose))
+
+        if guest1.human_pose.get_value():
+            print("right? " + str(guest1.human_pose))
+
+
 
         rospy.loginfo("human detected")
 
@@ -40,7 +56,7 @@ def test():
 
         rospy.loginfo("sleeping now")
 
-        rospy.sleep(10)
+        rospy.sleep(5)
 
         rospy.loginfo("sleep done stopping now")
 

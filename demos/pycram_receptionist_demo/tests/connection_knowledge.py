@@ -45,7 +45,7 @@ pose_home = Pose([3, 1.7, 0], robot_orientation)
 pub_nlp = rospy.Publisher('/startListener', String, queue_size=10)
 
 
-def demo_test(area):
+def demo_test():
     with real_robot:
         guest1 = HumanDescription("guest1")
 
@@ -57,9 +57,10 @@ def demo_test(area):
         rospy.sleep(1)
         pub_nlp.publish("start listening")
         rospy.sleep(5)
-
+        #asyncron??
         # TODO: test on real HSR
-        guest_data = get_guest_info(1)
+        guest_data = get_guest_info("3.0")
+        print("guest data: " + str(guest_data))
         while guest_data == "No name saved under this ID!":
             talk_error("no name")
             guest_data = get_guest_info(1)
@@ -103,7 +104,4 @@ def client_test(data):
 
 
 if __name__ == '__main__':
-    if client_test(1):
-        print("wtf!")
-    else:
-        print("klappt das?")
+    demo_test()
