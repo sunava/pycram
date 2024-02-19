@@ -30,6 +30,7 @@ from ..plan_failures import ObjectUnfetchable, ReachabilityFailure, EnvironmentU
 from ..pose import Pose
 from ..robot_descriptions import robot_description
 from ..task import with_tree
+from pycram.enums import ObjectType
 
 
 class MoveTorsoAction(ActionDesignatorDescription):
@@ -240,7 +241,7 @@ class ParkArmsAction(ActionDesignatorDescription):
                 kwargs["left_arm_config"] = "park"
                 MoveArmJointsMotion(**kwargs).resolve().perform()
                 #MoveTorsoAction([0.005]).resolve().perform()
-                MoveTorsoAction([0.2]).resolve().perform()
+                #MoveTorsoAction([0.2]).resolve().perform()
             # add park right arm if wanted
             if self.arm in [Arms.RIGHT, Arms.BOTH]:
                 kwargs["right_arm_config"] = "park"
@@ -320,10 +321,10 @@ class PickUpAction(ActionDesignatorDescription):
             if self.grasp == "top":
                 # Handle special cases for certain object types (e.g., Cutlery, Bowl)
                 # Note: This includes hardcoded adjustments and should ideally be generalized
-                if self.object_designator.type == "Cutlery":
-                    # todo: this z is the popcorn-table height, we need to define location to get that z otherwise it
-                    #  is hardcoded
-                    oTm.pose.position.z = 0.718
+                # if self.object_designator.type == "Cutlery":
+                #     # todo: this z is the popcorn-table height, we need to define location to get that z otherwise it
+                #     #  is hardcoded
+                #     oTm.pose.position.z = 0.718
                 oTm.pose.position.z += 0.04
 
             # Determine the grasp orientation and transform the pose to the base link frame
@@ -343,6 +344,7 @@ class PickUpAction(ActionDesignatorDescription):
             BulletWorld.current_bullet_world.add_vis_axis(oTmG)
             # Execute Bool, because sometimes u only want to visualize the poses to test things
             if execute:
+                MoveTorsoAction([0.25]).resolve().perform()
                 MoveTCPMotion(oTmG, self.arm).resolve().perform()
 
             # Calculate and apply any special knowledge offsets based on the robot and object type
@@ -366,6 +368,15 @@ class PickUpAction(ActionDesignatorDescription):
                         print(special_knowledge_offset.pose.position.x)
                         special_knowledge_offset.pose.position.x -= 0.115 # 0.11 before, fork needs more
                         print(special_knowledge_offset.pose.position.x)
+            elif robot.name == "pr2":
+                if self.grasp == "top":
+                    if self.object_designator.type == ObjectType.BOWL:
+                        print(f"x_pose: {special_knowledge_offset.pose.position.x}")
+                        print(f"y_pose: {special_knowledge_offset.pose.position.y}")
+                        special_knowledge_offset.pose.position.x -= 0.06
+                        special_knowledge_offset.pose.position.y -= 0.06  # 0.022
+                        print(f"x_pose_after: {special_knowledge_offset.pose.position.x}")
+                        print(f"y_pose_after: {special_knowledge_offset.pose.position.y}")
                     # if self.object_designator.type == "Fork":
                     #     special_knowledge_offset.pose.position.x -= 0.02
 
@@ -379,6 +390,13 @@ class PickUpAction(ActionDesignatorDescription):
                     if self.object_designator.type == "Bowl":
                         z = 0.045 # 0.05
                 push_base.pose.position.z += z
+            elif robot.name == "pr2":
+                x = 0.04
+                if self.grasp == "top":
+                    x = 0.039
+                    if self.object_designator.type == ObjectType.BOWL:
+                        x = 0.05  # 0.05
+                push_base.pose.position.x += x
             push_baseTm = lt.transform_pose(push_base, "map")
             special_knowledge_offsetTm = lt.transform_pose(push_base, "map")
 
@@ -393,7 +411,6 @@ class PickUpAction(ActionDesignatorDescription):
             rospy.logwarn("Pushing now")
             BulletWorld.current_bullet_world.add_vis_axis(push_baseTm)
             if execute:
-                print("push!!!")
                 MoveTCPMotion(push_baseTm, self.arm).resolve().perform()
 
             # Finalize the pick-up by closing the gripper and lifting the object
@@ -499,6 +516,7 @@ class PlaceAction(ActionDesignatorDescription):
             oTmG = lt.transform_pose(oTb, "map")
 
             rospy.logwarn("Placing now")
+            BulletWorld.current_bullet_world.add_vis_axis(oTmG)
             MoveTCPMotion(oTmG, self.arm).resolve().perform()
 
             tool_frame = robot_description.get_tool_frame(self.arm)
@@ -508,14 +526,21 @@ class PlaceAction(ActionDesignatorDescription):
                 if self.grasp == "top":
                     z = 0.07
                 push_base.pose.position.z += z
+            if robot.name == "pr2":
+                x = 0.03
+                if self.grasp == "top":
+                    x = 0.07
+                push_base.pose.position.x += x
             # todo: make this for other robots
             push_baseTm = lt.transform_pose(push_base, "map")
 
             rospy.logwarn("Pushing now")
             MoveTCPMotion(push_baseTm, self.arm).resolve().perform()
 
-            rospy.logwarn("Close Gripper")
+            rospy.logwarn("Opening Gripper")
+            robot.detach(object=self.object_designator.bullet_world_object)
             MoveGripperMotion(motion="open", gripper=self.arm).resolve().perform()
+
 
             rospy.logwarn("Lifting now")
             liftingTm = push_baseTm
@@ -905,7 +930,7 @@ class DetectAction(ActionDesignatorDescription):
         Or 'all' if all objects should be detected
         """
 
-        object_designator: Optional[ObjectDesignatorDescription.Object] = None
+        object_type: Optional[str] = None
         """
         Object designator loosely describing the object, e.g. only type. 
         """
@@ -917,11 +942,7 @@ class DetectAction(ActionDesignatorDescription):
 
         @with_tree
         def perform(self) -> Any:
-            if self.object_designator:
-                object_type = self.object_designator.type
-            else:
-                object_type = None
-            return DetectingMotion(technique=self.technique, object_type=object_type,
+            return DetectingMotion(technique=self.technique, object_type=self.object_type,
                                    state=self.state).resolve().perform()
 
         def to_sql(self) -> ORMDetectAction:
@@ -930,7 +951,7 @@ class DetectAction(ActionDesignatorDescription):
         def insert(self, session: sqlalchemy.orm.session.Session, *args, **kwargs) -> ORMDetectAction:
             action = super().insert(session)
 
-            od = self.object_designator.insert(session)
+            od = self.object_type.insert(session)
             action.object_id = od.id
 
             session.add(action)
@@ -939,7 +960,7 @@ class DetectAction(ActionDesignatorDescription):
             return action
 
     def __init__(self, technique, resolver=None,
-                 object_designator: Optional[ObjectDesignatorDescription] = None,
+                 object_type: Optional[str] = None,
                  state: Optional[str] = None):
         """
         Tries to detect an object in the field of view (FOV) of the robot.
@@ -951,7 +972,7 @@ class DetectAction(ActionDesignatorDescription):
         """
         super().__init__(resolver)
         self.technique: str = technique
-        self.object_designator: Optional[ObjectDesignatorDescription] = object_designator
+        self.object_type: Optional[str] = object_type
         self.state: Optional[str] = state
 
     def ground(self) -> Action:
@@ -960,8 +981,7 @@ class DetectAction(ActionDesignatorDescription):
 
         :return: A performable designator
         """
-
-        return self.Action(technique=self.technique, object_designator=self.object_designator, state=self.state)
+        return self.Action(technique=self.technique, object_type=self.object_type, state=self.state)
 
 
 class OpenAction(ActionDesignatorDescription):

@@ -379,7 +379,7 @@ class DetectingMotion(MotionDesignatorDescription):
         Technique means how the object should be detected, e.g. 'color', 'shape', 'all', etc. 
         """
 
-        object_type: Optional[str]
+        object_type: Optional[str] = None
         """
         Type of the object that should be detected
         """

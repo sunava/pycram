@@ -49,8 +49,7 @@ class ExamplePlans:
                          grasps=["front"]).resolve().perform()
             ParkArmsAction([Arms.BOTH]).resolve().perform()
 
-            place_island = SemanticCostmapLocation("kitchen_island_surface", self.kitchen_desig.resolve(),
-                                                   self.cereal_desig.resolve()).resolve()
+
 
             place_stand = CostmapLocation(place_island.pose, reachable_for=self.robot_desig,
                                           reachable_arm=pickup_arm).resolve()
