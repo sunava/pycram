@@ -1,5 +1,6 @@
 import rospy
 import actionlib
+from tmc_msgs.msg import Voice
 
 from ..designator import ObjectDesignatorDescription
 from ..pose import Pose
@@ -185,11 +186,19 @@ def queryHuman() -> Any:
     rospy.loginfo("Waiting for action server")
     client.wait_for_server()
     human_bool = False
+    waiting_human = False
     client.send_goal(object_goal, active_cb=active_callback, done_cb=done_callback, feedback_cb=feedback_callback)
     listener()
     while not human_bool:
         rospy.loginfo_throttle(3, "Waiting for human to be detected")
-        #TODO: Roboter sprechen lassen? "please step in front of me"
+        pub = rospy.Publisher('/talk_request', Voice, queue_size=10)
+        texttospeech = Voice()
+        texttospeech.language = 1
+        texttospeech.sentence = "please step in front of me"
+        if waiting_human:
+            pub.publish(texttospeech)
+        waiting_human = True
+        rospy.sleep(5)
         pass
 
     return human_pose
@@ -204,5 +213,5 @@ def stop_queryHuman() -> Any:
     client = actionlib.SimpleActionClient('robokudo/query', QueryAction)
     rospy.loginfo("Waiting for action server")
     client.wait_for_server()
-    client.cancel_goal()
+    client.cancel_all_goals()
     rospy.loginfo("cancelled current goal")
