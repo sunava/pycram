@@ -1593,10 +1593,10 @@ def _load_object(name: str,
         path = cach_dir + name + ".urdf"
 
     try:
-        if name == "floor:":
-            print("floor")
-            p.loadURDF(path, basePosition=position, baseOrientation=orientation, physicsClientId=world_id, mass=0,
-                       CF_STATIC_OBJECT=1)
+        if name == "floor" or name == "kitchen":
+            obj = p.loadURDF(path, basePosition=position, baseOrientation=orientation, physicsClientId=world_id)
+            p.changeDynamics(obj, -1, mass=0)
+
         else:
             obj = p.loadURDF(path, basePosition=position, baseOrientation=orientation, physicsClientId=world_id)
 
