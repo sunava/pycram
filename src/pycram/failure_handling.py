@@ -112,7 +112,7 @@ class RetryMonitor(FailureHandling):
         perform(): Implements the retry logic.
     """
 
-    def __init__(self, designator_description: Monitor, max_tries: int = 3):
+    def __init__(self, designator_description: Monitor, max_tries: int = 3, recovery: Language = None):
         """
         Initializes a new instance of the Retry class.
 
@@ -123,6 +123,7 @@ class RetryMonitor(FailureHandling):
         """
         super().__init__(designator_description)
         self.max_tries = max_tries
+        self.recovery = recovery
         self.lock = Lock()
 
     def perform(self):
@@ -174,4 +175,6 @@ class RetryMonitor(FailureHandling):
                     tries += 1
                     if tries >= self.max_tries:
                         raise e
+                    if self.recovery:
+                        self.recovery.perform()
         return status, flatten(res)
