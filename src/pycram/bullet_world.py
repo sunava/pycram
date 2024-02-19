@@ -100,6 +100,9 @@ class BulletWorld:
             plane = Object("floor", ObjectType.ENVIRONMENT, "plane.urdf", world=self)
         # atexit.register(self.exit)
 
+    def get_physic_world(self):
+        return p
+
     def get_objects_by_name(self, name: str) -> List[Object]:
         """
         Returns a list of all Objects in this BulletWorld with the same name as the given one.
@@ -484,8 +487,9 @@ class WorldSync(threading.Thread):
             # self.equal_states = False
             for i in range(self.add_obj_queue.qsize()):
                 obj = self.add_obj_queue.get()
-                # [name, type, path, position, orientation, self.world.shadow_world, color, bulletworld object]
-                o = Object(obj[0], obj[1], obj[2], Pose(obj[3], obj[4]), obj[5], obj[6])
+                # [name, type, path, position, orientation, self.world.shadow_world, color, size, bulletworld object]
+                o = Object(obj[0], obj[1], obj[2],
+                           Pose(obj[3], obj[4]), obj[5], obj[6])
                 # Maps the BulletWorld object to the shadow world object
                 self.object_mapping[obj[7]] = o
                 self.add_obj_queue.task_done()
@@ -809,7 +813,7 @@ class Object:
             # This means "world" is not the shadow world since it has a reference to a shadow world
             if self.world.shadow_world != None:
                 self.world.world_sync.add_obj_queue.put(
-                    [name, type, path, position, orientation, self.world.shadow_world, color, size,
+                    [name, type, path, position, orientation, self.world.shadow_world, color,
                      self])
 
             with open(self.path) as f:
@@ -1329,6 +1333,7 @@ class Object:
         else:
             return p.getAABB(self.id, physicsClientId=self.world.client_id)
 
+
     def get_object_dimensions(self, link_name: Optional[str] = None) -> Tuple[float, float, float]:
         """
         Return the dimensions of the object.
@@ -1588,7 +1593,13 @@ def _load_object(name: str,
         path = cach_dir + name + ".urdf"
 
     try:
-        obj = p.loadURDF(path, basePosition=position, baseOrientation=orientation, physicsClientId=world_id)
+        if name == "floor:":
+            print("floor")
+            p.loadURDF(path, basePosition=position, baseOrientation=orientation, physicsClientId=world_id, mass=0,
+                       CF_STATIC_OBJECT=1)
+        else:
+            obj = p.loadURDF(path, basePosition=position, baseOrientation=orientation, physicsClientId=world_id)
+
         return obj, path
     except p.error as e:
         logging.error(
