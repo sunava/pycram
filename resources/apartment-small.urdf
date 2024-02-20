@@ -1699,6 +1699,5 @@
     <parent link="apartment_root"/>
     <child link="table_area_main"/>
   </joint>
-
 </robot>
 
