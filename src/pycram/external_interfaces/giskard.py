@@ -1,5 +1,4 @@
 import rospy
-from giskard_msgs.msg import CollisionEntry, WorldBody
 from ..utilities import tf_wrapper as tf
 
 from ..pose import Pose
@@ -22,6 +21,7 @@ def init_giskard_interface():
         return
     topics = list(map(lambda x: x[0], rospy.get_published_topics()))
     try:
+        from giskard_msgs.msg import CollisionEntry, WorldBody
         from giskardpy.python_interface import GiskardWrapper
         from giskard_msgs.msg import WorldBody, MoveResult, CollisionEntry
         from giskard_msgs.srv import UpdateWorldRequest, UpdateWorld, UpdateWorldResponse, RegisterGroupResponse
