@@ -1,16 +1,6 @@
 import rospy
 import actionlib
 
-from ..designator import ObjectDesignatorDescription
-from ..pose import Pose
-from ..local_transformer import LocalTransformer
-from ..bullet_world import BulletWorld
-from ..enums import ObjectType
-from typing import Any
-from geometry_msgs.msg import PoseStamped
-from move_base_msgs.msg import MoveBaseAction, MoveBaseGoal, MoveBaseActionGoal
-
-
 def queryPoseNav(navpose):
     """
     Sends a query to RoboKudo to look for an object that fits the description given by the Object designator description.
@@ -20,6 +10,14 @@ def queryPoseNav(navpose):
     :param object_desc: The object designator description which describes the object that should be perceived
     :return: An object designator for the found object, if there was an object that fitted the description.
     """
+
+    try:
+        from move_base_msgs.msg import MoveBaseAction, MoveBaseGoal, MoveBaseActionGoal
+
+    except ModuleNotFoundError as e:
+        rospy.logwarn(f"Could not import move_base messages")
+
+
 
     global query_result
 
