@@ -18,16 +18,16 @@ spawning_poses = {
     # 'bread': Pose([-0.85, 0.9, 0.90], [0, 0, -1, 1])
     'bread': Pose([-0.85, 0.9, 0.90], [0, 0, -1, -1]),
     'board': Pose([-0.85, 0.9, 0.85], [0, 0, -1, -1]),
-    'cocumber': Pose([-0.85, 0.9, 0.87], [0, 0, -1, -1])
+    'cucumber': Pose([-0.85, 0.9, 0.87], [0, 0, -1, -1])
 }
 bigknife = Object("bigknife", "bigknife", "big-knife.stl", spawning_poses["bigknife"])
-cocumber = Object("cocumber", "cocumber", "cocumber.stl", spawning_poses["cocumber"])
+cucumber = Object("cucumber", "cucumber", "cucumber.stl", spawning_poses["cucumber"])
 board = Object("board", "board", "board.stl", spawning_poses["board"])
-cocumber.set_color([0, 1, 0.04, 1])
+cucumber.set_color([0, 1, 0.04, 1])
 board.set_color([0.4, 0.2, 0.06, 1])
 bigknife_BO = BelieveObject(names=["bigknife"])
 bread_BO = BelieveObject(names=["bread"])
-cocumber_BO = BelieveObject(names=["cocumber"])
+cucumber_BO = BelieveObject(names=["cucumber"])
 
 
 with simulated_robot:
@@ -50,11 +50,11 @@ with simulated_robot:
     resulting_quaternion = helper.multiply_quaternions(original_quaternion, rotation_quaternion)
     nav_pose = Pose([-0.3, 0.9, 0.0], resulting_quaternion)
     NavigateAction(target_locations=[nav_pose]).resolve().perform()
-    LookAtAction(targets=[cocumber_BO.resolve().pose]).resolve().perform()
+    LookAtAction(targets=[cucumber_BO.resolve().pose]).resolve().perform()
 
-    detected_bread_desig = DetectAction(cocumber_BO).resolve().perform()
+    detected_desig = DetectAction(cucumber_BO).resolve().perform()
 
-    CuttingAction(object_designator_description=cocumber_BO,
+    CuttingAction(object_designator_description=detected_desig,
                         arms=["left"],
                         grasps=["top"],).resolve().perform()
 

@@ -425,7 +425,7 @@ class PickUpAction(ActionDesignatorDescription):
                 MoveTCPMotion(liftingTm, self.arm).resolve().perform()
             tool_frame = robot_description.get_tool_frame(self.arm)
             robot.attach(object=self.object_designator.bullet_world_object, link=tool_frame)
-
+            BulletWorld.current_bullet_world.remove_vis_axis()
         def to_sql(self) -> ORMPickUpAction:
             return ORMPickUpAction(self.arm, self.grasp)
 
@@ -503,7 +503,7 @@ class PlaceAction(ActionDesignatorDescription):
             lt = LocalTransformer()
             robot = BulletWorld.robot
             # Retrieve object and robot from designators
-           # object = self.object_designator.bullet_world_object
+            # object = self.object_designator.bullet_world_object
             # oTm = Object Pose in Frame map
             oTm = self.target_location
 
@@ -548,7 +548,7 @@ class PlaceAction(ActionDesignatorDescription):
             BulletWorld.current_bullet_world.add_vis_axis(liftingTm)
 
             MoveTCPMotion(liftingTm, self.arm).resolve().perform()
-
+            BulletWorld.current_bullet_world.remove_vis_axis()
         def to_sql(self) -> ORMPlaceAction:
             return ORMPlaceAction(self.arm)
 

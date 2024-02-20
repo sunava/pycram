@@ -371,6 +371,7 @@ class BulletWorld:
         :param object: The object for which the shadow worlds object should be returned.
         :return: The corresponding object in the shadow world.
         """
+        self.world_sync.add_obj_queue.join()
         try:
             return self.world_sync.object_mapping[object]
         except KeyError:
