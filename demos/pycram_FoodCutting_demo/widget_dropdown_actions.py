@@ -103,7 +103,7 @@ def cutting_simple():
     world.set_gravity([0, 0, -9.8])
     robot = Object("pr2", "robot", "../../resources/" + robot_description.name + ".urdf")
     robot_desig = ObjectDesignatorDescription(names=["pr2"]).resolve()
-    kitchen = Object("kitchen", "environment", "kitchen.urdf")
+    kitchen = Object("kitchen", "environment", "kitchen-small.urdf")
     robot.set_joint_state(robot_description.torso_joint, 0.24)
     kitchen_desig = ObjectDesignatorDescription(names=["kitchen"])
     spawning_poses = {
@@ -155,4 +155,3 @@ def cutting_simple():
         # CuttingActionSPARQL(object_designator_description=bread_BO,
         #              arms=["left"],
         #              grasps=["top"]).resolve().perform()
-
