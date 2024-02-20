@@ -21,7 +21,7 @@ spawning_poses = {
     'cucumber': Pose([-0.85, 0.9, 0.87], [0, 0, -1, -1])
 }
 bigknife = Object("bigknife", "bigknife", "big-knife.stl", spawning_poses["bigknife"])
-cucumber = Object("cucumber", "cucumber", "cucumber.stl", spawning_poses["cucumber"])
+cucumber = Object("cucumber", "cucumber", "cocumber.stl", spawning_poses["cucumber"])
 board = Object("board", "board", "board.stl", spawning_poses["board"])
 cucumber.set_color([0, 1, 0.04, 1])
 board.set_color([0.4, 0.2, 0.06, 1])
@@ -52,11 +52,12 @@ with simulated_robot:
     NavigateAction(target_locations=[nav_pose]).resolve().perform()
     LookAtAction(targets=[cucumber_BO.resolve().pose]).resolve().perform()
 
-    detected_desig = DetectAction(cucumber_BO).resolve().perform()
-
-    CuttingAction(object_designator_description=detected_desig,
-                        arms=["left"],
-                        grasps=["top"],).resolve().perform()
+    object_desig = DetectAction(technique='all').resolve().perform()
+    object_dict = object_desig[1]
+    for key, value in object_dict.items():
+    #detected_desig = DetectAction(cucumber_BO).resolve().perform()
+        if object_dict[key].type == "cucumber":
+            CuttingAction(cucumber_BO, bigknife_BO, ["left"], "slicing").resolve().perform()
 
     # CuttingActionSPARQL(object_designator_description=bread_BO,
     #              arms=["left"],
