@@ -876,7 +876,7 @@ class TransportAction(ActionDesignatorDescription):
         :return: A performable designator
         """
         obj_desig = self.object_designator_description if isinstance(self.object_designator_description,
-
+                                                                     ObjectDesignatorDescription.Object) else self.object_designator_description.resolve()
         return self.Action(obj_desig, self.arms[0], self.target_locations[0])
 
 
