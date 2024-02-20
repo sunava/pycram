@@ -98,7 +98,7 @@ def setup_widgets():
     display(action_dropdown, output)
 
 def cutting_simple():
-    world = BulletWorld()
+    world = BulletWorld("DIRECT")
     world.set_gravity([0, 0, -9.8])
     robot = Object("pr2", "robot", "../../resources/" + robot_description.name + ".urdf")
     robot_desig = ObjectDesignatorDescription(names=["pr2"]).resolve()
