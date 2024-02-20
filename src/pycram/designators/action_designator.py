@@ -794,6 +794,10 @@ class TransportAction(ActionDesignatorDescription):
         """
         Target Location to which the object should be transported
         """
+        hold_object: bool
+        """
+        Determines if the robot should place down the object
+        """
 
         @with_tree
         def perform(self) -> None:
@@ -801,6 +805,7 @@ class TransportAction(ActionDesignatorDescription):
             ParkArmsAction.Action(Arms.BOTH).perform()
             pickup_loc = CostmapLocation(target=self.object_designator, reachable_for=robot_desig.resolve(),
                                          reachable_arm=self.arm)
+            hold_object = self.hold_object
             # Tries to find a pick-up posotion for the robot that uses the given arm
             pickup_pose = None
             for pose in pickup_loc:
@@ -821,8 +826,11 @@ class TransportAction(ActionDesignatorDescription):
                 raise ReachabilityFailure(
                     f"No location found from where the robot can reach the target location: {self.target_location}")
             NavigateAction([place_loc.pose]).resolve().perform()
-            PlaceAction.Action(self.object_designator, self.arm, self.target_location).perform()
-            ParkArmsAction.Action(Arms.BOTH).perform()
+            if hold_object:
+                MoveTCPMotion(arm=self.arm, target=self.target_location).resolve().perform()
+            else:
+                PlaceAction.Action(self.object_designator, self.arm, self.target_location).perform()
+                ParkArmsAction.Action(Arms.BOTH).perform()
 
         def to_sql(self) -> ORMTransportAction:
             return ORMTransportAction(self.arm)
@@ -843,7 +851,9 @@ class TransportAction(ActionDesignatorDescription):
 
     def __init__(self,
                  object_designator_description: Union[ObjectDesignatorDescription, ObjectDesignatorDescription.Object],
-                 arms: List[str], target_locations: List[Pose], resolver=None):
+                 arms: List[str],
+                 target_locations: List[Pose],
+                 hold_object: bool = False, resolver=None):
         """
         Designator representing a pick and place plan.
 
@@ -857,6 +867,7 @@ class TransportAction(ActionDesignatorDescription):
             ObjectDesignatorDescription, ObjectDesignatorDescription.Object] = object_designator_description
         self.arms: List[str] = arms
         self.target_locations: List[Pose] = target_locations
+        self.hold_object = hold_object
 
     def ground(self) -> Action:
         """
@@ -865,7 +876,7 @@ class TransportAction(ActionDesignatorDescription):
         :return: A performable designator
         """
         obj_desig = self.object_designator_description if isinstance(self.object_designator_description,
-                                                                     ObjectDesignatorDescription.Object) else self.object_designator_description.resolve()
+
         return self.Action(obj_desig, self.arms[0], self.target_locations[0])
 
 

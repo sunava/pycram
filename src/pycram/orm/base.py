@@ -2,6 +2,7 @@
 import datetime
 import getpass
 import os
+import pwd
 from typing import Optional
 
 import git
@@ -138,6 +139,7 @@ class ProcessMetaData(MappedAsDataclass, _Base):
     """The timestamp where this row got created. This is an aid for versioning."""
 
     created_by: Mapped[str] = mapped_column(default=getpass.getuser(), init=False)
+
     """The user that created the experiment."""
 
     description: Mapped[str] = mapped_column(init=False)
