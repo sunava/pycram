@@ -22,7 +22,6 @@ import rosnode
 import atexit
 
 import urdf_parser_py.urdf
-from betterpybullet import Vector3
 from geometry_msgs.msg import Quaternion, Point, TransformStamped
 from urdf_parser_py.urdf import URDF
 

@@ -1,6 +1,6 @@
 import rospy
 import actionlib
-from tmc_msgs.msg import Voice
+
 
 from ..designator import ObjectDesignatorDescription
 from ..pose import Pose
@@ -151,6 +151,12 @@ def queryHuman() -> Any:
     """
     init_robokudo_interface()
     from robokudo_msgs.msg import QueryAction, QueryGoal, QueryResult
+    try:
+        from tmc_msgs.msg import Voice
+    except ModuleNotFoundError as e:
+        rospy.logwarn("Failed to import TMC messages, HSR can not be used")
+
+
 
     global human_bool
     global query_result

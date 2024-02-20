@@ -4,8 +4,8 @@ from typing import Any
 
 import numpy as np
 import rospy
-from tmc_control_msgs.msg import GripperApplyEffortActionGoal
-from tmc_msgs.msg import Voice
+
+
 
 import pycram.bullet_world_reasoning as btr
 from ..designators.motion_designator import *
@@ -479,27 +479,29 @@ class HSRBMoveGripperReal(ProcessModule):
      """
 
     def _execute(self, designator: MoveGripperMotion.Motion) -> Any:
-        if (designator.motion == "open"):
-            pub_gripper = rospy.Publisher('/hsrb/gripper_controller/grasp/goal', GripperApplyEffortActionGoal,
-                                          queue_size=10)
-            rate = rospy.Rate(10)
-            rospy.sleep(2)
-            msg = GripperApplyEffortActionGoal()  # sprechen joint gripper_controll_manager an, indem wir goal publishen type den giskard fürs greifen erwartet
-            msg.goal.effort = 0.8
-            pub_gripper.publish(msg)
+        try:
+            from tmc_control_msgs.msg import GripperApplyEffortActionGoal
 
-        elif (designator.motion == "close"):
-            pub_gripper = rospy.Publisher('/hsrb/gripper_controller/grasp/goal', GripperApplyEffortActionGoal,
-                                          queue_size=10)
-            rate = rospy.Rate(10)
-            rospy.sleep(2)
-            msg = GripperApplyEffortActionGoal()
-            msg.goal.effort = -0.8
-            pub_gripper.publish(msg)
+            if (designator.motion == "open"):
+                pub_gripper = rospy.Publisher('/hsrb/gripper_controller/grasp/goal', GripperApplyEffortActionGoal,
+                                              queue_size=10)
+                rate = rospy.Rate(10)
+                rospy.sleep(2)
+                msg = GripperApplyEffortActionGoal()  # sprechen joint gripper_controll_manager an, indem wir goal publishen type den giskard fürs greifen erwartet
+                msg.goal.effort = 0.8
+                pub_gripper.publish(msg)
 
-        # if designator.allow_gripper_collision:
-        #     giskard.allow_gripper_collision("left")
-        # giskard.achieve_gripper_motion_goal(designator.motion)
+            elif (designator.motion == "close"):
+                pub_gripper = rospy.Publisher('/hsrb/gripper_controller/grasp/goal', GripperApplyEffortActionGoal,
+                                              queue_size=10)
+                rate = rospy.Rate(10)
+                rospy.sleep(2)
+                msg = GripperApplyEffortActionGoal()
+                msg.goal.effort = -0.8
+                pub_gripper.publish(msg)
+
+        except ModuleNotFoundError as e:
+            rospy.logwarn("Failed to import TMC messages, HSR can not be used")
 
 
 class HSRBOpenReal(ProcessModule):
@@ -528,16 +530,23 @@ class HSRBTalkReal(ProcessModule):
     """
 
     def _execute(self, designator: TalkingMotion.Motion) -> Any:
-        pub = rospy.Publisher('/talk_request', Voice, queue_size=10)
+        try:
+            from tmc_msgs.msg import Voice
 
-        # fill message of type Voice with required data:
-        texttospeech = Voice()
-        # language 1 = english (0 = japanese)
-        texttospeech.language = 1
-        texttospeech.sentence = designator.cmd
 
-        rospy.sleep(1)
-        pub.publish(texttospeech)
+            pub = rospy.Publisher('/talk_request', Voice, queue_size=10)
+
+            # fill message of type Voice with required data:
+            texttospeech = Voice()
+            # language 1 = english (0 = japanese)
+            texttospeech.language = 1
+            texttospeech.sentence = designator.cmd
+
+            rospy.sleep(1)
+            pub.publish(texttospeech)
+
+        except ModuleNotFoundError as e:
+            rospy.logwarn("Failed to import TMC messages, HSR can not be used")
 
 
 class HSRBManager(ProcessModuleManager):

@@ -1,5 +1,4 @@
 import rospy
-from speech_processing.msg import message_to_robot, message_from_robot, message_objects_in_use, dict_object
 from time import time
 from pycram.fluent import Fluent
 
@@ -7,6 +6,10 @@ from pycram.fluent import Fluent
 class InterruptClient:
 
     def __init__(self):
+        try:
+            from speech_processing.msg import message_to_robot, message_from_robot, message_objects_in_use, dict_object
+        except ModuleNotFoundError as e:
+            rospy.logwarn("Failed to import speech_processing messages, frontiers can not be used")
         self.minor_interrupt = Fluent()
 
         self.nlp_frequency = 10.0
