@@ -7,7 +7,7 @@ from pycram.enums import Arms
 from pycram.designators.object_designator import *
 from pycram.designators.object_designator import BelieveObject
 import pycram.helper as helper
-
+from pycram.ros.viz_marker_publisher import VizMarkerPublisher
 
 # all available parameters
 tasks = [('Cutting Action',"cut:CuttingAction"),
@@ -99,6 +99,7 @@ def setup_widgets():
 
 def cutting_simple():
     world = BulletWorld("DIRECT")
+    viz = VizMarkerPublisher()
     world.set_gravity([0, 0, -9.8])
     robot = Object("pr2", "robot", "../../resources/" + robot_description.name + ".urdf")
     robot_desig = ObjectDesignatorDescription(names=["pr2"]).resolve()
@@ -154,3 +155,4 @@ def cutting_simple():
         # CuttingActionSPARQL(object_designator_description=bread_BO,
         #              arms=["left"],
         #              grasps=["top"]).resolve().perform()
+

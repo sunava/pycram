@@ -65,3 +65,5 @@ def cutting_simple():
         # CuttingActionSPARQL(object_designator_description=bread_BO,
         #              arms=["left"],
         #              grasps=["top"]).resolve().perform()
+
+cutting_simple()
