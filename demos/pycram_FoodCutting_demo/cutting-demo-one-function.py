@@ -1,3 +1,6 @@
+from pycram.ros.viz_marker_publisher import VizMarkerPublisher
+
+
 def cutting_simple():
     from pycram.process_module import simulated_robot, with_simulated_robot
     from pycram.designators.action_designator import *
@@ -6,8 +9,8 @@ def cutting_simple():
     from pycram.designators.object_designator import BelieveObject
     import pycram.helper as helper
 
-    world = BulletWorld()
-    world.set_gravity([0, 0, -9.8])
+    world = BulletWorld("DIRECT")
+    viz = VizMarkerPublisher()
     robot = Object("pr2", "robot", "../../resources/" + robot_description.name + ".urdf")
     robot_desig = ObjectDesignatorDescription(names=["pr2"]).resolve()
     kitchen = Object("kitchen", "environment", "kitchen.urdf")
