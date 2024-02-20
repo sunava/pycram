@@ -1,7 +1,10 @@
 import logging
 import os
 import sys
+from knowledge_msgs.srv import IsKnown
+import rospy
 import rosservice
+
 
 from typing import Dict, List, Union
 
@@ -124,3 +127,20 @@ def knowrob_string_to_pose(pose_as_string: str) -> List[float]:
     xyz = list(map(float, pos.split(",")))
     qxyzw = list(map(float, ori.split(",")))
     return xyz + qxyzw
+
+def get_guest_info(id):
+    """
+    function that uses Knowledge Service to get Name and drink from new guest via ID
+    :param id: integer for person
+    :return: ["name", " drink"]
+    """
+
+    rospy.wait_for_service('name_server')
+    try:
+        info_service = rospy.ServiceProxy('name_server', IsKnown)
+        guest_data = info_service(id) #guest_data = "name, drink"
+        result = str(guest_data).split(',') #result = ["name", " drink"]
+        return result
+    except rospy.ServiceException as e:
+        print("Service call failed")
+

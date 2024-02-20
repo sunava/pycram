@@ -16,45 +16,13 @@ import tqdm
 
 from .bullet_world import BulletWorld
 from .orm.task import (Code as ORMCode, TaskTreeNode as ORMTaskTreeNode)
-from .orm.base import MetaData
+from .orm.base import ProcessMetaData
 from .plan_failures import PlanFailure
+from .language import Code
 from .enums import TaskStatus
 
 
-class Code:
-    """
-    Executable code block in a plan.
-
-    :ivar function: The function (plan) that was called
-    :ivar kwargs: Dictionary holding the keyword arguments of the function
-    """
-
-    def __init__(self, function: Optional[Callable] = None,
-                 kwargs: Optional[Dict] = None):
-        """
-        Initialize a code call
-
-        :param function: The function that was called
-        :param kwargs: The keyword arguments of the function as dict
-        """
-        self.function: Callable = function
-
-        if kwargs is None:
-            kwargs = dict()
-        self.kwargs: Dict[str, Any] = kwargs
-
-    def execute(self) -> Any:
-        """
-        Execute the code with its arguments
-
-        :returns: Anything that the function associated with this object will return.
-        """
-        return self.function(**self.kwargs)
-
-    # def __str__(self) -> str:
-    #     return "%s(%s)" % (self.function.__name__, ", ".join(["%s = %s" % (key, str(value)) for key, value in
-    #                                                           self.kwargs.items()]))
-
+class TaskCode(Code):
     def __str__(self) -> str:
         return "%s(%s)" % (
             self.function.__name__, ", ".join(["%s, " % (str(value.__class__).split(".")[-2]) for value in
@@ -62,7 +30,7 @@ class Code:
 
     def __eq__(self, other):
         return isinstance(other, Code) and other.function.__name__ == self.function.__name__ \
-               and other.kwargs == self.kwargs
+            and other.kwargs == self.kwargs
 
     def to_json(self) -> Dict:
         """Create a dictionary that can be json serialized."""
@@ -98,18 +66,18 @@ class Code:
 
         if self_ and getattr(self_, "insert", None):
             designator = self_.insert(session)
-            code.designator = designator.id
+            code.designator_id = designator.id
 
         # get and set metadata
-        metadata = MetaData().insert(session)
-        code.metadata_id = metadata.id
+        metadata = ProcessMetaData().insert(session)
+        code.process_metadata_id = metadata.id
 
         session.add(code)
         session.commit()
         return code
 
 
-class NoOperation(Code):
+class NoOperation(TaskCode):
     """
     Convenience class that represents no operation as code.
     """
@@ -133,17 +101,17 @@ class TaskTreeNode(anytree.NodeMixin):
     :ivar reason: The reason why this task failed, optional
     """
 
-    def __init__(self, code: Code = NoOperation(), parent: Optional[TaskTreeNode] = None,
+    def __init__(self, code: TaskCode = NoOperation(), parent: Optional[TaskTreeNode] = None,
                  children: Optional[List[TaskTreeNode]] = None, reason: Optional[Exception] = None):
         """
         Create a TaskTreeNode
 
-        :param code: The function and its arguments that got called as Code object, defaults to NoOperation()
+        :param code: The function and its arguments that got called as TaskCode object, defaults to NoOperation()
         :param parent: The parent function of this function. None if this the parent, optional
         :param children: An iterable of TaskTreeNode with the ordered children, optional
         """
         super().__init__()
-        self.code: Code = code
+        self.code: TaskCode = code
         self.status: TaskStatus = TaskStatus.CREATED
         self.start_time: Optional[datetime.datetime] = None
         self.end_time: Optional[datetime.datetime] = None
@@ -191,8 +159,8 @@ class TaskTreeNode(anytree.NodeMixin):
         else:
             reason = None
 
-        return ORMTaskTreeNode(None, self.start_time, self.end_time, self.status.name, reason,
-                               id(self.parent) if self.parent else None)
+        return ORMTaskTreeNode(None, self.start_time, self.end_time, self.status.name,
+                               reason, id(self.parent) if self.parent else None)
 
     def insert(self, session: sqlalchemy.orm.session.Session, recursive: bool = True,
                parent_id: Optional[int] = None, use_progress_bar: bool = True,
@@ -219,14 +187,14 @@ class TaskTreeNode(anytree.NodeMixin):
 
         # convert self to orm object
         node = self.to_sql()
-        node.code = code.id
+        node.code_id = code.id
 
         # get and set metadata
-        metadata = MetaData().insert(session)
-        node.metadata_id = metadata.id
+        metadata = ProcessMetaData().insert(session)
+        node.process_metadata_id = metadata.id
 
         # set parent to id from constructor
-        node.parent = parent_id
+        node.parent_id = parent_id
 
         # add the node to database to retrieve the new id
         session.add(node)
@@ -255,7 +223,7 @@ class SimulatedTaskTree:
 
         self.suspended_tree = task_tree
         self.world_state, self.objects2attached = BulletWorld.current_bullet_world.save_state()
-        self.simulated_root = TaskTreeNode(code=Code(simulation))
+        self.simulated_root = TaskTreeNode(code=TaskCode(simulation))
         task_tree = self.simulated_root
         pybullet.addUserDebugText("Simulating...", [0, 0, 1.75], textColorRGB=[0, 0, 0],
                                   parentObjectUniqueId=1, lifeTime=0)
@@ -300,7 +268,7 @@ def with_tree(fun: Callable) -> Callable:
         global task_tree
 
         # create the code object that gets executed
-        code = Code(fun, inspect.getcallargs(fun, *args, **kwargs))
+        code = TaskCode(fun, inspect.getcallargs(fun, *args, **kwargs))
 
         task_tree = TaskTreeNode(code, parent=task_tree)
 

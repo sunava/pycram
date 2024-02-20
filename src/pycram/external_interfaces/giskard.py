@@ -1,22 +1,40 @@
 import rospy
+from giskard_msgs.msg import CollisionEntry, WorldBody
+from ..utilities import tf_wrapper as tf
 
 from ..pose import Pose
 from ..robot_descriptions import robot_description
 from ..bullet_world import BulletWorld, Object
 
 from typing import List, Tuple, Dict
+from geometry_msgs.msg import PoseStamped, PointStamped, QuaternionStamped, Vector3Stamped
 
-topics = list(map(lambda x: x[0], rospy.get_published_topics()))
-if "/giskard/command/goal" in topics:
-    from giskardpy.python_interface import GiskardWrapper
-    from geometry_msgs.msg import PoseStamped, PointStamped, QuaternionStamped, Vector3Stamped
-    from giskard_msgs.msg import WorldBody, MoveResult
-    from giskard_msgs.srv import UpdateWorldRequest, UpdateWorld, UpdateWorldResponse
+giskard_wrapper = None
+giskard_update_service = None
+is_init = False
 
-    giskard_wrapper = GiskardWrapper()
-    giskard_update_service = rospy.ServiceProxy("/giskard/update_world", UpdateWorld)
-else:
-    rospy.logwarn("No Giskard topic available")
+
+def init_giskard_interface():
+    global giskard_wrapper
+    global giskard_update_service
+    global is_init
+    if is_init:
+        return
+    topics = list(map(lambda x: x[0], rospy.get_published_topics()))
+    try:
+        from giskardpy.python_interface import GiskardWrapper
+        from giskard_msgs.msg import WorldBody, MoveResult, CollisionEntry
+        from giskard_msgs.srv import UpdateWorldRequest, UpdateWorld, UpdateWorldResponse, RegisterGroupResponse
+
+        if "/giskard/command/goal" in topics:
+            giskard_wrapper = GiskardWrapper()
+            giskard_update_service = rospy.ServiceProxy("/giskard/update_world", UpdateWorld)
+            is_init = True
+            rospy.loginfo("Successfully initialized Giskard interface")
+        else:
+            rospy.logwarn("Giskard is not running, could not initialize Giskard interface")
+    except ModuleNotFoundError as e:
+        rospy.logwarn("Failed to import Giskard messages, giskard interface could not be initialized")
 
 
 # Believe state management between pycram and giskard
@@ -28,11 +46,12 @@ def initial_adding_objects() -> None:
     """
     groups = giskard_wrapper.get_group_names()
     for obj in BulletWorld.current_bullet_world.objects:
-        if obj == BulletWorld.robot:
-            continue
-        name = obj.name + "_" + str(obj.id)
-        if name not in groups:
-            spawn_object(obj)
+        if obj != BulletWorld.robot and len(obj.links) >= 1:
+            if obj.name != 'floor':
+                name = obj.name + "_" + str(obj.id)
+
+                if name not in groups:
+                    spawn_object(obj)
 
 
 def removing_of_objects() -> None:
@@ -40,11 +59,12 @@ def removing_of_objects() -> None:
     Removes objects that are present in the Giskard belief state but not in the BulletWorld from the Giskard belief state.
     """
     groups = giskard_wrapper.get_group_names()
-    object_names = list(
-        map(lambda obj: object_names.name + "_" + str(obj.id), BulletWorld.current_bullet_world.objects))
-    diff = list(set(groups) - set(object_names))
-    for grp in diff:
-        giskard_wrapper.remove_group(grp)
+    if groups:
+        object_names = list(
+            map(lambda obj: obj.name + "_" + str(obj.id), BulletWorld.current_bullet_world.objects))
+        diff = list(set(groups) - set(object_names))
+        for grp in diff:
+            giskard_wrapper.remove_group(grp)
 
 
 def sync_worlds() -> None:
@@ -53,15 +73,22 @@ def sync_worlds() -> None:
     belief state such that it matches the objects present in the BulletWorld and moving the robot to the position it is
     currently at in the BulletWorld.
     """
-    bullet_object_names = set(map(lambda obj: obj.name + "_" + str(obj.id), BulletWorld.current_bullet_world.objects))
+    init_giskard_interface()
+    # add_gripper_groups()
+    bullet_object_names = set()
+    for obj in BulletWorld.current_bullet_world.objects:
+        if obj.name != robot_description.name and len(obj.links) != 1:
+            if obj.name != 'floor':
+                bullet_object_names.add(obj.name + "_" + str(obj.id))
+
     giskard_object_names = set(giskard_wrapper.get_group_names())
     robot_name = {robot_description.name}
-    if giskard_object_names - bullet_object_names - robot_name != set():
+    if not bullet_object_names.union(robot_name).issubset(giskard_object_names):
         giskard_wrapper.clear_world()
     initial_adding_objects()
 
 
-def update_pose(object: Object) -> UpdateWorldResponse:
+def update_pose(object: Object) -> 'UpdateWorldResponse':
     """
     Sends an update message to giskard to update the object position. Might not work when working on the real robot just
     in standalone mode.
@@ -78,10 +105,13 @@ def spawn_object(object: Object) -> None:
 
     :param object: BulletWorld object that should be spawned
     """
-    spawn_urdf(object.name + "_" + str(object.id), object.path, object.get_pose())
+    if hasattr(object, "path"):
+        spawn_urdf(object.name + "_" + str(object.id), object.path, object.get_pose())
+    else:
+        geom = object.customGeom["size"]
+        spawn_box(object.name + "_" + str(object.id), geom, object.get_pose())
 
-
-def remove_object(object: Object) -> UpdateWorldResponse:
+def remove_object(object: Object) -> 'UpdateWorldResponse':
     """
     Removes an object from the giskard belief state.
 
@@ -90,7 +120,7 @@ def remove_object(object: Object) -> UpdateWorldResponse:
     return giskard_wrapper.remove_group(object.name + "_" + str(object.id))
 
 
-def spawn_urdf(name: str, urdf_path: str, pose: Pose) -> UpdateWorldResponse:
+def spawn_urdf(name: str, urdf_path: str, pose: Pose) -> 'UpdateWorldResponse':
     """
     Spawns an URDF in giskard's belief state.
 
@@ -102,11 +132,10 @@ def spawn_urdf(name: str, urdf_path: str, pose: Pose) -> UpdateWorldResponse:
     urdf_string = ""
     with open(urdf_path) as f:
         urdf_string = f.read()
-
     return giskard_wrapper.add_urdf(name, urdf_string, pose)
 
 
-def spawn_mesh(name: str, path: str, pose: Pose) -> UpdateWorldResponse:
+def spawn_mesh(name: str, path: str, pose: Pose) -> 'UpdateWorldResponse':
     """
     Spawns a mesh into giskard's belief state
 
@@ -118,10 +147,21 @@ def spawn_mesh(name: str, path: str, pose: Pose) -> UpdateWorldResponse:
     return giskard_wrapper.add_mesh(name, path, pose)
 
 
+def spawn_box(name: str, size: tuple, pose: Pose) -> 'UpdateWorldResponse':
+    """
+    Spawns a mesh into giskard's belief state
+
+    :param name: Name of the mesh
+    :param path: Path to the mesh file
+    :param pose: Pose in which the mesh should be spawned
+    :return: An UpdateWorldResponse message
+    """
+    return giskard_wrapper.add_box(name, size, pose)
+
 # Sending Goals to Giskard
 
 
-def achieve_joint_goal(goal_poses: Dict[str, float]) -> MoveResult:
+def achieve_joint_goal(goal_poses: Dict[str, float]) -> 'MoveResult':
     """
     Takes a dictionary of joint position that should be achieved, the keys in the dictionary are the joint names and
     values are the goal joint positions.
@@ -134,7 +174,7 @@ def achieve_joint_goal(goal_poses: Dict[str, float]) -> MoveResult:
     return giskard_wrapper.plan_and_execute()
 
 
-def achieve_cartesian_goal(goal_pose: Pose, tip_link: str, root_link: str) -> MoveResult:
+def achieve_cartesian_goal(goal_pose: Pose, tip_link: str, root_link: str) -> 'MoveResult':
     """
     Takes a cartesian position and tries to move the tip_link to this position using the chain defined by
     tip_link and root_link.
@@ -144,13 +184,14 @@ def achieve_cartesian_goal(goal_pose: Pose, tip_link: str, root_link: str) -> Mo
     :param root_link: The starting link of the chain which should be used to achieve this goal
     :return: MoveResult message for this goal
     """
-    sync_worlds()
-    giskard_wrapper.set_cart_goal(goal_pose, tip_link, root_link)
+
+    giskard_wrapper.avoid_all_collisions()
+    giskard_wrapper.set_cart_goal(_pose_to_pose_stamped(goal_pose), tip_link, root_link)
     return giskard_wrapper.plan_and_execute()
 
 
 def achieve_straight_cartesian_goal(goal_pose: Pose, tip_link: str,
-                                    root_link: str) -> MoveResult:
+                                    root_link: str) -> 'MoveResult':
     """
     Takes a cartesian position and tries to move the tip_link to this position in a straight line, using the chain
     defined by tip_link and root_link.
@@ -161,11 +202,11 @@ def achieve_straight_cartesian_goal(goal_pose: Pose, tip_link: str,
     :return: MoveResult message for this goal
     """
     sync_worlds()
-    giskard_wrapper.set_straight_cart_goal(goal_pose, tip_link, root_link)
+    giskard_wrapper.set_straight_cart_goal(_pose_to_pose_stamped(goal_pose), tip_link, root_link)
     return giskard_wrapper.plan_and_execute()
 
 
-def achieve_translation_goal(goal_point: List[float], tip_link: str, root_link: str) -> MoveResult:
+def achieve_translation_goal(goal_point: List[float], tip_link: str, root_link: str) -> 'MoveResult':
     """
     Tries to move the tip_link to the position defined by goal_point using the chain defined by root_link and
     tip_link. Since goal_point only defines the position but no rotation, rotation is not taken into account.
@@ -180,7 +221,7 @@ def achieve_translation_goal(goal_point: List[float], tip_link: str, root_link: 
     return giskard_wrapper.plan_and_execute()
 
 
-def achieve_straight_translation_goal(goal_point: List[float], tip_link: str, root_link: str) -> MoveResult:
+def achieve_straight_translation_goal(goal_point: List[float], tip_link: str, root_link: str) -> 'MoveResult':
     """
     Tries to move the tip_link to the position defined by goal_point in a straight line, using the chain defined by
     root_link and tip_link. Since goal_point only defines the position but no rotation, rotation is not taken into account.
@@ -195,7 +236,7 @@ def achieve_straight_translation_goal(goal_point: List[float], tip_link: str, ro
     return giskard_wrapper.plan_and_execute()
 
 
-def achieve_rotation_goal(quat: List[float], tip_link: str, root_link: str) -> MoveResult:
+def achieve_rotation_goal(quat: List[float], tip_link: str, root_link: str) -> 'MoveResult':
     """
     Tries to bring the tip link into the rotation defined by quat using the chain defined by root_link and
     tip_link.
@@ -211,7 +252,7 @@ def achieve_rotation_goal(quat: List[float], tip_link: str, root_link: str) -> M
 
 
 def achieve_align_planes_goal(goal_normal: List[float], tip_link: str, tip_normal: List[float],
-                              root_link: str) -> MoveResult:
+                              root_link: str) -> 'MoveResult':
     """
     Tries to align the plane defined by tip normal with goal_normal using the chain between root_link and
     tip_link.
@@ -228,7 +269,7 @@ def achieve_align_planes_goal(goal_normal: List[float], tip_link: str, tip_norma
     return giskard_wrapper.plan_and_execute()
 
 
-def achieve_open_container_goal(tip_link: str, environment_link: str) -> MoveResult:
+def achieve_open_container_goal(tip_link: str, environment_link: str) -> 'MoveResult':
     """
     Tries to open a container in an environment, this only works if the container was added as a URDF. This goal assumes
     that the handle was already grasped. Can only handle container with 1 DOF
@@ -242,7 +283,7 @@ def achieve_open_container_goal(tip_link: str, environment_link: str) -> MoveRes
     return giskard_wrapper.plan_and_execute()
 
 
-def achieve_close_container_goal(tip_link: str, environment_link: str) -> MoveResult:
+def achieve_close_container_goal(tip_link: str, environment_link: str) -> 'MoveResult':
     """
     Tries to close a container, this only works if the container was added as a URDF. Assumes that the handle of the
     container was already grasped. Can only handle container with 1 DOF.
@@ -257,6 +298,44 @@ def achieve_close_container_goal(tip_link: str, environment_link: str) -> MoveRe
 
 
 # Managing collisions
+def achieve_gripper_motion_goal(motion: str):
+    """
+    Opens or closes the gripper
+    """
+    rospy.loginfo("giskard change_gripper_state: " + motion)
+    giskard_wrapper.change_gripper_state(motion)
+
+    # return giskard_wrapper.plan_and_execute()
+
+
+def allow_gripper_collision(gripper: str):
+    """
+    Allows the specified gripper to collide with anything.
+
+    :param gripper: The gripper which can collide, either 'right', 'left' or 'both'
+    :return:
+    """
+    add_gripper_groups()
+    if gripper == "right":
+        giskard_wrapper.allow_collision("right_gripper", CollisionEntry.ALL)
+    elif gripper == "left":
+        giskard_wrapper.allow_collision("left_gripper", CollisionEntry.ALL)
+    elif gripper == "both":
+        giskard_wrapper.allow_collision("right_gripper", CollisionEntry.ALL)
+        giskard_wrapper.allow_collision("left_gripper", CollisionEntry.ALL)
+
+
+# todo niemand denkt an hsr :;(
+def add_gripper_groups() -> None:
+    """
+    Adds the gripper links as a group for collision avoidance.
+
+    :return: Response of the RegisterGroup Service
+    """
+    if "left_gripper" not in giskard_wrapper.get_group_names():
+        for gripper in ["left"]:
+            root_link = robot_description.chains[gripper].gripper.links[-1]
+            giskard_wrapper.register_group(gripper + "_gripper", root_link, robot_description.name)
 
 
 def avoid_all_collisions() -> None:
@@ -286,7 +365,7 @@ def avoid_collisions(object1: Object, object2: Object) -> None:
 # Creating ROS messages
 
 
-def make_world_body(object: Object) -> WorldBody:
+def make_world_body(object: Object) -> 'WorldBody':
     """
     Creates a WorldBody message for a BulletWorld Object. The WorldBody will contain the URDF of the BulletWorld Object
 
@@ -356,3 +435,66 @@ def make_vector_stamped(vector: List[float]) -> Vector3Stamped:
     msg.vector.z = vector[2]
 
     return msg
+
+
+def _pose_to_pose_stamped(pose: Pose) -> PoseStamped:
+    """
+    Transforms a PyCRAM pose to a PoseStamped message, this is necessary since Giskard NEEDS a PoseStamped message
+    otherwise it will crash.
+
+    :param pose: PyCRAM pose that should be converted
+    :return: An equivalent PoseStamped message
+    """
+    ps = PoseStamped()
+    ps.pose = pose.pose
+    ps.header = pose.header
+
+    return ps
+
+
+def move_head_to_human():
+    """
+    continously moves head in direction of perceived human
+    """
+    giskard_wrapper.continuous_pointing_head()
+    giskard_wrapper.plan_and_execute(wait=False)
+
+
+def stop_looking():
+    """
+    stops the move_head_to_human function so that hsr looks forward
+    """
+    # TODO: implement when manipulation is ready
+    # endless mode shut be stopped when new command to move is used
+    # moves hsr in standard position
+    giskard_wrapper.take_pose("park")
+    giskard_wrapper.plan_and_execute(wait=False)
+    rospy.loginfo("hsr looks forward instead of looking at human")
+    print("hsr looks forward instead of looking at human")
+
+
+def spawn_kitchen():
+    env_urdf = rospy.get_param('kitchen_description')
+    kitchen_pose = tf.lookup_pose('map', 'iai_kitchen/urdf_main')
+    giskard_wrapper.add_urdf(name='iai_kitchen',
+                             urdf=env_urdf,
+                             pose=kitchen_pose)
+
+
+def place_objects(object, target, grasp):
+    # TODO: Decide placing from_above or align_vertical. Maybe using Objecttype for that?
+    from_above_objects = ["Bowl", "Metalmug", "Spoon", "Knife", "Fork"]
+
+
+    context_from_above = {'action': 'placing', 'from_above': True}
+    context_default = {'action': 'placing'}
+
+    if object.name in from_above_objects:
+        giskard_wrapper.placing(context=context_from_above, goal_pose=target)
+        print("if placed")
+
+    else:
+        giskard_wrapper.placing(context="align_vertical", goal_pose=target)
+
+    print("placed object")
+

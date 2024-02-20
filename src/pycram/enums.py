@@ -40,3 +40,30 @@ class Grasp(Enum):
     RIGHT = 2
     TOP = 3
 
+
+class ObjectType(Enum):
+    """
+    Enum for Object types to easier identify different objects
+    """
+    METALMUG = auto()
+    PRINGLES = auto()
+    MILK = auto()
+    SPOON = auto()
+    BOWL = auto()
+    BREAKFAST_CEREAL = auto()
+    JEROEN_CUP = auto()
+    ROBOT = auto()
+    ENVIRONMENT = auto()
+    GENERIC_OBJECT = auto()
+    HUMAN = auto()
+
+
+class State(Enum):
+    """
+    Enumeration which describes the result of a language expression.
+    """
+    SUCCEEDED = 1
+    FAILED = 0
+    RUNNING = 2
+    INTERRUPTED = 3
+

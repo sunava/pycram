@@ -70,7 +70,7 @@ def generate_orientation(position: List[float], origin: Pose) -> List[float]:
         robot should face.
     :return: A quaternion of the calculated orientation
     """
-    angle = np.arctan2(position[1]-origin.position.y, position[0]-origin.position.x) + np.pi
+    angle = np.arctan2(position[1] - origin.position.y, position[0] - origin.position.x) + np.pi
     quaternion = list(tf.transformations.quaternion_from_euler(0, 0, angle, axes="sxyz"))
     return quaternion
 
@@ -141,7 +141,8 @@ def reachability_validator(pose: Pose,
     # left_joints = robot_description._safely_access_chains('left').joints
     left_joints = robot_description.chains['left'].joints
     # right_joints = robot_description._safely_access_chains('right').joints
-    right_joints = robot_description.chains['right'].joints
+    if robot.name != 'hsrb':
+        right_joints = robot_description.chains['right'].joints
     # TODO Make orientation adhere to grasping orientation
     res = False
     arms = []
@@ -151,6 +152,7 @@ def reachability_validator(pose: Pose,
     if robot in allowed_collision.keys():
         allowed_robot_links = allowed_collision[robot]
 
+    joint_state_before_ik=robot._current_joint_states
     try:
         # resp = request_ik(base_link, end_effector, target_diff, robot, left_joints)
         resp = request_ik(target, robot, left_joints, left_gripper)
@@ -174,6 +176,8 @@ def reachability_validator(pose: Pose,
             res = True
     except IKError:
         pass
+    finally:
+        robot.set_joint_states(joint_state_before_ik)
 
     try:
         # resp = request_ik(base_link, end_effector, target_diff, robot, right_joints)
@@ -198,5 +202,7 @@ def reachability_validator(pose: Pose,
             res = True
     except IKError:
         pass
+    finally:
+        robot.set_joint_states(joint_state_before_ik)
 
     return res, arms
