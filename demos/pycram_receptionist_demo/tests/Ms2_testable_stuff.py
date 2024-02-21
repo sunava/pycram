@@ -3,7 +3,7 @@ import rospy
 from pycram.designators.action_designator import DetectAction, NavigateAction
 from pycram.designators.motion_designator import TalkingMotion
 from pycram.fluent import Fluent
-#from demos.pycram_receptionist_demo.utils.misc import *
+from demos.pycram_receptionist_demo.utils.misc import *
 from pycram.helper import axis_angle_to_quaternion
 from pycram.process_module import real_robot
 import pycram.external_interfaces.giskard as giskardpy
@@ -47,29 +47,6 @@ data_received = False
 
 
 ############################
-def talk_error(data):
-    """
-    callback function if no name/drink was heard
-    """
-    rospy.loginfo(data)
-    rospy.loginfo("in callback error")
-    error_msgs = "i could not hear you, please repeat"
-    TalkingMotion(error_msgs).resolve().perform()
-    rospy.sleep(3)
-    pub_nlp.publish("start listening")
-
-def talk_request(data: String):
-    """
-    callback function that takes the data from nlp (name and drink) and lets the robot talk
-    :param data: String "name drink"
-    """
-    global data_received
-    rospy.loginfo("in callback success")
-    name_drink = data.data.split(" ")
-    talk_actions.name_drink_talker(name_drink)
-    rospy.loginfo("nlp data:" + name_drink[0] + " " + name_drink[1])
-    data_received = True
-
 
 
 
@@ -77,7 +54,9 @@ def talk_request(data: String):
 
 def demo_test(area):
     with real_robot:
+        #guest_data = get_guest_info("5.0")
         global data_received
+        data_received = False
         print("start demo")
         #host = HumanDescription("Bob", fav_drink="Coffee")
         #host.human_pose.set_value(False)
@@ -111,8 +90,8 @@ def demo_test(area):
         rospy.sleep(5)
 
         # TODO: might not work, if so use version from Ms1 in comments
-        guest_data = get_guest_info("1.0") # guest_data format is = ["name", "drink"]
-        print(str(guest_data))
+        #guest_data = get_guest_info("1.0") # guest_data format is = ["name", "drink"]
+        #print(str(guest_data))
         #while guest_data == "No name saved under this ID!":
         #    talk_error("no name")
         #    guest_data = get_guest_info(1)
@@ -134,9 +113,9 @@ def demo_test(area):
         while not data_received:
             rospy.sleep(0.5)
 
-        guest_data = get_guest_info("2.0")  # guest_data format is = ["name", "drink"]
-        print(str(guest_data))
-        rospy.sleep(4)
+        #guest_data = get_guest_info("2.0")  # guest_data format is =
+        #print(str(guest_data))
+        #rospy.sleep(4)
         # lead human to living room
         TalkingMotion("i will stop looking now").resolve().perform()
         rospy.loginfo("stop looking now")
