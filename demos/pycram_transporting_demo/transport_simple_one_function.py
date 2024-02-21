@@ -70,5 +70,5 @@ def transport_simple():
         rospy.loginfo("Completed!")
 
 
-transport_simple()
+
 
