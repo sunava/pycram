@@ -4,10 +4,12 @@ from __future__ import annotations
 import numpy as np
 import pybullet as p
 import rospy
-#import matplotlib.pyplot as plt
-#from matplotlib import colors
+# import matplotlib.pyplot as plt
+# from matplotlib import colors
 import psutil
 import time
+
+import pycram.enums
 from .bullet_world import BulletWorld, Use_shadow_world, Object
 from .bullet_world_reasoning import _get_images_for_target
 from nav_msgs.msg import OccupancyGrid, MapMetaData
@@ -78,7 +80,7 @@ class Costmap:
             visual = p.createVisualShape(p.GEOM_BOX,
                                          halfExtents=[(box[1] * self.resolution) / 2, (box[2] * self.resolution) / 2,
                                                       0.001],
-                                         rgbaColor=[1, 0, 0, 0.6],
+                                         rgbaColor=[1, 0, 0, 0.4],
                                          visualFramePosition=[(box[0][0] + box[1] / 2) * self.resolution,
                                                               (box[0][1] + box[2] / 2) * self.resolution, 0.])
             cells.append(visual)
@@ -757,6 +759,8 @@ class SemanticCostmap(Costmap):
             inverse_orientation = link_orientation_trans.invert()
             shadow_obj.set_orientation(inverse_orientation.to_pose())
             return shadow_obj.get_AABB(self.link)
+
+
 
 
 # cmap = colors.ListedColormap(['white', 'black', 'green', 'red', 'blue'])

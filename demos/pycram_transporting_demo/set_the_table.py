@@ -1,5 +1,6 @@
 import rospy
 
+import pycram.plan_failures
 from pycram.designators.action_designator import *
 from pycram.designators.location_designator import *
 from pycram.designators.object_designator import *
@@ -23,7 +24,7 @@ bowl = Object("bowl", ObjectType.BOWL, "bowl.stl", pose=Pose([2.38, 2.2, 1.02]),
 #world.get_objects_by_name("floor")[0].set_color([0.824, 0.706, 0.549, 0.8])
 #apartment.set_color([0.5, 0.5, 0.5, 0.7])
 pick_pose = Pose([2.7, 2.15, 1])
-
+kitchen_desig = ObjectDesignatorDescription(names=["apartment"])
 robot_desig = BelieveObject(names=["pr2"])
 cereal_desig = BelieveObject(names=["cereal"])
 #apartment_desig = BelieveObject(names=["apartment"])
@@ -41,72 +42,44 @@ def move_and_detect(obj_type):
     object_desig = DetectAction(technique='default', object_type=obj_type).resolve().perform()
 
     return object_desig
-def create_semantic_costmap_location_reachable(urdf_link_name, part_of, robot, reachable_arm=None):
-    """
-    Creates a SemanticCostmapLocation that is filtered by reachability constraints.
-
-    :param urdf_link_name: Name of the URDF link for which a location distribution is calculated.
-    :param part_of: The object of which the URDF link is a part.
-    :param robot: The robot for which reachability should be calculated.
-    :param reachable_arm: Specific arm name to check reachability, if applicable.
-    :return: A generator yielding SemanticCostmapLocation.Location instances that are reachable.
-    """
-    sem_costmap_loc = SemanticCostmapLocation(urdf_link_name=urdf_link_name, part_of=part_of)
-    rospy.loginfo("SemanticCostmapLocation found")
-
-    for sem_location in sem_costmap_loc:
-        try:
-            world.current_bullet_world.add_vis_axis(sem_location.pose)
-            # rospy.loginfo("Checking if reachable")
-            # reachable_location = CostmapLocation(
-            #     target=sem_location.pose,
-            #     reachable_for=robot,
-            #     reachable_arm=reachable_arm
-            # ).resolve()
-            # rospy.loginfo("Location is reachable")
-            yield sem_location
-
-        except StopIteration:
-            pass
-    # Exit the loop when there are no more elements to process
-    # Properly handle StopIteration by breaking the loop
-    rospy.loginfo("No more reachable locations.")
 
 with (simulated_robot):
-    kitchen_desig = ObjectDesignatorDescription(names=["apartment"])
-    # create_semantic_costmap_location_reachable(urdf_link_name="table_area_main", part_of=kitchen_desig.resolve(),
-    #                                            robot=robot_desig.resolve(), reachable_arm="left")
-    location_desig = SemanticCostmapLocation(urdf_link_name="table_area_main", part_of=kitchen_desig.resolve(),
-                                              for_object=cereal_desig.resolve())
-    rospy.loginfo("done.")
-    nav_pose = None
-    for location in location_desig:
-         world.current_bullet_world.add_vis_axis(location_desig.resolve().pose)
-         try:
-             print("calculating reachable location")
-             reachable_location = CostmapLocation(
-                 target=location.pose,
-                 reachable_for=robot_desig.resolve(),
-                 reachable_arm="left"
-             ).resolve()
-             print("Location is reachable")
-             world.current_bullet_world.add_vis_axis(reachable_location.pose)
-             nav_pose = reachable_location.pose
-             break
-         except StopIteration:
-             pass
-    if not nav_pose:
-        print("No location found")
-    else:
-        print("Moving to pose")
-        NavigateAction(target_locations=[Pose([1.7, 2, 0])]).resolve().perform()
-    # print(location_desig)
-    # You would use this function like this:
-    # reachable_locations = create_semantic_costmap_location_reachable("table_area_main", kitchen_desig.resolve(), robot_desig.resolve(), "left")
-    # # Example: Iterate through reachable locations and process them
-    # for location in reachable_locations:
-    #     # Process each reachable location
-    #     print(location)
+    ParkArmsAction([Arms.BOTH]).resolve().perform()
+    NavigateAction(target_locations=[Pose([1.7, 2, 0])]).resolve().perform()
+    LookAtAction(targets=[pick_pose]).resolve().perform()
+    MoveTorsoAction([0.25]).resolve().perform()
+
+    object_desig = DetectAction(technique='all').resolve().perform()
+    object_dict = object_desig[1]
+    for key, value in object_dict.items():
+        if object_dict[key].type == "Cutlery" or object_dict[key].type == ObjectType.BOWL:
+            grasp = "top"
+        else:
+            grasp = "front"
+        PickUpAction(object_dict[key], ["left"], [grasp]).resolve().perform()
+        ParkArmsAction([Arms.BOTH]).resolve().perform()
+        #todo: next place pose if place didnt work
+        place_pose, nav_pose = find_reachable_location_and_nav_pose(enviroment_link="table_area_main",
+                                                                       enviroment_desig=kitchen_desig.resolve(),
+                                                                       object_desig=cereal_desig.resolve(),
+                                                                       robot_desig=robot_desig.resolve(),
+                                                                       arm="left",
+                                                                       world=world)
+        if not nav_pose:
+            print("No location found")
+        else:
+            print("Moving to pose")
+            NavigateAction(target_locations=[nav_pose]).resolve().perform()
+            try:
+                PlaceAction(object_dict[key], ["left"], [grasp], [place_pose]).resolve().perform()
+                ParkArmsAction([Arms.BOTH]).resolve().perform()
+                NavigateAction(target_locations=[Pose([1.7, 2, 0])]).resolve().perform()
+                MoveTorsoAction([0.25]).resolve().perform()
+            except pycram.plan_failures.IKError:
+                print("IK error")
+                pass
+
+
 
     # ParkArmsAction([Arms.BOTH]).resolve().perform()
     # NavigateAction(target_locations=[Pose([1.7, 2, 0])]).resolve().perform()

@@ -2,6 +2,8 @@ import dataclasses
 import time
 from typing import List, Tuple, Union, Iterable, Optional, Callable
 
+import rospy
+
 from .object_designator import ObjectDesignatorDescription, ObjectPart
 from ..bullet_world import Object, BulletWorld, Use_shadow_world
 from ..bullet_world_reasoning import link_pose_for_joint_config
@@ -15,6 +17,7 @@ from ..pose_generator_and_validator import pose_generator, visibility_validator,
     generate_orientation
 from ..robot_description import ManipulatorDescription
 from ..pose import Pose
+from ..enums import ObjectType
 
 
 class Location(LocationDesignatorDescription):
@@ -205,6 +208,7 @@ class CostmapLocation(LocationDesignatorDescription):
                         res = res and valid
 
                 if res:
+                    final_map.close_visualization()
                     yield self.Location(maybe_pose, arms)
 
 
@@ -339,6 +343,8 @@ class SemanticCostmapLocation(LocationDesignatorDescription):
         """
         sem_costmap = SemanticCostmap(self.part_of.bullet_world_object, self.urdf_link_name)
         sem_costmap.visualize()
+        sem_costmap.close_visualization()
+
         height_offset = 0
         if self.for_object:
             min, max = self.for_object.bullet_world_object.get_AABB()
@@ -346,3 +352,52 @@ class SemanticCostmapLocation(LocationDesignatorDescription):
         for maybe_pose in pose_generator(sem_costmap):
             maybe_pose.position.z += height_offset
             yield self.Location(maybe_pose)
+
+
+def find_reachable_location_and_nav_pose(enviroment_link, enviroment_desig, object_desig, robot_desig, arm, world):
+    rospy.loginfo("Create a SemanticCostmapLocation instance")
+    location_desig = SemanticCostmapLocation(urdf_link_name=enviroment_link,
+                                             part_of=enviroment_desig,
+                                             for_object=object_desig)
+
+    rospy.loginfo("Iterate through the locations in the location designator")
+    for location in location_desig:
+        world.current_bullet_world.add_vis_axis(location_desig.resolve().pose)
+
+        # Check if the location is clear of objects
+        if not is_location_clear(location.pose, world):
+            continue  # Skip this location if it's not clear
+
+        try:
+            rospy.loginfo("Create a CostmapLocation instance to check if the location is reachable")
+            reachable_location = CostmapLocation(
+                target=location.pose,
+                reachable_for=robot_desig,
+                reachable_arm=arm
+            )
+            resolved_location = reachable_location.resolve()
+            world.current_bullet_world.add_vis_axis(resolved_location.pose)
+            nav_pose = resolved_location.pose
+            world.current_bullet_world.remove_vis_axis()
+            return location.pose, nav_pose
+        except StopIteration:
+            pass
+    rospy.loginfo("No costmap solution found for the object in the environment")
+    return None, None
+
+
+def is_location_clear(location_pose, world, clearance_radius=0.10):
+    """
+    Check if the specified location is clear of objects within the given clearance radius.
+    Implement the logic to check for nearby objects in the environment.
+    """
+    for obj in world.current_bullet_world.objects:
+        if obj.type != ObjectType.ENVIRONMENT and obj.type != ObjectType.ROBOT:
+            # Calculate the Euclidean distance between the object and the location
+            obj_position = obj.pose.position  # Assuming 'pose' attribute with 'position'
+            distance = ((obj_position.x - location_pose.position.x) ** 2 +
+                        (obj_position.y - location_pose.position.y) ** 2 +
+                        (obj_position.z - location_pose.position.z) ** 2) ** 0.5
+            if distance < clearance_radius:
+                return False  # An object is within the clearance radius
+    return True  # No objects are within the clearance radius
