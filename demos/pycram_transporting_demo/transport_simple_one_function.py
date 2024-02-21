@@ -1,7 +1,7 @@
 import rospy
 
 import pycram.plan_failures
-from demos.pycram_transporting_demo.init_setup import breakfast_context_apartment
+from init_setup import breakfast_context_apartment
 from pycram.bullet_world import BulletWorld, Object
 from pycram.designators.action_designator import *
 from pycram.designators.location_designator import *
