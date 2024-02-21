@@ -687,7 +687,7 @@ class SemanticCostmap(Costmap):
     table surface.
     """
 
-    def __init__(self, object, urdf_link_name, size=100, resolution=0.02, world=None):
+    def __init__(self, object, urdf_link_name, size=100, resolution=0.02, world=None, margin_cm=0.2):
         """
         Creates a semantic costmap for the given parameter. The semantic costmap will be on top of the link of the given
         Object.
@@ -705,11 +705,9 @@ class SemanticCostmap(Costmap):
         self.height: int = 0
         self.width: int = 0
         self.map: np.ndarray = []
+        self.margin_cm = margin_cm
         self.generate_map()
-
         Costmap.__init__(self, resolution, self.height, self.width, self.origin, self.map)
-
-    import numpy as np
 
     def generate_map(self) -> None:
         """
@@ -718,7 +716,7 @@ class SemanticCostmap(Costmap):
         not part of the semantic costmap.
         """
         aabb_min, aabb_max = self.get_aabb_for_link()  # Get the axis-aligned bounding box for the link
-        margin = int(0.2 / self.resolution)  # Convert 20 cm margin to pixels based on the resolution
+        margin = int(self.margin_cm / self.resolution)  # Convert 20 cm margin to pixels based on the resolution
 
         # Calculate height and width considering the resolution
         self.height = int((aabb_max[0] - aabb_min[0]) // self.resolution)

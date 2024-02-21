@@ -188,7 +188,6 @@ class CostmapLocation(LocationDesignatorDescription):
             test_robot = BulletWorld.current_bullet_world.get_shadow_object(robot_object)
 
         with Use_shadow_world():
-
             for maybe_pose in pose_generator(final_map, number_of_samples=600):
                 res = True
                 arms = None
@@ -309,7 +308,7 @@ class SemanticCostmapLocation(LocationDesignatorDescription):
     class Location(LocationDesignatorDescription.Location):
         pass
 
-    def __init__(self, urdf_link_name, part_of, for_object=None, resolver=None):
+    def __init__(self, urdf_link_name, part_of, for_object=None, resolver=None, margin_cm=0.2):
         """
         Creates a distribution over a urdf link to sample poses which are on this link. Can be used, for example, to find
         poses that are on a table. Optionally an object can be given for which poses should be calculated, in that case
@@ -324,6 +323,7 @@ class SemanticCostmapLocation(LocationDesignatorDescription):
         self.urdf_link_name: str = urdf_link_name
         self.part_of: ObjectDesignatorDescription.Object = part_of
         self.for_object: Optional[ObjectDesignatorDescription.Object] = for_object
+        self.margin_cm = margin_cm
 
     def ground(self) -> Location:
         """
@@ -341,7 +341,7 @@ class SemanticCostmapLocation(LocationDesignatorDescription):
 
         :yield: An instance of SemanticCostmapLocation.Location with the found valid position of the Costmap.
         """
-        sem_costmap = SemanticCostmap(self.part_of.bullet_world_object, self.urdf_link_name)
+        sem_costmap = SemanticCostmap(self.part_of.bullet_world_object, self.urdf_link_name, margin_cm=self.margin_cm)
         sem_costmap.visualize()
         sem_costmap.close_visualization()
 
@@ -354,22 +354,22 @@ class SemanticCostmapLocation(LocationDesignatorDescription):
             yield self.Location(maybe_pose)
 
 
-def find_reachable_location_and_nav_pose(enviroment_link, enviroment_desig, object_desig, robot_desig, arm, world):
-    rospy.loginfo("Create a SemanticCostmapLocation instance")
+def find_reachable_location_and_nav_pose(enviroment_link, enviroment_desig, object_desig, robot_desig, arm, world, marging_cm=0.2):
+    #rospy.loginfo("Create a SemanticCostmapLocation instance")
     location_desig = SemanticCostmapLocation(urdf_link_name=enviroment_link,
                                              part_of=enviroment_desig,
-                                             for_object=object_desig)
+                                             for_object=object_desig, margin_cm=marging_cm)
 
-    rospy.loginfo("Iterate through the locations in the location designator")
+    #rospy.loginfo("Iterate through the locations in the location designator")
     for location in location_desig:
-        world.current_bullet_world.add_vis_axis(location_desig.resolve().pose)
+        world.current_bullet_world.add_vis_axis(location.pose)
 
         # Check if the location is clear of objects
         if not is_location_clear(location.pose, world):
             continue  # Skip this location if it's not clear
 
         try:
-            rospy.loginfo("Create a CostmapLocation instance to check if the location is reachable")
+            #rospy.loginfo("Create a CostmapLocation instance to check if the location is reachable")
             reachable_location = CostmapLocation(
                 target=location.pose,
                 reachable_for=robot_desig,
@@ -386,7 +386,7 @@ def find_reachable_location_and_nav_pose(enviroment_link, enviroment_desig, obje
     return None, None
 
 
-def is_location_clear(location_pose, world, clearance_radius=0.10):
+def is_location_clear(location_pose, world, clearance_radius=0.20):
     """
     Check if the specified location is clear of objects within the given clearance radius.
     Implement the logic to check for nearby objects in the environment.

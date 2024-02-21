@@ -137,7 +137,6 @@ class HSRBDetecting(ProcessModule):
     """
 
     def _execute(self, desig: DetectingMotion.Motion):
-        rospy.loginfo("Detecting technique: {}".format(desig.technique))
         robot = BulletWorld.robot
         object_type = desig.object_type
         # Should be "wide_stereo_optical_frame"
