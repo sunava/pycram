@@ -9,43 +9,28 @@ from pycram.designators.object_designator import *
 from pycram.enums import ObjectType
 from pycram.pose import Pose
 from pycram.process_module import simulated_robot, with_simulated_robot
+from IPython.display import display, clear_output, HTML
+import time
 
-pick_pose = Pose([2.7, 2.15, 1])
-
-world = BulletWorld()
-robot = Object("pr2", ObjectType.ROBOT, "pr2.urdf", pose=Pose([1, 2, 0]))
-robot_desig = BelieveObject(names=["pr2"])
-apart_desig = BelieveObject(names=["apartment"])
-current_context = breakfast_context_apartment  # Or dinner_context, depending on the scenario
-current_context.spawn_objects()
-objects = current_context.get_all_objects()
+from pycram.ros.viz_marker_publisher import VizMarkerPublisher
 
 
-def search_for_object(object_type):
-    # Define the probabilities for each location given an object
-    location_probabilities = {"spoon": {"drawer": 0.6, "dishwasher": 0.3, "countertop": 0.1},
-        "bowl": {"cupboard": 0.5, "dishwasher": 0.3, "countertop": 0.2},
-        # Add more objects and their location probabilities as needed
-    }
+def transport_simple():
+    # Display the hourglass GIF
+    display(HTML('<img src="https://i.gifer.com/XVo6.gif" alt="Hourglass animation" width="50">'))
 
-    # Check if the object is in the predefined list
-    if object_type in location_probabilities:
-        # Get the location probabilities for the given object
-        probabilities = location_probabilities[object_type]
+    pick_pose = Pose([2.7, 2.15, 1])
 
-        # Find the location with the highest probability
-        most_likely_location = max(probabilities, key=probabilities.get)
+    world = BulletWorld("DIRECT")
+    v = VizMarkerPublisher()
+    robot = Object("pr2", ObjectType.ROBOT, "pr2.urdf", pose=Pose([1, 2, 0]))
+    robot_desig = BelieveObject(names=["pr2"])
+    apart_desig = BelieveObject(names=["apartment"])
+    current_context = breakfast_context_apartment  # Or dinner_context, depending on the scenario
+    current_context.spawn_objects()
 
-        return most_likely_location
-    else:
-        return "Unknown"  # Object not recognized
-
-
-with (simulated_robot):
-    for obj in objects:
+    with (simulated_robot):
         MoveTorsoAction([0.25]).resolve().perform()
-        ParkArmsAction([Arms.BOTH]).resolve().perform()
-
         ParkArmsAction([Arms.BOTH]).resolve().perform()
         NavigateAction(target_locations=[Pose([1.7, 2, 0])]).resolve().perform()
         LookAtAction(targets=[pick_pose]).resolve().perform()
@@ -78,4 +63,12 @@ with (simulated_robot):
 
                 ParkArmsAction([Arms.BOTH]).resolve().perform()
                 NavigateAction(target_locations=[Pose([1.7, 2, 0])]).resolve().perform()
-                MoveTorsoAction([0.25]).resolve().perform()
+                MoveTorsoAction([0.25]).resolve().perform()  # Clear the animation
+        clear_output(wait=True)
+
+        # Optionally, display a message that the process is complete
+        rospy.loginfo("Completed!")
+
+
+transport_simple()
+

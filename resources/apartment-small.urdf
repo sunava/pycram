@@ -1563,7 +1563,6 @@
       <geometry>
         <box size="0.58 0.32 0.41"/>
       </geometry>
-      <material name="oven_gray"/>
     </collision>
   </link>
   <!-- island waterfall, left side -->
@@ -1675,29 +1674,30 @@
     </collision>
   </link>
 
-  <link name="table_area_main">
-    <inertial>
-      <origin rpy="0 0 0" xyz="0.0 0.0 0.0"/>
-      <mass value="1"/>
-      <inertia ixx="1" ixy="0.0" ixz="0.0" iyy="1" iyz="0.0" izz="1"/>
-    </inertial>
-    <visual>
-      <origin rpy="0 0 0" xyz="0 0 0.3619"/>
-      <geometry>
-        <mesh filename="package://iai_kitchen/meshes/misc/big_table_1.dae"/>
-      </geometry>
-    </visual>
-    <collision>
-      <origin rpy="0 0 0" xyz="0 0 0.3619"/>
-      <geometry>
-        <mesh filename="package://iai_kitchen/meshes/misc/big_table_1.obj"/>
-      </geometry>
-    </collision>
-  </link>
-  <joint name="table_area_main_joint" type="fixed">
-    <origin rpy="0 0 1.57" xyz="5 4 0"/>
-    <parent link="apartment_root"/>
-    <child link="table_area_main"/>
-  </joint>
+
+<link name="table_area_main">
+  <inertial>
+    <origin rpy="0 0 1.5708" xyz="0.0 0.0 0.0"/>
+    <mass value="1"/>
+    <inertia ixx="1" ixy="0.0" ixz="0.0" iyy="1" iyz="0.0" izz="1"/>
+  </inertial>
+  <visual>
+    <origin rpy="0 0 1.5708" xyz="0 0 -0.35"/>  <!--Kept original position -->
+    <geometry>
+      <mesh filename="package://iai_kitchen/meshes/misc/big_table_1.dae"/>
+    </geometry>
+  </visual>
+  <collision>
+    <origin rpy="0 0 1.5708" xyz="0 0 -0.35"/>  <!--Kept original position -->
+    <geometry>
+      <mesh filename="package://iai_kitchen/meshes/misc/big_table_1.obj"/>
+    </geometry>
+  </collision>
+</link>
+<joint name="table_area_main_joint" type="fixed">
+  <origin rpy="0 0 0" xyz="5 4 0.73"/>
+  <parent link="apartment_root"/>
+  <child link="table_area_main"/>
+</joint>
 </robot>
 

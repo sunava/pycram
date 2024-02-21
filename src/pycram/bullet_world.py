@@ -1595,7 +1595,7 @@ def _load_object(name: str,
     try:
         if name == "floor" or name == "kitchen" or name == "apartment":
             obj = p.loadURDF(path, basePosition=position, baseOrientation=orientation, physicsClientId=world_id)
-            p.changeDynamics(obj, -1, mass=1)
+            #p.changeDynamics(obj, -1, mass=1)
 
         else:
             obj = p.loadURDF(path, basePosition=position, baseOrientation=orientation, physicsClientId=world_id)

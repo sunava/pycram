@@ -148,7 +148,6 @@ class Pr2Detecting(ProcessModule):
     """
 
     def _execute(self, desig: DetectingMotion.Motion):
-        rospy.loginfo("Detecting technique: {}".format(desig.technique))
         robot = BulletWorld.robot
         object_type = desig.object_type
         # Should be "wide_stereo_optical_frame"
@@ -156,10 +155,8 @@ class Pr2Detecting(ProcessModule):
         # should be [0, 0, 1]
         front_facing_axis = robot_description.front_facing_axis
         if desig.technique == 'all':
-            rospy.loginfo("Simulate: -> Detecting all generic objects")
             objects = BulletWorld.current_bullet_world.get_all_objets_not_robot()
         elif desig.technique == 'human':
-            rospy.loginfo("Simulate: -> detecting human -> spawn 0,0,0")
             human = []
             human.append(Object("human", ObjectType.HUMAN, "human_male.stl", pose=Pose([0, 0, 0])))
             object_dict = {}
@@ -170,7 +167,6 @@ class Pr2Detecting(ProcessModule):
             return object_dict
 
         else:
-            rospy.loginfo("Simulate: -> Detecting specific object type")
             objects = BulletWorld.current_bullet_world.get_objects_by_type(object_type)
 
         object_dict = {}
@@ -183,7 +179,6 @@ class Pr2Detecting(ProcessModule):
         for i, obj in enumerate(perceived_objects):
             object_dict[obj.name] = obj
 
-        rospy.loginfo("returning dict objects")
         return object_dict
 
 
