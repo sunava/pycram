@@ -20,7 +20,7 @@ cereal = Object("cereal", ObjectType.BREAKFAST_CEREAL, "breakfast_cereal.stl", p
 #spoon = Object("spoon", ObjectType.SPOON, "spoon.stl", pose=Pose([2.4, 2.2, 0.85]), color=[0, 0, 1, 1])
 bowl = Object("bowl", ObjectType.BOWL, "bowl.stl", pose=Pose([2.38, 2.2, 1.02]), color=[1, 1, 0, 1])
 #apartment.attach(spoon, 'cabinet10_drawer_top')
-world.get_objects_by_name("floor")[0].set_color([0.824, 0.706, 0.549, 0.8])
+#world.get_objects_by_name("floor")[0].set_color([0.824, 0.706, 0.549, 0.8])
 #apartment.set_color([0.5, 0.5, 0.5, 0.7])
 pick_pose = Pose([2.7, 2.15, 1])
 
@@ -76,25 +76,30 @@ with (simulated_robot):
     kitchen_desig = ObjectDesignatorDescription(names=["apartment"])
     # create_semantic_costmap_location_reachable(urdf_link_name="table_area_main", part_of=kitchen_desig.resolve(),
     #                                            robot=robot_desig.resolve(), reachable_arm="left")
-    location_desig = SemanticCostmapLocation(urdf_link_name="island_countertop", part_of=kitchen_desig.resolve(),
+    location_desig = SemanticCostmapLocation(urdf_link_name="table_area_main", part_of=kitchen_desig.resolve(),
                                               for_object=cereal_desig.resolve())
+    rospy.loginfo("done.")
+    nav_pose = None
     for location in location_desig:
          world.current_bullet_world.add_vis_axis(location_desig.resolve().pose)
          try:
-             x = location.pose.pose.position.x
-             y = location.pose.pose.position.y
-             z = location.pose.pose.position.z
              print("calculating reachable location")
              reachable_location = CostmapLocation(
-                 target=Pose([x, y, z]),
+                 target=location.pose,
                  reachable_for=robot_desig.resolve(),
                  reachable_arm="left"
              ).resolve()
              print("Location is reachable")
              world.current_bullet_world.add_vis_axis(reachable_location.pose)
+             nav_pose = reachable_location.pose
+             break
          except StopIteration:
              pass
-    print("No location found")
+    if not nav_pose:
+        print("No location found")
+    else:
+        print("Moving to pose")
+        NavigateAction(target_locations=[Pose([1.7, 2, 0])]).resolve().perform()
     # print(location_desig)
     # You would use this function like this:
     # reachable_locations = create_semantic_costmap_location_reachable("table_area_main", kitchen_desig.resolve(), robot_desig.resolve(), "left")

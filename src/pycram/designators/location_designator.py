@@ -178,6 +178,8 @@ class CostmapLocation(LocationDesignatorDescription):
             visible = VisibilityCostmap(min_height, max_height, 200, 0.02, Pose(target_pose.position_as_list()))
             final_map += visible
 
+        final_map.visualize()
+
         if self.visible_for or self.reachable_for:
             robot_object = self.visible_for.bullet_world_object if self.visible_for else self.reachable_for.bullet_world_object
             test_robot = BulletWorld.current_bullet_world.get_shadow_object(robot_object)
@@ -336,6 +338,7 @@ class SemanticCostmapLocation(LocationDesignatorDescription):
         :yield: An instance of SemanticCostmapLocation.Location with the found valid position of the Costmap.
         """
         sem_costmap = SemanticCostmap(self.part_of.bullet_world_object, self.urdf_link_name)
+        sem_costmap.visualize()
         height_offset = 0
         if self.for_object:
             min, max = self.for_object.bullet_world_object.get_AABB()

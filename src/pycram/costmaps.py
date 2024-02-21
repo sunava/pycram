@@ -707,15 +707,39 @@ class SemanticCostmap(Costmap):
 
         Costmap.__init__(self, resolution, self.height, self.width, self.origin, self.map)
 
+    import numpy as np
+
     def generate_map(self) -> None:
         """
-        Generates the semantic costmap according to the provided parameters. To do this the axis aligned bounding box (AABB)
-        for the link name will be used. Height and width of the final Costmap will be the x and y sizes of the AABB.
+        Generates the semantic costmap according to the provided parameters, with a 20 cm margin excluded from the outer
+        edges of the map. The central part of the map is used, while the outer 20 cm margin is marked to indicate it's
+        not part of the semantic costmap.
         """
-        min, max = self.get_aabb_for_link()
-        self.height = int((max[0] - min[0]) // self.resolution)
-        self.width = int((max[1] - min[1]) // self.resolution)
+        aabb_min, aabb_max = self.get_aabb_for_link()  # Get the axis-aligned bounding box for the link
+        margin = int(0.2 / self.resolution)  # Convert 20 cm margin to pixels based on the resolution
+
+        # Calculate height and width considering the resolution
+        self.height = int((aabb_max[0] - aabb_min[0]) // self.resolution)
+        self.width = int((aabb_max[1] - aabb_min[1]) // self.resolution)
+
+        # Initialize the map with ones
         self.map = np.ones((self.height, self.width))
+
+        # Apply the margin to the outer edges of the map by setting the values to a specific number (e.g., 0)
+        # Top margin
+        if margin < self.height // 2:
+            self.map[:margin, :] = 0
+            # Bottom margin
+            self.map[-margin:, :] = 0
+
+        # Left margin
+        if margin < self.width // 2:
+            self.map[:, :margin] = 0
+            # Right margin
+            self.map[:, -margin:] = 0
+
+        # Invert the map values: 0s become 1s, and everything else becomes 0
+        self.map = 1 - self.map
 
     def get_aabb_for_link(self) -> Tuple[List[float], List[float]]:
         """
