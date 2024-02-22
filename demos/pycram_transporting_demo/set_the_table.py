@@ -20,7 +20,6 @@ current_context = breakfast_context_apartment  # Or dinner_context, depending on
 current_context.spawn_objects()
 objects = current_context.get_all_objects()
 
-
 def search_for_object(object_type):
     # Define the probabilities for each location given an object
     location_probabilities = {"spoon": {"drawer": 0.6, "dishwasher": 0.3, "countertop": 0.1},

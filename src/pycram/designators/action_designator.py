@@ -1137,7 +1137,7 @@ class GraspingAction(ActionDesignatorDescription):
             pre_grasp = object_pose_in_gripper.copy()
             pre_grasp.pose.position.x -= 0.1
 
-            MoveTCPMotion(pre_grasp, self.arm).resolve().perform()
+            #MoveTCPMotion(pre_grasp, self.arm).resolve().perform()
             MoveGripperMotion("open", self.arm).resolve().perform()
 
             MoveTCPMotion(object_pose, self.arm, allow_gripper_collision=True).resolve().perform()

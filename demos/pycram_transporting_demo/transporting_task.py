@@ -11,7 +11,7 @@ from pycram.process_module import simulated_robot
 from pycram.ros.viz_marker_publisher import VizMarkerPublisher
 
 
-def transport():
+def start_demo():
     display(HTML('<img src="https://i.gifer.com/XVo6.gif" alt="Hourglass animation" width="50">'))
     pick_pose = Pose([2.7, 2.15, 1])
 

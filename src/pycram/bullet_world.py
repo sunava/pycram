@@ -564,13 +564,13 @@ class Gui(threading.Thread):
             # Disable the side windows of the GUI
             p.configureDebugVisualizer(p.COV_ENABLE_GUI, 0)
             # Change the init camera pose
-            p.resetDebugVisualizerCamera(cameraDistance=1.5, cameraYaw=270.0, cameraPitch=-50,
-                                         cameraTargetPosition=[-2, 0, 1])
+            p.resetDebugVisualizerCamera(cameraDistance=1.5, cameraYaw=88.0, cameraPitch=-37,
+                                         cameraTargetPosition=[2.6, 2.37, 1.46])
 
             # Get the initial camera target location
             cameraTargetPosition = p.getDebugVisualizerCamera()[11]
 
-            sphereVisualId = p.createVisualShape(p.GEOM_SPHERE, radius=0.05, rgbaColor=[1, 0, 0, 1])
+            sphereVisualId = p.createVisualShape(p.GEOM_SPHERE, radius=0.05, rgbaColor=[1, 0, 0, 0])
 
             # Create a sphere with a radius of 0.05 and a mass of 0
             sphereUid = p.createMultiBody(baseMass=0.0,

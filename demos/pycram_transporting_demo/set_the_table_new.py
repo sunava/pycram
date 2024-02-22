@@ -6,13 +6,14 @@ from pycram.designators.object_designator import *
 from pycram.enums import ObjectType
 from pycram.pose import Pose
 from pycram.process_module import simulated_robot, with_simulated_robot
-from demos.pycram_transporting_demo.init_setup import breakfast_context_apartment
+from demos.pycram_transporting_demo.init_setup import breakfast_context_apartment,test_context_apartment
 
 world = BulletWorld()
 robot = Object("pr2", ObjectType.ROBOT, "pr2.urdf", pose=Pose([1, 2, 0]))
 robot_desig = BelieveObject(names=["pr2"])
+
 apart_desig = BelieveObject(names=["apartment"])
-current_context = breakfast_context_apartment  # Or dinner_context, depending on the scenario
+current_context = test_context_apartment  # Or dinner_context, depending on the scenario
 current_context.spawn_objects()
 objects = current_context.get_all_objects()
 
@@ -29,13 +30,28 @@ def search_for_object(obj):
 
         OpenAction(object_designator_description=handle_desig, arms=[drawer_open_loc.arms[0]]).resolve().perform()
         ParkArmsAction([Arms.BOTH]).resolve().perform()
-        close_loc = drawer_open_loc.pose
-        close_loc.position.y += 0.1
-        NavigateAction([close_loc]).resolve().perform()
 
-        CloseAction(object_designator_description=handle_desig, arms=[drawer_open_loc.arms[0]]).resolve().perform()
 
-        ParkArmsAction([Arms.BOTH]).resolve().perform()
+        LookAtAction([current_context.environment_object.get_link_pose("handle_cab10_t")]).resolve().perform()
+        #status, object_dict = DetectAction(technique='specific', object_type=obj).resolve().perform()
+        status, object_dict = DetectAction(technique='all').resolve().perform()
+
+        if status:
+            for key, value in object_dict.items():
+                current_context.environment_object.detach(current_context.spoon_)
+                PickUpAction(object_dict[key], ["right"], ["top"]).resolve().perform()
+                close_loc = drawer_open_loc.pose
+
+                MoveTorsoAction([0.25]).resolve().perform()
+                ParkArmsAction([Arms.BOTH]).resolve().perform()
+                
+                NavigateAction([close_loc]).resolve().perform()
+
+                CloseAction(object_designator_description=handle_desig, arms=[drawer_open_loc.arms[0]]).resolve().perform()
+
+                ParkArmsAction([Arms.BOTH]).resolve().perform()
+        else:
+            rospy.logerr("Object not found")
     else:
         pose = SemanticCostmapLocation(urdf_link_name=location_to_search,
                                              part_of=apart_desig.resolve()).resolve()

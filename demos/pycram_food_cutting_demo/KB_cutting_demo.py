@@ -79,7 +79,7 @@ def setup_task_object_widgets():
 
     display(HBox([task_dropdown, object_dropdown]))
 
-def setup_widgets():
+def start_demo():
     global output
     output = widgets.Output()
 
