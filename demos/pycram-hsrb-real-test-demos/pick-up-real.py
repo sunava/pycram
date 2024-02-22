@@ -36,8 +36,6 @@ v = VizMarkerPublisher()
 
 # Initialize Giskard interface for motion planning
 
-
-
 #giskardpy.spawn_kitchen()
 # Create and configure the robot object
 robot = Object("hsrb", ObjectType.ROBOT, "../../resources/hsrb.urdf", pose=Pose([0, 0, 0]))
@@ -58,15 +56,14 @@ object_orientation = axis_angle_to_quaternion([0, 0, 1], 180)
 # Wished objects for the Demo
 #wished_sorted_obj_list = ["Bowl", "Metalmug", "Fork", "Spoon", "Metalplate", "Cerealbox", "Milkpack"]
 
-global y_pos
 y_pos = 1.66
+table_pose = 1.04
 # Define a breakfast cereal object
-#breakfast_cereal = Object("breakfast_cereal", "breakfast_cereal", "breakfast_cereal.stl", pose=Pose([4.8, 2.6, 0.87]),color=[0, 1, 0, 1])
-# fork = Object("Fork", "fork", "spoon.stl", pose=Pose([-2.8, 2.3, 0.368], object_orientation), color=[1, 0, 0, 1])
-# spoon = Object("Spoon", "spoon", "spoon.stl", pose=Pose([-2.5, 2.3, 0.368], object_orientation), color=[0, 1, 0, 1])
-# metalmug = Object("Metalmug", "metalmug", "bowl.stl", pose=Pose([-3.1, 2.3, 0.39]), color=[0, 1, 0, 1])
-# plate = Object("Plate", "plate", "board.stl", pose=Pose([-2.2, 2.3, 0.368], object_orientation), color=[0, 1, 0, 1])
-#bowl = Object("bowl", "bowl", "bowl.stl", pose=Pose([4.8, 2.6, 0.87]), color=[0, 1, 0, 1])
+#fork = Object("Fork", "Fork", "spoon.stl", pose=Pose([0.8, 2.73, 0.74]), color=[1, 0, 0, 1])
+#spoon = Object("Spoon", "Spoon", "spoon.stl", pose=Pose([0.8, 2.6, 0.74]), color=[0, 1, 0, 1])
+#metalmug = Object("Metalmug", "Metalmug", "bowl.stl", pose=Pose([0.8, 2.4, 0.765]), color=[0, 1, 0, 1])
+#plate = Object("Metalplate", "Metalplate", "board.stl", pose=Pose([0.8, 2.12, 0.735]), color=[0, 1, 0, 1])
+#bowl = Object("Bowl", "Bowl", "bowl.stl", pose=Pose([0.8, 1.8, 0.765]), color=[0, 1, 0, 1])
 
 # Set the world's gravity
 #world.set_gravity([0.0, 0.0, 9.81])
@@ -75,7 +72,6 @@ def sort_objects(obj_dict, wished_sorted_obj_list):
     sorted_objects= []
     object_tuples = []
     isPlate = True
-    isAdded = False
     #print(f"gefundene liste: {obj_dict}")
     first, *remaining = obj_dict
     print(f"type: {type(remaining)} and type of obj_dict: {type(obj_dict)}")
@@ -134,7 +130,7 @@ def try_pick_up(obj, grasps):
             TalkingMotion(f"Please push down my hand, when I can grab the {obj.name}.")
 
 def pickUp_and_place_objects(sorted_obj):
-
+    global y_pos, table_pose
     for value in sorted_obj:
         NavigateAction(target_locations=[Pose([1.6, value.pose.position.y, 0], [0, 0, 1, 0])]).resolve().perform()
         print("first navigation")
@@ -147,18 +143,16 @@ def pickUp_and_place_objects(sorted_obj):
             grasp = "top"
 
         if value.type == "Metalplate":
-            print("MetalPlate!!!!!!!!!!!!!!!!!!")
             MoveGripperMotion("open", "left").resolve().perform()
-            TalkingMotion("Can you pleas give me the plate on the table.").resolve().perform()
+            TalkingMotion("Can you please give me the plate on the table.").resolve().perform()
             # TalkingMotion("Please push down my hand, when I can grab the plate.").resolve().perform()
             print("picked up plate")
             time.sleep(3)
             MoveGripperMotion("close", "left").resolve().perform()
         else:
-            table_pose = 1.04
-            if sorted_obj[0].type == "Cutlery" and sorted_obj[0].pose.position.x + 0.05 >= table_pose:
-                print("adjusted x!!!!")
-                sorted_obj[0].pose.position.x -= 0.1
+            if value.type == "Cutlery" and value.pose.position.x + 0.05 >= table_pose:
+                print("adjusted x")
+                value.pose.position.x -= 0.1
             TalkingMotion("Picking Up with: " + grasp).resolve().perform()
             try_pick_up(value, grasp)
 
@@ -192,12 +186,12 @@ def pickUp_and_place_objects(sorted_obj):
 
 def navigate_and_detect():
     TalkingMotion("Navigating").resolve().perform()
-    NavigateAction(target_locations=[Pose([1.6, 1.8, 0], [0, 0, 1, 0])]).resolve().perform()
+    NavigateAction(target_locations=[Pose([1.6,1.8, 0], [0, 0, 1, 0])]).resolve().perform()
     # popcorntable
     LookAtAction(targets=[Pose([0.8, 1.8, 0.21], object_orientation)]).resolve().perform()
     LookAtAction(targets=[Pose([0.8, 1.8, 0.21], object_orientation)]).resolve().perform()
     TalkingMotion("Perceiving").resolve().perform()
-    object_desig = DetectAction(technique='default').resolve().perform()
+    object_desig = DetectAction(technique='all').resolve().perform()
 
     return object_desig
 
@@ -210,7 +204,7 @@ with ((real_robot)):
     ParkArmsAction([Arms.LEFT]).resolve().perform()
 
     object_desig = navigate_and_detect()
-    wished_sorted_obj_list = ["Metalmug", "Metalplate"]
+    wished_sorted_obj_list = ["Metalmug", "Metalplate", "Fork", "Spoon", "Bowl"]
 
     sorted_obj = sort_objects(object_desig, wished_sorted_obj_list)
 
@@ -229,17 +223,24 @@ with ((real_robot)):
 
     final_sorted_obj = sorted_obj + new_sorted_obj
 
-    print(f"sorted obj: {sorted_obj}")
-    print(f"new sorted obj: {new_sorted_obj}")
-    print(f"final sorted obj: {final_sorted_obj}")
+    for obj in sorted_obj:
+        print(f"sorted obj: {obj.type}")
+    for obj in new_sorted_obj:
+        print(f"new sorted obj: {obj.type}")
+    for obj in final_sorted_obj:
+        print(f"final sorted obj: {obj.type}")
+    print(f"y_pos: {y_pos}")
+
     if len(final_sorted_obj) < len(wished_sorted_obj_list):
         print("second Check")
+
+        for value in final_sorted_obj:
+            # TODO: Cutlery noch behandeln und doppelte Objektnamen, wie Fork
+                if value.type in wished_sorted_obj_list:
+                    wished_sorted_obj_list.remove(value.type)
         for name in wished_sorted_obj_list:
-            for value in final_sorted_obj:
-                if name == value.type:
-                    wished_sorted_obj_list.remove(name)
-        for name in wished_sorted_obj_list:
-            TalkingMotion(f"Can you pleas give me the {name} object on the table? Thanks")
+            print(f"in here with object {name}")
+            TalkingMotion(f"Can you please give me the {name} on the table?")
             rospy.sleep(1)
             #TalkingMotion(f"Please push down my hand, when I can grab the {name}.")
             time.sleep(3)
@@ -251,6 +252,7 @@ with ((real_robot)):
             NavigateAction(target_locations=[Pose([4.1, y_pos, 0], [0, 0, 0, 1])]).resolve().perform()
             TalkingMotion("Placing").resolve().perform()
             # TODO: PlaceGivenObjAction in ActionDesignator für die anderen Objekte anpassen
+            # TODO: Was machen wenn Teller nicht gesehen, direkt y_pos + 0.14, damit Abstand zum letzten Objekt 0.3?
             PlaceGivenObjAction(["left"], [Pose([4.86, y_pos, 0])]).resolve().perform()
             ParkArmsAction([Arms.LEFT]).resolve().perform()
             TalkingMotion("Navigating").resolve().perform()
