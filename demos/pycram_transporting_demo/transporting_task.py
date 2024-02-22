@@ -47,7 +47,7 @@ def start_demo():
                                                                         enviroment_desig=apart_desig.resolve(),
                                                                         object_desig=object_dict[key],
                                                                         robot_desig=robot_desig.resolve(), arm=arm,
-                                                                        world=world, marging_cm=marging_cm)
+                                                                        world=world, margin_cm=marging_cm)
             if not nav_pose:
                 rospy.logerr("No location found")
             else:

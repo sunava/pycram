@@ -68,7 +68,6 @@ class VizMarkerPublisher:
                 msg = Marker()
                 msg.header.frame_id = "map"
                 msg.ns = obj.name
-                #print("viz adding obj name" + obj.name)
                 msg.id = obj.links[link]
                 msg.type = Marker.MESH_RESOURCE
                 msg.action = Marker.ADD

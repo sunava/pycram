@@ -154,21 +154,6 @@ class Pr2Detecting(ProcessModule):
         cam_frame_name = robot_description.get_camera_frame()
         # should be [0, 0, 1]
         front_facing_axis = robot_description.front_facing_axis
-        if desig.technique == 'specific':
-            robot = BulletWorld.robot
-            object_type = desig.object_type
-            # Should be "wide_stereo_optical_frame"
-            cam_frame_name = robot_description.get_camera_frame()
-            # should be [0, 0, 1]
-            front_facing_axis = robot_description.front_facing_axis
-            object_dict = {}
-            objects = BulletWorld.current_bullet_world.get_objects_by_type(object_type)
-            print(objects)
-            for obj in objects:
-                if btr.visible(obj, robot.get_link_pose(cam_frame_name), front_facing_axis):
-                    object_dict[obj.name] = obj
-
-                return object_dict
 
         if desig.technique == 'all':
             objects = BulletWorld.current_bullet_world.get_all_objets_not_robot()

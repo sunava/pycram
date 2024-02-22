@@ -381,7 +381,7 @@ class PickUpAction(ActionDesignatorDescription):
                         z = 0.045 # 0.05
                 push_base.pose.position.z += z
             elif robot.name == "pr2":
-                x = 0.04
+                x = 0.02
                 if self.grasp == "top":
                     x = 0.039
                     if self.object_designator.type == ObjectType.BOWL:
