@@ -174,8 +174,11 @@ class Pr2Detecting(ProcessModule):
 
         perceived_objects = []
         for obj in objects:
-            if btr.visible(obj, robot.get_link_pose(cam_frame_name), front_facing_axis):
-                perceived_objects.append(ObjectDesignatorDescription.Object(obj.name, obj.type, obj))
+            perceived_objects.append(ObjectDesignatorDescription.Object(obj.name, obj.type, obj))
+
+            #todo: commented out since the visualisation is not working good bc of rendering one object
+            #if btr.visible(obj, robot.get_link_pose(cam_frame_name), front_facing_axis):
+
         # Iterate over the list of objects and store each one in the dictionary
         for i, obj in enumerate(perceived_objects):
             object_dict[obj.name] = obj
