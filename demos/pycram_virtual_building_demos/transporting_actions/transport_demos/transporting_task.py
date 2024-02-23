@@ -8,7 +8,7 @@ from pycram.process_module import simulated_robot
 from pycram.ros.viz_marker_publisher import VizMarkerPublisher
 
 
-def start_set_the_table(location: str = "table_area_main", context: str = "breakfast",
+def start_transporting_demo(location: str = "table_area_main", context: str = "breakfast",
                         environment: str = "apartment-small.urdf"):
     BulletWorld("DIRECT")
     VizMarkerPublisher()
