@@ -6,7 +6,7 @@ from pycram.designators.object_designator import *
 from pycram.enums import ObjectType
 from pycram.pose import Pose
 from pycram.process_module import simulated_robot
-from demos.pycram_transporting_demo.init_setup import test_context_apartment, breakfast_context_apartment
+from init_setup import test_context_apartment, breakfast_context_apartment
 from pycram.ros.viz_marker_publisher import VizMarkerPublisher
 
 # Initialize the simulation world and visual markers
