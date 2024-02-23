@@ -154,6 +154,7 @@ class Pr2Detecting(ProcessModule):
         cam_frame_name = robot_description.get_camera_frame()
         # should be [0, 0, 1]
         front_facing_axis = robot_description.front_facing_axis
+
         if desig.technique == 'all':
             objects = BulletWorld.current_bullet_world.get_all_objets_not_robot()
         elif desig.technique == 'human':

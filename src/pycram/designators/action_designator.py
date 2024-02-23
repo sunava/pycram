@@ -9,7 +9,8 @@ import sqlalchemy.orm
 from typing import Any, Union
 import rospy
 
-from .location_designator import CostmapLocation
+from demos.pycram_transporting_demo.init_setup import ContextConfig
+from .location_designator import CostmapLocation, find_reachable_location_and_nav_pose, AccessingLocation
 from .motion_designator import *
 from .object_designator import ObjectDesignatorDescription, BelieveObject, ObjectPart
 from ..bullet_world import BulletWorld
@@ -381,7 +382,7 @@ class PickUpAction(ActionDesignatorDescription):
                         z = 0.045 # 0.05
                 push_base.pose.position.z += z
             elif robot.name == "pr2":
-                x = 0.04
+                x = 0.02
                 if self.grasp == "top":
                     x = 0.039
                     if self.object_designator.type == ObjectType.BOWL:
@@ -765,6 +766,41 @@ class NavigateAction(ActionDesignatorDescription):
         """
         return self.Action(self.target_locations[0])
 
+class SearchAction(ActionDesignatorDescription):
+    """
+    Search for an object in the environment.
+    """
+
+    @dataclasses.dataclass
+    class Action(ActionDesignatorDescription.Action):
+        target_location: Pose
+        """
+        Location to which the robot should be navigated
+        """
+
+        @with_tree
+        def perform(self) -> None:
+            MoveMotion(self.target_location).resolve().perform()
+
+
+
+    def __init__(self, target_locations: List[Pose], resolver=None):
+        """
+        Navigates the robot to a location.
+
+        :param target_locations: A list of possible target locations for the navigation.
+        :param resolver: An alternative resolver that creates a performable designator from the list of possible parameter
+        """
+        super().__init__(resolver)
+        self.target_locations: List[Pose] = target_locations
+
+    def ground(self) -> Action:
+        """
+        Default resolver that returns a performable designator with the first entry of possible target locations.
+
+        :return: A performable designator
+        """
+        return self.Action(self.target_locations[0])
 
 class TransportAction(ActionDesignatorDescription):
     """
@@ -773,78 +809,166 @@ class TransportAction(ActionDesignatorDescription):
 
     @dataclasses.dataclass
     class Action(ActionDesignatorDescription.Action):
-        object_designator: ObjectDesignatorDescription.Object
-        """
-        Object designator describing the object that should be transported.
-        """
-        arm: str
-        """
-        Arm that should be used
-        """
-        target_location: Pose
+        target_location: str
         """
         Target Location to which the object should be transported
         """
-        hold_object: bool
+        current_context: ContextConfig
         """
-        Determines if the robot should place down the object
+        Current Context of the robot e,g breakfast
         """
 
         @with_tree
         def perform(self) -> None:
-            robot_desig = BelieveObject(names=[robot_description.name])
-            ParkArmsAction.Action(Arms.BOTH).perform()
-            pickup_loc = CostmapLocation(target=self.object_designator, reachable_for=robot_desig.resolve(),
-                                         reachable_arm=self.arm)
-            hold_object = self.hold_object
-            # Tries to find a pick-up posotion for the robot that uses the given arm
-            pickup_pose = None
-            for pose in pickup_loc:
-                if self.arm in pose.reachable_arms:
-                    pickup_pose = pose
-                    break
-            if not pickup_pose:
-                raise ObjectUnfetchable(
-                    f"Found no pose for the robot to grasp the object: {self.object_designator} with arm: {self.arm}")
+            world = BulletWorld.current_bullet_world
+            robot = BulletWorld.robot
+            envi = BulletWorld.current_bullet_world.get_objects_by_name("environment")[0]
+            objects = self.current_context.get_all_objects()
+            robot_desig = BelieveObject(names=[robot.name])
+            envi_desig = BelieveObject(names=[envi.name])
 
-            NavigateAction([pickup_pose.pose]).resolve().perform()
-            PickUpAction.Action(self.object_designator, self.arm, "front").perform()
-            ParkArmsAction.Action(Arms.BOTH).perform()
-            try:
-                place_loc = CostmapLocation(target=self.target_location, reachable_for=robot_desig.resolve(),
-                                            reachable_arm=self.arm).resolve()
-            except StopIteration:
-                raise ReachabilityFailure(
-                    f"No location found from where the robot can reach the target location: {self.target_location}")
-            NavigateAction([place_loc.pose]).resolve().perform()
-            if hold_object:
-                MoveTCPMotion(arm=self.arm, target=self.target_location).resolve().perform()
-            else:
-                PlaceAction.Action(self.object_designator, self.arm, self.target_location).perform()
-                ParkArmsAction.Action(Arms.BOTH).perform()
+            def search_for_object(current_context, obj_name):
+                location_to_search = current_context.search_locations(obj_name)
+                if location_to_search in ["drawer", "dishwasher", "cupboard", "cabinet", "cabinet10_drawer_top"]:
+                    grasp, arm, detected_object = access_and_pickup(current_context, location_to_search, obj_name,
+                                                                    open_container=True)
+                elif location_to_search in ["island_countertop"]:
+                    grasp, arm, detected_object = access_and_pickup(current_context, location_to_search, obj_name)
+                else:
+                    rospy.logerr("Location not found")
+                    # todo bowl is not yet found i need to use enums
+                return grasp, arm, detected_object
 
-        def to_sql(self) -> ORMTransportAction:
-            return ORMTransportAction(self.arm)
+            def access_and_pickup(current_context, location_to_search, target_object, open_container=False):
+                """
+                Accesses a specified location and picks a specified object. Optionally, it can also navigate to and open a container.
 
-        def insert(self, session: sqlalchemy.orm.session.Session, *args, **kwargs) -> ORMTransportAction:
-            action = super().insert(session)
+                Args:
+                - location_to_search: The location to search for the object.
+                - target_object: The object to pick up.
+                - open_container: A boolean indicating whether to navigate to and open a container before picking up the object.
+                """
+                # todo maybe a check which arm is free?
+                global detected_object, grasp
+                arm = "left"  # Default arm, can be made dynamic or parameterized
+                link_name = get_link_name_from_location(location_to_search)
+                link_pose = current_context.environment_object.get_link_pose(link_name)
 
-            od = self.object_designator.insert(session)
-            action.object_id = od.id
+                if open_container:
+                    # todo this needs to be handled differently
+                    handle_desig = ObjectPart(names=[link_name], part_of=envi_desig.resolve())
+                    drawer_open_location = AccessingLocation(handle_desig=handle_desig.resolve(),
+                                                             robot_desig=robot_desig.resolve()).resolve()
+                    NavigateAction([drawer_open_location.pose]).resolve().perform()
+                    OpenAction(object_designator_description=handle_desig,
+                               arms=[drawer_open_location.arms[0]]).resolve().perform()
+                    arm = select_alternate_arm(drawer_open_location.arms[0])
+                    current_context.environment_object.detach(
+                        current_context.spoon_)  # Assuming spoon_ needs to be detached
 
-            pose = self.target_location.insert(session)
-            action.pose_id = pose.id
+                else:
+                    # todo this should be from KB depending on the location
+                    location_pose = Pose([1.7, 2, 0])
+                    NavigateAction(target_locations=[location_pose]).resolve().perform()
 
-            session.add(action)
-            session.commit()
+                ParkArmsAction([Arms.BOTH]).resolve().perform()
+                LookAtAction([link_pose]).resolve().perform()
+                # todo i guess i should do "all" and then check for types
+                status, object_dict = DetectAction(technique='specific', object_type=target_object).resolve().perform()
 
-            return action
+                if status:
+                    for key, value in object_dict.items():
+                        detected_object = object_dict[key]
+                        grasp = pickup_target_object(detected_object, arm)
+                else:
+                    rospy.logerr("Object not found")
+                    grasp, detected_object = None, None
+
+                if open_container:
+                    CloseAction(object_designator_description=handle_desig,
+                                arms=[drawer_open_location.arms[0]]).resolve().perform()
+
+                ParkArmsAction([Arms.BOTH]).resolve().perform()
+                return grasp, arm, detected_object
+
+            def place_object(grasp_type, target_location, perceived_obj, arm):
+                """
+                Places an object at a specified location based on the grasp type and the target location.
+
+                Args:
+                - grasp_type: The type of grasp used ('top' or 'front').
+                - target_location: The target location to place the object (e.g., 'table').
+                - detected_object: The object that has been detected and is to be placed.
+                - arm: The arm used to perform the operation.
+                """
+                # Set margin based on grasp type
+                if grasp_type == "top":
+                    margin_cm = 0.08
+                elif grasp_type == "front":
+                    margin_cm = 0.2
+                else:
+                    margin_cm = 0.1  # Default margin if grasp type is unspecified
+
+                # Set environment link based on target location
+                if target_location == "table":
+                    environment_link = "table_area_main"
+                else:
+                    environment_link = target_location  # Default to using target_location as the environment link if unspecified
+                # Find a reachable location and navigation pose
+                place_pose, nav_pose = find_reachable_location_and_nav_pose(enviroment_link=environment_link,
+                                                                            enviroment_desig=envi_desig.resolve(),
+                                                                            object_desig=perceived_obj,
+                                                                            robot_desig=robot_desig.resolve(),
+                                                                            arm=arm,
+                                                                            world=world,
+                                                                            margin_cm=margin_cm)
+                # Check if a navigation pose was found
+                if not nav_pose:
+                    rospy.logerr("No navigable location found")
+                    return False
+
+                # Navigate to the location, adjust the torso, and place the object
+                NavigateAction(target_locations=[nav_pose]).resolve().perform()
+                MoveTorsoAction([0.25]).resolve().perform()  # Adjust torso height as needed
+                PlaceAction(perceived_obj, [arm], [grasp_type], [place_pose]).resolve().perform()
+                ParkArmsAction([Arms.BOTH]).resolve().perform()
+                return True
+
+            def pickup_target_object(detected_object, arm):
+                ParkArmsAction([arm]).resolve().perform()
+                if detected_object.type == "spoon" or detected_object.type == "bowl":
+                    grasp = "top"
+                else:
+                    grasp = "front"
+                PickUpAction(detected_object, [arm], [grasp]).resolve().perform()
+                ParkArmsAction([Arms.BOTH]).resolve().perform()
+                return grasp
+
+            def select_alternate_arm(current_arm):
+                # Selects the alternate arm based on the current arm.
+                return "right" if current_arm == "left" else "left"
+
+            def get_link_name_from_location(location):
+                # This function retrieves handle name based on the location.
+                if location == "drawer":
+                    return "handle_cab10_t"
+                # todo add more location but we could get handle from child..
+                elif location == "cabinet10_drawer_top":
+                    return "handle_cab10_t"
+                elif location == "countertop" or location == "island_countertop":
+                    return "island_countertop"
+                return None  # Add more conditions as needed
+
+            for obj in objects:
+                MoveTorsoAction([0.25]).resolve().perform()
+                ParkArmsAction([Arms.BOTH]).resolve().perform()
+                grasp, arm, detected_object = search_for_object(self.current_context, obj)
+                place_object(grasp, self.target_location, detected_object, arm)
+
 
     def __init__(self,
-                 object_designator_description: Union[ObjectDesignatorDescription, ObjectDesignatorDescription.Object],
-                 arms: List[str],
-                 target_locations: List[Pose],
-                 hold_object: bool = False, resolver=None):
+                 target_location: str,
+                 current_context: ContextConfig,resolver=None):
         """
         Designator representing a pick and place plan.
 
@@ -854,11 +978,8 @@ class TransportAction(ActionDesignatorDescription):
         :param resolver: An alternative resolver that returns a performable designator for the list of possible parameter
         """
         super().__init__(resolver)
-        self.object_designator_description: Union[
-            ObjectDesignatorDescription, ObjectDesignatorDescription.Object] = object_designator_description
-        self.arms: List[str] = arms
-        self.target_locations: List[Pose] = target_locations
-        self.hold_object = hold_object
+        self.target_locations: str = target_location
+        self.current_context: ContextConfig = current_context
 
     def ground(self) -> Action:
         """
@@ -866,9 +987,7 @@ class TransportAction(ActionDesignatorDescription):
 
         :return: A performable designator
         """
-        obj_desig = self.object_designator_description if isinstance(self.object_designator_description,
-                                                                     ObjectDesignatorDescription.Object) else self.object_designator_description.resolve()
-        return self.Action(obj_desig, self.arms[0], self.target_locations[0])
+        return self.Action(self.target_locations, self.current_context)
 
 
 class LookAtAction(ActionDesignatorDescription):
@@ -1137,7 +1256,7 @@ class GraspingAction(ActionDesignatorDescription):
             pre_grasp = object_pose_in_gripper.copy()
             pre_grasp.pose.position.x -= 0.1
 
-            MoveTCPMotion(pre_grasp, self.arm).resolve().perform()
+            #MoveTCPMotion(pre_grasp, self.arm).resolve().perform()
             MoveGripperMotion("open", self.arm).resolve().perform()
 
             MoveTCPMotion(object_pose, self.arm, allow_gripper_collision=True).resolve().perform()

@@ -354,11 +354,12 @@ class SemanticCostmapLocation(LocationDesignatorDescription):
             yield self.Location(maybe_pose)
 
 
-def find_reachable_location_and_nav_pose(enviroment_link, enviroment_desig, object_desig, robot_desig, arm, world, marging_cm=0.2):
+def find_reachable_location_and_nav_pose(enviroment_link, enviroment_desig, robot_desig, arm, world,
+                                         margin_cm=0.2, object_desig=None):
     #rospy.loginfo("Create a SemanticCostmapLocation instance")
     location_desig = SemanticCostmapLocation(urdf_link_name=enviroment_link,
                                              part_of=enviroment_desig,
-                                             for_object=object_desig, margin_cm=marging_cm)
+                                             for_object=object_desig, margin_cm=margin_cm)
 
     #rospy.loginfo("Iterate through the locations in the location designator")
     for location in location_desig:
