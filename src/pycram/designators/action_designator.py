@@ -235,9 +235,8 @@ class ParkArmsAction(ActionDesignatorDescription):
             if self.arm in [Arms.LEFT, Arms.BOTH]:
                 kwargs["left_arm_config"] = "park"
                 MoveArmJointsMotion(**kwargs).resolve().perform()
-                MoveTorsoAction([0.25]).resolve().perform()
-                # MoveTorsoAction([0.005]).resolve().perform()
-                # MoveTorsoAction([0.2]).resolve().perform()
+                MoveTorsoAction([
+                                    0.25]).resolve().perform()  # MoveTorsoAction([0.005]).resolve().perform()  # MoveTorsoAction([0.2]).resolve().perform()
             # add park right arm if wanted
             if self.arm in [Arms.RIGHT, Arms.BOTH]:
                 kwargs["right_arm_config"] = "park"
@@ -359,9 +358,7 @@ class PickUpAction(ActionDesignatorDescription):
                 if self.grasp == "top":
                     if self.object_designator.type == ObjectType.BOWL:
                         special_knowledge_offset.pose.position.x -= 0.06
-                        special_knowledge_offset.pose.position.y -= 0.06  # 0.022
-                    # if self.object_designator.type == "Fork":
-                    #     special_knowledge_offset.pose.position.x -= 0.02
+                        special_knowledge_offset.pose.position.y -= 0.06  # 0.022  # if self.object_designator.type == "Fork":  #     special_knowledge_offset.pose.position.x -= 0.02
 
             push_base = special_knowledge_offset
             # todo: this is for hsrb only at the moment we will need a function that returns us special knowledge
@@ -658,31 +655,9 @@ class PlaceGivenObjAction(ActionDesignatorDescription):
 
             # NavigateAction([Pose([robot.get_pose().position.x - 0.1, robot.get_pose().position.y, 0])]).resolve().perform()
 
-            # navigate close to the table
-            #  self.target_location.pose.position.x = 4.08
-            # # self.target_location.pose.position.y = 2.6
-            #  # because its the left arm of the hsr subtract from y position
-            #  self.target_location.pose.position.y -= 0.14
-            #  self.target_location.pose.position.z = 0
-            #  NavigateAction([self.target_location]).resolve().perform()
-            #
-            #  # create the keyword arguments
-            #  kwargs = dict()
-            #
-            #  # taking in the predefined arm position for placing
-            #  if self.arm in ["left", "both"]:
-            #       MoveTorsoAction([0.4]).resolve().perform()
-            #       kwargs["left_arm_config"] = "place_human_given_obj"
-            #       MoveArmJointsMotion(**kwargs).resolve().perform()
-            #       print("moveArmJointsMotion in Designator")
-            #
-            #
-            #  rospy.logwarn("Open Gripper")
-            #  MoveGripperMotion(motion="open", gripper=self.arm).resolve().perform()
-        #  robot.detach(object=self.object_designator.bullet_world_object)
+            # navigate close to the table  #  self.target_location.pose.position.x = 4.08  # # self.target_location.pose.position.y = 2.6  #  # because its the left arm of the hsr subtract from y position  #  self.target_location.pose.position.y -= 0.14  #  self.target_location.pose.position.z = 0  #  NavigateAction([self.target_location]).resolve().perform()  #  #  # create the keyword arguments  #  kwargs = dict()  #  #  # taking in the predefined arm position for placing  #  if self.arm in ["left", "both"]:  #       MoveTorsoAction([0.4]).resolve().perform()  #       kwargs["left_arm_config"] = "place_human_given_obj"  #       MoveArmJointsMotion(**kwargs).resolve().perform()  #       print("moveArmJointsMotion in Designator")  #  #  #  rospy.logwarn("Open Gripper")  #  MoveGripperMotion(motion="open", gripper=self.arm).resolve().perform()  #  robot.detach(object=self.object_designator.bullet_world_object)
 
-    def __init__(self,
-                 arms: List[str], target_locations: List[Pose], resolver=None):
+    def __init__(self, arms: List[str], target_locations: List[Pose], resolver=None):
         """
         Lets the robot place a human given object. The description needs an object designator describing the object that should be
         placed, an arm that should be used as well as the target location where the object should be placed.
@@ -828,11 +803,10 @@ class TransportAction(ActionDesignatorDescription):
                 if location_to_search in ["drawer", "dishwasher", "cupboard", "cabinet", "cabinet10_drawer_top"]:
                     grasp, arm, detected_object = access_and_pickup(current_context, location_to_search, obj_name,
                                                                     open_container=True)
-                elif location_to_search in ["island_countertop"]:
+                elif location_to_search in ["island_countertop", "table_area_main"]:
                     grasp, arm, detected_object = access_and_pickup(current_context, location_to_search, obj_name)
                 else:
-                    rospy.logerr("Location not found")
-                    # todo bowl is not yet found i need to use enums
+                    rospy.logerr("Location not found")  # todo bowl is not yet found i need to use enums
                 return grasp, arm, detected_object
 
             def access_and_pickup(current_context, location_to_search, target_object, open_container=False):
@@ -866,7 +840,10 @@ class TransportAction(ActionDesignatorDescription):
 
                 else:
                     # todo this should be from KB depending on the location
-                    location_pose = Pose([1.7, 2, 0])
+                    if location_to_search == "island_countertop":
+                        location_pose = Pose([1.7, 2, 0])
+                    elif location_to_search == "table_area_main":
+                        location_pose = Pose([4, 3.5, 0])
                     NavigateAction(target_locations=[location_pose]).resolve().perform()
 
                 ParkArmsAction([Arms.BOTH]).resolve().perform()
@@ -876,6 +853,10 @@ class TransportAction(ActionDesignatorDescription):
                 if status:
                     for key, value in object_dict.items():
                         detected_object = object_dict[key]
+                        if not open_container:
+                            reachable_location = CostmapLocation(target=detected_object.pose,
+                                                                 reachable_for=robot_desig.resolve()).resolve()
+                            NavigateAction([reachable_location.pose]).resolve().perform()
                         grasp = pickup_target_object(detected_object, arm)
                 else:
                     rospy.logerr("Object not found")
@@ -898,6 +879,7 @@ class TransportAction(ActionDesignatorDescription):
                 - detected_object: The object that has been detected and is to be placed.
                 - arm: The arm used to perform the operation.
                 """
+                # todo add placing in drawer
                 # Set margin based on grasp type
                 if grasp_type == "top":
                     margin_cm = 0.08
@@ -912,10 +894,8 @@ class TransportAction(ActionDesignatorDescription):
                 place_pose, nav_pose = find_reachable_location_and_nav_pose(enviroment_link=environment_link,
                                                                             enviroment_desig=envi_desig.resolve(),
                                                                             object_desig=perceived_obj,
-                                                                            robot_desig=robot_desig.resolve(),
-                                                                            arm=arm,
-                                                                            world=world,
-                                                                            margin_cm=margin_cm)
+                                                                            robot_desig=robot_desig.resolve(), arm=arm,
+                                                                            world=world, margin_cm=margin_cm)
                 # Check if a navigation pose was found
                 if not nav_pose:
                     rospy.logerr("No navigable location found")
@@ -948,9 +928,7 @@ class TransportAction(ActionDesignatorDescription):
                 grasp, arm, detected_object = search_for_object(self.current_context, obj)
                 place_object(grasp, self.target_location, detected_object, arm)
 
-    def __init__(self,
-                 target_location: str,
-                 current_context: ContextConfig, resolver=None):
+    def __init__(self, target_location: str, current_context: ContextConfig, resolver=None):
         """
         Designator representing a pick and place plan.
 
@@ -1048,23 +1026,9 @@ class DetectAction(ActionDesignatorDescription):
             return DetectingMotion(technique=self.technique, object_type=self.object_type,
                                    state=self.state).resolve().perform()
 
-        # def to_sql(self) -> ORMDetectAction:
-        #     return ORMDetectAction()
-        #
-        # def insert(self, session: sqlalchemy.orm.session.Session, *args, **kwargs) -> ORMDetectAction:
-        #     action = super().insert(session)
-        #
-        #     od = self.object_type.insert(session)
-        #     action.object_id = od.id
-        #
-        #     session.add(action)
-        #     session.commit()
-        #
-        #     return action
+        # def to_sql(self) -> ORMDetectAction:  #     return ORMDetectAction()  #  # def insert(self, session: sqlalchemy.orm.session.Session, *args, **kwargs) -> ORMDetectAction:  #     action = super().insert(session)  #  #     od = self.object_type.insert(session)  #     action.object_id = od.id  #  #     session.add(action)  #     session.commit()  #  #     return action
 
-    def __init__(self, technique, resolver=None,
-                 object_type: Optional[str] = None,
-                 state: Optional[str] = None):
+    def __init__(self, technique, resolver=None, object_type: Optional[str] = None, state: Optional[str] = None):
         """
         Tries to detect an object in the field of view (FOV) of the robot.
 
@@ -1417,32 +1381,10 @@ class CuttingAction(ActionDesignatorDescription):
 
                 BulletWorld.current_bullet_world.remove_vis_axis()
 
-        # def to_sql(self) -> ORMCuttingAction:
-        #     """
-        #     Convert the action to a corresponding SQL representation for storage.
-        #     """
-        #     return ORMCuttingAction(self.arm, self.technique, self.slice_thickness)
-        #
-        # def insert(self, session: sqlalchemy.orm.session.Session, **kwargs):
-        #     """
-        #     Insert the cutting action into the database session.
-        #     """
-        #     # insert related objects
-        #     object_to_be_cut = self.object_to_be_cut_at_execution.insert(session)
-        #     tool = self.tool_at_execution.insert(session)
-        #
-        #     action = super().insert(session)
-        #     action.object_to_be_cut_id = object_to_be_cut.id
-        #     action.tool_id = tool.id
-        #
-        #     # Additional logic for inserting cutting action data goes here
-        #     session.add(action)
-        #     session.commit()
-        #
-        #     return action
+        # def to_sql(self) -> ORMCuttingAction:  #     """  #     Convert the action to a corresponding SQL representation for storage.  #     """  #     return ORMCuttingAction(self.arm, self.technique, self.slice_thickness)  #  # def insert(self, session: sqlalchemy.orm.session.Session, **kwargs):  #     """  #     Insert the cutting action into the database session.  #     """  #     # insert related objects  #     object_to_be_cut = self.object_to_be_cut_at_execution.insert(session)  #     tool = self.tool_at_execution.insert(session)  #  #     action = super().insert(session)  #     action.object_to_be_cut_id = object_to_be_cut.id  #     action.tool_id = tool.id  #  #     # Additional logic for inserting cutting action data goes here  #     session.add(action)  #     session.commit()  #  #     return action
 
-    def __init__(self, object_to_be_cut: ObjectDesignatorDescription,
-                 tool: ObjectDesignatorDescription, arms: List[str], technique: Optional[str] = None):
+    def __init__(self, object_to_be_cut: ObjectDesignatorDescription, tool: ObjectDesignatorDescription,
+                 arms: List[str], technique: Optional[str] = None):
         """
         Initializes a CuttingAction with specified object and tool designators, arms, and an optional cutting technique.
 
