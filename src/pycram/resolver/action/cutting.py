@@ -17,7 +17,7 @@ class CuttingActionSPARQL(CuttingAction):
 
     def __init__(self, object_designator_description: ObjectDesignatorDescription, arms: List[str], grasps: List[str]):
         super().__init__(object_designator_description, arms, grasps, [0])
-        self.query_folder: str = os.path.join(os.path.expanduser("~", ), "pycram_ws", "src", "pycram", "demos",
+        self.query_folder: str = os.path.join(os.path.expanduser("~", ), "pycram_ws", "src", "pycram", "transport_demos",
                                               "pycram_possible_actions_demo", "queries")
         task = "cut:Quartering"
         tobject = "obo:FOODON_03301710"
