@@ -2,17 +2,24 @@ from pycram.designators.location_designator import *
 from pycram.enums import ObjectType
 from pycram.pose import Pose
 
-breakfast_objects = {"milk": {"type": "milk", "model": "milk.stl", "pose": [2.5, 2, 1.02],
-                              "color": [1, 0, 0, 1], "default_location": "island_countertop"},
+breakfast_objects = {"milk": {"type": "milk", "model": "milk.stl", "pose": [2.5, 2, 1.02], "color": [1, 0, 0, 1],
+                              "default_location": "island_countertop"},
                      "breakfast_cereal": {"type": "breakfast_cereal", "model": "breakfast_cereal.stl",
-                                "pose": [2.5, 2.5, 1.05],
-                                "color": [0, 1, 0, 1], "default_location": "island_countertop"},
-                     "spoon": {"type": "spoon", "model": "spoon.stl", "pose": [2.5, 2.2, 0.85],
-                               "color": [0, 0, 1, 1], "default_location": "cabinet10_drawer_top"},
-                     "bowl": {"type": "bowl", "model": "bowl.stl", "pose": [2.38, 2.2, 1.02],
-                              "color": [1, 1, 0, 1], "default_location": "island_countertop"}}
-test_spoon = {"spoon": {"type": "spoon", "model": "spoon.stl", "pose": [2.43, 2.2, 0.85],
-                        "color": [0, 0, 1, 1], "default_location": "drawer"}}
+                                          "pose": [2.5, 2.5, 1.05], "color": [0, 1, 0, 1],
+                                          "default_location": "island_countertop"},
+                     "spoon": {"type": "spoon", "model": "spoon.stl", "pose": [2.5, 2.2, 0.85], "color": [0, 0, 1, 1],
+                               "default_location": "cabinet10_drawer_top"},
+                     "bowl": {"type": "bowl", "model": "bowl.stl", "pose": [2.38, 2.2, 1.02], "color": [1, 1, 0, 1],
+                              "default_location": "island_countertop"}}
+clean_up_objects = {"milk": {"type": "milk", "model": "milk.stl", "pose": [2.5, 2, 1.02], "color": [1, 0, 0, 1],
+                             "default_location": "island_countertop"},
+                    "breakfast_cereal": {"type": "breakfast_cereal", "model": "breakfast_cereal.stl",
+                                         "pose": [2.5, 2.5, 1.05], "color": [0, 1, 0, 1],
+                                         "default_location": "island_countertop"},
+                    "spoon": {"type": "spoon", "model": "spoon.stl", "pose": [2.5, 2.2, 0.85], "color": [0, 0, 1, 1],
+                              "default_location": "cabinet10_drawer_top"},
+                    "bowl": {"type": "bowl", "model": "bowl.stl", "pose": [2.38, 2.2, 1.02], "color": [1, 1, 0, 1],
+                             "default_location": "island_countertop"}}
 
 
 class ContextConfig:
@@ -23,15 +30,9 @@ class ContextConfig:
         self.context_name = context_name
         self.objects_info = objects_info  # A dictionary of object names and their types
         self.environment_name = enviornment_name  # Name of the environment model
-
+        self.spawn_objects()
     def spawn_objects(self):
-        if self.environment_name == "apartment":
-            path = "apartment-small.urdf"
-        elif self.environment_name == "kitchen":
-            path = "kitchen-small.urdf"
-        else:
-            path = "apartment-small.urdf"
-        apart = Object("environment", ObjectType.ENVIRONMENT, path)
+        apart = Object("environment", ObjectType.ENVIRONMENT, self.environment_name)
         apart.set_color([0.5, 0.5, 0.5, 0.7])
         self.environment_object = apart
         # Function to spawn objects in the simulation environment
@@ -52,6 +53,17 @@ class ContextConfig:
     def get_all_objects(self):
         return self.objects_info.keys()
 
+    def get_handle(self, location):
+        # This function retrieves handle name based on the location.
+        if location == "cabinet10_drawer_top":
+            return "handle_cab10_t"
+        return None  # Add more conditions as needed
 
-breakfast_context_apartment = ContextConfig("breakfast", "apartment", breakfast_objects)
-test_context_apartment = ContextConfig("test_spoon", "apartment", test_spoon)
+
+def generate_context(context_name, enviornment_name):
+    if context_name == "breakfast":
+        return ContextConfig(context_name, enviornment_name, breakfast_objects)
+    elif context_name == "clean_up":
+        return ContextConfig(context_name, enviornment_name, clean_up_objects)
+
+

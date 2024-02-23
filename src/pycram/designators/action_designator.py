@@ -1,10 +1,5 @@
 import itertools
-import time
-from typing import Any, Union
-
-import itertools
 import math
-import rospy
 import sqlalchemy.orm
 from typing import Any, Union
 import rospy
@@ -27,7 +22,6 @@ from ..orm.action_designator import (ParkArmsAction as ORMParkArmsAction, Naviga
                                      GraspingAction as ORMGraspingAction)
 
 from ..orm.base import Quaternion, Position, Base
-from ..plan_failures import ObjectUnfetchable, ReachabilityFailure, EnvironmentUnreachable, GripperClosedCompletely
 from ..pose import Pose
 from ..robot_descriptions import robot_description
 from ..task import with_tree
@@ -242,8 +236,8 @@ class ParkArmsAction(ActionDesignatorDescription):
                 kwargs["left_arm_config"] = "park"
                 MoveArmJointsMotion(**kwargs).resolve().perform()
                 MoveTorsoAction([0.25]).resolve().perform()
-                #MoveTorsoAction([0.005]).resolve().perform()
-                #MoveTorsoAction([0.2]).resolve().perform()
+                # MoveTorsoAction([0.005]).resolve().perform()
+                # MoveTorsoAction([0.2]).resolve().perform()
             # add park right arm if wanted
             if self.arm in [Arms.RIGHT, Arms.BOTH]:
                 kwargs["right_arm_config"] = "park"
@@ -276,8 +270,6 @@ class ParkArmsAction(ActionDesignatorDescription):
         :return: A performable designator
         """
         return self.Action(self.arms[0])
-
-
 
 
 class PickUpAction(ActionDesignatorDescription):
@@ -338,11 +330,11 @@ class PickUpAction(ActionDesignatorDescription):
             oTmG = lt.transform_pose(oTb, "map")
 
             # Open the gripper before picking up the object
-            #rospy.logwarn("Opening Gripper")
+            # rospy.logwarn("Opening Gripper")
             MoveGripperMotion(motion="open", gripper=self.arm).resolve().perform()
 
             # Move to the pre-grasp position and visualize the action
-            #rospy.logwarn("Picking up now")
+            # rospy.logwarn("Picking up now")
             BulletWorld.current_bullet_world.add_vis_axis(oTmG)
             # Execute Bool, because sometimes u only want to visualize the poses to test things
             if execute:
@@ -360,9 +352,9 @@ class PickUpAction(ActionDesignatorDescription):
                 if self.grasp == "top":
                     if self.object_designator.type == "Bowl":
                         special_knowledge_offset.pose.position.y += 0.06
-                        special_knowledge_offset.pose.position.x -= 0.03 # 0.022
+                        special_knowledge_offset.pose.position.x -= 0.03  # 0.022
                     if self.object_designator.type == "Cutlery":
-                        special_knowledge_offset.pose.position.x -= 0.115 # 0.11 before, fork needs more
+                        special_knowledge_offset.pose.position.x -= 0.115  # 0.11 before, fork needs more
             elif robot.name == "pr2":
                 if self.grasp == "top":
                     if self.object_designator.type == ObjectType.BOWL:
@@ -379,7 +371,7 @@ class PickUpAction(ActionDesignatorDescription):
                 if self.grasp == "top":
                     z = 0.039
                     if self.object_designator.type == "Bowl":
-                        z = 0.045 # 0.05
+                        z = 0.045  # 0.05
                 push_base.pose.position.z += z
             elif robot.name == "pr2":
                 x = 0.02
@@ -394,21 +386,21 @@ class PickUpAction(ActionDesignatorDescription):
             # Grasping from the top inherently requires calculating an offset, whereas front grasping involves
             # slightly pushing the object forward.
             # if self.grasp == "top":
-            #rospy.logwarn("Offset now")
+            # rospy.logwarn("Offset now")
             BulletWorld.current_bullet_world.add_vis_axis(special_knowledge_offsetTm)
             if execute:
                 MoveTCPMotion(special_knowledge_offsetTm, self.arm).resolve().perform()
 
-            #rospy.logwarn("Pushing now")
+            # rospy.logwarn("Pushing now")
             BulletWorld.current_bullet_world.add_vis_axis(push_baseTm)
             if execute:
                 MoveTCPMotion(push_baseTm, self.arm).resolve().perform()
 
             # Finalize the pick-up by closing the gripper and lifting the object
-            #rospy.logwarn("Close Gripper")
+            # rospy.logwarn("Close Gripper")
             MoveGripperMotion(motion="close", gripper=self.arm).resolve().perform()
 
-            #rospy.logwarn("Lifting now")
+            # rospy.logwarn("Lifting now")
             liftingTm = push_baseTm
             liftingTm.pose.position.z += 0.03
             BulletWorld.current_bullet_world.add_vis_axis(liftingTm)
@@ -417,6 +409,7 @@ class PickUpAction(ActionDesignatorDescription):
             tool_frame = robot_description.get_tool_frame(self.arm)
             robot.attach(object=self.object_designator.bullet_world_object, link=tool_frame)
             BulletWorld.current_bullet_world.remove_vis_axis()
+
         def to_sql(self) -> ORMPickUpAction:
             return ORMPickUpAction(self.arm, self.grasp)
 
@@ -498,15 +491,15 @@ class PlaceAction(ActionDesignatorDescription):
             # oTm = Object Pose in Frame map
             oTm = self.target_location
 
-            #if self.grasp == "top":
-                #oTm.pose.position.z += 0.05
+            # if self.grasp == "top":
+            # oTm.pose.position.z += 0.05
 
             grasp_rotation = robot_description.grasps.get_orientation_for_grasp(self.grasp)
             oTb = lt.transform_pose(oTm, robot.get_link_tf_frame("base_link"))
             oTb.orientation = grasp_rotation
             oTmG = lt.transform_pose(oTb, "map")
 
-            #rospy.logwarn("Placing now")
+            # rospy.logwarn("Placing now")
             BulletWorld.current_bullet_world.add_vis_axis(oTmG)
             MoveTCPMotion(oTmG, self.arm).resolve().perform()
 
@@ -525,15 +518,14 @@ class PlaceAction(ActionDesignatorDescription):
             # todo: make this for other robots
             push_baseTm = lt.transform_pose(push_base, "map")
 
-            #rospy.logwarn("Pushing now")
+            # rospy.logwarn("Pushing now")
             MoveTCPMotion(push_baseTm, self.arm).resolve().perform()
 
-            #rospy.logwarn("Opening Gripper")
+            # rospy.logwarn("Opening Gripper")
             robot.detach(object=self.object_designator.bullet_world_object)
             MoveGripperMotion(motion="open", gripper=self.arm).resolve().perform()
 
-
-            #rospy.logwarn("Lifting now")
+            # rospy.logwarn("Lifting now")
             liftingTm = push_baseTm
             liftingTm.pose.position.z += 0.08
             BulletWorld.current_bullet_world.add_vis_axis(liftingTm)
@@ -605,11 +597,12 @@ class PlaceGivenObjAction(ActionDesignatorDescription):
     """
     Arm movement of the robot for placing human given objects.
     """
-    #Todo: erweitern ums placing
+
+    # Todo: erweitern ums placing
 
     @dataclasses.dataclass
     class Action(ActionDesignatorDescription.Action):
-       # object_designator: ObjectDesignatorDescription.Object
+        # object_designator: ObjectDesignatorDescription.Object
         """
         Object designator describing the object that should be placed
         """
@@ -629,7 +622,7 @@ class PlaceGivenObjAction(ActionDesignatorDescription):
             lt = LocalTransformer()
             robot = BulletWorld.robot
             # Retrieve object and robot from designators
-           # object = self.object_designator.bullet_world_object
+            # object = self.object_designator.bullet_world_object
 
             # self.target_location.pose.position.x = 4.86
             # self.target_location.pose.position.y = 2.2
@@ -647,7 +640,7 @@ class PlaceGivenObjAction(ActionDesignatorDescription):
             MoveTCPMotion(oTmG, self.arm).resolve().perform()
 
             print(f" wrist_flex: {robot.get_joint_state('wrist_flex_joint')}")
-            MoveTorsoAction([0.62]).resolve().perform() # 0.62
+            MoveTorsoAction([0.62]).resolve().perform()  # 0.62
 
             MoveJointsMotion(["arm_roll_joint"], [0]).resolve().perform()
 
@@ -659,13 +652,13 @@ class PlaceGivenObjAction(ActionDesignatorDescription):
 
             print(f" wrist_roll: {robot.get_joint_state('wrist_roll_joint')}")
             MoveGripperMotion(motion="open", gripper="left").resolve().perform()
-           # MoveTorsoAction([0.4]).resolve().perform()
-            NavigateAction([Pose([robot.get_pose().position.x - 0.1, robot.get_pose().position.y, 0])]).resolve().perform()
+            # MoveTorsoAction([0.4]).resolve().perform()
+            NavigateAction(
+                [Pose([robot.get_pose().position.x - 0.1, robot.get_pose().position.y, 0])]).resolve().perform()
 
+            # NavigateAction([Pose([robot.get_pose().position.x - 0.1, robot.get_pose().position.y, 0])]).resolve().perform()
 
-            #NavigateAction([Pose([robot.get_pose().position.x - 0.1, robot.get_pose().position.y, 0])]).resolve().perform()
-
-             # navigate close to the table
+            # navigate close to the table
             #  self.target_location.pose.position.x = 4.08
             # # self.target_location.pose.position.y = 2.6
             #  # because its the left arm of the hsr subtract from y position
@@ -686,7 +679,7 @@ class PlaceGivenObjAction(ActionDesignatorDescription):
             #
             #  rospy.logwarn("Open Gripper")
             #  MoveGripperMotion(motion="open", gripper=self.arm).resolve().perform()
-          #  robot.detach(object=self.object_designator.bullet_world_object)
+        #  robot.detach(object=self.object_designator.bullet_world_object)
 
     def __init__(self,
                  arms: List[str], target_locations: List[Pose], resolver=None):
@@ -700,11 +693,10 @@ class PlaceGivenObjAction(ActionDesignatorDescription):
         :param resolver: An optional resolver that returns a performable designator with elements from the lists of possible paramter
         """
         super().__init__(resolver)
-       # self.object_designator_description: Union[
-           # ObjectDesignatorDescription, ObjectDesignatorDescription.Object] = object_designator_description
+        # self.object_designator_description: Union[
+        # ObjectDesignatorDescription, ObjectDesignatorDescription.Object] = object_designator_description
         self.arms: List[str] = arms
         self.target_locations: List[Pose] = target_locations
-
 
     def ground(self) -> Action:
         """
@@ -712,8 +704,8 @@ class PlaceGivenObjAction(ActionDesignatorDescription):
 
         :return: A performable designator
         """
-       # obj_desig = self.object_designator_description if isinstance(self.object_designator_description,
-                                                                  #   ObjectDesignatorDescription.Object) else self.object_designator_description.resolve()
+        # obj_desig = self.object_designator_description if isinstance(self.object_designator_description,
+        #   ObjectDesignatorDescription.Object) else self.object_designator_description.resolve()
 
         return self.Action(self.arms[0], self.target_locations[0])
 
@@ -766,6 +758,7 @@ class NavigateAction(ActionDesignatorDescription):
         """
         return self.Action(self.target_locations[0])
 
+
 class SearchAction(ActionDesignatorDescription):
     """
     Search for an object in the environment.
@@ -781,8 +774,6 @@ class SearchAction(ActionDesignatorDescription):
         @with_tree
         def perform(self) -> None:
             MoveMotion(self.target_location).resolve().perform()
-
-
 
     def __init__(self, target_locations: List[Pose], resolver=None):
         """
@@ -801,6 +792,7 @@ class SearchAction(ActionDesignatorDescription):
         :return: A performable designator
         """
         return self.Action(self.target_locations[0])
+
 
 class TransportAction(ActionDesignatorDescription):
     """
@@ -822,7 +814,11 @@ class TransportAction(ActionDesignatorDescription):
         def perform(self) -> None:
             world = BulletWorld.current_bullet_world
             robot = BulletWorld.robot
-            envi = BulletWorld.current_bullet_world.get_objects_by_name("environment")[0]
+            envi = None
+            try:
+                envi = BulletWorld.current_bullet_world.get_objects_by_name("environment")[0]
+            except IndexError:
+                rospy.logerr("No environment found")
             objects = self.current_context.get_all_objects()
             robot_desig = BelieveObject(names=[robot.name])
             envi_desig = BelieveObject(names=[envi.name])
@@ -851,12 +847,14 @@ class TransportAction(ActionDesignatorDescription):
                 # todo maybe a check which arm is free?
                 global detected_object, grasp
                 arm = "left"  # Default arm, can be made dynamic or parameterized
-                link_name = get_link_name_from_location(location_to_search)
-                link_pose = current_context.environment_object.get_link_pose(link_name)
 
                 if open_container:
-                    # todo this needs to be handled differently
-                    handle_desig = ObjectPart(names=[link_name], part_of=envi_desig.resolve())
+                    link_name = current_context.get_handle(location_to_search)
+                    location_to_search = link_name
+
+                link_pose = current_context.environment_object.get_link_pose(location_to_search)
+                if open_container:
+                    handle_desig = ObjectPart(names=[location_to_search], part_of=envi_desig.resolve())
                     drawer_open_location = AccessingLocation(handle_desig=handle_desig.resolve(),
                                                              robot_desig=robot_desig.resolve()).resolve()
                     NavigateAction([drawer_open_location.pose]).resolve().perform()
@@ -910,10 +908,7 @@ class TransportAction(ActionDesignatorDescription):
                     margin_cm = 0.1  # Default margin if grasp type is unspecified
 
                 # Set environment link based on target location
-                if target_location == "table":
-                    environment_link = "table_area_main"
-                else:
-                    environment_link = target_location  # Default to using target_location as the environment link if unspecified
+                environment_link = target_location
                 # Find a reachable location and navigation pose
                 place_pose, nav_pose = find_reachable_location_and_nav_pose(enviroment_link=environment_link,
                                                                             enviroment_desig=envi_desig.resolve(),
@@ -948,27 +943,15 @@ class TransportAction(ActionDesignatorDescription):
                 # Selects the alternate arm based on the current arm.
                 return "right" if current_arm == "left" else "left"
 
-            def get_link_name_from_location(location):
-                # This function retrieves handle name based on the location.
-                if location == "drawer":
-                    return "handle_cab10_t"
-                # todo add more location but we could get handle from child..
-                elif location == "cabinet10_drawer_top":
-                    return "handle_cab10_t"
-                elif location == "countertop" or location == "island_countertop":
-                    return "island_countertop"
-                return None  # Add more conditions as needed
-
             for obj in objects:
                 MoveTorsoAction([0.25]).resolve().perform()
                 ParkArmsAction([Arms.BOTH]).resolve().perform()
                 grasp, arm, detected_object = search_for_object(self.current_context, obj)
                 place_object(grasp, self.target_location, detected_object, arm)
 
-
     def __init__(self,
                  target_location: str,
-                 current_context: ContextConfig,resolver=None):
+                 current_context: ContextConfig, resolver=None):
         """
         Designator representing a pick and place plan.
 
@@ -1256,7 +1239,7 @@ class GraspingAction(ActionDesignatorDescription):
             pre_grasp = object_pose_in_gripper.copy()
             pre_grasp.pose.position.x -= 0.1
 
-            #MoveTCPMotion(pre_grasp, self.arm).resolve().perform()
+            # MoveTCPMotion(pre_grasp, self.arm).resolve().perform()
             MoveGripperMotion("open", self.arm).resolve().perform()
 
             MoveTCPMotion(object_pose, self.arm, allow_gripper_collision=True).resolve().perform()
@@ -1298,7 +1281,6 @@ class GraspingAction(ActionDesignatorDescription):
         :return: A performable action designator that contains specific arguments
         """
         return self.Action(self.arms[0], self.object_description.resolve())
-
 
 
 class CuttingAction(ActionDesignatorDescription):
