@@ -26,9 +26,8 @@ def update_globals(context=None, environment=None, location=None):
 def robot_execute(func):
     with output:
         output.clear_output()
-        display(HTML('<img src="https://i.gifer.com/XVo6.gif" alt="Hourglass animation" width="50">'))
         func(selected_location, selected_context, selected_environment)
-        clear_output(wait=True)
+
 
 
 def setup_task_object_widgets():

@@ -873,7 +873,6 @@ class TransportAction(ActionDesignatorDescription):
                 LookAtAction([link_pose]).resolve().perform()
                 # todo i guess i should do "all" and then check for types
                 status, object_dict = DetectAction(technique='specific', object_type=target_object).resolve().perform()
-
                 if status:
                     for key, value in object_dict.items():
                         detected_object = object_dict[key]
@@ -1049,19 +1048,19 @@ class DetectAction(ActionDesignatorDescription):
             return DetectingMotion(technique=self.technique, object_type=self.object_type,
                                    state=self.state).resolve().perform()
 
-        def to_sql(self) -> ORMDetectAction:
-            return ORMDetectAction()
-
-        def insert(self, session: sqlalchemy.orm.session.Session, *args, **kwargs) -> ORMDetectAction:
-            action = super().insert(session)
-
-            od = self.object_type.insert(session)
-            action.object_id = od.id
-
-            session.add(action)
-            session.commit()
-
-            return action
+        # def to_sql(self) -> ORMDetectAction:
+        #     return ORMDetectAction()
+        #
+        # def insert(self, session: sqlalchemy.orm.session.Session, *args, **kwargs) -> ORMDetectAction:
+        #     action = super().insert(session)
+        #
+        #     od = self.object_type.insert(session)
+        #     action.object_id = od.id
+        #
+        #     session.add(action)
+        #     session.commit()
+        #
+        #     return action
 
     def __init__(self, technique, resolver=None,
                  object_type: Optional[str] = None,
