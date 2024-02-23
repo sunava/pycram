@@ -1,7 +1,7 @@
 import rospy
 from IPython.display import display, clear_output, HTML
 
-from init_setup import breakfast_context_apartment
+from .init_setup import breakfast_context_apartment
 from pycram.designators.action_designator import *
 from pycram.designators.location_designator import *
 from pycram.designators.object_designator import *
