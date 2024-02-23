@@ -3,7 +3,7 @@ import rospy
 from pycram.designators.action_designator import DetectAction, NavigateAction
 from pycram.designators.motion_designator import TalkingMotion
 from pycram.fluent import Fluent
-#from demos.pycram_receptionist_demo.utils.misc import *
+#from transport_demos.pycram_receptionist_demo.utils.misc import *
 from pycram.helper import axis_angle_to_quaternion
 from pycram.process_module import real_robot
 import pycram.external_interfaces.giskard as giskardpy

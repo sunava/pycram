@@ -9,7 +9,7 @@ import sqlalchemy.orm
 from typing import Any, Union
 import rospy
 
-from demos.pycram_transporting_demo.init_setup import ContextConfig
+from ..context_knowledge import ContextConfig
 from .location_designator import CostmapLocation, find_reachable_location_and_nav_pose, AccessingLocation
 from .motion_designator import *
 from .object_designator import ObjectDesignatorDescription, BelieveObject, ObjectPart
