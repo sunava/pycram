@@ -3,7 +3,7 @@
     "background": "#333333",
     "fixedFrame": "/simulated/odom"
   },
-  "sidebarOpened": true,
+  "sidebarOpened": false,
   "displays": [
     {
       "isShown": true,
@@ -19,7 +19,7 @@
       "isShown": true,
       "name": "Marker array",
       "options": {
-        "topic": "/pycram/viz_marker"
+        "topic": "/giskard/visualization_marker_array"
       },
       "type": "markerArray"
     }
