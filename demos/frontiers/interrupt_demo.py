@@ -69,10 +69,11 @@ def move_and_detect(obj_type, obj_size, obj_color):
     NavigateAction(target_locations=[Pose([1.7, 2, 0])]).resolve().perform()
 
     LookAtAction(targets=[pick_pose]).resolve().perform()
-
-    object_desig = DetectAction(BelieveObject(types=[obj_type] if obj_type else None,
-                                              sizes=[obj_size] if obj_size else None,
-                                              colors=[obj_color] if obj_color else None)).resolve().perform()
+    #object_desig = DetectAction(BelieveObject(types=[obj_type] if obj_type else None,
+    #                                          sizes=[obj_size] if obj_size else None,
+    #                                          colors=[obj_color] if obj_color else None)).resolve().perform()
+    status, object_dict = DetectAction(technique='all').resolve().perform()
+    object_desig = object_dict[obj_type]
 
     return object_desig
 
