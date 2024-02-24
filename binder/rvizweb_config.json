@@ -19,7 +19,7 @@
       "isShown": true,
       "name": "Marker array",
       "options": {
-        "topic": "/giskard/visualization_marker_array"
+        "topic": "/pycram/viz_marker"
       },
       "type": "markerArray"
     }
