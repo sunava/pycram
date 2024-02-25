@@ -3,7 +3,7 @@
     "background": "#333333",
     "fixedFrame": "/simulated/odom"
   },
-  "sidebarOpened": true,
+  "sidebarOpened": false,
   "displays": [
     {
       "isShown": true,
