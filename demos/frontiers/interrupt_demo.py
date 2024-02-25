@@ -101,9 +101,9 @@ def announce_pick_place(case: str, type: str, color: str, size: str):
 
 
 def place_and_pick_new_obj(old_desig, location, obj_type, obj_size, obj_color):
-    PlaceAction.Action(old_desig, "left", Pose(location)).perform()
+    PlaceAction(old_desig, ["left"], ["front"], [Pose(location)]).resolve().perform()
     ParkArmsAction([Arms.BOTH]).resolve().perform()
-    _, new_desig = move_and_detect(obj_type, obj_size, obj_color)
+    new_desig = move_and_detect(obj_type, obj_size, obj_color)
     PickUpAction.Action(new_desig, "left", "front").perform()
     ParkArmsAction([Arms.BOTH]).resolve().perform()
 
