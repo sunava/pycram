@@ -52,6 +52,7 @@ class BulletWorld:
     Global reference to the spawned Object that represents the robot. The robot is identified by checking the name in the 
     URDF with the name of the URDF on the parameter server. 
     """
+    viz: bool = True
 
     # Check is for sphinx autoAPI to be able to work in a CI workflow
     if rosgraph.is_master_online():  # and "/pycram" not in rosnode.get_node_names():
@@ -427,6 +428,7 @@ class Use_shadow_world():
 
     def __init__(self):
         self.prev_world: BulletWorld = None
+        BulletWorld.current_bullet_world.viz = False
 
     def __enter__(self):
         if not BulletWorld.current_bullet_world.is_shadow_world:
@@ -446,7 +448,7 @@ class Use_shadow_world():
         if not self.prev_world == None:
             BulletWorld.current_bullet_world = self.prev_world
         BulletWorld.current_bullet_world.world_sync.pause_sync = False
-
+        BulletWorld.current_bullet_world.viz = True
 
 class WorldSync(threading.Thread):
     """
