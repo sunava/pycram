@@ -9,8 +9,9 @@ breakfast_objects = {"milk": {"type": "milk", "model": "milk.stl", "pose": [2.5,
                                           "default_location": "island_countertop"},
                      "spoon": {"type": "spoon", "model": "spoon.stl", "pose": [2.5, 2.2, 0.85], "color": [0, 0, 1, 1],
                                "default_location": "cabinet10_drawer_top"},
-                     "bowl": {"type": "bowl", "model": "bowl.stl", "pose": [2.38, 2.2, 1.02], "color": [1, 1, 0, 1],
-                              "default_location": "island_countertop"}}
+                     # "bowl": {"type": "bowl", "model": "bowl.stl", "pose": [2.38, 2.2, 1.02], "color": [1, 1, 0, 1],
+                     #          "default_location": "island_countertop"}
+                               }
 clean_up_objects = {"milk": {"type": "milk", "model": "milk.stl", "pose": [4.81671219471512,
                                                                            3.2802720926294127,
                                                                            0.8029613686135095], "color": [1, 0, 0, 1],
