@@ -18,6 +18,7 @@ class VizMarkerPublisher:
     """
     Publishes an Array of visualization marker which represent the situation in the Bullet World
     """
+
     def __init__(self, topic_name="/pycram/viz_marker", interval=0.1):
         """
         The Publisher creates an Array of Visualization marker with a Marker for each link of each Object in the Bullet
@@ -42,10 +43,17 @@ class VizMarkerPublisher:
         Constantly publishes the Marker Array. To the given topic name at a fixed rate.
         """
         while not self.kill_event.is_set():
-            marker_array = self._make_marker_array()
 
-            self.pub.publish(marker_array)
-            time.sleep(self.interval)
+            if BulletWorld.current_bullet_world.viz:
+                prev_marker = self._make_marker_array()
+                marker_array = self._make_marker_array()
+
+                self.pub.publish(marker_array)
+                time.sleep(self.interval)
+            if not BulletWorld.current_bullet_world.viz:
+                marker_array = prev_marker
+                self.pub.publish(marker_array)
+                time.sleep(self.interval)
 
     def _make_marker_array(self) -> MarkerArray:
         """
@@ -56,6 +64,7 @@ class VizMarkerPublisher:
         :return: An Array of Visualization Marker
         """
         marker_array = MarkerArray()
+
         for obj in BulletWorld.current_bullet_world.objects:
             if obj.name == "floor":
                 continue
@@ -75,7 +84,8 @@ class VizMarkerPublisher:
                 if hasattr(obj, "urdf_object"):
                     if obj.urdf_object.link_map[link].collision.origin:
                         link_origin = Transform(obj.urdf_object.link_map[link].collision.origin.xyz,
-                                                list(quaternion_from_euler(*obj.urdf_object.link_map[link].collision.origin.rpy)))
+                                                list(quaternion_from_euler(
+                                                    *obj.urdf_object.link_map[link].collision.origin.rpy)))
                     else:
                         link_origin = Transform()
                 else:
@@ -112,11 +122,9 @@ class VizMarkerPublisher:
                 marker_array.markers.append(msg)
         return marker_array
 
-
     def _stop_publishing(self) -> None:
         """
         Stops the publishing of the Visualization Marker update by setting the kill event and collecting the thread.
         """
         self.kill_event.set()
         self.thread.join()
-
