@@ -69,10 +69,11 @@ def move_and_detect(obj_type, obj_size, obj_color):
     NavigateAction(target_locations=[Pose([1.7, 2, 0])]).resolve().perform()
 
     LookAtAction(targets=[pick_pose]).resolve().perform()
-
-    object_desig = DetectAction(BelieveObject(types=[obj_type] if obj_type else None,
-                                              sizes=[obj_size] if obj_size else None,
-                                              colors=[obj_color] if obj_color else None)).resolve().perform()
+    #object_desig = DetectAction(BelieveObject(types=[obj_type] if obj_type else None,
+    #                                          sizes=[obj_size] if obj_size else None,
+    #                                          colors=[obj_color] if obj_color else None)).resolve().perform()
+    status, object_dict = DetectAction(technique='all').resolve().perform()
+    object_desig = object_dict[obj_type]
 
     return object_desig
 
@@ -100,9 +101,9 @@ def announce_pick_place(case: str, type: str, color: str, size: str):
 
 
 def place_and_pick_new_obj(old_desig, location, obj_type, obj_size, obj_color):
-    PlaceAction.Action(old_desig, "left", Pose(location)).perform()
+    PlaceAction(old_desig, ["left"], ["front"], [Pose(location)]).resolve().perform()
     ParkArmsAction([Arms.BOTH]).resolve().perform()
-    _, new_desig = move_and_detect(obj_type, obj_size, obj_color)
+    new_desig = move_and_detect(obj_type, obj_size, obj_color)
     PickUpAction.Action(new_desig, "left", "front").perform()
     ParkArmsAction([Arms.BOTH]).resolve().perform()
 
