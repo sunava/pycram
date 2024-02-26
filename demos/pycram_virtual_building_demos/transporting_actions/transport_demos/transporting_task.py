@@ -12,7 +12,7 @@ def start_transporting_demo(location: str = "table_area_main", context: str = "b
                         environment: str = "apartment-small.urdf"):
     display(HTML('<img src="https://i.gifer.com/XVo6.gif" alt="Hourglass animation" width="50">'))
     world = BulletWorld("DIRECT")
-    VizMarkerPublisher()
+    VizMarkerPublisher(interval=0.6)
     current_context = generate_context(context, environment)
     Object("pr2", ObjectType.ROBOT, "pr2.urdf", pose=Pose([1, 2, 0]))
     with simulated_robot:
@@ -25,4 +25,4 @@ def start_transporting_demo(location: str = "table_area_main", context: str = "b
     rospy.loginfo("Transporting task completed!")
 
 
-#start_transporting_demo(context="clean_up", location="island_countertop")
+start_transporting_demo(context="clean_up", location="island_countertop")

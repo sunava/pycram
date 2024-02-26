@@ -4,9 +4,9 @@ from IPython.display import display, clear_output, HTML
 
 from pycram.context_knowledge import ContextConfig, generate_context
 
-contexts = [('Select', 'None'), ('Breakfast', "breakfast"), ('Clean Up', "clean_up")]
-environments = [('Select', 'None'), ('Apartment', "apartment-small.urdf"), ('Kitchen', "kitchen-small.urdf")]
-locations = [('Select', 'None'), ('Table', "table_area_main"), ('Countertop', "island_countertop")]
+contexts = [('Breakfast', "breakfast"), ('Clean Up', "clean_up")]
+environments = [('Apartment', "apartment-small.urdf")] #('Kitchen', "kitchen-small.urdf")
+locations = [('Table', "table_area_main"), ('Countertop', "island_countertop")]
 
 selected_context = None
 selected_environment = None
@@ -24,8 +24,15 @@ def update_globals(context=None, environment=None, location=None):
 
 
 def robot_execute(func):
+    global selected_context, selected_environment, selected_location
     with output:
         output.clear_output()
+        if selected_context is None:
+            selected_context = "breakfast"
+        elif selected_environment is None:
+            selected_environment = "apartment-small.urdf"
+        elif selected_location is None:
+            selected_location = "table_area_main"
         func(selected_location, selected_context, selected_environment)
 
 

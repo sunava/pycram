@@ -1,6 +1,7 @@
 import atexit
 import threading
 import time
+import random as rn
 
 from geometry_msgs.msg import Vector3
 from std_msgs.msg import ColorRGBA
@@ -64,12 +65,14 @@ class VizMarkerPublisher:
         :return: An Array of Visualization Marker
         """
         marker_array = MarkerArray()
-
+        objnew = False
         for obj in BulletWorld.current_bullet_world.objects:
             if obj.name == "floor":
                 continue
             if obj.name == "hsrb":
                 continue
+            if not obj.name in ["environment", "pr2"]:
+                objnew = True
             for link in obj.links.keys():
                 geom = obj.link_to_geometry[link]
                 if not geom:
@@ -93,16 +96,19 @@ class VizMarkerPublisher:
                 link_pose_with_origin = link_pose * link_origin
                 msg.pose = link_pose_with_origin.to_pose().pose
 
-                color = [1, 1, 1, 1] if obj.links[link] == -1 else obj.get_color(link)
+                color = [1, 1, 1, 1] \
+                    if obj.links[link] == -1 else obj.get_color(link)
 
                 msg.color = ColorRGBA(*color)
                 msg.lifetime = rospy.Duration(1)
 
                 if type(geom) == urdf_parser_py.urdf.Mesh:
+
                     msg.type = Marker.MESH_RESOURCE
                     msg.mesh_resource = "file://" + geom.filename
                     msg.scale = Vector3(1, 1, 1)
-                    msg.mesh_use_embedded_materials = True
+                    msg.mesh_use_embedded_materials = False
+
                 elif type(geom) == urdf_parser_py.urdf.Cylinder:
                     msg.type = Marker.CYLINDER
                     msg.scale = Vector3(geom.radius * 2, geom.radius * 2, geom.length)
@@ -118,6 +124,10 @@ class VizMarkerPublisher:
                     y = geom["size"][1]
                     z = geom["size"][2]
                     msg.scale = Vector3(x, y, z)
+                if objnew:
+                    color = obj.get_color()
+                    msg.color = ColorRGBA(*color)
+                    objnew = False
 
                 marker_array.markers.append(msg)
         return marker_array
