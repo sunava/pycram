@@ -1152,13 +1152,13 @@ class Object:
         """
         Returns a Pose of the link corresponding to the given name. The returned Pose will be in world coordinate frame.
 
-        :param name: Link name for which a Pose should returned
+        :param name: Link name for which a Pose should return
         :return: The pose of the link
         """
         if name in self.links.keys() and self.links[name] == -1:
             return self.get_pose()
         return self._current_link_poses[name]
-        # return Pose(*p.getLinkState(self.id, self.links[name], physicsClientId=self.world.client_id)[4:6])
+        #return Pose(*p.getLinkState(self.id, self.links[name], physicsClientId=self.world.client_id)[4:6])
 
     def set_joint_state(self, joint_name: str, joint_pose: float) -> None:
         """

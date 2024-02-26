@@ -14,15 +14,8 @@ def start_transporting_demo(location: str = "table_area_main", context: str = "b
     world = BulletWorld("DIRECT")
     VizMarkerPublisher(interval=0.6)
     current_context = generate_context(context, environment)
-    Object("pr2", ObjectType.ROBOT, "pr2.urdf", pose=Pose([1, 2, 0]))
     with simulated_robot:
         TransportAction(location, current_context).resolve().perform()
 
-    objects = world.current_bullet_world.get_all_objets_not_robot()
-    for obj in objects:
-        print(obj.name, "_", obj.get_pose())
     clear_output(wait=True)
     rospy.loginfo("Transporting task completed!")
-
-
-start_transporting_demo(context="clean_up", location="island_countertop")
