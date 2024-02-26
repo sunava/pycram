@@ -4,6 +4,7 @@ import sqlalchemy.orm
 from typing import Any, Union
 import rospy
 
+import pycram.plan_failures
 from ..context_knowledge import ContextConfig
 from .location_designator import CostmapLocation, find_reachable_location_and_nav_pose, AccessingLocation
 from .motion_designator import *
@@ -318,7 +319,7 @@ class PickUpAction(ActionDesignatorDescription):
                 #     # todo: this z is the popcorn-table height, we need to define location to get that z otherwise it
                 #     #  is hardcoded
                 #     oTm.pose.position.z = 0.718
-                oTm.pose.position.z += 0.04
+                oTm.pose.position.z += 0.02
 
             # Determine the grasp orientation and transform the pose to the base link frame
             grasp_rotation = robot_description.grasps.get_orientation_for_grasp(self.grasp)
@@ -353,12 +354,12 @@ class PickUpAction(ActionDesignatorDescription):
                         special_knowledge_offset.pose.position.y += 0.06
                         special_knowledge_offset.pose.position.x -= 0.03  # 0.022
                     if self.object_designator.type == "Cutlery":
-                        special_knowledge_offset.pose.position.x -= 0.115  # 0.11 before, fork needs more
+                        special_knowledge_offset.pose.position.x -= 0.0115  # 0.11 before, fork needs more
             elif robot.name == "pr2":
                 if self.grasp == "top":
                     if self.object_designator.type == ObjectType.BOWL:
-                        special_knowledge_offset.pose.position.x -= 0.06
-                        special_knowledge_offset.pose.position.y -= 0.06  # 0.022  # if self.object_designator.type == "Fork":  #     special_knowledge_offset.pose.position.x -= 0.02
+                        special_knowledge_offset.pose.position.x -= 0.0
+                        special_knowledge_offset.pose.position.y += 0.0  # 0.022  # if self.object_designator.type == "Fork":  #     special_knowledge_offset.pose.position.x -= 0.02
 
             push_base = special_knowledge_offset
             # todo: this is for hsrb only at the moment we will need a function that returns us special knowledge
@@ -371,11 +372,11 @@ class PickUpAction(ActionDesignatorDescription):
                         z = 0.045  # 0.05
                 push_base.pose.position.z += z
             elif robot.name == "pr2":
-                x = 0.02
+                x = 0.01
                 if self.grasp == "top":
-                    x = 0.039
+                    x = 0.01
                     if self.object_designator.type == ObjectType.BOWL:
-                        x = 0.05  # 0.05
+                        x = 0.01 # 0.05
                 push_base.pose.position.x += x
             push_baseTm = lt.transform_pose(push_base, "map")
             special_knowledge_offsetTm = lt.transform_pose(push_base, "map")
@@ -399,7 +400,7 @@ class PickUpAction(ActionDesignatorDescription):
 
             # rospy.logwarn("Lifting now")
             liftingTm = push_baseTm
-            liftingTm.pose.position.z += 0.03
+            liftingTm.pose.position.z += 0.02
             BulletWorld.current_bullet_world.add_vis_axis(liftingTm)
             if execute:
                 MoveTCPMotion(liftingTm, self.arm).resolve().perform()
@@ -524,7 +525,7 @@ class PlaceAction(ActionDesignatorDescription):
 
             # rospy.logwarn("Lifting now")
             liftingTm = push_baseTm
-            liftingTm.pose.position.z += 0.08
+            liftingTm.pose.position.z += 0.03
             BulletWorld.current_bullet_world.add_vis_axis(liftingTm)
 
             MoveTCPMotion(liftingTm, self.arm).resolve().perform()
@@ -799,14 +800,13 @@ class TransportAction(ActionDesignatorDescription):
             envi_desig = BelieveObject(names=[envi.name])
 
             def search_for_object(current_context, obj_name):
-                location_to_search = current_context.search_locations(obj_name)
-                if location_to_search in ["drawer", "dishwasher", "cupboard", "cabinet", "cabinet10_drawer_top"]:
-                    grasp, arm, detected_object = access_and_pickup(current_context, location_to_search, obj_name,
-                                                                    open_container=True)
-                elif location_to_search in ["island_countertop", "table_area_main"]:
-                    grasp, arm, detected_object = access_and_pickup(current_context, location_to_search, obj_name)
-                else:
-                    rospy.logerr("Location not found")  # todo bowl is not yet found i need to use enums
+                location_to_search, typeloc = current_context.search_locations(obj_name)
+                open_container = False
+                if typeloc in ["acces"]:
+                    open_container = True
+
+                grasp, arm, detected_object = access_and_pickup(current_context, location_to_search, obj_name,
+                                                                    open_container=open_container)
                 return grasp, arm, detected_object
 
             def access_and_pickup(current_context, location_to_search, target_object, open_container=False):
@@ -821,12 +821,12 @@ class TransportAction(ActionDesignatorDescription):
                 # todo maybe a check which arm is free?
                 global detected_object, grasp
                 arm = "left"  # Default arm, can be made dynamic or parameterized
-
+                link_pose = current_context.environment_object.get_link_pose(location_to_search)
                 if open_container:
                     link_name = current_context.get_handle(location_to_search)
                     location_to_search = link_name
 
-                link_pose = current_context.environment_object.get_link_pose(location_to_search)
+
                 if open_container:
                     handle_desig = ObjectPart(names=[location_to_search], part_of=envi_desig.resolve())
                     drawer_open_location = AccessingLocation(handle_desig=handle_desig.resolve(),
@@ -844,6 +844,7 @@ class TransportAction(ActionDesignatorDescription):
                         location_pose = Pose([1.7, 2, 0])
                     elif location_to_search == "table_area_main":
                         location_pose = Pose([4, 3.5, 0])
+                    else: location_pose = Pose([1.7, 2, 0])
                     NavigateAction(target_locations=[location_pose]).resolve().perform()
 
                 ParkArmsAction([Arms.BOTH]).resolve().perform()
@@ -910,11 +911,14 @@ class TransportAction(ActionDesignatorDescription):
 
             def pickup_target_object(detected_object, arm):
                 ParkArmsAction([arm]).resolve().perform()
+                grasp = None
                 if detected_object.type == "spoon" or detected_object.type == "bowl":
                     grasp = "top"
                 else:
                     grasp = "front"
+
                 PickUpAction(detected_object, [arm], [grasp]).resolve().perform()
+
                 ParkArmsAction([Arms.BOTH]).resolve().perform()
                 return grasp
 
