@@ -1,5 +1,4 @@
-from catkin_pkg import rospack
-
+import rospkg
 from pycram.context_knowledge import generate_context
 from pycram.designators.action_designator import *
 from pycram.designators.location_designator import *
@@ -17,7 +16,8 @@ def start_transporting_demo(location: str = "table_area_main", context: str = "b
     world = BulletWorld("DIRECT")
     VizMarkerPublisher(interval=0.8)
     current_context = generate_context(context, environment)
-
+    # Initialize a ROS package object
+    rospack = rospkg.RosPack()
     package_path = rospack.get_path('pycram') + '/resources/' + environment
     urdf_string = helper.urdf_to_string(package_path)
     rospy.set_param('kitchen_description', urdf_string)
