@@ -6,11 +6,35 @@ from pycram.designators.object_designator import *
 from pycram.designators.object_designator import BelieveObject
 import pycram.helper as helper
 from pycram.ros.viz_marker_publisher import VizMarkerPublisher
+from pycram.ros.tf_broadcaster import TFBroadcaster
+import os
+import rospkg
+
+
 
 world = BulletWorld()
-VizMarkerPublisher(interval=0.6)
+VizMarkerPublisher(interval=0.8)
+
+
+
+# Initialize a ROS package object
+rospack = rospkg.RosPack()
+
+# Get the path to the specific ROS package
+# Replace 'your_package_name' with the name of your ROS package
+
+
+
 current_context = generate_context("cutting-init", "apartment-small.urdf")
 cutting_tool = current_context.get_cutting_tool()
+name = "apartment-small.urdf"
+
+package_path = rospack.get_path('pycram') + '/resources/' + name
+urdf_string = helper.urdf_to_string(package_path)
+rospy.set_param('kitchen_description', urdf_string)
+broadcaster = TFBroadcaster(interval=0.0002)
+
+
 with simulated_robot:
     ParkArmsAction([Arms.BOTH]).resolve().perform()
     MoveTorsoAction([0.33]).resolve().perform()

@@ -67,7 +67,7 @@ class VizMarkerPublisher:
         marker_array = MarkerArray()
         objnew = False
         for obj in BulletWorld.current_bullet_world.objects:
-            if obj.name == "floor":
+            if obj.name in ["floor", "robot", "pr2", "environment"]:
                 continue
             if obj.name == "hsrb":
                 continue
@@ -78,7 +78,7 @@ class VizMarkerPublisher:
                 if not geom:
                     continue
                 msg = Marker()
-                msg.header.frame_id = "map"
+                msg.header.frame_id = "simulated/map"
                 msg.ns = obj.name
                 msg.id = obj.links[link]
                 msg.type = Marker.MESH_RESOURCE
