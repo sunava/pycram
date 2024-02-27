@@ -31,7 +31,7 @@ class HSRBDescription(RobotDescription):
         arm_joints = ["arm_flex_joint", "arm_roll_joint", "wrist_flex_joint", "wrist_roll_joint"]
         arm_links = ["arm_flex_link", "arm_roll_link", "wrist_flex_link", "wrist_roll_link"]
         arm_carry = {"park": [0, 1.5, -1.85, 0]}
-        arm_placing_given_obj = {"place_human_given_obj": [-1.6, 0, 0, 1.55]}
+        arm_placing_given_obj = {"place_human_given_obj": [-1.8, 0, -0.5, -1.5]}
         gripper_links = ["hand_l_distal_link", "hand_l_spring_proximal_link", "hand_palm_link",
                          "hand_r_distal_link", "hand_r_spring_proximal_link", "hand_gripper_tool_frame"]
         gripper_joints = ["hand_l_proximal_joint", "hand_r_proximal_joint", "hand_motor_joint"]
@@ -47,7 +47,7 @@ class HSRBDescription(RobotDescription):
         arm_inter2 = InteractionDescription(arm_chain2, "wrist_roll_link")
         arm_manip2 = ManipulatorDescription(arm_inter2, tool_frame="hand_gripper_tool_frame", gripper_description=gripper)
         self.add_chains({"given_obj": arm_manip2, "left": arm_manip})
-
+        rospy.logerr(self.chains)
         self.add_static_gripper_chains("left", {"open": [0.3], "close": [0.0]})
         self.grasps = GraspingDescription(
             {"front": [-1, 0, -1, 0],

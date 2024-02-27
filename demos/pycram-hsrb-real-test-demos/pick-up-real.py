@@ -1,3 +1,4 @@
+import random
 from math import sqrt
 
 import rospy
@@ -54,25 +55,19 @@ apartment = Object("kitchen", ObjectType.ENVIRONMENT, "couch-kitchen.urdf")
 object_orientation = axis_angle_to_quaternion([0, 0, 1], 180)
 
 # Wished objects for the Demo
-#wished_sorted_obj_list = ["Bowl", "Metalmug", "Fork", "Spoon", "Metalplate", "Cerealbox", "Milkpack"]
+wished_sorted_obj_list = ["Bowl", "Metalmug", "Fork", "Metalplate", "Cerealbox"]
 
 y_pos = 1.66
 table_pose = 1.04
-# Define a breakfast cereal object
-#fork = Object("Fork", "Fork", "spoon.stl", pose=Pose([0.8, 2.73, 0.74]), color=[1, 0, 0, 1])
-#spoon = Object("Spoon", "Spoon", "spoon.stl", pose=Pose([0.8, 2.6, 0.74]), color=[0, 1, 0, 1])
-#metalmug = Object("Metalmug", "Metalmug", "bowl.stl", pose=Pose([0.8, 2.4, 0.765]), color=[0, 1, 0, 1])
-#plate = Object("Metalplate", "Metalplate", "board.stl", pose=Pose([0.8, 2.12, 0.735]), color=[0, 1, 0, 1])
-#bowl = Object("Bowl", "Bowl", "bowl.stl", pose=Pose([0.8, 1.8, 0.765]), color=[0, 1, 0, 1])
 
-# Set the world's gravity
-#world.set_gravity([0.0, 0.0, 9.81])
 
 def sort_objects(obj_dict, wished_sorted_obj_list):
     sorted_objects= []
     object_tuples = []
     isPlate = True
     #print(f"gefundene liste: {obj_dict}")
+    if len(obj_dict) == 0:
+        return sorted_objects
     first, *remaining = obj_dict
     print(f"type: {type(remaining)} and type of obj_dict: {type(obj_dict)}")
     robot_pose = robot.get_pose()
@@ -131,18 +126,18 @@ def try_pick_up(obj, grasps):
 
 def pickUp_and_place_objects(sorted_obj):
     global y_pos, table_pose
-    for value in sorted_obj:
-        NavigateAction(target_locations=[Pose([1.6, value.pose.position.y, 0], [0, 0, 1, 0])]).resolve().perform()
+    #for value in sorted_obj:
+    for value in range(len(sorted_obj)):
         print("first navigation")
         cutlery = ["Spoon", "Fork", "Knife", "Plasticknife"]
         grasp = "front"
-        if (value.type in cutlery):
-            value.type = "Cutlery"
+        if (sorted_obj[value].type in cutlery):
+            sorted_obj[value].type = "Cutlery"
 
-        if value.type in ["Bowl", "Cutlery"]:
+        if sorted_obj[value].type in ["Bowl", "Cutlery"]:
             grasp = "top"
 
-        if value.type == "Metalplate":
+        if sorted_obj[value].type == "Metalplate":
             MoveGripperMotion("open", "left").resolve().perform()
             TalkingMotion("Can you please give me the plate on the table.").resolve().perform()
             # TalkingMotion("Please push down my hand, when I can grab the plate.").resolve().perform()
@@ -150,11 +145,11 @@ def pickUp_and_place_objects(sorted_obj):
             time.sleep(3)
             MoveGripperMotion("close", "left").resolve().perform()
         else:
-            if value.type == "Cutlery" and value.pose.position.x + 0.05 >= table_pose:
+            if sorted_obj[value].type == "Cutlery" and sorted_obj[value].pose.position.x + 0.05 >= table_pose:
                 print("adjusted x")
-                value.pose.position.x -= 0.1
+                sorted_obj[value].pose.position.x -= 0.1
             TalkingMotion("Picking Up with: " + grasp).resolve().perform()
-            try_pick_up(value, grasp)
+            try_pick_up(sorted_obj[value], grasp)
 
         ParkArmsAction([Arms.LEFT]).resolve().perform()
         TalkingMotion("Navigating").resolve().perform()
@@ -162,27 +157,31 @@ def pickUp_and_place_objects(sorted_obj):
         NavigateAction(target_locations=[Pose([4.1, y_pos, 0], [0, 0, 0, 1])]).resolve().perform()
         TalkingMotion("Placing").resolve().perform()
         # Todo: Objekte in z unterscheiden
-        if value.type == "Cutlery":
+        if sorted_obj[value].type == "Cutlery":
             z = 0.8
-        elif value.type == "Bowl":
+        elif sorted_obj[value].type == "Bowl":
             z = 0.84
-        elif value.type == "Metalmug":
+        elif sorted_obj[value].type == "Metalmug":
             z = 0.8
-        elif value.type == "Milkpack":
+        elif sorted_obj[value].type == "Milkpack":
             z = 0.88
-        elif value.type == "Cerealbox":
+        elif sorted_obj[value].type == "Cerealbox":
             z = 0.9
-        if value.type == "Metalplate":
-            PlaceGivenObjAction(["left"], [Pose([4.86, y_pos, 0])]).resolve().perform()
+        if sorted_obj[value].type == "Metalplate":
+            PlaceGivenObjAction([sorted_obj[value].type], ["left"], [Pose([4.86, y_pos, 0])], ["front"]).resolve().perform()
         else:
-            PlaceAction(value, ["left"], [grasp], [Pose([4.9, y_pos, z])]).resolve().perform()
+            PlaceAction(sorted_obj[value], ["left"], [grasp], [Pose([4.9, y_pos, z])]).resolve().perform()
         ParkArmsAction([Arms.LEFT]).resolve().perform()
         TalkingMotion("Navigating").resolve().perform()
         NavigateAction(target_locations=[Pose([3.9, 2, 0], [0, 0, 1, 0])]).resolve().perform()  # 4.1 für x
-        if value.type == "Metalplate":
+        if sorted_obj[value].type == "Metalplate":
             y_pos += 0.3
         else:
             y_pos += 0.16
+        if value + 1 < len(sorted_obj):
+            NavigateAction(target_locations=[Pose([1.6, sorted_obj[value + 1].pose.position.y, 0], [0, 0, 1, 0])]).resolve().perform()
+
+
 
 def navigate_and_detect():
     TalkingMotion("Navigating").resolve().perform()
@@ -191,8 +190,10 @@ def navigate_and_detect():
     LookAtAction(targets=[Pose([0.8, 1.8, 0.21], object_orientation)]).resolve().perform()
     LookAtAction(targets=[Pose([0.8, 1.8, 0.21], object_orientation)]).resolve().perform()
     TalkingMotion("Perceiving").resolve().perform()
-    object_desig = DetectAction(technique='all').resolve().perform()
-
+    try:
+         object_desig = DetectAction(technique='all').resolve().perform()
+    except PerceptionObjectNotFound:
+            object_desig = {}
     return object_desig
 
 
@@ -204,7 +205,6 @@ with ((real_robot)):
     ParkArmsAction([Arms.LEFT]).resolve().perform()
 
     object_desig = navigate_and_detect()
-    wished_sorted_obj_list = ["Metalmug", "Metalplate", "Fork", "Spoon", "Bowl"]
 
     sorted_obj = sort_objects(object_desig, wished_sorted_obj_list)
 
@@ -212,14 +212,12 @@ with ((real_robot)):
     new_sorted_obj = []
     print(f"length of sorted obj: {len(sorted_obj)}")
     if len(sorted_obj) < len(wished_sorted_obj_list):
-        try:
-            new_object_desig = navigate_and_detect()
-            print("first Check")
-            print(new_object_desig)
-            new_sorted_obj = sort_objects(new_object_desig, wished_sorted_obj_list)
-            pickUp_and_place_objects(new_sorted_obj)
-        except PerceptionObjectNotFound:
-            new_sorted_obj = []
+        new_object_desig = navigate_and_detect()
+        print("first Check")
+        print(new_object_desig)
+        new_sorted_obj = sort_objects(new_object_desig, wished_sorted_obj_list)
+        pickUp_and_place_objects(new_sorted_obj)
+
 
     final_sorted_obj = sorted_obj + new_sorted_obj
 
@@ -232,19 +230,53 @@ with ((real_robot)):
     print(f"y_pos: {y_pos}")
 
     if len(final_sorted_obj) < len(wished_sorted_obj_list):
+        NavigateAction(target_locations=[Pose([1.6, 1.8, 0], [0, 0, 1, 0])]).resolve().perform()
         print("second Check")
 
         for value in final_sorted_obj:
             # TODO: Cutlery noch behandeln und doppelte Objektnamen, wie Fork
                 if value.type in wished_sorted_obj_list:
                     wished_sorted_obj_list.remove(value.type)
+                if value.type == "Cutlery":
+                    if "Fork" in wished_sorted_obj_list:
+                        print("deleted fork")
+                        wished_sorted_obj_list.remove("Fork")
+                    elif "Spoon" in wished_sorted_obj_list:
+                        print("deleted spoon")
+                        wished_sorted_obj_list.remove("Spoon")
+
         for name in wished_sorted_obj_list:
+            # random_id = random.randint(50,100)
+            # print(f"random number: {random_id}")
+            # missed_obj = Object(name=name, type=name, id= random_id)
+            # #missed_obj_desig = ObjectDesignatorDescription(names=[name]).resolve()
+            # missed_obj_desig = BelieveObject(types=[name])
+            grasp = "front"
+            if name in ["Bowl", "Spoon", "Fork", "Knife", "Plasticknife"]:
+                grasp = "top"
+
             print(f"in here with object {name}")
-            TalkingMotion(f"Can you please give me the {name} on the table?")
+            TalkingMotion(f"Can you please give me the {name} on the table?").resolve().perform()
             rospy.sleep(1)
             #TalkingMotion(f"Please push down my hand, when I can grab the {name}.")
             time.sleep(3)
             MoveGripperMotion("close", "left").resolve().perform()
+
+            if name == "Metalplate":
+                 y_pos += 0.14
+
+            if name in ["Spoon", "Fork", "Knife", "Plasticknife"]:
+                z = 0.8
+            elif name == "Bowl":
+                z = 0.84
+            elif name == "Metalmug":
+                z = 0.8
+            elif name == "Milkpack":
+                z = 0.88
+            elif name == "Cerealbox":
+                z = 0.9
+            elif name == "Metalplate":
+                z = 0
 
             ParkArmsAction([Arms.LEFT]).resolve().perform()
             TalkingMotion("Navigating").resolve().perform()
@@ -253,7 +285,9 @@ with ((real_robot)):
             TalkingMotion("Placing").resolve().perform()
             # TODO: PlaceGivenObjAction in ActionDesignator für die anderen Objekte anpassen
             # TODO: Was machen wenn Teller nicht gesehen, direkt y_pos + 0.14, damit Abstand zum letzten Objekt 0.3?
-            PlaceGivenObjAction(["left"], [Pose([4.86, y_pos, 0])]).resolve().perform()
+
+            print(f"y_pos failure handling: {y_pos}")
+            PlaceGivenObjAction([name],["left"], [Pose([4.86, y_pos, z])], [grasp]).resolve().perform()
             ParkArmsAction([Arms.LEFT]).resolve().perform()
             TalkingMotion("Navigating").resolve().perform()
             NavigateAction(target_locations=[Pose([3.9, 2, 0], [0, 0, 1, 0])]).resolve().perform()  # 4.1 für x
@@ -261,6 +295,7 @@ with ((real_robot)):
                 y_pos += 0.3
             else:
                 y_pos += 0.16
+            NavigateAction(target_locations=[Pose([1.6, 1.8, 0], [0, 0, 1, 0])]).resolve().perform()
 
     rospy.loginfo("Done!")
     TalkingMotion("Done").resolve().perform()

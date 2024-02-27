@@ -393,7 +393,7 @@ class PickUpAction(ActionDesignatorDescription):
             rospy.logwarn("Pushing now")
             BulletWorld.current_bullet_world.add_vis_axis(push_baseTm)
             if execute:
-                print("push!!!")
+                print("Push_pose")
                 MoveTCPMotion(push_baseTm, self.arm).resolve().perform()
 
             # Finalize the pick-up by closing the gripper and lifting the object
@@ -592,9 +592,9 @@ class PlaceGivenObjAction(ActionDesignatorDescription):
 
     @dataclasses.dataclass
     class Action(ActionDesignatorDescription.Action):
-       # object_designator: ObjectDesignatorDescription.Object
+        object_type: str
         """
-        Object designator describing the object that should be placed
+        Object type describing the object that should be placed
         """
 
         arm: str
@@ -606,7 +606,7 @@ class PlaceGivenObjAction(ActionDesignatorDescription):
         """
         Pose in the world at which the object should be placed
         """
-
+        grasp: str
         @with_tree
         def perform(self) -> None:
             lt = LocalTransformer()
@@ -616,63 +616,86 @@ class PlaceGivenObjAction(ActionDesignatorDescription):
 
             # self.target_location.pose.position.x = 4.86
             # self.target_location.pose.position.y = 2.2
-            self.target_location.pose.position.z = 0.9
+            if self.object_type == "Metalplate":
+                print("in if placehuman")
+                self.target_location.pose.position.z = 0.9
 
-            # oTm = Object Pose in Frame map
-            oTm = self.target_location
+                # oTm = Object Pose in Frame map
+                oTm = self.target_location
 
-            grasp_rotation = robot_description.grasps.get_orientation_for_grasp("front")
-            oTb = lt.transform_pose(oTm, robot.get_link_tf_frame("base_link"))
-            oTb.orientation = grasp_rotation
-            oTmG = lt.transform_pose(oTb, "map")
+                grasp_rotation = robot_description.grasps.get_orientation_for_grasp(self.grasp)
+                oTb = lt.transform_pose(oTm, robot.get_link_tf_frame("base_link"))
+                oTb.orientation = grasp_rotation
+                oTmG = lt.transform_pose(oTb, "map")
 
-            rospy.logwarn("Placing now")
-            MoveTCPMotion(oTmG, self.arm).resolve().perform()
+                rospy.logwarn("Placing now")
+                MoveTCPMotion(oTmG, self.arm).resolve().perform()
 
-            print(f" wrist_flex: {robot.get_joint_state('wrist_flex_joint')}")
-            MoveTorsoAction([0.62]).resolve().perform() # 0.62
+                print(f" wrist_flex: {robot.get_joint_state('wrist_flex_joint')}")
+                MoveTorsoAction([0.62]).resolve().perform() # 0.62
 
-            MoveJointsMotion(["arm_roll_joint"], [0]).resolve().perform()
+                # MoveJointsMotion(["arm_roll_joint"], [0]).resolve().perform()
+                #
+                # MoveJointsMotion(["wrist_roll_joint"], [-1.5]).resolve().perform()
+                # MoveJointsMotion(["wrist_flex_joint"], [-0.5]).resolve().perform()
+                # MoveJointsMotion(["arm_flex_joint"], [-1.8]).resolve().perform()
+                kwargs = dict()
 
-            MoveJointsMotion(["wrist_roll_joint"], [-1.5]).resolve().perform()
-            MoveJointsMotion(["wrist_flex_joint"], [-0.5]).resolve().perform()
-            MoveJointsMotion(["arm_flex_joint"], [-1.8]).resolve().perform()
-            MoveJointsMotion(["wrist_flex_joint"], [-0.8]).resolve().perform()
-            NavigateAction([Pose([robot.get_pose().position.x, robot.get_pose().position.y, 0])]).resolve().perform()
+                # taking in the predefined arm position for placing
+                if self.arm in ["left", "both"]:
+                      # MoveTorsoAction([0.4]).resolve().perform()
+                       kwargs["left_arm_config"] = "place_human_given_obj"
+                       MoveArmJointsMotion(**kwargs).resolve().perform()
+                       print("moveArmJointsMotion in Designator")
 
-            print(f" wrist_roll: {robot.get_joint_state('wrist_roll_joint')}")
-            MoveGripperMotion(motion="open", gripper="left").resolve().perform()
-           # MoveTorsoAction([0.4]).resolve().perform()
-            NavigateAction([Pose([robot.get_pose().position.x - 0.1, robot.get_pose().position.y, 0])]).resolve().perform()
+                MoveJointsMotion(["wrist_flex_joint"], [-0.8]).resolve().perform()
+                NavigateAction([Pose([robot.get_pose().position.x, robot.get_pose().position.y, 0])]).resolve().perform()
 
+                print(f" wrist_roll: {robot.get_joint_state('wrist_roll_joint')}")
+                MoveGripperMotion(motion="open", gripper="left").resolve().perform()
+               # MoveTorsoAction([0.4]).resolve().perform()
+                NavigateAction([Pose([robot.get_pose().position.x - 0.1, robot.get_pose().position.y, 0])]).resolve().perform()
 
-            #NavigateAction([Pose([robot.get_pose().position.x - 0.1, robot.get_pose().position.y, 0])]).resolve().perform()
+            else:
+                print("In else placehuman")
+                oTm = self.target_location
 
-             # navigate close to the table
-            #  self.target_location.pose.position.x = 4.08
-            # # self.target_location.pose.position.y = 2.6
-            #  # because its the left arm of the hsr subtract from y position
-            #  self.target_location.pose.position.y -= 0.14
-            #  self.target_location.pose.position.z = 0
-            #  NavigateAction([self.target_location]).resolve().perform()
-            #
-            #  # create the keyword arguments
-            #  kwargs = dict()
-            #
-            #  # taking in the predefined arm position for placing
-            #  if self.arm in ["left", "both"]:
-            #       MoveTorsoAction([0.4]).resolve().perform()
-            #       kwargs["left_arm_config"] = "place_human_given_obj"
-            #       MoveArmJointsMotion(**kwargs).resolve().perform()
-            #       print("moveArmJointsMotion in Designator")
-            #
-            #
-            #  rospy.logwarn("Open Gripper")
-            #  MoveGripperMotion(motion="open", gripper=self.arm).resolve().perform()
-          #  robot.detach(object=self.object_designator.bullet_world_object)
+                if self.grasp == "top":
+                    oTm.pose.position.z += 0.05
+
+                grasp_rotation = robot_description.grasps.get_orientation_for_grasp(self.grasp)
+                oTb = lt.transform_pose(oTm, robot.get_link_tf_frame("base_link"))
+                oTb.orientation = grasp_rotation
+                oTmG = lt.transform_pose(oTb, "map")
+
+                rospy.logwarn("Placing now")
+                MoveTCPMotion(oTmG, self.arm).resolve().perform()
+
+                tool_frame = robot_description.get_tool_frame(self.arm)
+                push_base = lt.transform_pose(oTmG, robot.get_link_tf_frame(tool_frame))
+                if robot.name == "hsrb":
+                    z = 0.03
+                    if self.grasp == "top":
+                        z = 0.07
+                    push_base.pose.position.z += z
+                # todo: make this for other robots
+                push_baseTm = lt.transform_pose(push_base, "map")
+
+                rospy.logwarn("Pushing now")
+                MoveTCPMotion(push_baseTm, self.arm).resolve().perform()
+
+                rospy.logwarn("Close Gripper")
+                MoveGripperMotion(motion="open", gripper=self.arm).resolve().perform()
+
+                rospy.logwarn("Lifting now")
+                liftingTm = push_baseTm
+                liftingTm.pose.position.z += 0.08
+                BulletWorld.current_bullet_world.add_vis_axis(liftingTm)
+
+                MoveTCPMotion(liftingTm, self.arm).resolve().perform()
 
     def __init__(self,
-                 arms: List[str], target_locations: List[Pose], resolver=None):
+                 object_types: List[str], arms: List[str], target_locations: List[Pose], grasps: List[str], resolver=None):
         """
         Lets the robot place a human given object. The description needs an object designator describing the object that should be
         placed, an arm that should be used as well as the target location where the object should be placed.
@@ -685,7 +708,9 @@ class PlaceGivenObjAction(ActionDesignatorDescription):
         super().__init__(resolver)
        # self.object_designator_description: Union[
            # ObjectDesignatorDescription, ObjectDesignatorDescription.Object] = object_designator_description
+        self.object_types: List[str] = object_types
         self.arms: List[str] = arms
+        self.grasps: List[str] = grasps
         self.target_locations: List[Pose] = target_locations
 
 
@@ -698,7 +723,7 @@ class PlaceGivenObjAction(ActionDesignatorDescription):
        # obj_desig = self.object_designator_description if isinstance(self.object_designator_description,
                                                                   #   ObjectDesignatorDescription.Object) else self.object_designator_description.resolve()
 
-        return self.Action(self.arms[0], self.target_locations[0])
+        return self.Action(self.object_types[0], self.arms[0], self.target_locations[0], self.grasps[0])
 
 
 class NavigateAction(ActionDesignatorDescription):
