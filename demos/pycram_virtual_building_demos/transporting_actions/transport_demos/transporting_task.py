@@ -25,7 +25,7 @@ def start_transporting_demo(location: str = "table_area_main", context: str = "b
 
 
     with simulated_robot:
-        TransportAction(location, current_context).resolve().perform()
+        TransportAction(current_context, target_location=location).resolve().perform()
 
     clear_output(wait=True)
     rospy.loginfo("Transporting task completed!")
