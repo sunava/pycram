@@ -20,6 +20,7 @@ RUN cd pycram \
 # === When all .gitmodules use https urls ===
 
 RUN pip install --requirement ${PYCRAM_WS}/src/pycram/requirements.txt --user 
+RUN pip install service_identity --force
 RUN pip install --requirement ${PYCRAM_WS}/src/pycram/src/neem_interface_python/requirements.txt --user \
   && pip cache purge
 
