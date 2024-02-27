@@ -1,10 +1,13 @@
 import itertools
 import math
+
+import roslibpy.tf
 import sqlalchemy.orm
 from typing import Any, Union
 import rospy
 
 import pycram.plan_failures
+from .. import helper
 from ..context_knowledge import ContextConfig
 from .location_designator import CostmapLocation, find_reachable_location_and_nav_pose, AccessingLocation
 from .motion_designator import *
@@ -237,7 +240,7 @@ class ParkArmsAction(ActionDesignatorDescription):
                 kwargs["left_arm_config"] = "park"
                 MoveArmJointsMotion(**kwargs).resolve().perform()
                 MoveTorsoAction([
-                                    0.25]).resolve().perform()  # MoveTorsoAction([0.005]).resolve().perform()  # MoveTorsoAction([0.2]).resolve().perform()
+                    0.25]).resolve().perform()  # MoveTorsoAction([0.005]).resolve().perform()  # MoveTorsoAction([0.2]).resolve().perform()
             # add park right arm if wanted
             if self.arm in [Arms.RIGHT, Arms.BOTH]:
                 kwargs["right_arm_config"] = "park"
@@ -308,7 +311,7 @@ class PickUpAction(ActionDesignatorDescription):
             # Retrieve object and robot from designators
             object = self.object_designator.bullet_world_object
             # Calculate the object's pose in the map frame
-            oTm = object.get_pose()
+            oTm = object.get_pose().copy()
             execute = True
 
             # Adjust object pose for top-grasping, if applicable
@@ -324,18 +327,24 @@ class PickUpAction(ActionDesignatorDescription):
             # Determine the grasp orientation and transform the pose to the base link frame
             grasp_rotation = robot_description.grasps.get_orientation_for_grasp(self.grasp)
             oTb = lt.transform_pose(oTm, robot.get_link_tf_frame("base_link"))
+            #otbtest = oTb.copy()
+            testmulti = helper.multiply_quaternions([oTb.orientation.x, oTb.orientation.y, oTb.orientation.z, oTb.orientation.w], grasp_rotation)
+            #otbtest.orientation = testmulti
             # Set pose to the grasp rotation
-            oTb.orientation = grasp_rotation
+            oTb.orientation = testmulti
             # Transform the pose to the map frame
             oTmG = lt.transform_pose(oTb, "map")
-
+            BulletWorld.current_bullet_world.add_vis_axis(oTmG)
+            #BulletWorld.current_bullet_world.add_vis_axis(otbtest)
+            #
+            #
             # Open the gripper before picking up the object
             # rospy.logwarn("Opening Gripper")
             MoveGripperMotion(motion="open", gripper=self.arm).resolve().perform()
 
             # Move to the pre-grasp position and visualize the action
             # rospy.logwarn("Picking up now")
-            BulletWorld.current_bullet_world.add_vis_axis(oTmG)
+            #BulletWorld.current_bullet_world.add_vis_axis(oTmG)
             # Execute Bool, because sometimes u only want to visualize the poses to test things
             if execute:
                 MoveTorsoAction([0.25]).resolve().perform()
@@ -355,11 +364,14 @@ class PickUpAction(ActionDesignatorDescription):
                         special_knowledge_offset.pose.position.x -= 0.03  # 0.022
                     if self.object_designator.type == "Cutlery":
                         special_knowledge_offset.pose.position.x -= 0.0115  # 0.11 before, fork needs more
+
             elif robot.name == "pr2":
                 if self.grasp == "top":
                     if self.object_designator.type == ObjectType.BOWL:
-                        special_knowledge_offset.pose.position.x -= 0.0
-                        special_knowledge_offset.pose.position.y += 0.0  # 0.022  # if self.object_designator.type == "Fork":  #     special_knowledge_offset.pose.position.x -= 0.02
+                        special_knowledge_offset.pose.position.x -= 0.06
+                        special_knowledge_offset.pose.position.y += 0.03
+                    if self.object_designator.type == "cutting_tool":
+                        special_knowledge_offset.pose.position.z -= 0.09  # 0.11 before, fork needs more  # 0.022  # if self.object_designator.type == "Fork":  #     special_knowledge_offset.pose.position.x -= 0.02
 
             push_base = special_knowledge_offset
             # todo: this is for hsrb only at the moment we will need a function that returns us special knowledge
@@ -376,7 +388,7 @@ class PickUpAction(ActionDesignatorDescription):
                 if self.grasp == "top":
                     x = 0.01
                     if self.object_designator.type == ObjectType.BOWL:
-                        x = 0.01 # 0.05
+                        x = 0.01  # 0.05
                 push_base.pose.position.x += x
             push_baseTm = lt.transform_pose(push_base, "map")
             special_knowledge_offsetTm = lt.transform_pose(push_base, "map")
@@ -393,7 +405,8 @@ class PickUpAction(ActionDesignatorDescription):
             BulletWorld.current_bullet_world.add_vis_axis(push_baseTm)
             if execute:
                 MoveTCPMotion(push_baseTm, self.arm).resolve().perform()
-
+            tool_frame = robot_description.get_tool_frame(self.arm)
+            robot.attach(object=self.object_designator.bullet_world_object, link=tool_frame)
             # Finalize the pick-up by closing the gripper and lifting the object
             # rospy.logwarn("Close Gripper")
             MoveGripperMotion(motion="close", gripper=self.arm).resolve().perform()
@@ -404,8 +417,6 @@ class PickUpAction(ActionDesignatorDescription):
             BulletWorld.current_bullet_world.add_vis_axis(liftingTm)
             if execute:
                 MoveTCPMotion(liftingTm, self.arm).resolve().perform()
-            tool_frame = robot_description.get_tool_frame(self.arm)
-            robot.attach(object=self.object_designator.bullet_world_object, link=tool_frame)
             BulletWorld.current_bullet_world.remove_vis_axis()
 
         def to_sql(self) -> ORMPickUpAction:
@@ -637,7 +648,6 @@ class PlaceGivenObjAction(ActionDesignatorDescription):
             rospy.logwarn("Placing now")
             MoveTCPMotion(oTmG, self.arm).resolve().perform()
 
-            print(f" wrist_flex: {robot.get_joint_state('wrist_flex_joint')}")
             MoveTorsoAction([0.62]).resolve().perform()  # 0.62
 
             MoveJointsMotion(["arm_roll_joint"], [0]).resolve().perform()
@@ -777,14 +787,10 @@ class TransportAction(ActionDesignatorDescription):
 
     @dataclasses.dataclass
     class Action(ActionDesignatorDescription.Action):
-        target_location: str
-        """
-        Target Location to which the object should be transported
-        """
         current_context: ContextConfig
-        """
-        Current Context of the robot e,g breakfast
-        """
+        target_location: Optional[str] = None
+        hold: Optional[bool] = None  # Add this line
+        target_object: Optional[str] = None  # And this line
 
         @with_tree
         def perform(self) -> None:
@@ -805,8 +811,10 @@ class TransportAction(ActionDesignatorDescription):
                 if typeloc in ["acces"]:
                     open_container = True
 
-                grasp, arm, detected_object = access_and_pickup(current_context, location_to_search, obj_name,
-                                                                    open_container=open_container)
+                obj_type = self.current_context.get_object_type(obj_name)
+
+                grasp, arm, detected_object = access_and_pickup(current_context, location_to_search, obj_type,
+                                                                open_container=open_container)
                 return grasp, arm, detected_object
 
             def access_and_pickup(current_context, location_to_search, target_object, open_container=False):
@@ -826,7 +834,6 @@ class TransportAction(ActionDesignatorDescription):
                     link_name = current_context.get_handle(location_to_search)
                     location_to_search = link_name
 
-
                 if open_container:
                     handle_desig = ObjectPart(names=[location_to_search], part_of=envi_desig.resolve())
                     drawer_open_location = AccessingLocation(handle_desig=handle_desig.resolve(),
@@ -844,7 +851,8 @@ class TransportAction(ActionDesignatorDescription):
                         location_pose = Pose([1.7, 2, 0])
                     elif location_to_search == "table_area_main":
                         location_pose = Pose([4, 3.5, 0])
-                    else: location_pose = Pose([1.7, 2, 0])
+                    else:
+                        location_pose = Pose([1.7, 2, 0])
                     NavigateAction(target_locations=[location_pose]).resolve().perform()
 
                 ParkArmsAction([Arms.BOTH]).resolve().perform()
@@ -912,7 +920,7 @@ class TransportAction(ActionDesignatorDescription):
             def pickup_target_object(detected_object, arm):
                 ParkArmsAction([arm]).resolve().perform()
                 grasp = None
-                if detected_object.type == "spoon" or detected_object.type == "bowl":
+                if detected_object.type in ["spoon", "bowl", "cutlery", "cutting_tool"]:
                     grasp = "top"
                 else:
                     grasp = "front"
@@ -926,13 +934,18 @@ class TransportAction(ActionDesignatorDescription):
                 # Selects the alternate arm based on the current arm.
                 return "right" if current_arm == "left" else "left"
 
+            if self.target_object:
+                objects = [self.target_object]
+
             for obj in objects:
                 MoveTorsoAction([0.25]).resolve().perform()
                 ParkArmsAction([Arms.BOTH]).resolve().perform()
                 grasp, arm, detected_object = search_for_object(self.current_context, obj)
-                place_object(grasp, self.target_location, detected_object, arm)
+                if not self.hold:
+                    place_object(grasp, self.target_location, detected_object, arm)
 
-    def __init__(self, target_location: str, current_context: ContextConfig, resolver=None):
+    def __init__(self, current_context: ContextConfig, target_location: Optional[str] = None,
+                 hold: Optional[bool] = None, target_object: Optional[str] = None, resolver=None):
         """
         Designator representing a pick and place plan.
 
@@ -942,8 +955,10 @@ class TransportAction(ActionDesignatorDescription):
         :param resolver: An alternative resolver that returns a performable designator for the list of possible parameter
         """
         super().__init__(resolver)
-        self.target_locations: str = target_location
         self.current_context: ContextConfig = current_context
+        self.target_locations: Optional[str] = target_location
+        self.hold: Optional[bool] = hold
+        self.target_object: Optional[str] = target_object
 
     def ground(self) -> Action:
         """
@@ -951,7 +966,7 @@ class TransportAction(ActionDesignatorDescription):
 
         :return: A performable designator
         """
-        return self.Action(self.target_locations, self.current_context)
+        return self.Action(self.current_context, self.target_locations, self.hold, self.target_object)
 
 
 class LookAtAction(ActionDesignatorDescription):

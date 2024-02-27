@@ -7,7 +7,7 @@ from pycram.designators.object_designator import BelieveObject
 import pycram.helper as helper
 from pycram.ros.viz_marker_publisher import VizMarkerPublisher
 
-world = BulletWorld("DIRECT")
+world = BulletWorld()
 VizMarkerPublisher(interval=0.6)
 current_context = generate_context("cutting-init", "apartment-small.urdf")
 cutting_tool = current_context.get_cutting_tool()
