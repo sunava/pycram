@@ -223,3 +223,15 @@ def multiply_poses(pose1: Pose, pose2: Pose) -> Tuple:
     new_pos = np.add(pos1, quaternion_rotate(quat1, pos2))
 
     return new_pos, new_quat
+
+def urdf_to_string(urdf_file_path):
+    try:
+        with open(urdf_file_path, 'r') as file:
+            urdf_string = file.read()
+        return urdf_string
+    except FileNotFoundError:
+        print(f"The file {urdf_file_path} was not found.")
+        return None
+    except Exception as e:
+        print(f"An error occurred: {e}")
+        return None

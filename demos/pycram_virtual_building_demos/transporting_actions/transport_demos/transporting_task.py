@@ -1,3 +1,5 @@
+from catkin_pkg import rospack
+
 from pycram.context_knowledge import generate_context
 from pycram.designators.action_designator import *
 from pycram.designators.location_designator import *
@@ -5,6 +7,7 @@ from pycram.designators.object_designator import *
 from pycram.enums import ObjectType
 from pycram.pose import Pose
 from pycram.process_module import simulated_robot
+from pycram.ros.tf_broadcaster import TFBroadcaster
 from pycram.ros.viz_marker_publisher import VizMarkerPublisher
 from IPython.display import display, HTML, clear_output
 
@@ -14,6 +17,13 @@ def start_transporting_demo(location: str = "table_area_main", context: str = "b
     world = BulletWorld("DIRECT")
     VizMarkerPublisher(interval=0.8)
     current_context = generate_context(context, environment)
+
+    package_path = rospack.get_path('pycram') + '/resources/' + environment
+    urdf_string = helper.urdf_to_string(package_path)
+    rospy.set_param('kitchen_description', urdf_string)
+    TFBroadcaster(interval=0.0002)
+
+
     with simulated_robot:
         TransportAction(location, current_context).resolve().perform()
 

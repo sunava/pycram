@@ -809,7 +809,8 @@ class Object:
             self.links: Dict[str, int] = self._joint_or_link_name_to_id("link")
             self.joints: Dict[str, int] = self._joint_or_link_name_to_id("joint")
 
-        self.tf_frame = ("shadow/" if self.world.is_shadow_world else "") + self.name + "_" + str(self.id)
+        self.tf_frame = (("shadow/" if self.world.is_shadow_world else "") + self.name)
+                         #+ "_" + str(self.id))
 
         if path:
             # This means "world" is not the shadow world since it has a reference to a shadow world
