@@ -12,7 +12,7 @@ def start_transporting_demo(location: str = "table_area_main", context: str = "b
                         environment: str = "apartment-small.urdf"):
     display(HTML('<img src="https://i.gifer.com/XVo6.gif" alt="Hourglass animation" width="50">'))
     world = BulletWorld("DIRECT")
-    VizMarkerPublisher(interval=0.6)
+    VizMarkerPublisher(interval=0.8)
     current_context = generate_context(context, environment)
     with simulated_robot:
         TransportAction(location, current_context).resolve().perform()

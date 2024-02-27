@@ -13,9 +13,6 @@ breakfast_objects_apart = {"milk": {"type": "milk", "model": "milk.stl", "pose":
                            "spoon": {"type": "spoon", "model": "spoon.stl", "pose": [2.5, 2.2, 0.85],
                                      "color": [0, 0, 1, 1], "default_location": "cabinet10_drawer_top",
                                      "typeloc": "acces"}, }
-#                   "bowl": {"type": "bowl", "model": "bowl.stl", "pose": [2.31, 2.2, 0.95], "color": [1, 1, 0, 1],
-#                            "default_location": "island_countertop",
-#                            "typeloc": "No"}}
 handles = {"cabinet10_drawer_top": "handle_cab10_t", "cabinet3_door_top_left": "handle_cab3_door_top",
            "cabinet7_door_bottom_left": "handle_cab7"}
 # breakfast_objects_kitchen = {
@@ -41,17 +38,31 @@ clean_up_objects = {
     "bowl": {"type": "bowl", "model": "bowl.stl", "pose": [4.6599997387605585, 4.339999616031064, 0.8166916942596436],
              "color": [1, 1, 0, 1], "default_location": "table_area_main"}}
 
+cutting_apart = {"board": {"type": "board", "model": "board.stl",
+                           "pose": Pose([2.5, 2.5, 1.05], [0, 0, -1, -1]), "color": [0.4, 0.2, 0.06, 1],
+                           "default_location": "island_countertop", "typeloc": "No"},
+                "cucumber": {"type": "object_to_be_cut", "model": "cocumber.stl",
+                           "pose": Pose([2.5, 2.5, 1.05], [0, 0, -1, -1]),
+                             "color":[0.2, 0.8, 0.2, 1],
+                           "default_location": "island_countertop", "typeloc": "No"},
+                 "bigknife": {"type": "cutting_tool", "model": "big-knife.stl", "pose": [2.55, 2.2, 0.85],
+                              "color": [0.75, 0.75, 0.75, 1], "default_location": "cabinet10_drawer_top",
+                              "typeloc": "acces"}, }
+
 
 class ContextConfig:
     environment_object = None
     spoon_ = None
 
     def __init__(self, context_name, enviornment_name, objects_info):
+        self.object_to_be_cut = None
+        self.cutting_tool = None
         self.context_name = context_name
         self.objects_info = objects_info  # A dictionary of object names and their types
         self.environment_name = enviornment_name  # Name of the environment model
         self.spawn_objects()
         self.handles = handles
+
 
     def spawn_objects(self):
         apart = Object("environment", ObjectType.ENVIRONMENT, self.environment_name)
@@ -59,14 +70,21 @@ class ContextConfig:
         self.environment_object = apart
         # Function to spawn objects in the simulation environment
         for obj_name, obj_info in self.objects_info.items():
-            obj = Object(obj_name, obj_info['type'], obj_info['model'], pose=Pose(obj_info['pose']),
-                         color=obj_info['color'])
-            if obj_info['type'] == "spoon":
+            if isinstance(obj_info['pose'], Pose):
+                obj = Object(obj_name, obj_info['type'], obj_info['model'], pose=obj_info['pose'])
+            else:
+                obj = Object(obj_name, obj_info['type'], obj_info['model'], pose=Pose(obj_info['pose']))
+            if obj_info['type'] == "spoon" or obj_info['type'] == "cutting_tool":
                 if self.environment_name == "apartment-small.urdf":
                     self.environment_object.attach(obj, 'cabinet10_drawer_top')
                 else:
                     self.environment_object.attach(obj, 'sink_area_left_middle_drawer_handle')
                 self.spoon_ = obj
+            if obj_info['type'] == "object_to_be_cut":
+                self.object_to_be_cut = obj
+            if obj_info['type'] == "cutting_tool":
+                self.cutting_tool = obj
+            obj.set_color(obj_info['color'])
 
     def search_locations(self, object_name):
         # Function to provide likely locations of objects within this context
@@ -77,6 +95,15 @@ class ContextConfig:
 
     def get_all_objects(self):
         return self.objects_info.keys()
+
+    def get_object_type(self, object_name):
+        return self.objects_info[object_name].get('type', 'Unknown')
+
+    def get_cutting_objects(self):
+        return self.object_to_be_cut
+
+    def get_cutting_tool(self):
+        return self.cutting_tool
 
     def get_handle(self, location):
         try:
@@ -91,6 +118,9 @@ def generate_context(context_name, enviornment_name):
     if context_name == "breakfast" and enviornment_name == "apartment-small.urdf":
         Object("pr2", ObjectType.ROBOT, "pr2.urdf", pose=Pose([1, 2, 0]))
         return ContextConfig(context_name, enviornment_name, breakfast_objects_apart)
+    if context_name == "cutting-init" and enviornment_name == "apartment-small.urdf":
+        Object("pr2", ObjectType.ROBOT, "pr2.urdf", pose=Pose([1, 2, 0]))
+        return ContextConfig(context_name, enviornment_name, cutting_apart)
     elif context_name == "breakfast" and enviornment_name == "kitchen-small.urdf":
         Object("pr2", ObjectType.ROBOT, "pr2.urdf", pose=Pose([0, 0, 0]))
         return ContextConfig(context_name, enviornment_name, breakfast_objects_kitchen)
