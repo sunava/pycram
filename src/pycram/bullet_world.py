@@ -95,7 +95,7 @@ class BulletWorld:
             self.local_transformer.shadow_world = self.shadow_world
 
         # Some default settings
-        self.set_gravity([0, 0, -9.8])
+        #self.set_gravity([0, 0, -9.8])
         if not is_shadow_world:
             plane = Object("floor", ObjectType.ENVIRONMENT, "plane.urdf", world=self)
         # atexit.register(self.exit)

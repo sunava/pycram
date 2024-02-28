@@ -100,7 +100,6 @@
     <child link="oven"/>
   </joint>
   <material name="oven_gray">
-    <color rgba="0.8 0.8 0.8 1"/>
   </material>
   <link name="oven">
     <visual>
