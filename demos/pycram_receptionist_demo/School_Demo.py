@@ -1,13 +1,9 @@
-import rospy
-
 from pycram.designators.action_designator import DetectAction, NavigateAction
 from pycram.designators.motion_designator import TalkingMotion
-from pycram.fluent import Fluent
-#from demos.pycram_receptionist_demo.utils.misc import *
+# from demos.pycram_receptionist_demo.utils.misc import *
 from pycram.helper import axis_angle_to_quaternion
 from pycram.process_module import real_robot
 import pycram.external_interfaces.giskard as giskardpy
-from pycram.external_interfaces.knowrob import get_guest_info
 from pycram.ros.robot_state_updater import RobotStateUpdater
 from pycram.ros.viz_marker_publisher import VizMarkerPublisher
 from pycram.designators.location_designator import *
@@ -45,6 +41,7 @@ pub_nlp = rospy.Publisher('/startListener', String, queue_size=10)
 
 data_received = False
 
+
 def talk_request(data: String):
     """
     callback function that takes the data from nlp (name and drink) and lets the robot talk
@@ -56,6 +53,7 @@ def talk_request(data: String):
     talk_actions.name_drink_talker(name_drink)
     rospy.loginfo("nlp data:" + name_drink[0] + " " + name_drink[1])
     data_received = True
+
 
 def talk_error(data):
     """
@@ -73,11 +71,7 @@ def demo_test(area):
         data_received = False
         print("start demo")
 
-
-        TalkingMotion("Hello").resolve().perform()
-
         DetectAction(technique='human', state='start').resolve().perform()
-
 
         rospy.loginfo("human detected")
 
@@ -90,10 +84,10 @@ def demo_test(area):
         # signal to start listening
         pub_nlp.publish("start listening")
 
-        #wait for human to say something
+        # wait for human to say something
         rospy.sleep(5)
 
-        #get name and drink
+        # get name and drink
         rospy.Subscriber("nlp_feedback", Bool, talk_error)
 
         rospy.Subscriber("nlp_out", String, talk_request)
@@ -103,7 +97,6 @@ def demo_test(area):
 
         # sleep so that toya finishes sentence
         rospy.sleep(3)
-
 
         # lead human to living room
         TalkingMotion("i will show you the living room now").resolve().perform()
@@ -116,29 +109,28 @@ def demo_test(area):
         rospy.loginfo("stop detecting")
         DetectAction(technique='human', state='stop').resolve().perform()
 
-
-
         if area == 'to_couch':
             rospy.loginfo("Navigating now")
-            TalkingMotion("navigating to couch area now, please step away").resolve().perform()
-            rospy.sleep(5)
+            rospy.sleep(3)
+
             NavigateAction([pose_kitchen_to_couch]).resolve().perform()
             NavigateAction([pose_couch]).resolve().perform()
+
+            rospy.sleep(1)
+            TalkingMotion("Welcome to the living room").resolve().perform()
+            TalkingMotion("take a seat").resolve().perform()
         elif area == 'from_couch':
             rospy.loginfo("Navigating now")
-            TalkingMotion("navigating to couch area now, please step away").resolve().perform()
-            rospy.sleep(5)
+            rospy.sleep(3)
             NavigateAction([pose_from_couch]).resolve().perform()
             NavigateAction([pose_home]).resolve().perform()
         else:
             rospy.loginfo("in else")
             TalkingMotion("not navigating").resolve().perform()
-            rospy.sleep(5)
+            rospy.sleep(3)
             print("end")
 
         TalkingMotion("End of demo").resolve().perform()
-
-
 
 
 def nav_test():
@@ -150,5 +142,5 @@ def nav_test():
         moveBase.queryPoseNav(test_pose)
 
 
-#demo_test('from_couch')
-demo_test('now')
+# demo_test('from_couch')
+demo_test('to_couch')
