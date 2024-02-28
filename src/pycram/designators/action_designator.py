@@ -239,7 +239,7 @@ class ParkArmsAction(ActionDesignatorDescription):
             if self.arm in [Arms.LEFT, Arms.BOTH]:
                 kwargs["left_arm_config"] = "park"
                 MoveArmJointsMotion(**kwargs).resolve().perform()
-                #MoveTorsoAction([0.005]).resolve().perform()
+                # MoveTorsoAction([0.005]).resolve().perform()
                 MoveTorsoAction([0.2]).resolve().perform()
             # add park right arm if wanted
             if self.arm in [Arms.RIGHT, Arms.BOTH]:
@@ -273,8 +273,6 @@ class ParkArmsAction(ActionDesignatorDescription):
         :return: A performable designator
         """
         return self.Action(self.arms[0])
-
-
 
 
 class PickUpAction(ActionDesignatorDescription):
@@ -358,13 +356,13 @@ class PickUpAction(ActionDesignatorDescription):
                         print(f"x_pose: {special_knowledge_offset.pose.position.x}")
                         print(f"y_pose: {special_knowledge_offset.pose.position.y}")
                         special_knowledge_offset.pose.position.y += 0.06
-                        special_knowledge_offset.pose.position.x -= 0.03 # 0.022
+                        special_knowledge_offset.pose.position.x -= 0.03  # 0.022
                         print(f"x_pose_after: {special_knowledge_offset.pose.position.x}")
                         print(f"y_pose_after: {special_knowledge_offset.pose.position.y}")
                     if self.object_designator.type == "Cutlery":
                         print(f"Cutlery erkannt, rechne -x")
                         print(special_knowledge_offset.pose.position.x)
-                        special_knowledge_offset.pose.position.x -= 0.115 # 0.11 before, fork needs more
+                        special_knowledge_offset.pose.position.x -= 0.115  # 0.11 before, fork needs more
                         print(special_knowledge_offset.pose.position.x)
                     # if self.object_designator.type == "Fork":
                     #     special_knowledge_offset.pose.position.x -= 0.02
@@ -377,7 +375,7 @@ class PickUpAction(ActionDesignatorDescription):
                 if self.grasp == "top":
                     z = 0.039
                     if self.object_designator.type == "Bowl":
-                        z = 0.045 # 0.05
+                        z = 0.045  # 0.05
                 push_base.pose.position.z += z
             push_baseTm = lt.transform_pose(push_base, "map")
             special_knowledge_offsetTm = lt.transform_pose(push_base, "map")
@@ -486,7 +484,7 @@ class PlaceAction(ActionDesignatorDescription):
             lt = LocalTransformer()
             robot = BulletWorld.robot
             # Retrieve object and robot from designators
-           # object = self.object_designator.bullet_world_object
+            # object = self.object_designator.bullet_world_object
             # oTm = Object Pose in Frame map
             oTm = self.target_location
 
@@ -588,7 +586,6 @@ class PlaceGivenObjAction(ActionDesignatorDescription):
     """
     Arm movement of the robot for placing human given objects.
     """
-    #Todo: erweitern ums placing
 
     @dataclasses.dataclass
     class Action(ActionDesignatorDescription.Action):
@@ -606,24 +603,25 @@ class PlaceGivenObjAction(ActionDesignatorDescription):
         """
         Pose in the world at which the object should be placed
         """
+
         grasp: str
+        """
+        Grasp that defines how to place the given object
+        """
+
         @with_tree
         def perform(self) -> None:
             lt = LocalTransformer()
             robot = BulletWorld.robot
-            # Retrieve object and robot from designators
-           # object = self.object_designator.bullet_world_object
+            # oTm = Object Pose in Frame map
+            oTm = self.target_location
 
-            # self.target_location.pose.position.x = 4.86
-            # self.target_location.pose.position.y = 2.2
-            if self.object_type == "Metalplate":
-                print("in if placehuman")
+            # TODO add for other robots
+            if self.object_type == "Metalplate" and robot.name == "hsrb":
+                print("in hsrb and metalplate placing")
                 self.target_location.pose.position.z = 0.9
 
-                # oTm = Object Pose in Frame map
-                oTm = self.target_location
-
-                grasp_rotation = robot_description.grasps.get_orientation_for_grasp(self.grasp)
+                grasp_rotation = robot_description.grasps.get_orientation_for_grasp("front")
                 oTb = lt.transform_pose(oTm, robot.get_link_tf_frame("base_link"))
                 oTb.orientation = grasp_rotation
                 oTmG = lt.transform_pose(oTb, "map")
@@ -631,35 +629,35 @@ class PlaceGivenObjAction(ActionDesignatorDescription):
                 rospy.logwarn("Placing now")
                 MoveTCPMotion(oTmG, self.arm).resolve().perform()
 
-                print(f" wrist_flex: {robot.get_joint_state('wrist_flex_joint')}")
-                MoveTorsoAction([0.62]).resolve().perform() # 0.62
+                MoveTorsoAction([0.62]).resolve().perform()
 
-                # MoveJointsMotion(["arm_roll_joint"], [0]).resolve().perform()
-                #
-                # MoveJointsMotion(["wrist_roll_joint"], [-1.5]).resolve().perform()
-                # MoveJointsMotion(["wrist_flex_joint"], [-0.5]).resolve().perform()
-                # MoveJointsMotion(["arm_flex_joint"], [-1.8]).resolve().perform()
                 kwargs = dict()
 
                 # taking in the predefined arm position for placing
                 if self.arm in ["left", "both"]:
-                      # MoveTorsoAction([0.4]).resolve().perform()
-                       kwargs["left_arm_config"] = "place_human_given_obj"
-                       MoveArmJointsMotion(**kwargs).resolve().perform()
-                       print("moveArmJointsMotion in Designator")
+                    kwargs["left_arm_config"] = "place_human_given_obj"
+                    MoveArmJointsMotion(**kwargs).resolve().perform()
 
+                # turning the gripper downwards to better drop the plate
                 MoveJointsMotion(["wrist_flex_joint"], [-0.8]).resolve().perform()
-                NavigateAction([Pose([robot.get_pose().position.x, robot.get_pose().position.y, 0])]).resolve().perform()
 
-                print(f" wrist_roll: {robot.get_joint_state('wrist_roll_joint')}")
+                # correct a possible sloped orientation
+                NavigateAction([Pose([robot.get_pose().pose.position.x, robot.get_pose().pose.position.y, 0],
+                                     [robot.get_pose().orientation.x, robot.get_pose().orientation.y,
+                                      robot.get_pose().orientation.z,
+                                      robot.get_pose().orientation.w])]).resolve().perform()
+
                 MoveGripperMotion(motion="open", gripper="left").resolve().perform()
-               # MoveTorsoAction([0.4]).resolve().perform()
-                NavigateAction([Pose([robot.get_pose().position.x - 0.1, robot.get_pose().position.y, 0])]).resolve().perform()
 
+                # Move away from the table
+                # todo if turned in an other direction hsr is not moving backwards but forward
+                NavigateAction(
+                    [Pose([robot.get_pose().pose.position.x - 0.1, robot.get_pose().pose.position.y, 0],
+                          [robot.get_pose().orientation.x, robot.get_pose().orientation.y,
+                           robot.get_pose().orientation.z, robot.get_pose().orientation.w])]).resolve().perform()
+
+            # placing everything else except the Metalplate
             else:
-                print("In else placehuman")
-                oTm = self.target_location
-
                 if self.grasp == "top":
                     oTm.pose.position.z += 0.05
 
@@ -695,34 +693,30 @@ class PlaceGivenObjAction(ActionDesignatorDescription):
                 MoveTCPMotion(liftingTm, self.arm).resolve().perform()
 
     def __init__(self,
-                 object_types: List[str], arms: List[str], target_locations: List[Pose], grasps: List[str], resolver=None):
+                 object_types: List[str], arms: List[str], target_locations: List[Pose], grasps: List[str],
+                 resolver=None):
         """
-        Lets the robot place a human given object. The description needs an object designator describing the object that should be
-        placed, an arm that should be used as well as the target location where the object should be placed.
+        Lets the robot place a human given object. The description needs an object type describing the object that should be
+        placed, an arm that should be used as well as the target location where the object should be placed and the needed grasping movement.
 
-        :param object_designator_description: List of possible object designator
+        :param object_types: List of possible object types
         :param arms: List of possible arms that could be used
         :param target_locations: List of possible target locations for the object to be placed
+        :param grasps: List of possible grasps for the object
         :param resolver: An optional resolver that returns a performable designator with elements from the lists of possible paramter
         """
         super().__init__(resolver)
-       # self.object_designator_description: Union[
-           # ObjectDesignatorDescription, ObjectDesignatorDescription.Object] = object_designator_description
         self.object_types: List[str] = object_types
         self.arms: List[str] = arms
         self.grasps: List[str] = grasps
         self.target_locations: List[Pose] = target_locations
 
-
     def ground(self) -> Action:
         """
-        Default resolver that returns a performable designator with the first element of the list of possible arms
+        Default resolver that returns a performable designator with the first entries from the lists of possible parameter.
 
         :return: A performable designator
         """
-       # obj_desig = self.object_designator_description if isinstance(self.object_designator_description,
-                                                                  #   ObjectDesignatorDescription.Object) else self.object_designator_description.resolve()
-
         return self.Action(self.object_types[0], self.arms[0], self.target_locations[0], self.grasps[0])
 
 

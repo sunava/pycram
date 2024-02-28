@@ -42,18 +42,19 @@ class HSRBDescription(RobotDescription):
         arm_inter = InteractionDescription(arm_chain, "wrist_roll_link")
         arm_manip = ManipulatorDescription(arm_inter, tool_frame="hand_gripper_tool_frame", gripper_description=gripper)
 
-
         arm_chain2 = ChainDescription("given_obj", arm_joints, arm_links, static_joint_states=arm_placing_given_obj)
         arm_inter2 = InteractionDescription(arm_chain2, "wrist_roll_link")
-        arm_manip2 = ManipulatorDescription(arm_inter2, tool_frame="hand_gripper_tool_frame", gripper_description=gripper)
+        arm_manip2 = ManipulatorDescription(arm_inter2, tool_frame="hand_gripper_tool_frame",
+                                            gripper_description=gripper)
         self.add_chains({"given_obj": arm_manip2, "left": arm_manip})
-        rospy.logerr(self.chains)
+
         self.add_static_gripper_chains("left", {"open": [0.3], "close": [0.0]})
         self.grasps = GraspingDescription(
             {"front": [-1, 0, -1, 0],
              "left": [0, -1, 1, 0],
              "right": [0, -1, -1, 0.0],
              "top": [-1, 0, 0, 0]})
+
     def get_camera_frame(self, name="head_center_camera"):
         # TODO: Hacky since only one optical camera frame from pr2 is used
         return super().get_camera_frame(name)
