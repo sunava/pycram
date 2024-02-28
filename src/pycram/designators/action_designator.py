@@ -1325,8 +1325,8 @@ class CuttingAction(ActionDesignatorDescription):
             """
 
             # Store the object and tool at the time of execution
-            self.object_to_be_cut_at_execution = self.object_to_be_cut.data_copy()
-            self.tool_at_execution = self.tool.data_copy()
+#            self.object_to_be_cut_at_execution = self.object_to_be_cut.data_copy()
+#            self.tool_at_execution = self.tool.data_copy()
 
             # Obtain the preferred grasp orientation for the cutting action
             grasp = robot_description.grasps.get_orientation_for_grasp("top")
@@ -1346,9 +1346,14 @@ class CuttingAction(ActionDesignatorDescription):
             obj_length, obj_width, obj_height = dim
 
             # Calculate the starting position for slicing, adjusted based on the chosen technique
-            if self.technique == 'halving':
+            if self.technique in ['halving']:
                 start_offset = 0  # No offset needed for halving
                 num_slices = 1  # Only one slice for halving
+            elif self.technique in ['Cutting Action', 'Sawing', 'Paring', 'Cutting', 'Carving']:
+                # Calculate number of slices and initial offset for regular slicing
+                num_slices = 1
+                start_offset = (-obj_length / 2) + (self.slice_thickness / 2)
+
             else:
                 # Calculate number of slices and initial offset for regular slicing
                 num_slices = int(obj_length // self.slice_thickness)
@@ -1425,9 +1430,7 @@ class CuttingAction(ActionDesignatorDescription):
 
         :yields:  A possible cutting action with a specific combination of object, tool, and arm.
         """
-        for object_, tool_, arm, technique in itertools.product(iter(self.object_to_be_cut), iter(self.tool), self.arms,
-                                                                self.technique):
-            yield self.Action(object_, tool_, arm, technique)
+        yield self.Action(self.object_to_be_cut, self.tool, self.arms[0], self.technique)
 
     def ground(self) -> Action:
         """

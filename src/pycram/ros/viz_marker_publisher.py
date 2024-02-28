@@ -67,7 +67,7 @@ class VizMarkerPublisher:
         marker_array = MarkerArray()
         objnew = False
         for obj in BulletWorld.current_bullet_world.objects:
-            if obj.name in ["floor", "robot", "pr2", "environment"]:
+            if obj.name in ["floor", ]:
                 continue
             if obj.name == "hsrb":
                 continue

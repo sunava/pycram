@@ -27,18 +27,33 @@ rospack = rospkg.RosPack()
 
 current_context = generate_context("cutting-init", "apartment-small.urdf")
 cutting_tool = current_context.get_cutting_tool()
+
+cutting_obj = current_context.get_cutting_objects()
 name = "apartment-small.urdf"
 
 package_path = rospack.get_path('pycram') + '/resources/' + name
 urdf_string = helper.urdf_to_string(package_path)
 rospy.set_param('kitchen_description', urdf_string)
 broadcaster = TFBroadcaster(interval=0.0002)
+robot_desig = BulletWorld.current_bullet_world.robot
 
 
 with simulated_robot:
     ParkArmsAction([Arms.BOTH]).resolve().perform()
     MoveTorsoAction([0.33]).resolve().perform()
     TransportAction(current_context=current_context, hold=True, target_object=cutting_tool.name).resolve().perform()
+    location_pose = Pose([1.7, 2, 0])
+    looking_pose = Pose([2.5, 2, 0.97])
+    NavigateAction([location_pose]).resolve().perform()
+
+    LookAtAction([looking_pose]).resolve().perform()
+    status, object_dict = DetectAction(technique='specific', object_type="object_to_be_cut").resolve().perform()
+    if status:
+        for key, value in object_dict.items():
+            detected_object = object_dict[key]
+            bigknife_BO = BelieveObject(names=["bigknife"])
+            CuttingAction(detected_object, bigknife_BO, ["right"], "slicing").resolve().perform()
+
     #     grasp = robot_description.grasps.get_orientation_for_grasp("top")
 #     arm = "left"
 #     pickup_pose_knife = CostmapLocation(target=bigknife_BO.resolve(), reachable_for=robot_desig).resolve()

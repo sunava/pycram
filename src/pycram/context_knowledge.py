@@ -39,10 +39,10 @@ clean_up_objects = {
              "color": [1, 1, 0, 1], "default_location": "table_area_main"}}
 
 cutting_apart = {"board": {"type": "board", "model": "board.stl",
-                           "pose": Pose([2.5, 2.5, 1.05], [0, 0, -1, -1]), "color": [0.4, 0.2, 0.06, 1],
+                           "pose": Pose([2.5, 2, 0.95], [0, 0, -1, -1]), "color": [0.4, 0.2, 0.06, 1],
                            "default_location": "island_countertop", "typeloc": "No"},
                 "cucumber": {"type": "object_to_be_cut", "model": "cocumber.stl",
-                           "pose": Pose([2.5, 2.5, 1.05], [0, 0, -1, -1]),
+                           "pose": Pose([2.5, 2, 0.97], [1, 1, 1, 1]),
                              "color":[0.2, 0.8, 0.2, 1],
                            "default_location": "island_countertop", "typeloc": "No"},
                  "bigknife": {"type": "cutting_tool", "model": "big-knife.stl", "pose": [2.55, 2.2, 0.85],
