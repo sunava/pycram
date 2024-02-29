@@ -30,8 +30,8 @@ kitchen = Object("kitchen", "environment", "kitchen.urdf")
 giskardpy.init_giskard_interface()
 RobotStateUpdater("/tf", "/giskard_joint_states")
 
-robot_orientation_couch = axis_angle_to_quaternion([0, 0, 1], 0)
-pose_couch = Pose([3, 5, 0], robot_orientation_couch)
+robot_orientation_couch = axis_angle_to_quaternion([0, 0, 1], 180)
+pose_couch = Pose([3, 5, 0])
 
 robot_orientation_from_couch = axis_angle_to_quaternion([0, 0, 1], -90)
 pose_from_couch = Pose([4.2, 3.8, 0], robot_orientation_from_couch)
@@ -47,7 +47,7 @@ pub_nlp = rospy.Publisher('/startListener', String, queue_size=10)
 def demo_ms2(area):
     with real_robot:
         # declare variables for humans
-        host = HumanDescription("Bob", fav_drink="Coffee")
+        host = HumanDescription("Yannis", fav_drink="Tea")
         guest1 = HumanDescription("guest1")
 
         # look for human
@@ -65,7 +65,7 @@ def demo_ms2(area):
         pub_nlp.publish("start listening")
 
         #wait for human to say something
-        rospy.sleep(15)
+        rospy.sleep(13)
 
         # guest_data format is = ["name", "drink"]
         guest_data = get_guest_info("1.0")
@@ -127,4 +127,4 @@ def nav_test():
 
 
 # demo_test('from_couch')
-demo_ms2('now')
+demo_ms2('to_couch')

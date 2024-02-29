@@ -5,13 +5,13 @@ from pycram.designators.object_designator import *
 from pycram.designators.motion_designator import *
 from pycram.pose import Pose
 from pycram.bullet_world import BulletWorld, Object
-from pycram.process_module import real_robot, semi_real_robot
+from pycram.process_module import real_robot
 from pycram.enums import ObjectType
 from pycram.ros.robot_state_updater import RobotStateUpdater
 from pycram.ros.viz_marker_publisher import VizMarkerPublisher
 import pycram.external_interfaces.giskard as giskardpy
-from pycram.helper import sort_objects
-
+from demos.pycram_hsrb_real_test_demos.utils.misc import *
+from pycram.external_interfaces.knowrob import get_table_pose
 
 # Initialize the Bullet world for simulation
 world = BulletWorld()
@@ -134,13 +134,13 @@ def pickup_and_place_objects(robot, sorted_obj):
                 print("adjusted x")
                 sorted_obj[value].pose.position.x -= 0.1
             TalkingMotion("Picking up with: " + grasp).resolve().perform()
-            try_pick_up(sorted_obj[value], grasp)
+            try_pick_up(robot, sorted_obj[value], grasp)
 
         # placing the object
         ParkArmsAction([Arms.LEFT]).resolve().perform()
         TalkingMotion("Navigating").resolve().perform()
-        navigate_to(1.8, 1.8, "table")
-        navigate_to(4.1, y_pos, "table")
+        navigate_to(True, 1.8, "long table")
+        navigate_to(False, y_pos, "long table")
         TalkingMotion("Placing").resolve().perform()
 
         z = get_z(sorted_obj[value].type)
@@ -153,7 +153,7 @@ def pickup_and_place_objects(robot, sorted_obj):
 
         ParkArmsAction([Arms.LEFT]).resolve().perform()
         TalkingMotion("Navigating").resolve().perform()
-        navigate_to(3.9, 2, "popcorntable")
+        navigate_to(True, 2, "popcorn table")
 
         # adjust y_pos for the next placing round
         if sorted_obj[value].type == "Metalplate":
@@ -163,9 +163,10 @@ def pickup_and_place_objects(robot, sorted_obj):
 
         # navigates back if a next object exists
         if value + 1 < len(sorted_obj):
-            navigate_to(1.6, sorted_obj[value + 1].pose.position.y, "popcorntable")
+            navigate_to(False, sorted_obj[value + 1].pose.position.y, "popcorn table")
 
 
+def navigate_to(turn_around, y, table_name):
 def get_z(obj_type: str):
     """
     Getter for z value for placing the given object type.
@@ -184,11 +185,12 @@ def navigate_to(x, y, orientation):
     :param y: y pose to navigate to
     :param orientation: defines the orientation of the robot respectively the name of the table to move to
     """
-    if orientation == "popcorntable":
-        NavigateAction(target_locations=[Pose([x, y, 0], [0, 0, 1, 0])]).resolve().perform()
-    elif orientation == "table":
-        NavigateAction(target_locations=[Pose([x, y, 0], [0, 0, 0, 1])]).resolve().perform()
-
+    table = get_table_pose(table_name)
+    print(f"table_pose: {table}")
+    # if turn_around:
+    #     NavigateAction(target_locations=[Pose([2, y, table.pose.position.z], table.pose.orentation)]).resolve().perform()
+    # else:
+    #     NavigateAction(target_locations=[Pose([table.pose.position.x, y, table.pose.position.z], table.pose.orentation)]).resolve().perform()
 
 def navigate_and_detect():
     """
@@ -197,7 +199,8 @@ def navigate_and_detect():
     :return: tupel of State and dictionary of found objects in the FOV
     """
     TalkingMotion("Navigating").resolve().perform()
-    navigate_to(1.6, 1.8, "popcorntable")
+    navigate_to(False, 1.8, "popcorn table")
+    navigate_to(False, 1.8, "long table") #Todo: comment / take out
 
     # popcorntable
     # todo gucken ob ein aufruf genügt
@@ -252,7 +255,7 @@ with ((real_robot)):
 
     # failure handling part 2
     if len(final_sorted_obj) < len(wished_sorted_obj_list):
-        navigate_to(1.6, 1.8, "popcorntable")
+        navigate_to(False, 1.8, "popcorn table")
         print("second Check")
 
         for value in final_sorted_obj:
@@ -291,8 +294,8 @@ with ((real_robot)):
 
             ParkArmsAction([Arms.LEFT]).resolve().perform()
             TalkingMotion("Navigating").resolve().perform()
-            navigate_to(1.8, 1.8, "table")
-            navigate_to(4.1, y_pos, "table")
+            navigate_to(True, 1.8, "long table")
+            navigate_to(False, y_pos, "long table")
             TalkingMotion("Placing").resolve().perform()
 
             PlaceGivenObjAction([wished_sorted_obj_list[val]], ["left"], [Pose([4.86, y_pos, z])],
@@ -307,8 +310,8 @@ with ((real_robot)):
             # navigates back if a next object exists
             # todo sollen wir ihn echt zum tisch navigieren lassen, wenn er das objekt vom menschen bekommt?
             if val + 1 < len(wished_sorted_obj_list):
-                navigate_to(3.9, 2, "popcorntable")
-                navigate_to(1.6, 1.8, "popcorntable")
+                navigate_to(True, 2, "popcorn table")
+                navigate_to(False, 1.8, "popcorn table")
 
     rospy.loginfo("Done!")
     TalkingMotion("Done").resolve().perform()

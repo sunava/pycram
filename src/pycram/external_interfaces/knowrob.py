@@ -1,7 +1,8 @@
 import logging
 import os
 import sys
-from knowledge_msgs.srv import IsKnown
+from std_msgs.msg import String
+from knowledge_msgs.srv import IsKnown, ObjectPose
 import rospy
 import rosservice
 
@@ -144,3 +145,16 @@ def get_guest_info(id):
     except rospy.ServiceException as e:
         print("Service call failed")
 
+def get_table_pose(table_name):
+    """
+    Get table pose from knowledge
+    :param table_name: predefined name for each table
+    """
+
+    rospy.wait_for_service('pose_server')
+    try:
+        service = rospy.ServiceProxy('pose_server', String)
+        table_pose = service(table_name)
+        return table_pose
+    except rospy.ServiceException:
+        print("Service call failed")
