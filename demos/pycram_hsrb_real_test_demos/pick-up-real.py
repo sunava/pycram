@@ -4,13 +4,12 @@ from pycram.designators.object_designator import *
 from pycram.designators.motion_designator import *
 from pycram.pose import Pose
 from pycram.bullet_world import BulletWorld, Object
-from pycram.process_module import real_robot, semi_real_robot
+from pycram.process_module import real_robot
 from pycram.enums import ObjectType
 from pycram.ros.robot_state_updater import RobotStateUpdater
 from pycram.ros.viz_marker_publisher import VizMarkerPublisher
 import pycram.external_interfaces.giskard as giskardpy
 from pycram.helper import sort_objects
-
 
 # Initialize the Bullet world for simulation
 world = BulletWorld()
@@ -44,6 +43,7 @@ y_pos = 1.66
 # x pose of the end of the popcorntable
 table_pose = 1.04
 
+
 def try_pick_up(robot, obj, grasps):
     """
     Picking up any object with failure handling.
@@ -58,8 +58,9 @@ def try_pick_up(robot, obj, grasps):
         print("try pick up again")
         TalkingMotion("Try pick up again")
         # after failed attempt to pick up the object, the robot moves 30cm back on x pose
-        NavigateAction([Pose([robot.get_pose().position.x - 0.3, robot.get_pose().position.y, robot.get_pose().position.z],
-                       robot.get_pose().orientation)]).resolve().perform()
+        NavigateAction(
+            [Pose([robot.get_pose().position.x - 0.3, robot.get_pose().position.y, robot.get_pose().position.z],
+                  robot.get_pose().orientation)]).resolve().perform()
         ParkArmsAction([Arms.LEFT]).resolve().perform()
         # try to detect the object again
         if EnvironmentUnreachable:
