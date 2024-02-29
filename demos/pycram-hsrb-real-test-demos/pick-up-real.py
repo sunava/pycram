@@ -1,3 +1,4 @@
+from enum import Enum
 from pycram.designators.action_designator import *
 from pycram.designators.location_designator import *
 from pycram.designators.object_designator import *
@@ -44,7 +45,24 @@ y_pos = 1.66
 # x pose of the end of the popcorntable
 table_pose = 1.04
 
-def try_pick_up(robot, obj, grasps):
+
+class PlacingZPose(Enum):
+    """
+    Differentiate the z pose for placing
+    """
+    CUTLERY = 0.8
+    SPOON = 0.8
+    FORK = 0.8
+    PLASTICKNIFE = 0.8
+    KNIFE = 0.8
+    BOWL = 0.84
+    MILKPACK = 0.88
+    METALMUG = 0.8
+    CEREALBOX = 0.9
+    METALPLATE = 0
+
+
+def try_pick_up(obj, grasps):
     """
     Picking up any object with failure handling.
 
@@ -52,14 +70,15 @@ def try_pick_up(robot, obj, grasps):
     :param obj: the object that should be picked up
     :param grasps: how to pick up the object
     """
+    # Todo verschieben dann robot hinzufügen sonst aus comment entfernen
     try:
         PickUpAction(obj, ["left"], [grasps]).resolve().perform()
     except (EnvironmentUnreachable, GripperClosedCompletely):
         print("try pick up again")
         TalkingMotion("Try pick up again")
         # after failed attempt to pick up the object, the robot moves 30cm back on x pose
-        NavigateAction([Pose([robot.get_pose().position.x - 0.3, robot.get_pose().position.y, robot.get_pose().position.z],
-                       robot.get_pose().orientation)]).resolve().perform()
+        NavigateAction([Pose([robot.get_pose().pose.position.x - 0.3, robot.get_pose().pose.position.y, robot.get_pose().pose.position.z],
+                       robot.get_pose().pose.orientation)]).resolve().perform()
         ParkArmsAction([Arms.LEFT]).resolve().perform()
         # try to detect the object again
         if EnvironmentUnreachable:
@@ -83,7 +102,7 @@ def try_pick_up(robot, obj, grasps):
             MoveGripperMotion("close", "left").resolve().perform()
 
 
-def pickUp_and_place_objects(robot, sorted_obj):
+def pickup_and_place_objects(robot, sorted_obj):
     """
     For picking up and placing the objects in the given object designator list.
 
@@ -124,17 +143,7 @@ def pickUp_and_place_objects(robot, sorted_obj):
         navigate_to(4.1, y_pos, "table")
         TalkingMotion("Placing").resolve().perform()
 
-        # differentiate the z pose for placing
-        if sorted_obj[value].type == "Cutlery":
-            z = 0.8
-        elif sorted_obj[value].type == "Bowl":
-            z = 0.84
-        elif sorted_obj[value].type == "Metalmug":
-            z = 0.8
-        elif sorted_obj[value].type == "Milkpack":
-            z = 0.88
-        elif sorted_obj[value].type == "Cerealbox":
-            z = 0.9
+        z = get_z(sorted_obj[value].type)
         if sorted_obj[value].type == "Metalplate":
             # with special defined placing movement for the plate
             PlaceGivenObjAction([sorted_obj[value].type], ["left"], [Pose([4.86, y_pos, 0])],
@@ -155,6 +164,16 @@ def pickUp_and_place_objects(robot, sorted_obj):
         # navigates back if a next object exists
         if value + 1 < len(sorted_obj):
             navigate_to(1.6, sorted_obj[value + 1].pose.position.y, "popcorntable")
+
+
+def get_z(obj_type: str):
+    """
+    Getter for z value for placing the given object type.
+
+    :param obj_type: type of object, which z pose we want
+    :return: returns the int z value for placing that object
+    """
+    return PlacingZPose[obj_type.upper()].value
 
 
 def navigate_to(x, y, orientation):
@@ -206,7 +225,8 @@ with ((real_robot)):
     sorted_obj = sort_objects(robot, object_desig, wished_sorted_obj_list)
 
     # picking up and placing objects
-    pickUp_and_place_objects(robot, sorted_obj)
+    # Todo verschieben dann robot hinzufügen sonst aus comment entfernen
+    pickup_and_place_objects(robot, sorted_obj)
 
     # failure handling part 1
     new_sorted_obj = []
@@ -218,7 +238,7 @@ with ((real_robot)):
         print("first Check")
         new_object_desig = navigate_and_detect()
         new_sorted_obj = sort_objects(robot, new_object_desig, wished_sorted_obj_list)
-        pickUp_and_place_objects(robot, new_sorted_obj)
+        pickup_and_place_objects(robot, new_sorted_obj)
 
     final_sorted_obj = sorted_obj + new_sorted_obj
 
@@ -267,18 +287,7 @@ with ((real_robot)):
             if wished_sorted_obj_list[val] == "Metalplate":
                 y_pos += 0.14
 
-            if wished_sorted_obj_list[val] in ["Spoon", "Fork", "Knife", "Plasticknife"]:
-                z = 0.8
-            elif wished_sorted_obj_list[val] == "Bowl":
-                z = 0.84
-            elif wished_sorted_obj_list[val] == "Metalmug":
-                z = 0.8
-            elif wished_sorted_obj_list[val] == "Milkpack":
-                z = 0.88
-            elif wished_sorted_obj_list[val] == "Cerealbox":
-                z = 0.9
-            elif wished_sorted_obj_list[val] == "Metalplate":
-                z = 0
+            z = get_z(wished_sorted_obj_list[val])
 
             ParkArmsAction([Arms.LEFT]).resolve().perform()
             TalkingMotion("Navigating").resolve().perform()
