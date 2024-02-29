@@ -1,99 +1,130 @@
 import rospy
+
 from pycram.designators.action_designator import DetectAction, NavigateAction
 from pycram.designators.motion_designator import TalkingMotion
-from pycram.process_module import real_robot
+from pycram.fluent import Fluent
 from demos.pycram_receptionist_demo.utils.misc import *
+from pycram.helper import axis_angle_to_quaternion
+from pycram.process_module import real_robot
 import pycram.external_interfaces.giskard as giskardpy
+from pycram.external_interfaces.knowrob import get_guest_info
+from pycram.ros.robot_state_updater import RobotStateUpdater
 from pycram.ros.viz_marker_publisher import VizMarkerPublisher
 from pycram.designators.location_designator import *
 from pycram.designators.object_designator import *
 from pycram.bullet_world import BulletWorld, Object
-from pycram.external_interfaces.knowrob import instances_of, get_guest_info
 from std_msgs.msg import String, Bool
-from pycram.helper import axis_angle_to_quaternion
+from demos.pycram_receptionist_demo.deprecated import talk_actions
+import pycram.external_interfaces.navigate as moveBase
 
 world = BulletWorld("DIRECT")
 # /pycram/viz_marker topic bei Marker Array
 v = VizMarkerPublisher()
 
-world.set_gravity([0, 0, -9.8])
 robot = Object("hsrb", "robot", "../../resources/" + robot_description.name + ".urdf")
 robot_desig = ObjectDesignatorDescription(names=["hsrb"]).resolve()
 robot.set_color([0.5, 0.5, 0.9, 1])
+
+# carefull that u spawn the correct kitchen
 kitchen = Object("kitchen", "environment", "kitchen.urdf")
-robot.set_joint_state(robot_description.torso_joint, 0.24)
-kitchen_desig = ObjectDesignatorDescription(names=["kitchen"])
-milk = Object("Milkpack", "milk", "milk.stl", pose=Pose([-2.7, 2.3, 0.43]), color=[1, 0, 0, 1])
-
 giskardpy.init_giskard_interface()
+RobotStateUpdater("/tf", "/giskard_joint_states")
+
+robot_orientation_couch = axis_angle_to_quaternion([0, 0, 1], 0)
+pose_couch = Pose([3, 5, 0], robot_orientation_couch)
+
+robot_orientation_from_couch = axis_angle_to_quaternion([0, 0, 1], -90)
+pose_from_couch = Pose([4.2, 3.8, 0], robot_orientation_from_couch)
+
+robot_orientation = axis_angle_to_quaternion([0, 0, 1], 90)
+pose_kitchen_to_couch = Pose([4.2, 3, 0], robot_orientation)
+
+pose_home = Pose([3, 1.7, 0], robot_orientation)
+
+pub_nlp = rospy.Publisher('/startListener', String, queue_size=10)
 
 
-# giskardpy.sync_worlds()
-# RobotStateUpdater("/tf", "/joint_states")
+def demo_ms2(area):
+    with real_robot:
+        # declare variables for humans
+        host = HumanDescription("Bob", fav_drink="Coffee")
+        guest1 = HumanDescription("guest1")
 
+        # look for human
+        # TODO: only continue when human stands for longer than 3s in front of robot
+        DetectAction(technique='human', state='start').resolve().perform()
+        rospy.loginfo("human detected")
 
-with real_robot:
-
-    # Variables
-    robot_orientation = axis_angle_to_quaternion([0, 0, 1], 90)
-    pose_kitchen_to_couch = Pose([4.2, 3, 0], robot_orientation)
-    robot_orientation_couch = axis_angle_to_quaternion([0, 0, 1], 0)
-    pose_couch = Pose([3, 5, 0], robot_orientation_couch)
-    host = HumanDescription("Bob", fav_drink="Coffee")
-    guest1 = HumanDescription("x")
-    pub_nlp = rospy.Publisher('/startListener', String, queue_size=10)
-
-    # Perception, detect first guest
-    DetectAction(technique='human', state='start').resolve().perform()
-    while not guest1.human_pose:
-        TalkingMotion("Please step in front of me").resolve.perform()
-        rospy.sleep(5)
-
-    rospy.loginfo("human detected")
-
-    # look at guest and introduction
-    giskardpy.move_head_to_human()
-    TalkingMotion("Hello, i am Toya and my favorite drink is oil. What about you, talk to me?").resolve().perform()
-
-    # reicht sleep 1?
-    rospy.sleep(1)
-
-    # signal to start listening
-    pub_nlp.publish("start listening")
-    rospy.sleep(10)
-
-    # get data from Knowledge
-    # TODO: test on real HSR
-    guest_data = get_guest_info(1)
-    while guest_data == "No name saved under this ID!":
-        talk_error("no name")
-        guest_data = get_guest_info(1)
-        rospy.sleep(3)
-
-    guest1.set_name(guest_data[0])
-    guest1.set_drink(guest_data[1])
-    talk_request(guest_data)
-
-    # lead guest to living room
-    giskardpy.stop_looking()
-    NavigateAction([pose_kitchen_to_couch]).resolve().perform()
-    NavigateAction([pose_couch]).resolve().perform()
-
-    # search for host in living room
-    if DetectAction(technique='human', state='start').resolve().perform():
-        # look at host
+        # look at guest and introduce
         giskardpy.move_head_to_human()
+        TalkingMotion("Hello, i am Toya and my favorite drink is oil. What about you, talk to me?").resolve().perform()
 
-        # introduce guest and host
-        introduce(host.name, host.fav_drink, guest1.name, guest1.fav_drink)
+        rospy.sleep(1)
+
+        # signal to start listening
+        pub_nlp.publish("start listening")
+
+        #wait for human to say something
+        rospy.sleep(15)
+
+        # guest_data format is = ["name", "drink"]
+        guest_data = get_guest_info("1.0")
+        print("guest data: " + str(guest_data))
+        while guest_data == ['person_infos: "No name saved under this ID!"']:
+            talk_error("no name")
+            rospy.sleep(13)
+            guest_data = get_guest_info("1.0")
+            print("guest data: " + str(guest_data))
+
+        # set heard name and drink of guest
+        guest1.set_name(guest_data[0][13:])
+        guest1.set_drink(guest_data[1])
+        talk_request(guest_data)
+        rospy.sleep(1)
+
+        # lead human to living room
+        TalkingMotion("i will show you the living room now").resolve().perform()
+        rospy.sleep(1)
+        TalkingMotion("please step out of the way and follow me").resolve().perform()
+        rospy.loginfo("stop looking now")
         giskardpy.stop_looking()
 
+        # stop perceiving human
+        rospy.loginfo("stop detecting")
+        DetectAction(technique='human', state='stop').resolve().perform()
+
+        if area == 'to_couch':
+            # wait for human to step out of way
+            rospy.sleep(5)
+            NavigateAction([pose_kitchen_to_couch]).resolve().perform()
+            NavigateAction([pose_couch]).resolve().perform()
+            rospy.sleep(2)
+            TalkingMotion("Welcome to the living room").resolve().perform()
+            rospy.sleep(1)
+        elif area == 'from_couch':
+            rospy.loginfo("Navigating now")
+            TalkingMotion("navigating to kitchen, please step away").resolve().perform()
+            rospy.sleep(5)
+            NavigateAction([pose_from_couch]).resolve().perform()
+            NavigateAction([pose_home]).resolve().perform()
+        else:
+            rospy.loginfo("in else")
+            TalkingMotion("not navigating").resolve().perform()
+            rospy.sleep(1)
 
 
+        introduce(guest1.name, guest1.fav_drink, host.name, host.fav_drink)
+        #TalkingMotion("End of demo").resolve().perform()
 
 
+def nav_test():
+    with real_robot:
+        robot_orientation = axis_angle_to_quaternion([0, 0, 1], 90)
+        test_pose1 = Pose([4.2, 3, 0], robot_orientation)
+        test_pose = Pose([3, 5, 0], [0, 0, 0, 1])
+        moveBase.queryPoseNav(test_pose1)
+        moveBase.queryPoseNav(test_pose)
 
 
-
-
-
+# demo_test('from_couch')
+demo_ms2('now')

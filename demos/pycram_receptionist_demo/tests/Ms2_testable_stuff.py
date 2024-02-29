@@ -1,9 +1,7 @@
-import rospy
-
 from pycram.designators.action_designator import DetectAction, NavigateAction
 from pycram.designators.motion_designator import TalkingMotion
 from pycram.fluent import Fluent
-#from demos.pycram_receptionist_demo.utils.misc import *
+from demos.pycram_receptionist_demo.utils.misc import *
 from pycram.helper import axis_angle_to_quaternion
 from pycram.process_module import real_robot
 import pycram.external_interfaces.giskard as giskardpy
@@ -46,56 +44,17 @@ pub_nlp = rospy.Publisher('/startListener', String, queue_size=10)
 data_received = False
 
 
-############################
-def talk_error(data):
-    """
-    callback function if no name/drink was heard
-    """
-    rospy.loginfo(data)
-    rospy.loginfo("in callback error")
-    error_msgs = "i could not hear you, please repeat"
-    TalkingMotion(error_msgs).resolve().perform()
-    rospy.sleep(3)
-    pub_nlp.publish("start listening")
-
-def talk_request(data: String):
-    """
-    callback function that takes the data from nlp (name and drink) and lets the robot talk
-    :param data: String "name drink"
-    """
-    global data_received
-    rospy.loginfo("in callback success")
-    name_drink = data.data.split(" ")
-    talk_actions.name_drink_talker(name_drink)
-    rospy.loginfo("nlp data:" + name_drink[0] + " " + name_drink[1])
-    data_received = True
-
-
-
-
-#################################################################
-
 def demo_test(area):
     with real_robot:
         global data_received
+        data_received = False
         print("start demo")
-        #host = HumanDescription("Bob", fav_drink="Coffee")
-        #host.human_pose.set_value(False)
-        #guest1 = HumanDescription("guest1")
-        #guest1.human_pose.set_value(False)
+        host = HumanDescription("Bob", fav_drink="Coffee")
+        guest1 = HumanDescription("guest1")
 
         TalkingMotion("Hello").resolve().perform()
 
-
-        # While loop, human is detected
-        #while not guest1.human_pose.get_value():
-         #   rospy.loginfo("value: " + str(guest1.human_pose.get_value()))
-          #  rospy.loginfo("in while")
         DetectAction(technique='human', state='start').resolve().perform()
-           # rospy.sleep(5)
-            #TalkingMotion("please step in front of me").resolve().perform()
-            # Perception, detect first guest
-
 
         rospy.loginfo("human detected")
 
@@ -108,48 +67,42 @@ def demo_test(area):
         # signal to start listening
         pub_nlp.publish("start listening")
         #wait for human to say something
-        rospy.sleep(5)
+        #rospy.sleep(15)
 
-        # TODO: might not work, if so use version from Ms1 in comments
-        guest_data = get_guest_info("1.0") # guest_data format is = ["name", "drink"]
-        print(str(guest_data))
-        #while guest_data == "No name saved under this ID!":
-        #    talk_error("no name")
-        #    guest_data = get_guest_info(1)
-        #    rospy.sleep(3)
+        # guest_data format is = ["name", "drink"]
+        guest_data = get_guest_info("1.0")
+        print("guest data: " + str(guest_data))
+        while guest_data == ['person_infos: "No name saved under this ID!"']:
+            talk_error("no name")
+            rospy.sleep(13)
+            guest_data = get_guest_info("1.0")
+            print("guest data: " + str(guest_data))
 
-        # failure handling
-        rospy.Subscriber("nlp_feedback", Bool, talk_error)
+
+        print("guest data after while: " + str(guest_data))
+        guest1.set_name(guest_data[0][13:])
+        guest1.set_drink(guest_data[1])
 
         # receives name and drink via topic
-        rospy.Subscriber("nlp_out", String, talk_request)
-        #guest1.set_name(guest_data[0])
-        #guest1.set_drink(guest_data[1])
-        #talk_request(guest_data)
+        # rospy.Subscriber("nlp_out", String, talk_request)
 
-        # TODO: does the rest of the code waits for talk_request to be executed?
-        # if not sleep has to stay
-        rospy.sleep(5)
+        # failure handling
+        # rospy.Subscriber("nlp_feedback", Bool, talk_error)
 
-        while not data_received:
-            rospy.sleep(0.5)
+        talk_request(guest_data)
 
-        guest_data = get_guest_info("2.0")  # guest_data format is = ["name", "drink"]
-        print(str(guest_data))
-        rospy.sleep(4)
+        rospy.sleep(1)
+
         # lead human to living room
-        TalkingMotion("i will stop looking now").resolve().perform()
+        TalkingMotion("i will show you the living room now").resolve().perform()
+        rospy.sleep(1)
+        TalkingMotion("please step out of the way and follow me").resolve().perform()
         rospy.loginfo("stop looking now")
         giskardpy.stop_looking()
 
         # stop perceiving human
         rospy.loginfo("stop detecting")
         DetectAction(technique='human', state='stop').resolve().perform()
-
-        #guest1.human_pose.set_value(False)
-        #host.human_pose.set_value(False)
-
-
 
         if area == 'to_couch':
             rospy.loginfo("Navigating now")
@@ -166,10 +119,12 @@ def demo_test(area):
         else:
             rospy.loginfo("in else")
             TalkingMotion("not navigating").resolve().perform()
-            rospy.sleep(5)
-            print("end")
+            rospy.sleep(2)
 
-        TalkingMotion("End of demo").resolve().perform()
+        print(guest1.name)
+        print(guest1.fav_drink)
+        introduce(guest1.name, guest1.fav_drink, host.name, host.fav_drink)
+        #TalkingMotion("End of demo").resolve().perform()
 
 
 

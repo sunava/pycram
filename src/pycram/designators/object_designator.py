@@ -182,11 +182,12 @@ class RealObject(ObjectDesignatorDescription):
                 #     obj_deisg.bullet_world_object = bullet_obj
                 #     yield obj_deisg
 
+
 class HumanDescription:
     """
     Class that represents humans. this class does not spawn a human in a simulation.
     """
-    def __init__(self, name, fav_drink: Optional = None):
+    def __init__(self, name: String, fav_drink:  Optional = None):
         """
         :param name: name of human
         :param fav_drink: favorite drink of human
@@ -194,22 +195,22 @@ class HumanDescription:
 
         # TODO: coordinate with Perception on what is easy to implement
         # characteristics to consider: height, hair color, and age.
-        self.human_pose = Fluent()
+        # self.human_pose = Fluent()
         self.name = name
         self.fav_drink = fav_drink  # self.shirt_color = shirt_color  # self.gender = gender
 
-        self.human_pose_sub = rospy.Subscriber("/human_pose", PoseStamped, self.human_pose_cb)
+        # self.human_pose_sub = rospy.Subscriber("/human_pose", PoseStamped, self.human_pose_cb)
 
-    def human_pose_cb(self, HumanPoseMsg):
-        """
-        callback function for human_pose Subscriber.
-        sets the attribute human_pose when someone (e.g. Perception/Robokudo) publishes on the topic
-        :param HumanPoseMsg: received message
-        """
+    # def human_pose_cb(self, HumanPoseMsg):
+        # """
+        # callback function for human_pose Subscriber.
+        # sets the attribute human_pose when someone (e.g. Perception/Robokudo) publishes on the topic
+        # :param HumanPoseMsg: received message
+        # """
 
-        self.human_pose.set_value(True)
-        rospy.loginfo("done cb")
-        rospy.sleep(10)
+        # self.human_pose.set_value(True)
+        # rospy.loginfo("done cb")
+        # rospy.sleep(10)
 
     def set_name(self, new_name):
         """
@@ -223,4 +224,4 @@ class HumanDescription:
         function for changing/setting favorite drink of human
         :param new_drink: name of drink
         """
-        self.name = new_drink
+        self.fav_drink = new_drink
