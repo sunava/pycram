@@ -362,7 +362,7 @@ class PickUpAction(ActionDesignatorDescription):
                     if self.object_designator.type == "Cutlery":
                         print(f"Cutlery erkannt, rechne -x")
                         print(special_knowledge_offset.pose.position.x)
-                        special_knowledge_offset.pose.position.x -= 0.115  # 0.11 before, fork needs more
+                       # special_knowledge_offset.pose.position.x -= 0.11  # 0.11 before, fork needs more
                         print(special_knowledge_offset.pose.position.x)
                     # if self.object_designator.type == "Fork":
                     #     special_knowledge_offset.pose.position.x -= 0.02
@@ -396,7 +396,7 @@ class PickUpAction(ActionDesignatorDescription):
 
             # Finalize the pick-up by closing the gripper and lifting the object
             rospy.logwarn("Close Gripper")
-            MoveGripperMotion(motion="close", gripper=self.arm).resolve().perform()
+            MoveGripperMotion(motion="close", gripper=self.arm, allow_gripper_collision=True).resolve().perform()
 
             rospy.logwarn("Lifting now")
             liftingTm = push_baseTm
@@ -642,19 +642,14 @@ class PlaceGivenObjAction(ActionDesignatorDescription):
                 MoveJointsMotion(["wrist_flex_joint"], [-0.8]).resolve().perform()
 
                 # correct a possible sloped orientation
-                NavigateAction([Pose([robot.get_pose().pose.position.x, robot.get_pose().pose.position.y, 0],
-                                     [robot.get_pose().orientation.x, robot.get_pose().orientation.y,
-                                      robot.get_pose().orientation.z,
-                                      robot.get_pose().orientation.w])]).resolve().perform()
+                NavigateAction([Pose([robot.get_pose().pose.position.x, robot.get_pose().pose.position.y, 0])]).resolve().perform()
 
                 MoveGripperMotion(motion="open", gripper="left").resolve().perform()
 
                 # Move away from the table
                 # todo if turned in an other direction hsr is not moving backwards but forward
                 NavigateAction(
-                    [Pose([robot.get_pose().pose.position.x - 0.1, robot.get_pose().pose.position.y, 0],
-                          [robot.get_pose().orientation.x, robot.get_pose().orientation.y,
-                           robot.get_pose().orientation.z, robot.get_pose().orientation.w])]).resolve().perform()
+                    [Pose([robot.get_pose().pose.position.x - 0.1, robot.get_pose().pose.position.y, 0])]).resolve().perform()
 
             # placing everything else except the Metalplate
             else:
