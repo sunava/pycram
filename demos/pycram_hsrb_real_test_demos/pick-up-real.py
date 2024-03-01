@@ -11,7 +11,7 @@ from pycram.ros.robot_state_updater import RobotStateUpdater
 from pycram.ros.viz_marker_publisher import VizMarkerPublisher
 import pycram.external_interfaces.giskard as giskardpy
 from demos.pycram_hsrb_real_test_demos.utils.misc import *
-#from pycram.external_interfaces.knowrob import get_table_pose
+from pycram.external_interfaces.knowrob import get_table_pose
 
 # Initialize the Bullet world for simulation
 world = BulletWorld()
@@ -28,7 +28,7 @@ giskardpy.init_giskard_interface()
 robot.set_color([0.5, 0.5, 0.9, 1])
 
 # Create environmental objects
-apartment = Object("kitchen", ObjectType.ENVIRONMENT, "couch-kitchen.urdf")
+apartment = Object("kitchen", ObjectType.ENVIRONMENT, "couch-kitchenmarch1.urdf")
 
 # Define orientation for objects
 object_orientation = axis_angle_to_quaternion([0, 0, 1], 180)
@@ -116,7 +116,7 @@ def pickup_and_place_objects(robot, sorted_obj):
             PlaceGivenObjAction([sorted_obj[value].type], ["left"], [Pose([4.86, y_pos, 0])],
                                 ["front"]).resolve().perform()
         else:
-            PlaceAction(sorted_obj[value], ["left"], [grasp], [Pose([4.85, y_pos, z])]).resolve().perform()
+            PlaceAction(sorted_obj[value], ["left"], [grasp], [Pose([4.87, y_pos, z])]).resolve().perform()
 
         ParkArmsAction([Arms.LEFT]).resolve().perform()
         TalkingMotion("Navigating").resolve().perform()
@@ -145,10 +145,10 @@ def get_z(obj_type: str):
     return PlacingZPose[obj_type.upper()].value
 
 def navigate_to(x,y, table_name):
-    if table_name == "popcorn table":
-        NavigateAction(target_locations=[Pose([x, y, 0], [0, 0, 1, 0])]).resolve().perform()
-    elif table_name == "long table":
-        NavigateAction(target_locations=[Pose([x, y, 0], [0, 0, 0, 1])]).resolve().perform()
+     if table_name == "popcorn table":
+         NavigateAction(target_locations=[Pose([x, y, 0], [0, 0, 1, 0])]).resolve().perform()
+     elif table_name == "long table":
+         NavigateAction(target_locations=[Pose([x, y, 0], [0, 0, 0, 1])]).resolve().perform()
 
 
 # def navigate_to(turn_around, y, table_name):
@@ -160,7 +160,8 @@ def navigate_to(x,y, table_name):
 #     :param orientation: defines the orientation of the robot respectively the name of the table to move to
 #     """
 #     table = get_table_pose(table_name)
-#     print(f"table_pose: {table}")
+#
+#     print(f"table_pose: {table.posestamped.pose.position.x}")
     # if turn_around:
     #     NavigateAction(target_locations=[Pose([2, y, table.pose.position.z], table.pose.orentation)]).resolve().perform()
     # else:
@@ -175,12 +176,10 @@ def navigate_and_detect():
     """
     TalkingMotion("Navigating").resolve().perform()
     #navigate_to(False, 1.8, "popcorn table")
-    navigate_to(1.6, 1.8, "popcorn table")
+    navigate_to(1.7, 1.8, "popcorn table") # 1.6
 
     # popcorntable
-    # todo gucken ob ein aufruf genügt
-    #LookAtAction(targets=[Pose([0.8, 1.8, 0.21], object_orientation)]).resolve().perform()
-    LookAtAction(targets=[Pose([0.8, 1.8, 0.21], object_orientation)]).resolve().perform()
+    LookAtAction(targets=[Pose([0.8, 1.8, 0.21], object_orientation)]).resolve().perform() # 0.18 vanessa
     TalkingMotion("Perceiving").resolve().perform()
     try:
         object_desig = DetectAction(technique='all').resolve().perform()

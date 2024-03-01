@@ -30,7 +30,7 @@ class HSRBDescription(RobotDescription):
         # Arm
         arm_joints = ["arm_flex_joint", "arm_roll_joint", "wrist_flex_joint", "wrist_roll_joint"]
         arm_links = ["arm_flex_link", "arm_roll_link", "wrist_flex_link", "wrist_roll_link"]
-        arm_carry = {"park": [0, 1.5, -1.85, 0]}
+        arm_carry = {"park": [0, 1.3, -1.85, 0]}
         arm_placing_given_obj = {"place_human_given_obj": [-1.8, 0, -0.5, -1.5]}
         gripper_links = ["hand_l_distal_link", "hand_l_spring_proximal_link", "hand_palm_link",
                          "hand_r_distal_link", "hand_r_spring_proximal_link", "hand_gripper_tool_frame"]

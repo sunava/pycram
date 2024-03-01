@@ -12,9 +12,10 @@ import rospy
 from .location_designator import CostmapLocation
 from .motion_designator import *
 from .object_designator import ObjectDesignatorDescription, BelieveObject, ObjectPart
+from .. import helper
 from ..bullet_world import BulletWorld
 from ..designator import ActionDesignatorDescription
-from ..enums import Arms
+from ..enums import Arms, ObjectType
 from ..helper import multiply_quaternions, axis_angle_to_quaternion
 from ..local_transformer import LocalTransformer
 from ..orm.action_designator import (ParkArmsAction as ORMParkArmsAction, NavigateAction as ORMNavigateAction,
@@ -240,7 +241,7 @@ class ParkArmsAction(ActionDesignatorDescription):
                 kwargs["left_arm_config"] = "park"
                 MoveArmJointsMotion(**kwargs).resolve().perform()
                 # MoveTorsoAction([0.005]).resolve().perform()
-                MoveTorsoAction([0.2]).resolve().perform()
+                MoveTorsoAction([0.30]).resolve().perform()
             # add park right arm if wanted
             if self.arm in [Arms.RIGHT, Arms.BOTH]:
                 kwargs["right_arm_config"] = "park"
@@ -304,6 +305,115 @@ class PickUpAction(ActionDesignatorDescription):
 
         @with_tree
         def perform(self) -> None:
+            # self.object_designator.type = "Bowl"
+            # # Initialize the local transformer and robot reference
+            # rospy.loginfo("pickup")
+            # lt = LocalTransformer()
+            # robot = BulletWorld.robot
+            # # Retrieve object and robot from designators
+            # object = self.object_designator.bullet_world_object
+            # # Calculate the object's pose in the map frame
+            # oTm = object.get_pose().copy()
+            # execute = True
+            #
+            # # Adjust object pose for top-grasping, if applicable
+            # if self.grasp == "top":
+            #     # Handle special cases for certain object types (e.g., Cutlery, Bowl)
+            #     # Note: This includes hardcoded adjustments and should ideally be generalized
+            #     if self.object_designator.type == "Cutlery":
+            #         # todo: this z is the popcorn-table height, we need to define location to get that z otherwise it
+            #         #  is hardcoded
+            #         oTm.pose.position.z = 0.71
+            #     oTm.pose.position.z += 0.025
+            #
+            # # Determine the grasp orientation and transform the pose to the base link frame
+            # grasp_rotation = robot_description.grasps.get_orientation_for_grasp(self.grasp)
+            # oTb = lt.transform_pose(oTm, robot.get_link_tf_frame("base_link"))
+            # # otbtest = oTb.copy()
+            # testmulti = helper.multiply_quaternions(
+            #     [oTb.orientation.x, oTb.orientation.y, oTb.orientation.z, oTb.orientation.w], grasp_rotation)
+            # # otbtest.orientation = testmulti
+            # # Set pose to the grasp rotation
+            # oTb.orientation = grasp_rotation
+            # # Transform the pose to the map frame
+            # oTmG = lt.transform_pose(oTb, "map")
+            # BulletWorld.current_bullet_world.add_vis_axis(oTmG)
+            # # BulletWorld.current_bullet_world.add_vis_axis(otbtest)
+            # #
+            # #
+            # # Open the gripper before picking up the object
+            # # rospy.logwarn("Opening Gripper")
+            # MoveGripperMotion(motion="open", gripper=self.arm).resolve().perform()
+            #
+            # # Move to the pre-grasp position and visualize the action
+            # # rospy.logwarn("Picking up now")
+            # # BulletWorld.current_bullet_world.add_vis_axis(oTmG)
+            # # Execute Bool, because sometimes u only want to visualize the poses to test things
+            # if execute:
+            #     MoveTorsoAction([0.25]).resolve().perform()
+            #     rospy.loginfo('execute')
+            #     MoveTCPMotion(oTmG, self.arm).resolve().perform()
+            #
+            # # Calculate and apply any special knowledge offsets based on the robot and object type
+            # # Note: This currently includes robot-specific logic that should be generalized
+            # tool_frame = robot_description.get_tool_frame(self.arm)
+            # special_knowledge_offset = lt.transform_pose(oTmG, robot.get_link_tf_frame(tool_frame))
+            #
+            # # todo: this is for hsrb only at the moment we will need a function that returns us special knowledge
+            # #  depending on robot
+            # if robot.name == "hsrb":
+            #     if self.grasp == "top":
+            #         if self.object_designator.type == "Bowl":
+            #             special_knowledge_offset.pose.position.y += 0.06
+            #             special_knowledge_offset.pose.position.x -= 0.03  # 0.022
+            #
+            #
+            # push_base = special_knowledge_offset
+            # # todo: this is for hsrb only at the moment we will need a function that returns us special knowledge
+            # #  depending on robot if we dont generlize this we will have a big list in the end of all robots
+            # if robot.name == "hsrb":
+            #     z = 0.025
+            #     if self.grasp == "top":
+            #         z = 0.025
+            #         if self.object_designator.type == "Bowl":
+            #             z = 0.04  # 0.05
+            #     push_base.pose.position.z += z
+            # elif robot.name == "pr2":
+            #     x = 0.01
+            #     if self.grasp == "top":
+            #         x = 0.01
+            #         if self.object_designator.type == ObjectType.BOWL:
+            #             x = 0.01  # 0.05
+            #     push_base.pose.position.x += x
+            # push_baseTm = lt.transform_pose(push_base, "map")
+            # special_knowledge_offsetTm = lt.transform_pose(push_base, "map")
+            #
+            # # Grasping from the top inherently requires calculating an offset, whereas front grasping involves
+            # # slightly pushing the object forward.
+            # # if self.grasp == "top":
+            # # rospy.logwarn("Offset now")
+            # BulletWorld.current_bullet_world.add_vis_axis(special_knowledge_offsetTm)
+            # if execute:
+            #     MoveTCPMotion(special_knowledge_offsetTm, self.arm).resolve().perform()
+            #
+            # # rospy.logwarn("Pushing now")
+            # BulletWorld.current_bullet_world.add_vis_axis(push_baseTm)
+            # if execute:
+            #     MoveTCPMotion(push_baseTm, self.arm).resolve().perform()
+            # tool_frame = robot_description.get_tool_frame(self.arm)
+            # robot.attach(object=self.object_designator.bullet_world_object, link=tool_frame)
+            # # Finalize the pick-up by closing the gripper and lifting the object
+            # # rospy.logwarn("Close Gripper")
+            # MoveGripperMotion(motion="close", gripper=self.arm).resolve().perform()
+            #
+            # # rospy.logwarn("Lifting now")
+            # liftingTm = push_baseTm
+            # liftingTm.pose.position.z += 0.04
+            # BulletWorld.current_bullet_world.add_vis_axis(liftingTm)
+            # if execute:
+            #     MoveTCPMotion(liftingTm, self.arm).resolve().perform()
+            # BulletWorld.current_bullet_world.remove_vis_axis()
+
             # Initialize the local transformer and robot reference
 
             lt = LocalTransformer()
@@ -321,8 +431,8 @@ class PickUpAction(ActionDesignatorDescription):
                 if self.object_designator.type == "Cutlery":
                     # todo: this z is the popcorn-table height, we need to define location to get that z otherwise it
                     #  is hardcoded
-                    oTm.pose.position.z = 0.718
-                oTm.pose.position.z += 0.04
+                    oTm.pose.position.z = 0.71
+                oTm.pose.position.z += 0.035 # 0.025
 
             # Determine the grasp orientation and transform the pose to the base link frame
             grasp_rotation = robot_description.grasps.get_orientation_for_grasp(self.grasp)
@@ -355,7 +465,7 @@ class PickUpAction(ActionDesignatorDescription):
                     if self.object_designator.type == "Bowl":
                         print(f"x_pose: {special_knowledge_offset.pose.position.x}")
                         print(f"y_pose: {special_knowledge_offset.pose.position.y}")
-                        special_knowledge_offset.pose.position.y += 0.06
+                        special_knowledge_offset.pose.position.y += 0.065
                         special_knowledge_offset.pose.position.x -= 0.03  # 0.022
                         print(f"x_pose_after: {special_knowledge_offset.pose.position.x}")
                         print(f"y_pose_after: {special_knowledge_offset.pose.position.y}")
@@ -373,9 +483,9 @@ class PickUpAction(ActionDesignatorDescription):
             if robot.name == "hsrb":
                 z = 0.04
                 if self.grasp == "top":
-                    z = 0.039
+                    z = 0.025  # 0.039
                     if self.object_designator.type == "Bowl":
-                        z = 0.045  # 0.05
+                        z = 0.044  # 0.05
                 push_base.pose.position.z += z
             push_baseTm = lt.transform_pose(push_base, "map")
             special_knowledge_offsetTm = lt.transform_pose(push_base, "map")
@@ -406,6 +516,26 @@ class PickUpAction(ActionDesignatorDescription):
                 MoveTCPMotion(liftingTm, self.arm).resolve().perform()
             tool_frame = robot_description.get_tool_frame(self.arm)
             robot.attach(object=self.object_designator.bullet_world_object, link=tool_frame)
+
+        def to_sql(self) -> ORMPickUpAction:
+            return ORMPickUpAction(self.arm, self.grasp)
+
+        def insert(self, session: sqlalchemy.orm.session.Session, **kwargs):
+            action = super().insert(session)
+            # try to create the object designator
+            if self.object_at_execution:
+                od = self.object_at_execution.insert(session, )
+                action.object = od.id
+            else:
+                action.object = None
+
+            session.add(action)
+            session.commit()
+
+            return action
+
+
+
 
         def to_sql(self) -> ORMPickUpAction:
             return ORMPickUpAction(self.arm, self.grasp)

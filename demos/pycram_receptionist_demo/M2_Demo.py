@@ -70,6 +70,7 @@ def demo_ms2(area):
 
         # guest_data format is = ['person infos: "name', 'drink"']
         guest_data = get_guest_info("1.0")
+        print(get_guest_info("1.0"))
         while guest_data == ['person_infos: "No name saved under this ID!"']:
             talk_error("no name")
             rospy.sleep(13)
@@ -78,6 +79,7 @@ def demo_ms2(area):
         # set heard name and drink of guest
         guest1.set_name(guest_data[0][13:])
         guest1.set_drink(guest_data[1])
+        rospy.loginfo("after while")
         talk_request(guest_data)
         rospy.sleep(1)
 
@@ -113,4 +115,4 @@ def demo_ms2(area):
 
 
 # demo_test('from_couch')
-demo_ms2('to_couch')
+demo_ms2('now')

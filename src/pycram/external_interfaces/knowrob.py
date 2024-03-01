@@ -136,11 +136,11 @@ def get_guest_info(id):
     :return: ['person_infos: "name', 'drink"']
     """
 
-    rospy.wait_for_service('name_server')
+    rospy.wait_for_service('info_server')
     try:
-        info_service = rospy.ServiceProxy('name_server', IsKnown)
-        guest_data = info_service(id) #guest_data = "name, drink"
-        result = str(guest_data).split(',') #result = ["name", " drink"]
+        info_service = rospy.ServiceProxy('info_server', IsKnown)
+        guest_data = info_service(id) #guest_data = person_infos: "Angel,Milk"
+        result = str(guest_data).split(',') #result = ['person_infos: "Angel', 'Milk"']
         return result
     except rospy.ServiceException as e:
         print("Service call failed")
@@ -153,7 +153,7 @@ def get_table_pose(table_name):
     print("waiting for server")
     rospy.wait_for_service('pose_server')
     try:
-        service = rospy.ServiceProxy('pose_server', ObjectPose)
+        service = rospy.ServiceProxy('pose_server', String)
         table_pose = service(table_name)#
         print(f"table_pose_knowrob: {table_pose}")
         return table_pose
