@@ -58,7 +58,7 @@ def demo_test():
         pub_nlp.publish("start listening")
         rospy.sleep(5)
         #asyncron??
-        # TODO: test on real HSR
+
         guest_data = get_guest_info("3.0")
         print("guest data: " + str(guest_data))
         while guest_data == "No name saved under this ID!":

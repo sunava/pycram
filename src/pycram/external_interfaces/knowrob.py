@@ -133,7 +133,7 @@ def get_guest_info(id):
     """
     function that uses Knowledge Service to get Name and drink from new guest via ID
     :param id: integer for person
-    :return: ["name", " drink"]
+    :return: ['person_infos: "name', 'drink"']
     """
 
     rospy.wait_for_service('name_server')

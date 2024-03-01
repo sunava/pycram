@@ -45,7 +45,9 @@ pub_nlp = rospy.Publisher('/startListener', String, queue_size=10)
 
 
 def demo_ms2(area):
+
     with real_robot:
+
         # declare variables for humans
         host = HumanDescription("Yannis", fav_drink="Tea")
         guest1 = HumanDescription("guest1")
@@ -58,23 +60,20 @@ def demo_ms2(area):
         # look at guest and introduce
         giskardpy.move_head_to_human()
         TalkingMotion("Hello, i am Toya and my favorite drink is oil. What about you, talk to me?").resolve().perform()
-
         rospy.sleep(1)
 
         # signal to start listening
         pub_nlp.publish("start listening")
 
-        #wait for human to say something
-        rospy.sleep(13)
+        # wait for human to say something
+        rospy.sleep(15)
 
-        # guest_data format is = ["name", "drink"]
+        # guest_data format is = ['person infos: "name', 'drink"']
         guest_data = get_guest_info("1.0")
-        print("guest data: " + str(guest_data))
         while guest_data == ['person_infos: "No name saved under this ID!"']:
             talk_error("no name")
             rospy.sleep(13)
             guest_data = get_guest_info("1.0")
-            print("guest data: " + str(guest_data))
 
         # set heard name and drink of guest
         guest1.set_name(guest_data[0][13:])
@@ -98,12 +97,10 @@ def demo_ms2(area):
             rospy.sleep(5)
             NavigateAction([pose_kitchen_to_couch]).resolve().perform()
             NavigateAction([pose_couch]).resolve().perform()
-            rospy.sleep(2)
             TalkingMotion("Welcome to the living room").resolve().perform()
             rospy.sleep(1)
         elif area == 'from_couch':
             rospy.loginfo("Navigating now")
-            TalkingMotion("navigating to kitchen, please step away").resolve().perform()
             rospy.sleep(5)
             NavigateAction([pose_from_couch]).resolve().perform()
             NavigateAction([pose_home]).resolve().perform()
@@ -112,18 +109,7 @@ def demo_ms2(area):
             TalkingMotion("not navigating").resolve().perform()
             rospy.sleep(1)
 
-
         introduce(guest1.name, guest1.fav_drink, host.name, host.fav_drink)
-        #TalkingMotion("End of demo").resolve().perform()
-
-
-def nav_test():
-    with real_robot:
-        robot_orientation = axis_angle_to_quaternion([0, 0, 1], 90)
-        test_pose1 = Pose([4.2, 3, 0], robot_orientation)
-        test_pose = Pose([3, 5, 0], [0, 0, 0, 1])
-        moveBase.queryPoseNav(test_pose1)
-        moveBase.queryPoseNav(test_pose)
 
 
 # demo_test('from_couch')

@@ -26,29 +26,13 @@ robot.set_color([0.5, 0.5, 0.9, 1])
 # carefull that u spawn the correct kitchen
 kitchen = Object("kitchen", "environment", "kitchen.urdf")
 giskardpy.init_giskard_interface()
-#RobotStateUpdater("/tf", "/giskard_joint_states")
+
+
 
 def test():
     with real_robot:
-        guest1 = HumanDescription("x")
-       # print("...................... nothing" )
-        guest1.human_pose.set_value(False)
-        if not guest1.human_pose.get_value():
-            print("wrong? " + str(guest1.human_pose))
 
-        if guest1.human_pose.get_value():
-            print("right? " + str(guest1.human_pose))
-
-        print("----------------------------------")
         DetectAction(technique='human', state='start').resolve().perform()
-
-        if not guest1.human_pose.get_value():
-            print("wrong? " + str(guest1.human_pose))
-
-        if guest1.human_pose.get_value():
-            print("right? " + str(guest1.human_pose))
-
-
 
         rospy.loginfo("human detected")
 
@@ -65,14 +49,6 @@ def test():
         print("------------------------------- stop")
 
         print("end")
-
-
-
-
-
-
-
-
 
 
 if __name__ == '__main__':

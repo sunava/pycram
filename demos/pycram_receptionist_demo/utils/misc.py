@@ -22,7 +22,21 @@ def talk_request(data: list):
     TalkingMotion(toyas_text).resolve().perform()
     rospy.sleep(1)
     TalkingMotion("nice to meet you").resolve().perform()
-    rospy.loginfo("data from Knowledge -> data[0] = " + data[0] + ", data[1] = " + data[1])
+
+
+def talk_request_nlp(data: str):
+    """
+    callback function that takes the data from nlp (name and drink) and lets the robot talk
+    :param data: String "name drink"
+    """
+
+    rospy.loginfo("in callback success")
+    data = data.split(",")
+    toyas_text = "Hey " + data[0] + " your favorite drink is " + data[
+        1]
+    TalkingMotion(toyas_text).resolve().perform()
+    rospy.sleep(1)
+    TalkingMotion("nice to meet you").resolve().perform()
 
 
 def talk_error(data):
@@ -46,6 +60,5 @@ def introduce(name1, drink1, host_name, host_drink):
     TalkingMotion(first).resolve().perform()
     rospy.sleep(3)
     TalkingMotion(second).resolve().perform()
-
 
 
