@@ -69,7 +69,7 @@ class ForceTorqueSensor:
 
             self.fts_pub.publish(wrench_msg)
             seq += 1
-            time.sleep(self.interval)
+            rospy.sleep(self.interval)
 
     def _stop_publishing(self) -> None:
         """

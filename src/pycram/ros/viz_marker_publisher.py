@@ -50,11 +50,11 @@ class VizMarkerPublisher:
                 marker_array = self._make_marker_array()
 
                 self.pub.publish(marker_array)
-                time.sleep(self.interval)
+                rospy.sleep(self.interval)
             if not BulletWorld.current_bullet_world.viz:
                 marker_array = prev_marker
                 self.pub.publish(marker_array)
-                time.sleep(self.interval)
+                rospy.sleep(self.interval)
 
     def _make_marker_array(self) -> MarkerArray:
         """
