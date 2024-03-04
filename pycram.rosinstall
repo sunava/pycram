@@ -9,8 +9,8 @@ repositories:
     version: master
   pycram:
     type: git
-    url: git@github.com:cram2/pycram.git
-    version: dev
+    url: git@github.com:sunava/pycram.git
+    version: ageaware
   pr2_common:
     type: git
     url: git@github.com:PR2/pr2_common.git
