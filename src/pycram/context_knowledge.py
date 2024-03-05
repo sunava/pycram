@@ -4,9 +4,9 @@ from pycram.pose import Pose
 
 breakfast_objects_apart = {"milk": {"type": "milk", "model": "milk.stl", "pose": [2.5, 2, 1.02], "color": [1, 0, 0, 1],
                                     "default_location": "island_countertop", "typeloc": "No"},
-                           "breakfast_cereal": {"type": "breakfast_cereal", "model": "breakfast_cereal.stl",
-                                                "pose": [2.5, 2.5, 1.05], "color": [0, 1, 0, 1],
-                                                "default_location": "island_countertop", "typeloc": "No"},
+                           #'"breakfast_cereal": {"type": "breakfast_cereal", "model": "breakfast_cereal.stl",
+                            #                    "pose": [2.5, 2.5, 1.05], "color": [0, 1, 0, 1],
+                             #                   "default_location": "island_countertop", "typeloc": "No"},
                            "jeroen_cup": {"type": "jeroen_cup", "model": "jeroen_cup.stl", "pose": [2.5, 2.2, 0.95],
                                           "color": [1, 0.4, 0.4, 1], "default_location": "island_countertop",
                                           "typeloc": "No"},
