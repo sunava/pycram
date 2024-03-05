@@ -1,7 +1,6 @@
 import atexit
 import threading
 import time
-import random as rn
 
 from geometry_msgs.msg import Vector3
 from std_msgs.msg import ColorRGBA
@@ -35,8 +34,9 @@ class VizMarkerPublisher:
 
         self.thread = threading.Thread(target=self._publish)
         self.kill_event = threading.Event()
-        self.thread.start()
+        self.main_world = BulletWorld.current_bullet_world if not BulletWorld.current_bullet_world.is_shadow_world else BulletWorld.current_bullet_world.world_sync.world
 
+        self.thread.start()
         atexit.register(self._stop_publishing)
 
     def _publish(self) -> None:
@@ -44,17 +44,10 @@ class VizMarkerPublisher:
         Constantly publishes the Marker Array. To the given topic name at a fixed rate.
         """
         while not self.kill_event.is_set():
+            marker_array = self._make_marker_array()
 
-            if BulletWorld.current_bullet_world.viz:
-                prev_marker = self._make_marker_array()
-                marker_array = self._make_marker_array()
-
-                self.pub.publish(marker_array)
-                time.sleep(self.interval)
-            if not BulletWorld.current_bullet_world.viz:
-                marker_array = prev_marker
-                self.pub.publish(marker_array)
-                time.sleep(self.interval)
+            self.pub.publish(marker_array)
+            time.sleep(self.interval)
 
     def _make_marker_array(self) -> MarkerArray:
         """
@@ -65,50 +58,39 @@ class VizMarkerPublisher:
         :return: An Array of Visualization Marker
         """
         marker_array = MarkerArray()
-        objnew = False
-        for obj in BulletWorld.current_bullet_world.objects:
-            if obj.name in ["floor", ]:
+        for obj in self.main_world.objects:
+            if obj.name == "floor":
                 continue
-            if obj.name == "hsrb":
-                continue
-            if not obj.name in ["environment", "pr2"]:
-                objnew = True
             for link in obj.links.keys():
                 geom = obj.link_to_geometry[link]
                 if not geom:
                     continue
                 msg = Marker()
-                msg.header.frame_id = "simulated/map"
+                msg.header.frame_id = "map"
                 msg.ns = obj.name
                 msg.id = obj.links[link]
                 msg.type = Marker.MESH_RESOURCE
                 msg.action = Marker.ADD
                 link_pose = obj.get_link_pose(link).to_transform(link)
-                if hasattr(obj, "urdf_object"):
-                    if obj.urdf_object.link_map[link].collision.origin:
-                        link_origin = Transform(obj.urdf_object.link_map[link].collision.origin.xyz,
-                                                list(quaternion_from_euler(
-                                                    *obj.urdf_object.link_map[link].collision.origin.rpy)))
-                    else:
-                        link_origin = Transform()
+                if obj.urdf_object.link_map[link].collision.origin:
+                    link_origin = Transform(obj.urdf_object.link_map[link].collision.origin.xyz,
+                                            list(quaternion_from_euler(
+                                                *obj.urdf_object.link_map[link].collision.origin.rpy)))
                 else:
                     link_origin = Transform()
                 link_pose_with_origin = link_pose * link_origin
                 msg.pose = link_pose_with_origin.to_pose().pose
 
-                color = [1, 1, 1, 1] \
-                    if obj.links[link] == -1 else obj.get_color(link)
+                color = [1, 1, 1, 1] if obj.links[link] == -1 else obj.get_color(link)
 
                 msg.color = ColorRGBA(*color)
                 msg.lifetime = rospy.Duration(1)
 
                 if type(geom) == urdf_parser_py.urdf.Mesh:
-
                     msg.type = Marker.MESH_RESOURCE
                     msg.mesh_resource = "file://" + geom.filename
                     msg.scale = Vector3(1, 1, 1)
-                    msg.mesh_use_embedded_materials = False
-
+                    msg.mesh_use_embedded_materials = True
                 elif type(geom) == urdf_parser_py.urdf.Cylinder:
                     msg.type = Marker.CYLINDER
                     msg.scale = Vector3(geom.radius * 2, geom.radius * 2, geom.length)
@@ -118,16 +100,6 @@ class VizMarkerPublisher:
                 elif type(geom) == urdf_parser_py.urdf.Sphere:
                     msg.type == Marker.SPHERE
                     msg.scale = Vector3(geom.radius * 2, geom.radius * 2, geom.radius * 2)
-                elif obj.customGeom:
-                    msg.type = Marker.CUBE
-                    x = geom["size"][0]
-                    y = geom["size"][1]
-                    z = geom["size"][2]
-                    msg.scale = Vector3(x, y, z)
-                if objnew:
-                    color = obj.get_color()
-                    msg.color = ColorRGBA(*color)
-                    objnew = False
 
                 marker_array.markers.append(msg)
         return marker_array
