@@ -1349,10 +1349,14 @@ class Object:
         else:
             aabb = p.getAABB(self.id, physicsClientId=self.world.client_id)
 
-        # Calculate dimensions
-        dimensions = [np.absolute(aabb[0][i] - aabb[1][i]) for i in range(3)]
+        # Calculate the full dimensions along each axis
+        dimensions = [abs(aabb[1][i] - aabb[0][i]) for i in range(3)]
 
-        return dimensions
+        # Sort dimensions to ensure: width > depth, height is always along z-axis
+        width, depth = sorted(dimensions[:2], reverse=True)  # Sort x and y to ensure width is longer
+        height = dimensions[2]  # Height remains along the z-axis
+
+        return width, depth, height
 
     def get_base_origin(self, link_name: Optional[str] = None) -> Pose:
         """
