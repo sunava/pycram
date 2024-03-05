@@ -12,7 +12,7 @@ from ..context_knowledge import ContextConfig
 from .location_designator import CostmapLocation, find_reachable_location_and_nav_pose, AccessingLocation
 from .motion_designator import *
 from .object_designator import ObjectDesignatorDescription, BelieveObject, ObjectPart
-from ..bullet_world import BulletWorld
+from ..bullet_world import BulletWorld, Use_shadow_world
 from ..designator import ActionDesignatorDescription
 from ..enums import Arms
 from ..helper import multiply_quaternions, axis_angle_to_quaternion
@@ -327,15 +327,16 @@ class PickUpAction(ActionDesignatorDescription):
             # Determine the grasp orientation and transform the pose to the base link frame
             grasp_rotation = robot_description.grasps.get_orientation_for_grasp(self.grasp)
             oTb = lt.transform_pose(oTm, robot.get_link_tf_frame("base_link"))
-            #otbtest = oTb.copy()
-            testmulti = helper.multiply_quaternions([oTb.orientation.x, oTb.orientation.y, oTb.orientation.z, oTb.orientation.w], grasp_rotation)
-            #otbtest.orientation = testmulti
+            # otbtest = oTb.copy()
+            testmulti = helper.multiply_quaternions(
+                [oTb.orientation.x, oTb.orientation.y, oTb.orientation.z, oTb.orientation.w], grasp_rotation)
+            # otbtest.orientation = testmulti
             # Set pose to the grasp rotation
             oTb.orientation = testmulti
             # Transform the pose to the map frame
             oTmG = lt.transform_pose(oTb, "map")
             BulletWorld.current_bullet_world.add_vis_axis(oTmG)
-            #BulletWorld.current_bullet_world.add_vis_axis(otbtest)
+            # BulletWorld.current_bullet_world.add_vis_axis(otbtest)
             #
             #
             # Open the gripper before picking up the object
@@ -344,7 +345,7 @@ class PickUpAction(ActionDesignatorDescription):
 
             # Move to the pre-grasp position and visualize the action
             # rospy.logwarn("Picking up now")
-            #BulletWorld.current_bullet_world.add_vis_axis(oTmG)
+            # BulletWorld.current_bullet_world.add_vis_axis(oTmG)
             # Execute Bool, because sometimes u only want to visualize the poses to test things
             if execute:
                 MoveTorsoAction([0.25]).resolve().perform()
@@ -1316,6 +1317,49 @@ class CuttingAction(ActionDesignatorDescription):
         not updated when the BulletWorld object is changed.
         """
 
+        def calculate_slices(self, obj_width, technique, thickness):
+            """
+            Calculates the number of slices and the starting offset based on the cutting technique and slice thickness.
+            """
+            if technique == 'halving':
+                return 1, 0  # Halving involves a single slice with no offset
+            else:
+                num_slices = max(1, int(obj_width // thickness))  # Ensure at least one slice
+                start_offset = (-obj_width / 2) + (thickness / 2)
+                return num_slices, start_offset
+
+        def calculate_slice_pose(self, object_pose, slice_position, obj_width):
+            """
+            Determines the pose for each slice based on the object's current pose, the slice position, and the object's dimensions.
+            """
+            slice_pose = object_pose.copy()
+            slice_pose.position.x = slice_position
+            slice_pose.position.y -= 3 * obj_width  # Adjust for slicing width
+
+            return slice_pose
+
+
+        def adjust_for_lifting(self, pose, height):
+            """
+            Adjusts the given pose to lift the cutting tool above the object before and after cutting.
+            """
+            lift_pose = pose.copy()
+            lift_pose.position.z += 2 * height  # Lift the tool above the object
+            return lift_pose
+
+        def perform_cutting_motion(self, lift_pose, slice_pose):
+            """
+            Executes the motion for lifting the tool, performing the cut, and then lifting the tool again.
+            """
+            ##grasp_rotation = robot_description.grasps.get_orientation_for_grasp(self.grasp)
+            #oTb = lt.transform_pose(slice_pose, BulletWorld.robot.get_link_tf_frame("base_link"))
+            #oTm = lt.transform_pose(slice_pose, "map")
+            BulletWorld.current_bullet_world.add_vis_axis(slice_pose)
+            #BulletWorld.current_bullet_world.add_vis_axis(lift_pose)
+            # self.move_tool_to_pose(lift_pose)  # Lift tool before cutting
+            # self.move_tool_to_pose(slice_pose)  # Perform cutting motion
+            # self.move_tool_to_pose(lift_pose)  # Lift tool after cutting
+
         @with_tree
         def perform(self) -> None:
             """
@@ -1323,27 +1367,24 @@ class CuttingAction(ActionDesignatorDescription):
             grasp orientation, computing slice positions, and orchestrating the necessary robot motions
             for executing the cutting task.
             """
-
             # Store the object and tool at the time of execution
-#            self.object_to_be_cut_at_execution = self.object_to_be_cut.data_copy()
-#            self.tool_at_execution = self.tool.data_copy()
+            #            self.object_to_be_cut_at_execution = self.object_to_be_cut.data_copy()
+            #            self.tool_at_execution = self.tool.data_copy()
 
             # Obtain the preferred grasp orientation for the cutting action
             grasp = robot_description.grasps.get_orientation_for_grasp("top")
 
             # Access the designated object for cutting and retrieve its dimensions
             object = self.object_to_be_cut.bullet_world_object
-            obj_dim = object.get_object_dimensions()
+            obj_length, obj_width, object_height = object.get_object_dimensions()
 
-            # Arrange object dimensions in order of size for cutting calculations
-            dim = [max(obj_dim[0], obj_dim[1]), min(obj_dim[0], obj_dim[1]), obj_dim[2]]
 
             # Retrieve the current pose of the object and transform it to the object frame
             oTm = object.get_pose()
+            #BulletWorld.current_bullet_world.add_vis_axis(oTm)
             object_pose = object.local_transformer.transform_to_object_frame(oTm, object)
 
-            # Derive the object's length, width, and height from its dimensions
-            obj_length, obj_width, obj_height = dim
+
 
             # Calculate the starting position for slicing, adjusted based on the chosen technique
             if self.technique in ['halving']:
@@ -1367,45 +1408,38 @@ class CuttingAction(ActionDesignatorDescription):
             for x in slice_coordinates:
                 # Adjust slice pose based on object dimensions and orientation
                 tmp_pose = object_pose.copy()
-                tmp_pose.pose.position.y -= 3 * obj_width  # Offset position for slicing
+                tmp_pose.pose.position.y -=  obj_width #plus tool länge  # Offset position for slicing
                 tmp_pose.pose.position.x = x  # Set slicing position
+                #tmp_pose.pose.position.z
                 sTm = object.local_transformer.transform_pose(tmp_pose, "map")
+                #BulletWorld.current_bullet_world.add_vis_axis(sTm)
                 slice_poses.append(sTm)
 
             # Process each slice pose for the cutting action
             for slice_pose in slice_poses:
+                tool_frame = robot_description.get_tool_frame(self.arm)
+                special_knowledge_offset = object.local_transformer.transform_pose(slice_pose, BulletWorld.robot.get_link_tf_frame("base_link"))
                 # Rotate the slice pose to align with the grasp orientation
-                ori = multiply_quaternions(
-                    [slice_pose.orientation.x, slice_pose.orientation.y, slice_pose.orientation.z,
-                     slice_pose.orientation.w], grasp)
+                ori = helper.multiply_quaternions(
+                    [special_knowledge_offset.orientation.x, special_knowledge_offset.orientation.y, special_knowledge_offset.orientation.z,
+                     special_knowledge_offset.orientation.w], grasp)
 
-                # Adjust slice orientation for a 90-degree rotation along the Z-axis
-                oriR = axis_angle_to_quaternion([0, 0, 1], 90)
-                oriM = multiply_quaternions([oriR[0], oriR[1], oriR[2], oriR[3]], [ori[0], ori[1], ori[2], ori[3]])
 
                 # Apply the adjusted orientation to the slice pose
-                adjusted_slice_pose = slice_pose.copy()
-                adjusted_slice_pose.orientation = oriM
-
+                adjusted_slice_pose = special_knowledge_offset.copy()
+                adjusted_slice_pose.orientation = ori
+                sTm = object.local_transformer.transform_pose(adjusted_slice_pose, "map")
                 # Adjust the position of the slice pose for lifting the tool
                 lift_pose = adjusted_slice_pose.copy()
-                lift_pose.pose.position.z += 2 * obj_height  # Lift the tool above the object
+                lift_pose.pose.position.z += 2 * object_height  # Lift the tool above the object
+                self.perform_cutting_motion(lift_pose, sTm)
 
-                # Execute the lifting motion before the cutting action
-                BulletWorld.current_bullet_world.add_vis_axis(lift_pose)
-                MoveTCPMotion(lift_pose, self.arm).resolve().perform()
-
-                # Perform the cutting motion
-                BulletWorld.current_bullet_world.add_vis_axis(adjusted_slice_pose)
-                MoveTCPMotion(adjusted_slice_pose, self.arm).resolve().perform()
-
-                # Lift the tool again after the cutting action
-                BulletWorld.current_bullet_world.add_vis_axis(lift_pose)
-                MoveTCPMotion(lift_pose, self.arm).resolve().perform()
-
-                BulletWorld.current_bullet_world.remove_vis_axis()
-
-        # def to_sql(self) -> ORMCuttingAction:  #     """  #     Convert the action to a corresponding SQL representation for storage.  #     """  #     return ORMCuttingAction(self.arm, self.technique, self.slice_thickness)  #  # def insert(self, session: sqlalchemy.orm.session.Session, **kwargs):  #     """  #     Insert the cutting action into the database session.  #     """  #     # insert related objects  #     object_to_be_cut = self.object_to_be_cut_at_execution.insert(session)  #     tool = self.tool_at_execution.insert(session)  #  #     action = super().insert(session)  #     action.object_to_be_cut_id = object_to_be_cut.id  #     action.tool_id = tool.id  #  #     # Additional logic for inserting cutting action data goes here  #     session.add(action)  #     session.commit()  #  #     return action
+            #
+            # # Lift the tool again after the cutting action
+            # BulletWorld.current_bullet_world.add_vis_axis(lift_pose)
+            # MoveTCPMotion(lift_pose, self.arm).resolve().perform()
+            #
+            # BulletWorld.current_bullet_world.remove_vis_axis()
 
     def __init__(self, object_to_be_cut: ObjectDesignatorDescription, tool: ObjectDesignatorDescription,
                  arms: List[str], technique: Optional[str] = None):
