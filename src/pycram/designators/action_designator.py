@@ -1,10 +1,12 @@
 import itertools
 import math
 
+import numpy as np
 import roslibpy.tf
 import sqlalchemy.orm
 from typing import Any, Union
 import rospy
+from roslibpy import tf
 
 import pycram.plan_failures
 from .. import helper
@@ -1417,21 +1419,38 @@ class CuttingAction(ActionDesignatorDescription):
 
             # Process each slice pose for the cutting action
             for slice_pose in slice_poses:
+
+
+                # check if obj is facing the object
+                if helper.facing_robot(slice_pose, BulletWorld.robot):
+                    #print("facing")
+                    rotate_q = helper.axis_angle_to_quaternion([0, 0, 1], 180)
+                    resulting_q = helper.multiply_quaternions(slice_pose.pose, rotate_q)
+                    slice_pose.pose.orientation.x = resulting_q[0]
+                    slice_pose.pose.orientation.y = resulting_q[1]
+                    slice_pose.pose.orientation.z = resulting_q[2]
+                    slice_pose.pose.orientation.w = resulting_q[3]
+
+                    #BulletWorld.current_bullet_world.add_vis_axis(slice_pose)
+
                 tool_frame = robot_description.get_tool_frame(self.arm)
                 special_knowledge_offset = object.local_transformer.transform_pose(slice_pose, BulletWorld.robot.get_link_tf_frame("base_link"))
+
+
                 # Rotate the slice pose to align with the grasp orientation
                 ori = helper.multiply_quaternions(
-                    [special_knowledge_offset.orientation.x, special_knowledge_offset.orientation.y, special_knowledge_offset.orientation.z,
-                     special_knowledge_offset.orientation.w], grasp)
-
+                    special_knowledge_offset.pose, grasp)
 
                 # Apply the adjusted orientation to the slice pose
                 adjusted_slice_pose = special_knowledge_offset.copy()
                 adjusted_slice_pose.orientation = ori
+
+
                 sTm = object.local_transformer.transform_pose(adjusted_slice_pose, "map")
                 # Adjust the position of the slice pose for lifting the tool
                 lift_pose = adjusted_slice_pose.copy()
                 lift_pose.pose.position.z += 2 * object_height  # Lift the tool above the object
+
                 self.perform_cutting_motion(lift_pose, sTm)
 
             #

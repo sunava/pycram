@@ -174,7 +174,7 @@ def axis_angle_to_quaternion(axis: List, angle: float) -> Tuple:
     return (x, y, z, w)
 
 
-def multiply_quaternions(q1: List, q2: List) -> List:
+def multiply_quaternions(q1, q2: List) -> List:
     """
     Multiply two quaternions using the robotics convention (x, y, z, w).
 
@@ -182,6 +182,8 @@ def multiply_quaternions(q1: List, q2: List) -> List:
     :param q2: The second quaternion
     :return: The quaternion resulting from the multiplication
     """
+    if hasattr(q1, "orientation"):
+        q1 = (q1.orientation.x, q1.orientation.y, q1.orientation.z, q1.orientation.w)
     x1, y1, z1, w1 = q1
     x2, y2, z2, w2 = q2
 
@@ -235,3 +237,37 @@ def urdf_to_string(urdf_file_path):
     except Exception as e:
         print(f"An error occurred: {e}")
         return None
+
+def facing_robot(pose, robot) -> bool:
+    """
+    Check if the object is facing the robot.
+    """
+    def dot(v1, v2):
+        return sum(x * y for x, y in zip(v1, v2))
+
+
+    def normalize(v):
+        norm = math.sqrt(dot(v, v))
+        return [x / norm for x in v]
+
+
+    # Example usage
+    vector_to_robot = [robot.pose.position.x - pose.pose.position.x,
+                       robot.pose.position.y - pose.pose.position.y]
+    x = pose.pose.orientation.x
+    y = pose.pose.orientation.y
+    z = pose.pose.orientation.z
+    w = pose.pose.orientation.w
+
+    q = [x, y, z, w]
+
+    object_y_axis = quaternion_rotate(q, [0, 1, 0])
+
+    vector_to_robot_normalized = normalize(vector_to_robot)
+    object_y_axis_normalized = normalize(object_y_axis)
+
+    dot_product = dot(vector_to_robot_normalized, object_y_axis_normalized)
+
+    if dot_product > 0.8:  # Example threshold
+        return True
+    return False
