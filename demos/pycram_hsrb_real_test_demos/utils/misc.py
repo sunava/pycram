@@ -78,27 +78,28 @@ def try_pick_up(robot: BulletWorld.robot, obj: ObjectDesignatorDescription, gras
         PickUpAction(obj, ["left"], [grasps]).resolve().perform()
     except (EnvironmentUnreachable, GripperClosedCompletely):
         print("try pick up again")
-        TalkingMotion("Try pick up again")
+        TalkingMotion("Try pick up again").resolve().perform()
         # after failed attempt to pick up the object, the robot moves 30cm back on x pose
+        # TODO: x-pose und orentation sollten allgemein sein
         NavigateAction(
             [Pose([robot.get_pose().position.x + 0.3, robot.get_pose().position.y,
-                   robot.get_pose().position.z])]).resolve().perform()
+                   robot.get_pose().position.z], [0, 0, 1, 0])]).resolve().perform()
         ParkArmsAction([Arms.LEFT]).resolve().perform()
         # try to detect the object again
         object_desig = DetectAction(technique='default').resolve().perform()
-        # TODO nur wenn key (name des vorherigen objektes) in object_desig enthalten ist
-        # TODO umschreiben, geht so nicht mehr, da das dict in einem tupel ist
-        new_object = object_desig[1][obj.type]
-        print(new_object)
-        # when the robot just grasped next to the object
-        # TODO wieso unterscheiden wir hier überhaupt, wenn er daneben gegriffen hat, hat er das objekt
-        # TODO wahrscheinlich verschoben und sollte auch nochmal perceiven
+        new_object = sort_objects(robot, object_desig, [obj.type])[0]
+
         # second try to pick up the object
         try:
+            TalkingMotion("try again").resolve().perform()
             PickUpAction(new_object, ["left"], [grasps]).resolve().perform()
         # ask for human interaction if it fails a second time
-        except:
-            TalkingMotion(f"Can you pleas give me the {obj.type} on the table?")
+        except (EnvironmentUnreachable, GripperClosedCompletely):
+            NavigateAction(
+                [Pose([robot.get_pose().position.x + 0.3, robot.get_pose().position.y,
+                       robot.get_pose().position.z], [0, 0, 1, 0])]).resolve().perform()
+            ParkArmsAction([Arms.LEFT]).resolve().perform()
+            TalkingMotion(f"Can you pleas give me the {obj.type} on the table?").resolve().perform()
             MoveGripperMotion("open", "left").resolve().perform()
             time.sleep(4)
             MoveGripperMotion("close", "left").resolve().perform()

@@ -9,8 +9,8 @@ from demos.pycram_hsrb_real_test_demos.utils.misc import *
 CUTLERY = ["Spoon", "Fork", "Knife", "Plasticknife"]
 
 # Wished objects for the Demo
-#wished_sorted_obj_list = ["Metalplate", "Bowl", "Metalmug", "Fork", "Cerealbox"]
-wished_sorted_obj_list = ["Milkpack"]
+wished_sorted_obj_list = ["Metalplate", "Bowl", "Metalmug", "Fork", "Cerealbox"]
+
 
 # length of wished list for failure handling
 LEN_WISHED_SORTED_OBJ_LIST = len(wished_sorted_obj_list)
