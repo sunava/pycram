@@ -1319,16 +1319,24 @@ class CuttingAction(ActionDesignatorDescription):
         not updated when the BulletWorld object is changed.
         """
 
-        def calculate_slices(self, obj_width, technique, thickness):
+        def calculate_slices(self, obj_length, technique, thickness):
             """
             Calculates the number of slices and the starting offset based on the cutting technique and slice thickness.
             """
-            if technique == 'halving':
-                return 1, 0  # Halving involves a single slice with no offset
-            else:
-                num_slices = max(1, int(obj_width // thickness))  # Ensure at least one slice
-                start_offset = (-obj_width / 2) + (thickness / 2)
+            # slicing
+            num_slices = int(obj_length // thickness)
+            start_offset = (-obj_length / 2) + (thickness / 2)
+
+            # Calculate the starting position for slicing, adjusted based on the chosen technique
+            if technique in ['halving']:
+                start_offset = 0  # No offset needed for halving
+                num_slices = 1  # Only one slice for halving
                 return num_slices, start_offset
+            elif technique in ['Cutting Action', 'Sawing', 'Paring', 'Cutting', 'Carving']:
+                # Calculate number of slices and initial offset for regular slicing
+                num_slices = 1
+
+            return num_slices, start_offset
 
         def calculate_slice_pose(self, object_pose, slice_position, obj_width):
             """
@@ -1336,10 +1344,8 @@ class CuttingAction(ActionDesignatorDescription):
             """
             slice_pose = object_pose.copy()
             slice_pose.position.x = slice_position
-            slice_pose.position.y -= 3 * obj_width  # Adjust for slicing width
 
             return slice_pose
-
 
         def adjust_for_lifting(self, pose, height):
             """
@@ -1349,18 +1355,29 @@ class CuttingAction(ActionDesignatorDescription):
             lift_pose.position.z += 2 * height  # Lift the tool above the object
             return lift_pose
 
-        def perform_cutting_motion(self, lift_pose, slice_pose):
+        def facing_robot(self, pose, robot):
             """
-            Executes the motion for lifting the tool, performing the cut, and then lifting the tool again.
+            Checks if the object is facing the robot.
             """
-            ##grasp_rotation = robot_description.grasps.get_orientation_for_grasp(self.grasp)
-            #oTb = lt.transform_pose(slice_pose, BulletWorld.robot.get_link_tf_frame("base_link"))
-            #oTm = lt.transform_pose(slice_pose, "map")
-            BulletWorld.current_bullet_world.add_vis_axis(slice_pose)
-            #BulletWorld.current_bullet_world.add_vis_axis(lift_pose)
-            # self.move_tool_to_pose(lift_pose)  # Lift tool before cutting
-            # self.move_tool_to_pose(slice_pose)  # Perform cutting motion
-            # self.move_tool_to_pose(lift_pose)  # Lift tool after cutting
+            if helper.facing_robot(pose, robot):
+                rotate_q = helper.axis_angle_to_quaternion([0, 0, 1], 180)
+                resulting_q = helper.multiply_quaternions(pose.pose, rotate_q)
+                pose.pose.orientation.x = resulting_q[0]
+                pose.pose.orientation.y = resulting_q[1]
+                pose.pose.orientation.z = resulting_q[2]
+                pose.pose.orientation.w = resulting_q[3]
+            return pose
+
+        def perpendicular_pose(self, pose):
+            perpendicular_pose = pose.copy()
+            rotation_axis = [0, 0, 1]
+            rotation_quaternion = helper.axis_angle_to_quaternion(rotation_axis, 90)
+            resulting_q = helper.multiply_quaternions(perpendicular_pose.pose, rotation_quaternion)
+            perpendicular_pose.pose.orientation.x = resulting_q[0]
+            perpendicular_pose.pose.orientation.y = resulting_q[1]
+            perpendicular_pose.pose.orientation.z = resulting_q[2]
+            perpendicular_pose.pose.orientation.w = resulting_q[3]
+            return perpendicular_pose
 
         @with_tree
         def perform(self) -> None:
@@ -1369,38 +1386,17 @@ class CuttingAction(ActionDesignatorDescription):
             grasp orientation, computing slice positions, and orchestrating the necessary robot motions
             for executing the cutting task.
             """
-            # Store the object and tool at the time of execution
-            #            self.object_to_be_cut_at_execution = self.object_to_be_cut.data_copy()
-            #            self.tool_at_execution = self.tool.data_copy()
-
-            # Obtain the preferred grasp orientation for the cutting action
-            grasp = robot_description.grasps.get_orientation_for_grasp("top")
-
+            local_tf = LocalTransformer()
             # Access the designated object for cutting and retrieve its dimensions
             object = self.object_to_be_cut.bullet_world_object
             obj_length, obj_width, object_height = object.get_object_dimensions()
 
-
             # Retrieve the current pose of the object and transform it to the object frame
             oTm = object.get_pose()
-            #BulletWorld.current_bullet_world.add_vis_axis(oTm)
-            object_pose = object.local_transformer.transform_to_object_frame(oTm, object)
+            # BulletWorld.current_bullet_world.add_vis_axis(oTm)
+            object_pose = local_tf.transform_to_object_frame(oTm, object)
 
-
-
-            # Calculate the starting position for slicing, adjusted based on the chosen technique
-            if self.technique in ['halving']:
-                start_offset = 0  # No offset needed for halving
-                num_slices = 1  # Only one slice for halving
-            elif self.technique in ['Cutting Action', 'Sawing', 'Paring', 'Cutting', 'Carving']:
-                # Calculate number of slices and initial offset for regular slicing
-                num_slices = 1
-                start_offset = (-obj_length / 2) + (self.slice_thickness / 2)
-
-            else:
-                # Calculate number of slices and initial offset for regular slicing
-                num_slices = int(obj_length // self.slice_thickness)
-                start_offset = (-obj_length / 2) + (self.slice_thickness / 2)
+            num_slices, start_offset = self.calculate_slices(obj_length, self.technique, self.slice_thickness)
 
             # Generate coordinates for each slice along the object's length
             slice_coordinates = [start_offset + i * self.slice_thickness for i in range(num_slices)]
@@ -1410,55 +1406,38 @@ class CuttingAction(ActionDesignatorDescription):
             for x in slice_coordinates:
                 # Adjust slice pose based on object dimensions and orientation
                 tmp_pose = object_pose.copy()
-                tmp_pose.pose.position.y -=  obj_width #plus tool länge  # Offset position for slicing
+                # tmp_pose.pose.position.y -=  obj_width #plus tool länge  # Offset position for slicing
                 tmp_pose.pose.position.x = x  # Set slicing position
-                #tmp_pose.pose.position.z
-                sTm = object.local_transformer.transform_pose(tmp_pose, "map")
-                #BulletWorld.current_bullet_world.add_vis_axis(sTm)
+                # tmp_pose.pose.position.z
+                sTm = local_tf.transform_pose(tmp_pose, "map")
+                # BulletWorld.current_bullet_world.add_vis_axis(sTm)
                 slice_poses.append(sTm)
 
             # Process each slice pose for the cutting action
             for slice_pose in slice_poses:
-
-
                 # check if obj is facing the object
-                if helper.facing_robot(slice_pose, BulletWorld.robot):
-                    #print("facing")
-                    rotate_q = helper.axis_angle_to_quaternion([0, 0, 1], 180)
-                    resulting_q = helper.multiply_quaternions(slice_pose.pose, rotate_q)
-                    slice_pose.pose.orientation.x = resulting_q[0]
-                    slice_pose.pose.orientation.y = resulting_q[1]
-                    slice_pose.pose.orientation.z = resulting_q[2]
-                    slice_pose.pose.orientation.w = resulting_q[3]
-
-                    #BulletWorld.current_bullet_world.add_vis_axis(slice_pose)
-
-                tool_frame = robot_description.get_tool_frame(self.arm)
-                special_knowledge_offset = object.local_transformer.transform_pose(slice_pose, BulletWorld.robot.get_link_tf_frame("base_link"))
+                slice_pose = self.facing_robot(slice_pose, BulletWorld.robot)
 
 
-                # Rotate the slice pose to align with the grasp orientation
-                ori = helper.multiply_quaternions(
-                    special_knowledge_offset.pose, grasp)
+                perpendicular_pose = self.perpendicular_pose(slice_pose)
 
-                # Apply the adjusted orientation to the slice pose
-                adjusted_slice_pose = special_knowledge_offset.copy()
-                adjusted_slice_pose.orientation = ori
+                object_pose = self.tool.pose
 
+                # Transformations such that the target position is the position of the object and not the tcp
+                tcp_to_object = local_tf.transform_pose(object_pose,
+                                                        BulletWorld.robot.get_link_tf_frame(
+                                                            robot_description.get_tool_frame(self.arm)))
+                target_diff = (perpendicular_pose.to_transform("target").inverse_times(
+                    tcp_to_object.to_transform("object")).to_pose())
 
-                sTm = object.local_transformer.transform_pose(adjusted_slice_pose, "map")
-                # Adjust the position of the slice pose for lifting the tool
-                lift_pose = adjusted_slice_pose.copy()
-                lift_pose.pose.position.z += 2 * object_height  # Lift the tool above the object
+                lift_pose = target_diff.copy()
+                lift_pose.pose.position.z += object_height  # Lift the tool above the object
 
-                self.perform_cutting_motion(lift_pose, sTm)
-
-            #
-            # # Lift the tool again after the cutting action
-            # BulletWorld.current_bullet_world.add_vis_axis(lift_pose)
-            # MoveTCPMotion(lift_pose, self.arm).resolve().perform()
-            #
-            # BulletWorld.current_bullet_world.remove_vis_axis()
+                #BulletWorld.current_bullet_world.add_vis_axis(target_diff)
+                #BulletWorld.current_bullet_world.add_vis_axis(lift_pose)
+                MoveTCPMotion(lift_pose, self.arm).resolve().perform()
+                MoveTCPMotion(target_diff, self.arm).resolve().perform()
+                MoveTCPMotion(lift_pose, self.arm).resolve().perform()
 
     def __init__(self, object_to_be_cut: ObjectDesignatorDescription, tool: ObjectDesignatorDescription,
                  arms: List[str], technique: Optional[str] = None):
