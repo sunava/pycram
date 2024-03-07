@@ -465,7 +465,7 @@ class PickUpAction(ActionDesignatorDescription):
                     if self.object_designator.type == "Bowl":
                         print(f"x_pose: {special_knowledge_offset.pose.position.x}")
                         print(f"y_pose: {special_knowledge_offset.pose.position.y}")
-                        special_knowledge_offset.pose.position.y += 0.065
+                        special_knowledge_offset.pose.position.y += 0.085  # 0.065
                         special_knowledge_offset.pose.position.x -= 0.03  # 0.022
                         print(f"x_pose_after: {special_knowledge_offset.pose.position.x}")
                         print(f"y_pose_after: {special_knowledge_offset.pose.position.y}")
@@ -533,8 +533,6 @@ class PickUpAction(ActionDesignatorDescription):
             session.commit()
 
             return action
-
-
 
 
         def to_sql(self) -> ORMPickUpAction:
