@@ -432,7 +432,7 @@ class PickUpAction(ActionDesignatorDescription):
                     # todo: this z is the popcorn-table height, we need to define location to get that z otherwise it
                     #  is hardcoded
                     oTm.pose.position.z = 0.71
-                oTm.pose.position.z += 0.035 # 0.025
+                oTm.pose.position.z += 0.035
 
             # Determine the grasp orientation and transform the pose to the base link frame
             grasp_rotation = robot_description.grasps.get_orientation_for_grasp(self.grasp)
@@ -472,7 +472,7 @@ class PickUpAction(ActionDesignatorDescription):
                     if self.object_designator.type == "Cutlery":
                         print(f"Cutlery erkannt, rechne -x")
                         print(special_knowledge_offset.pose.position.x)
-                       # special_knowledge_offset.pose.position.x -= 0.11  # 0.11 before, fork needs more
+                        # special_knowledge_offset.pose.position.x -= 0.11  # 0.11 before, fork needs more
                         print(special_knowledge_offset.pose.position.x)
                     # if self.object_designator.type == "Fork":
                     #     special_knowledge_offset.pose.position.x -= 0.02
@@ -535,23 +535,6 @@ class PickUpAction(ActionDesignatorDescription):
             return action
 
 
-        def to_sql(self) -> ORMPickUpAction:
-            return ORMPickUpAction(self.arm, self.grasp)
-
-        def insert(self, session: sqlalchemy.orm.session.Session, **kwargs):
-            action = super().insert(session)
-            # try to create the object designator
-            if self.object_at_execution:
-                od = self.object_at_execution.insert(session, )
-                action.object = od.id
-            else:
-                action.object = None
-
-            session.add(action)
-            session.commit()
-
-            return action
-
     def __init__(self,
                  object_designator_description: Union[ObjectDesignatorDescription, ObjectDesignatorDescription.Object],
                  arms: List[str], grasps: List[str], resolver=None):
@@ -584,7 +567,12 @@ class PickUpAction(ActionDesignatorDescription):
 
 class PlaceAction(ActionDesignatorDescription):
     """
-    Places an Object at a position using an arm.
+     A class representing a designator for a place action, allowing a robot to place a specified object.
+
+    This class encapsulates the details of the place action, including the object to be placed, the arm to be used,
+    the target_location to place the object and the grasp type. It defines the sequence of operations for the robot
+    to execute the place action, such as moving the arm holding the object to the target_location, opening
+    the gripper, and lifting the arm.
     """
 
     @dataclasses.dataclass
@@ -619,9 +607,12 @@ class PlaceAction(ActionDesignatorDescription):
             if self.grasp == "top":
                 oTm.pose.position.z += 0.05
 
+            # Determine the grasp orientation and transform the pose to the base link frame
             grasp_rotation = robot_description.grasps.get_orientation_for_grasp(self.grasp)
             oTb = lt.transform_pose(oTm, robot.get_link_tf_frame("base_link"))
+            # Set pose to the grasp rotation
             oTb.orientation = grasp_rotation
+            # Transform the pose to the map frame
             oTmG = lt.transform_pose(oTb, "map")
 
             rospy.logwarn("Placing now")
@@ -640,7 +631,8 @@ class PlaceAction(ActionDesignatorDescription):
             rospy.logwarn("Pushing now")
             MoveTCPMotion(push_baseTm, self.arm).resolve().perform()
 
-            rospy.logwarn("Close Gripper")
+            # Finalize the placing by opening the gripper and lifting the arm
+            rospy.logwarn("Open Gripper")
             MoveGripperMotion(motion="open", gripper=self.arm).resolve().perform()
 
             rospy.logwarn("Lifting now")
@@ -689,7 +681,8 @@ class PlaceAction(ActionDesignatorDescription):
         :param arms: List of possible arms that could be used
         :param grasps: List of possible grasps for the object
         :param target_locations: List of possible target locations for the object to be placed
-        :param resolver: An optional resolver that returns a performable designator with elements from the lists of possible paramter
+        :param resolver: An optional resolver that returns a performable designator with elements from the lists of
+                         possible paramter
         """
         super().__init__(resolver)
         self.object_designator_description: Union[
@@ -712,7 +705,13 @@ class PlaceAction(ActionDesignatorDescription):
 
 class PlaceGivenObjAction(ActionDesignatorDescription):
     """
-    Arm movement of the robot for placing human given objects.
+     A class representing a designator for a place action of human given objects, allowing a robot to place a
+     human given object, that could not be picked up or were not found in the FOV.
+
+    This class encapsulates the details of the place action of human given objects, including the type of the object to
+    be placed, the arm to be used, the target_location to place the object and the grasp type. It defines the sequence
+    of operations for the robot to execute the place action of human given object, such as moving the arm holding the
+    object to the target_location, opening the gripper, and lifting the arm.
     """
 
     @dataclasses.dataclass
@@ -746,8 +745,8 @@ class PlaceGivenObjAction(ActionDesignatorDescription):
 
             # TODO add for other robots
             if self.object_type == "Metalplate" and robot.name == "hsrb":
-                print("in hsrb and metalplate placing")
-                self.target_location.pose.position.z = 0.9
+                # z should always be at least table height plus radius of plate
+                self.target_location.pose.position.z = 0.9 # todo take this out and check if code works without it
 
                 grasp_rotation = robot_description.grasps.get_orientation_for_grasp("front")
                 oTb = lt.transform_pose(oTm, robot.get_link_tf_frame("base_link"))
@@ -770,14 +769,16 @@ class PlaceGivenObjAction(ActionDesignatorDescription):
                 MoveJointsMotion(["wrist_flex_joint"], [-0.8]).resolve().perform()
 
                 # correct a possible sloped orientation
-                NavigateAction([Pose([robot.get_pose().pose.position.x, robot.get_pose().pose.position.y, 0])]).resolve().perform()
+                NavigateAction(
+                    [Pose([robot.get_pose().pose.position.x, robot.get_pose().pose.position.y, 0])]).resolve().perform()
 
                 MoveGripperMotion(motion="open", gripper="left").resolve().perform()
 
                 # Move away from the table
-                # todo if turned in an other direction hsr is not moving backwards but forward
+                # todo generalize so that hsr is always moving backwards
                 NavigateAction(
-                    [Pose([robot.get_pose().pose.position.x - 0.1, robot.get_pose().pose.position.y, 0])]).resolve().perform()
+                    [Pose([robot.get_pose().pose.position.x - 0.1, robot.get_pose().pose.position.y,
+                           0])]).resolve().perform()
 
             # placing everything else except the Metalplate
             else:
@@ -819,14 +820,16 @@ class PlaceGivenObjAction(ActionDesignatorDescription):
                  object_types: List[str], arms: List[str], target_locations: List[Pose], grasps: List[str],
                  resolver=None):
         """
-        Lets the robot place a human given object. The description needs an object type describing the object that should be
-        placed, an arm that should be used as well as the target location where the object should be placed and the needed grasping movement.
+        Lets the robot place a human given object. The description needs an object type describing the object that
+        should be placed, an arm that should be used as well as the target location where the object should be placed
+        and the needed grasping movement.
 
         :param object_types: List of possible object types
         :param arms: List of possible arms that could be used
         :param target_locations: List of possible target locations for the object to be placed
         :param grasps: List of possible grasps for the object
-        :param resolver: An optional resolver that returns a performable designator with elements from the lists of possible paramter
+        :param resolver: An optional resolver that returns a performable designator with elements from the lists of
+                         possible paramter
         """
         super().__init__(resolver)
         self.object_types: List[str] = object_types
@@ -836,7 +839,8 @@ class PlaceGivenObjAction(ActionDesignatorDescription):
 
     def ground(self) -> Action:
         """
-        Default resolver that returns a performable designator with the first entries from the lists of possible parameter.
+        Default resolver that returns a performable designator with the first entries from the lists of possible
+        parameter.
 
         :return: A performable designator
         """
