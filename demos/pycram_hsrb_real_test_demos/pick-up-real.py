@@ -278,7 +278,7 @@ with ((real_robot)):
             PlaceGivenObjAction([wished_sorted_obj_list[val]], ["left"], [Pose([4.86, y_pos, z])],
                                 [grasp]).resolve().perform()
             ParkArmsAction([Arms.LEFT]).resolve().perform()
-            TalkingMotion("Navigating").resolve().perform()
+
             if wished_sorted_obj_list[val] == "Metalplate":
                 y_pos += 0.3
             else:
@@ -287,6 +287,7 @@ with ((real_robot)):
             # navigates back if a next object exists
             # todo sollen wir ihn echt zum tisch navigieren lassen, wenn er das objekt vom menschen bekommt?
             if val + 1 < len(wished_sorted_obj_list):
+                TalkingMotion("Navigating").resolve().perform()
                 #navigate_to(True, 2, "popcorn table")
                 #navigate_to(False, 1.8, "popcorn table")
                 navigate_to(3.9, 2, "popcorn table")
