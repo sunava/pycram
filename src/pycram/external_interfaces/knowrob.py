@@ -133,17 +133,21 @@ def get_guest_info(id):
     """
     function that uses Knowledge Service to get Name and drink from new guest via ID
     :param id: integer for person
-    :return: ['person_infos: "name', 'drink"']
+    :return: ["name", "drink"]
     """
 
     rospy.wait_for_service('info_server')
     try:
         info_service = rospy.ServiceProxy('info_server', IsKnown)
-        guest_data = info_service(id) #guest_data = person_infos: "Angel,Milk"
-        result = str(guest_data).split(',') #result = ['person_infos: "Angel', 'Milk"']
+        # guest_data = person_infos: "Angel,Milk"
+        guest_data = info_service(id)
+        # result = ['person_infos: "Angel', 'Milk"']
+        result = str(guest_data).split(',')
+        result[0] = result[0][13:]
         return result
     except rospy.ServiceException as e:
-        print("Service call failed")
+        rospy.logerr("Service call failed")
+        pass
 
 def get_table_pose(table_name):
     """
@@ -155,7 +159,8 @@ def get_table_pose(table_name):
     try:
         service = rospy.ServiceProxy('pose_server', String)
         table_pose = service(table_name)#
-        print(f"table_pose_knowrob: {table_pose}")
+        # print(f"table_pose_knowrob: {table_pose}")
         return table_pose
     except rospy.ServiceException:
-        print("Service call failed")
+        rospy.logerr("Service call failed")
+        pass
