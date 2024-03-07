@@ -67,7 +67,7 @@ class VizMarkerPublisher:
         marker_array = MarkerArray()
         objnew = False
         for obj in BulletWorld.current_bullet_world.objects:
-            if obj.name in ["floor", ]:
+            if obj.name in ["floor"]:
                 continue
             if obj.name == "hsrb":
                 continue
@@ -125,8 +125,8 @@ class VizMarkerPublisher:
                     z = geom["size"][2]
                     msg.scale = Vector3(x, y, z)
                 if objnew:
-                    color = obj.get_color()
-                    msg.color = ColorRGBA(*color)
+                    #color = obj.get_color()
+                    #msg.color = ColorRGBA(*color)
                     objnew = False
 
                 marker_array.markers.append(msg)
