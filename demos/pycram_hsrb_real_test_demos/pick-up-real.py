@@ -133,6 +133,13 @@ def get_z(obj_type: str):
 
 
 def navigate_to(x: float, y: float, table_name: str):
+    """
+    Navigates to the popcorn table or to the table on the other side.
+
+    :param x: x pose to navigate to
+    :param y: y pose to navigate to
+    :param table_name: defines the name of the table to move to
+    """
     if table_name == "popcorn table":
         NavigateAction(target_locations=[Pose([x, y, 0], [0, 0, 1, 0])]).resolve().perform()
     elif table_name == "long table":

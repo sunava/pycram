@@ -153,13 +153,13 @@ def get_table_pose(table_name):
     """
     Get table pose from knowledge
     :param table_name: predefined name for each table
+
+    :return: object pose of the given table
     """
-    print("waiting for server")
     rospy.wait_for_service('pose_server')
     try:
-        service = rospy.ServiceProxy('pose_server', String)
+        service = rospy.ServiceProxy('pose_server', ObjectPose)
         table_pose = service(table_name)#
-        # print(f"table_pose_knowrob: {table_pose}")
         return table_pose
     except rospy.ServiceException:
         rospy.logerr("Service call failed")
