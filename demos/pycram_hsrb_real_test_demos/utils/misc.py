@@ -84,7 +84,7 @@ def try_pick_up(robot: BulletWorld.robot, obj: ObjectDesignatorDescription, gras
         # after failed attempt to pick up the object, the robot moves 30cm back on x pose
         #Todo is this working with this orientation???
         NavigateAction(
-            [Pose([robot.get_pose().position.x - 0.3, robot.get_pose().position.y, robot.get_pose().position.z],
+            [Pose([robot.get_pose().position.x + 0.3, robot.get_pose().position.y, robot.get_pose().position.z],
                   robot.get_pose().orientation)]).resolve().perform()
         ParkArmsAction([Arms.LEFT]).resolve().perform()
         # try to detect the object again

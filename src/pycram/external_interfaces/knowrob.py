@@ -139,9 +139,9 @@ def get_guest_info(id):
     rospy.wait_for_service('info_server')
     try:
         info_service = rospy.ServiceProxy('info_server', IsKnown)
-        # guest_data = person_infos: "Angel,Milk"
+        # guest_data = person_infos: "name,drink"
         guest_data = info_service(id)
-        # result = ['person_infos: "Angel', 'Milk"']
+        # result = ['person_infos: "name', 'drink"']
         result = str(guest_data).split(',')
         result[0] = result[0][13:]
         return result

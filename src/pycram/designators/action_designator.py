@@ -452,7 +452,7 @@ class PickUpAction(ActionDesignatorDescription):
             # Execute Bool, because sometimes u only want to visualize the poses to test things
             if execute:
                 MoveTCPMotion(oTmG, self.arm).resolve().perform()
-
+            raise EnvironmentUnreachable
             # Calculate and apply any special knowledge offsets based on the robot and object type
             # Note: This currently includes robot-specific logic that should be generalized
             tool_frame = robot_description.get_tool_frame(self.arm)
