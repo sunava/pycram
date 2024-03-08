@@ -238,8 +238,11 @@ class ParkArmsAction(ActionDesignatorDescription):
             if self.arm in [Arms.LEFT, Arms.BOTH]:
                 kwargs["left_arm_config"] = "park"
                 MoveArmJointsMotion(**kwargs).resolve().perform()
-                MoveTorsoAction([
-                    0.25]).resolve().perform()  # MoveTorsoAction([0.005]).resolve().perform()  # MoveTorsoAction([0.2]).resolve().perform()
+                if robot_description.name == "Armar6":
+                    MoveTorsoAction([-0.1]).resolve().perform()
+                else:
+                    MoveTorsoAction([
+                        0.25]).resolve().perform()  # MoveTorsoAction([0.005]).resolve().perform()  # MoveTorsoAction([0.2]).resolve().perform()
             # add park right arm if wanted
             if self.arm in [Arms.RIGHT, Arms.BOTH]:
                 kwargs["right_arm_config"] = "park"
@@ -325,7 +328,10 @@ class PickUpAction(ActionDesignatorDescription):
 
             # Determine the grasp orientation and transform the pose to the base link frame
             grasp_rotation = robot_description.grasps.get_orientation_for_grasp(self.grasp)
-            oTb = lt.transform_pose(oTm, robot.get_link_tf_frame("base_link"))
+            if robot_description.name == "Armar6":
+                oTb = lt.transform_pose(oTm, robot.get_link_tf_frame("platform"))
+            else:
+                oTb = lt.transform_pose(oTm, robot.get_link_tf_frame("base_link"))
             #otbtest = oTb.copy()
             testmulti = helper.multiply_quaternions([oTb.orientation.x, oTb.orientation.y, oTb.orientation.z, oTb.orientation.w], grasp_rotation)
             #otbtest.orientation = testmulti
@@ -346,7 +352,10 @@ class PickUpAction(ActionDesignatorDescription):
             #BulletWorld.current_bullet_world.add_vis_axis(oTmG)
             # Execute Bool, because sometimes u only want to visualize the poses to test things
             if execute:
-                MoveTorsoAction([0.25]).resolve().perform()
+                if robot_description.name == "Armar6":
+                    MoveTorsoAction([-0.1]).resolve().perform()
+                else:
+                    MoveTorsoAction([0.25]).resolve().perform()
                 MoveTCPMotion(oTmG, self.arm).resolve().perform()
 
             # Calculate and apply any special knowledge offsets based on the robot and object type
@@ -503,7 +512,10 @@ class PlaceAction(ActionDesignatorDescription):
             # oTm.pose.position.z += 0.05
 
             grasp_rotation = robot_description.grasps.get_orientation_for_grasp(self.grasp)
-            oTb = lt.transform_pose(oTm, robot.get_link_tf_frame("base_link"))
+            if robot_description.name == "Armar6":
+                oTb = lt.transform_pose(oTm, robot.get_link_tf_frame("platform"))
+            else:
+                oTb = lt.transform_pose(oTm, robot.get_link_tf_frame("base_link"))
             oTb.orientation = grasp_rotation
             oTmG = lt.transform_pose(oTb, "map")
 
@@ -911,7 +923,10 @@ class TransportAction(ActionDesignatorDescription):
 
                 # Navigate to the location, adjust the torso, and place the object
                 NavigateAction(target_locations=[nav_pose]).resolve().perform()
-                MoveTorsoAction([0.25]).resolve().perform()  # Adjust torso height as needed
+                if robot_description.name == "Armar6":
+                    MoveTorsoAction([-0.1]).resolve().perform()
+                else:
+                    MoveTorsoAction([0.25]).resolve().perform()  # Adjust torso height as needed
                 PlaceAction(perceived_obj, [arm], [grasp_type], [place_pose]).resolve().perform()
                 ParkArmsAction([Arms.BOTH]).resolve().perform()
                 return True
@@ -937,7 +952,10 @@ class TransportAction(ActionDesignatorDescription):
                 objects = [self.target_object]
 
             for obj in objects:
-                MoveTorsoAction([0.25]).resolve().perform()
+                if robot_description.name == "Armar6":
+                    MoveTorsoAction([-0.1]).resolve().perform()
+                else:
+                    MoveTorsoAction([0.25]).resolve().perform()
                 ParkArmsAction([Arms.BOTH]).resolve().perform()
                 grasp, arm, detected_object = search_for_object(self.current_context, obj)
                 if not self.hold:
