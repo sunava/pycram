@@ -325,8 +325,6 @@ class AxisMarkerPublisher:
 
         rospy.sleep(1)
 
-        print(self.marker_array)
-
         # Publish the MarkerArray
         self.marker_pub.publish(self.marker_array)
 
