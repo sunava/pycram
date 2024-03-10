@@ -192,7 +192,7 @@ def multiply_quaternions(q1, q2: List) -> List:
     y = w1 * y2 - x1 * z2 + y1 * w2 + z1 * x2
     z = w1 * z2 + x1 * y2 - y1 * x2 + z1 * w2
 
-    return (x, y, z, w)
+    return [x, y, z, w]
 
 
 def quaternion_rotate(q: List, v: List) -> List:

@@ -39,9 +39,9 @@ robot_desig = BulletWorld.current_bullet_world.robot
 
 
 with simulated_robot:
-    # ParkArmsAction([Arms.BOTH]).resolve().perform()
-    # MoveTorsoAction([0.33]).resolve().perform()
-    # TransportAction(current_context=current_context, hold=True, target_object=cutting_tool.name).resolve().perform()
+    ParkArmsAction([Arms.BOTH]).resolve().perform()
+    MoveTorsoAction([0.33]).resolve().perform()
+    TransportAction(current_context=current_context, hold=True, target_object=cutting_tool.name).resolve().perform()
     location_pose = Pose([1.7, 2, 0])
     looking_pose = Pose([2.5, 2, 0.97])
     NavigateAction([location_pose]).resolve().perform()
@@ -51,7 +51,7 @@ with simulated_robot:
     if status:
         for key, value in object_dict.items():
             detected_object = object_dict[key]
-            bigknife_BO = BelieveObject(names=["bigknife"])
+            bigknife_BO = BelieveObject(names=["bigknife"]).resolve()
             CuttingAction(detected_object, bigknife_BO, ["right"], "slicing").resolve().perform()
 
     #     grasp = robot_description.grasps.get_orientation_for_grasp("top")
