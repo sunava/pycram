@@ -1328,7 +1328,7 @@ class CuttingAction(ActionDesignatorDescription):
             start_offset = (-obj_length / 2) + (thickness / 2)
 
             # Calculate the starting position for slicing, adjusted based on the chosen technique
-            if technique in ['halving']:
+            if technique in ['Halving']:
                 start_offset = 0  # No offset needed for halving
                 num_slices = 1  # Only one slice for halving
                 return num_slices, start_offset
@@ -1406,7 +1406,7 @@ class CuttingAction(ActionDesignatorDescription):
             for x in slice_coordinates:
                 # Adjust slice pose based on object dimensions and orientation
                 tmp_pose = object_pose.copy()
-                # tmp_pose.pose.position.y -=  obj_width #plus tool länge  # Offset position for slicing
+                tmp_pose.pose.position.y +=  obj_width #plus tool länge  # Offset position for slicing
                 tmp_pose.pose.position.x = x  # Set slicing position
                 # tmp_pose.pose.position.z
                 sTm = local_tf.transform_pose(tmp_pose, "map")
@@ -1433,7 +1433,7 @@ class CuttingAction(ActionDesignatorDescription):
                 lift_pose = target_diff.copy()
                 lift_pose.pose.position.z += object_height  # Lift the tool above the object
 
-                #BulletWorld.current_bullet_world.add_vis_axis(target_diff)
+                BulletWorld.current_bullet_world.add_vis_axis(target_diff)
                 #BulletWorld.current_bullet_world.add_vis_axis(lift_pose)
                 MoveTCPMotion(lift_pose, self.arm).resolve().perform()
                 MoveTCPMotion(target_diff, self.arm).resolve().perform()

@@ -278,7 +278,7 @@ class BulletWorld:
         return world
 
     def add_vis_axis(self, pose: Pose,
-                     length: Optional[float] = 0.2) -> None:
+                     length: Optional[float] = 0.15) -> None:
         """
         Creates a Visual object which represents the coordinate frame at the given
         position and orientation. There can be an unlimited amount of vis axis objects.
@@ -291,12 +291,12 @@ class BulletWorld:
 
         position, orientation = pose_in_map.to_list()
 
-        vis_x = p.createVisualShape(p.GEOM_BOX, halfExtents=[length, 0.01, 0.01],
-                                    rgbaColor=[1, 0, 0, 0.8], visualFramePosition=[length, 0.01, 0.01])
+        vis_x = p.createVisualShape(p.GEOM_BOX, halfExtents=[length, 0.005, 0.005],
+                                    rgbaColor=[1, 1, 1, 0], visualFramePosition=[length, 0.01, 0.01])
         vis_y = p.createVisualShape(p.GEOM_BOX, halfExtents=[0.01, length, 0.01],
-                                    rgbaColor=[0, 1, 0, 0.8], visualFramePosition=[0.01, length, 0.01])
-        vis_z = p.createVisualShape(p.GEOM_BOX, halfExtents=[0.01, 0.01, length],
-                                    rgbaColor=[0, 0, 1, 0.8], visualFramePosition=[0.01, 0.01, length])
+                                   rgbaColor=[0, 1, 0, 0], visualFramePosition=[0.01, length, 0.01])
+        vis_z = p.createVisualShape(p.GEOM_BOX, halfExtents=[0.0005, 0.0005, length],
+                                    rgbaColor=[0, 1, 1, 0.7], visualFramePosition=[0.005, 0.005, length])
 
         obj = p.createMultiBody(baseVisualShapeIndex=-1, linkVisualShapeIndices=[vis_x, vis_y, vis_z],
                                 basePosition=position, baseOrientation=orientation,

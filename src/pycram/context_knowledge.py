@@ -38,16 +38,16 @@ clean_up_objects = {
     "bowl": {"type": "bowl", "model": "bowl.stl", "pose": [4.6599997387605585, 4.339999616031064, 0.8166916942596436],
              "color": [1, 1, 0, 1], "default_location": "table_area_main"}}
 
-cutting_apart = {"board": {"type": "board", "model": "board.stl",
-                           "pose": Pose([2.4, 2, 0.95], [0, 0, -1, -1]), "color": [0.4, 0.2, 0.06, 1],
-                           "default_location": "island_countertop", "typeloc": "No"},
-                "cucumber": {"type": "object_to_be_cut", "model": "cucumber.stl",
-                           "pose": Pose([2.3, 2, 0.99], [0, 0, 1, 1]),
-                             "color":[0.2, 0.8, 0.2, 1],
-                           "default_location": "island_countertop", "typeloc": "No"},
-                 "bigknife": {"type": "cutting_tool", "model": "big-knife.stl", "pose": [2.55, 2.2, 0.85],
+cutting_big = {
+    "knife": {"type": "cutting_tool", "model": "big-knife.stl", "pose": [2.55, 2.15, 0.85],
                               "color": [0.75, 0.75, 0.75, 1], "default_location": "cabinet10_drawer_top",
-                              "typeloc": "acces"}, }
+                              "typeloc": "acces"},
+
+                 }
+cutting_small = {
+    "knife": {"type": "cutting_tool", "model": "/objects/butter_knife.stl", "pose": [2.55, 2.25, 0.85],
+                 "color": [0.75, 0.75, 0.75, 1], "default_location": "cabinet10_drawer_top", "typeloc": "acces"},
+                 }
 
 
 class ContextConfig:
@@ -118,9 +118,12 @@ def generate_context(context_name, enviornment_name):
     if context_name == "breakfast" and enviornment_name == "apartment-small.urdf":
         Object("pr2", ObjectType.ROBOT, "pr2.urdf", pose=Pose([1, 2, 0]))
         return ContextConfig(context_name, enviornment_name, breakfast_objects_apart)
-    if context_name == "cutting-init" and enviornment_name == "apartment-small.urdf":
+    if context_name == "cutting-big" and enviornment_name == "apartment-small.urdf":
         Object("pr2", ObjectType.ROBOT, "pr2.urdf", pose=Pose([1, 2, 0]))
-        return ContextConfig(context_name, enviornment_name, cutting_apart)
+        return ContextConfig(context_name, enviornment_name, cutting_big)
+    elif context_name == "cutting-small" and enviornment_name == "apartment-small.urdf":
+        Object("pr2", ObjectType.ROBOT, "pr2.urdf", pose=Pose([1, 2, 0]))
+        return ContextConfig(context_name, enviornment_name, cutting_small)
     elif context_name == "breakfast" and enviornment_name == "kitchen-small.urdf":
         Object("pr2", ObjectType.ROBOT, "pr2.urdf", pose=Pose([0, 0, 0]))
         return ContextConfig(context_name, enviornment_name, breakfast_objects_kitchen)

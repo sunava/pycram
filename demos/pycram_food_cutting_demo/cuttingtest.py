@@ -78,7 +78,7 @@ def start_demo():
     display(execute_button, output)
 
 
-def cutting_simple(obj="cucumber.stl", technique="slicing"):
+def cutting_simple(obj="cucumber.stl", technique="slicing", color=[0, 1, 0.04, 1]):
     world = BulletWorld()
     kitchen = Object("environment", ObjectType.ENVIRONMENT, "kitchen-small.urdf")
     kitchen.set_color([0.5, 0.5, 0.5, 0.8])
@@ -114,7 +114,7 @@ def cutting_simple(obj="cucumber.stl", technique="slicing"):
     cucumber = Object("cucumber", "cucumber", obj, spawning_poses["cucumber"])
     perceived_cucumber = ObjectDesignatorDescription.Object(cucumber.name, cucumber.type, cucumber)
     board = Object("board", "board", "board.stl", spawning_poses["board"])
-    cucumber.set_color([0, 1, 0.04, 1])
+    cucumber.set_color(color)
     board.set_color([0.4, 0.2, 0.06, 1])
     bigknife.set_color([0.5, 0.5, 0.5, 1])
     bigknife_BO = BelieveObject(names=["bigknife"])
@@ -143,4 +143,18 @@ def cutting_simple(obj="cucumber.stl", technique="slicing"):
 
         CuttingAction(perceived_cucumber, bigknife_BO.resolve(), ["left"], technique).resolve().perform()
         rospy.loginfo("Done with the task")
-cutting_simple("/objects/watermelon.stl")
+
+colors = {
+    "Crimson": (0.86, 0.08, 0.24, 1),
+    "Cerulean": (0, 0.48, 0.65, 1),
+    "Amber": (1, 0.75, 0, 1),
+    "Teal": (0, 0.5, 0.5, 1),
+    "Lavender": (0.9, 0.9, 0.98, 1),
+    "Saffron": (0.96, 0.77, 0.19, 1),
+    "Charcoal": (0.21, 0.27, 0.31, 1),
+    "Coral": (1, 0.5, 0.31, 1),
+    "Turquoise": (0.25, 0.88, 0.82, 1),
+    "Mauve": (0.88, 0.69, 1, 1)
+}
+
+cutting_simple("/objects/tomato.stl", colors["Amber"])
