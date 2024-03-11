@@ -9,7 +9,7 @@ from IPython.display import display, HTML, clear_output
 
 def start_cutting(obj, technique):
     display(HTML('<img src="https://i.gifer.com/XVo6.gif" alt="Hourglass animation" width="50">'))
-    BulletWorld("DIRECT")
+    BulletWorld()
     VizMarkerPublisher(interval=0.1)
 
     Object("pr2", ObjectType.ROBOT, "pr2.urdf", pose=Pose([1, 2, 0]))
@@ -91,7 +91,7 @@ def start_cutting(obj, technique):
         rospy.loginfo("Cutting task completed!")
 
 
-start_cutting("obo:FOODON_03301710", "cut:Halving")
+# start_cutting("obo:FOODON_03301710", "soma:Slicing")
 # [INFO] [1710184677.654084]: Querying the ontology for the cutting task
 # [INFO] [1710184680.265410]: The repetition for the task is: 0.05
 # [INFO] [1710184680.405835]: The start position is: http://www.ease-crc.org/ont/food_cutting#halving_position
