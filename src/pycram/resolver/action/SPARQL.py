@@ -37,7 +37,7 @@ class SPARQL():
                 ?rep_node owl:onProperty cut:repetitions.
                 FILTER EXISTS {
                     ?rep_node owl:hasValue ?val.}
-                BIND("0.05" AS ?rep)}
+                BIND("1" AS ?rep)}
             UNION
             {
                OPTIONAL{ %s rdfs:subClassOf ?action }
