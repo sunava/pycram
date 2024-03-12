@@ -16,12 +16,7 @@ from IPython.display import display, clear_output, HTML
 import rospkg
 from pycram.context_knowledge import ContextConfig, generate_context
 
-# all available parameters
-tasks = [('Select',None),('Cutting Action', "Cutting Action"), ('Sawing', "Sawing"), ('Paring', "Paring"), ('Cutting', "Cutting"),
-         ('Carving', "Carving"), ('Slicing', "Slicing"), ('Snipping', "Snipping"), ('Slivering', "Slivering"),
-         ('Halving', "Halving"), ('Quartering (Unavailable)', None), ('Julienning (Unavailable)', None),
-         ('Dicing (Unavailable)', None), ('Mincing (Unavailable)', None), ('Cubing (Unavailable)', None),
-         ('Cubing (Unavailable)', None)]
+
 
 objects = [('Select', None), ('cucumber', "cucumber.stl"), ('strawberry', "strawberry.stl"), ('pumpkin', "pumpkin.stl"),
     ('banana', "banana.stl"), ('apple', "apple.stl"), ('citron', "citron.stl"),
@@ -30,6 +25,23 @@ objects = [('Select', None), ('cucumber', "cucumber.stl"), ('strawberry', "straw
     ('cherry (Unavailable)', None), ('bean (Unavailable)', None), ('lemon (Unavailable)', None),
     ('kumquat (Unavailable)', None), ('olive (Unavailable)', None)]
 
+# all available parameters
+tasks = [('Select',None),
+         ('Cutting',"cut:CuttingAction"),
+        ('Quartering', "cut:Quartering"),
+        ('Julienning (Unavailable)',"cut:Julienning"),
+        ('Halving',"cut:Halving"),
+        ('Dicing (Unavailable)', None)
+        ('Cutting',"soma:Cutting"),
+        ('Slicing',"soma:Slicing"),
+        ('Snipping',"cut:Snipping"),
+        ('Slivering',"cut:Slivering"),
+        ('Sawing',"cut:Sawing"),
+        ('Paring',"cut:Paring"),
+        ('Carving',"cut:Carving"),
+        ('Mincing (Unavailable)',None),
+        ('Cubing (Unavailable)',None),
+        ('Chopping (Unavailable)',None)]
 task = ""
 obj = ""
 
