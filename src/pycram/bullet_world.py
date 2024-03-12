@@ -98,6 +98,7 @@ class BulletWorld:
         #self.set_gravity([0, 0, -9.8])
         if not is_shadow_world:
             plane = Object("floor", ObjectType.ENVIRONMENT, "plane.urdf", world=self)
+            plane.set_color([0.71, 0.40, 0.11, 0.5])   # [0.5, 0.5, 0.5, 1]
         # atexit.register(self.exit)
 
     def get_physic_world(self):

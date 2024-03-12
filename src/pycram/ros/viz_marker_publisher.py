@@ -84,10 +84,19 @@ class VizMarkerPublisher:
                 if obj.name == "board":
                     color = [0.4, 0.2, 0.06, 1]
                 elif obj.type == "object_to_be_cut":
-                    colors = {"orange": (1, 0.75, 0, 1), "cucumber": (0, 1, 0, 1), "banana": (1, 1, 0, 1),
-                              "lemon": (1, 1, 0, 1), "lime": (0.75, 1.0, 0.0, 1), "apple": (1, 0, 0, 1),
-                              "tomato": (1, 0, 0, 1), "peach": (1.0, 0.8, 0.64, 1), "kiwi": (0.76, 0.88, 0.52, 1),
-                              "avocado": (0.0, 0.5, 0.0, 1)}
+                    colors = {
+                        "orange": (1, 0.75, 0, 1),
+                        "cucumber": (0, 1, 0, 1),
+                        "banana": (1, 1, 0, 1),
+                        "lemon": (1, 1, 0, 1),
+                        "citron": (1, 1, 0, 1),
+                        "lime": (0.75, 1.0, 0.0, 1),
+                        "apple": (1, 0, 0, 1),
+                        "tomato": (1, 0, 0, 1),
+                        "peach": (1.0, 0.8, 0.64, 1),
+                        "kiwi": (0.76, 0.88, 0.52, 1),
+                        "avocado": (0.0, 0.5, 0.0, 1),
+                    }
                     color = colors[obj.name]
                 else:
                     color = [1, 1, 1, 1] if obj.links[link] == -1 else obj.get_color(link)

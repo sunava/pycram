@@ -9,11 +9,8 @@ from IPython.display import display, HTML, clear_output
 
 def start_cutting(obj, technique):
     display(HTML('<img src="https://i.gifer.com/XVo6.gif" alt="Hourglass animation" width="50">'))
-    BulletWorld()
-    VizMarkerPublisher(interval=0.1)
 
-    Object("pr2", ObjectType.ROBOT, "pr2.urdf", pose=Pose([1, 2, 0]))
-    Object("environment", ObjectType.ENVIRONMENT, "apartment-small.urdf")
+
 
     _technique = technique.split(":", 1)[1]
     #######################################################################################
@@ -26,9 +23,9 @@ def start_cutting(obj, technique):
     position_ont, position_name = query_resolver.position(technique, obj)
     rospy.loginfo("The start position is: " + position_ont)
 
-    cutting_tool_ont, cutting_tool = query_resolver.get_cutting_tool(technique, obj)
-    rospy.loginfo("The tool to cut with is:  " + cutting_tool_ont)
-    rospy.loginfo("Queried all necessary information from the ontology")
+    # cutting_tool_ont, cutting_tool = query_resolver.get_cutting_tool(technique, obj)
+    # rospy.loginfo("The tool to cut with is:  " + cutting_tool_ont)
+    # rospy.loginfo("Queried all necessary information from the ontology")
 
     #######################################################################################
 
@@ -39,9 +36,11 @@ def start_cutting(obj, technique):
 
     board = Object("board", "board", "board.stl", drawer_island_surface_board)
     board.set_color([0.4, 0.2, 0.06, 1])
-    objects = [('Select', None), ('cucumber', "obo:FOODON_00003415"), ('banana', "obo:FOODON_00004183"),
-               ('apple', "obo:FOODON_03301710"), ('lemon', "obo:FOODON_03301441"),
-               ('orange', "obo:FOODON_03309832"), ('tomato', "obo:FOODON_03309927")]
+    objects = [(None, None), ('apple', "obo:FOODON_03301710"), ('avocado', "obo:FOODON_00003600"),
+               ('banana', "obo:FOODON_00004183"), ('citron', "obo:FOODON_03306596"),
+               ('cucumber', "obo:FOODON_00003415"),
+               ('kiwi', "obo:FOODON_00004387"), ('lemon', "obo:FOODON_03301441"), ('lime', "obo:FOODON_00003661"),
+               ('orange', "obo:FOODON_03309832"), ('peach', "obo:FOODON_03315502"), ('tomato', "obo:FOODON_03309927")]
 
     for id_, name in objects:
         if name == obj:
@@ -54,6 +53,7 @@ def start_cutting(obj, technique):
         "cucumber": (0, 1, 0, 1),
         "banana": (1, 1, 0, 1),
         "lemon": (1, 1, 0, 1),
+        "citron": (1, 1, 0, 1),
         "lime": (0.75, 1.0, 0.0, 1),
         "apple": (1, 0, 0, 1),
         "tomato": (1, 0, 0, 1),
@@ -89,9 +89,73 @@ def start_cutting(obj, technique):
         ParkArmsAction([Arms.BOTH]).resolve().perform()
         clear_output(wait=True)
         rospy.loginfo("Cutting task completed!")
+        obj_to_cut.remove()
+        BulletWorld.current_bullet_world.remove_vis_axis()
 
 
+#
+# start_cutting("obo:FOODON_03301710", "soma:Cutting")
 # start_cutting("obo:FOODON_03301710", "soma:Slicing")
+# start_cutting("obo:FOODON_03301710", "cut:Halving")
+#
+# #avocado
+# start_cutting("obo:FOODON_00003600", "soma:Cutting")
+# start_cutting("obo:FOODON_00003600", "soma:Slicing")
+# start_cutting("obo:FOODON_00003600", "cut:Halving")
+#
+# #banana
+# start_cutting("obo:FOODON_00004183", "soma:Cutting")
+# start_cutting("obo:FOODON_00004183", "soma:Slicing")
+# start_cutting("obo:FOODON_00004183", "cut:Halving")
+#
+#
+# #citron
+# start_cutting("obo:FOODON_03306596", "soma:Cutting")
+# start_cutting("obo:FOODON_03306596", "soma:Slicing")
+# start_cutting("obo:FOODON_03306596", "cut:Halving")
+
+
+# print("cut")
+# start_cutting("obo:FOODON_00003415", "soma:Cutting")
+# print("slice")
+# start_cutting("obo:FOODON_00003415", "soma:Slicing")
+# print("halving")
+# start_cutting("obo:FOODON_00003415", "cut:Halving")
+
+# #kiwi
+# start_cutting("obo:FOODON_00004387", "soma:Cutting")
+# start_cutting("obo:FOODON_00004387", "soma:Slicing")
+# start_cutting("obo:FOODON_00004387", "cut:Halving")
+
+#
+# #lemon
+# start_cutting("obo:FOODON_03301441", "soma:Cutting")
+# start_cutting("obo:FOODON_03301441", "soma:Slicing")
+# start_cutting("obo:FOODON_03301441", "cut:Halving")
+#
+# #lime
+# start_cutting("obo:FOODON_00003661", "soma:Cutting")
+# start_cutting("obo:FOODON_00003661", "soma:Slicing")
+# start_cutting("obo:FOODON_00003661", "cut:Halving")
+#
+# #orange
+# start_cutting("obo:FOODON_03309832", "soma:Cutting")
+# start_cutting("obo:FOODON_03309832", "soma:Slicing")
+# start_cutting("obo:FOODON_03309832", "cut:Halving")
+#
+#
+# #peach
+# start_cutting("obo:FOODON_03315502", "soma:Cutting")
+# start_cutting("obo:FOODON_03315502", "soma:Slicing")
+# start_cutting("obo:FOODON_03315502", "cut:Halving")
+
+
+# #peach
+# start_cutting("obo:FOODON_03309927", "soma:Cutting")
+# start_cutting("obo:FOODON_03309927", "soma:Slicing")
+# start_cutting("obo:FOODON_03309927", "cut:Halving")
+
+
 # [INFO] [1710184677.654084]: Querying the ontology for the cutting task
 # [INFO] [1710184680.265410]: The repetition for the task is: 0.05
 # [INFO] [1710184680.405835]: The start position is: http://www.ease-crc.org/ont/food_cutting#halving_position
