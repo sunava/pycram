@@ -63,9 +63,9 @@ def setup_task_object_widgets():
 def start_demo():
     global output
     output = Output()
-    setup_task_object_widgets("Direct")
+    setup_task_object_widgets()
     execute_button = Button(description="Start Demo")
-    BulletWorld()
+    BulletWorld("DIRECT")
     VizMarkerPublisher(interval=0.1)
 
     Object("pr2", ObjectType.ROBOT, "pr2.urdf", pose=Pose([1, 2, 0]))
