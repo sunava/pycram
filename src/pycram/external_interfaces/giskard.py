@@ -22,13 +22,13 @@ def init_giskard_interface():
         return
     topics = list(map(lambda x: x[0], rospy.get_published_topics()))
     try:
-        from giskardpy.python_interface import GiskardWrapper
+        from giskardpy.python_interface.old_python_interface import OldGiskardWrapper
         from giskard_msgs.msg import WorldBody, MoveResult, CollisionEntry
-        from giskard_msgs.srv import UpdateWorldRequest, UpdateWorld, UpdateWorldResponse, RegisterGroupResponse
+        # from giskard_msgs.srv import UpdateWorldRequest, UpdateWorld, UpdateWorldResponse, RegisterGroupResponse
 
         if "/giskard/command/goal" in topics:
-            giskard_wrapper = GiskardWrapper()
-            giskard_update_service = rospy.ServiceProxy("/giskard/update_world", UpdateWorld)
+            giskard_wrapper = OldGiskardWrapper()
+            # giskard_update_service = rospy.ServiceProxy("/giskard/update_world", UpdateWorld)
             is_init = True
             rospy.loginfo("Successfully initialized Giskard interface")
         else:
@@ -171,7 +171,7 @@ def achieve_joint_goal(goal_poses: Dict[str, float]) -> 'MoveResult':
     """
     sync_worlds()
     giskard_wrapper.set_joint_goal(goal_poses)
-    return giskard_wrapper.plan_and_execute()
+    return giskard_wrapper.execute()
 
 
 def achieve_cartesian_goal(goal_pose: Pose, tip_link: str, root_link: str) -> 'MoveResult':
@@ -187,7 +187,7 @@ def achieve_cartesian_goal(goal_pose: Pose, tip_link: str, root_link: str) -> 'M
 
     giskard_wrapper.avoid_all_collisions()
     giskard_wrapper.set_cart_goal(_pose_to_pose_stamped(goal_pose), tip_link, root_link)
-    return giskard_wrapper.plan_and_execute()
+    return giskard_wrapper.execute()
 
 
 def achieve_straight_cartesian_goal(goal_pose: Pose, tip_link: str,
@@ -203,7 +203,7 @@ def achieve_straight_cartesian_goal(goal_pose: Pose, tip_link: str,
     """
     sync_worlds()
     giskard_wrapper.set_straight_cart_goal(_pose_to_pose_stamped(goal_pose), tip_link, root_link)
-    return giskard_wrapper.plan_and_execute()
+    return giskard_wrapper.execute()
 
 
 def achieve_translation_goal(goal_point: List[float], tip_link: str, root_link: str) -> 'MoveResult':
@@ -218,7 +218,7 @@ def achieve_translation_goal(goal_point: List[float], tip_link: str, root_link: 
     """
     sync_worlds()
     giskard_wrapper.set_translation_goal(make_point_stamped(goal_point), tip_link, root_link)
-    return giskard_wrapper.plan_and_execute()
+    return giskard_wrapper.execute()
 
 
 def achieve_straight_translation_goal(goal_point: List[float], tip_link: str, root_link: str) -> 'MoveResult':
@@ -233,7 +233,7 @@ def achieve_straight_translation_goal(goal_point: List[float], tip_link: str, ro
     """
     sync_worlds()
     giskard_wrapper.set_straight_translation_goal(make_point_stamped(goal_point), tip_link, root_link)
-    return giskard_wrapper.plan_and_execute()
+    return giskard_wrapper.execute()
 
 
 def achieve_rotation_goal(quat: List[float], tip_link: str, root_link: str) -> 'MoveResult':
@@ -248,7 +248,7 @@ def achieve_rotation_goal(quat: List[float], tip_link: str, root_link: str) -> '
     """
     sync_worlds()
     giskard_wrapper.set_rotation_goal(make_quaternion_stamped(quat), tip_link, root_link)
-    return giskard_wrapper.plan_and_execute()
+    return giskard_wrapper.execute()
 
 
 def achieve_align_planes_goal(goal_normal: List[float], tip_link: str, tip_normal: List[float],
@@ -266,7 +266,7 @@ def achieve_align_planes_goal(goal_normal: List[float], tip_link: str, tip_norma
     sync_worlds()
     giskard_wrapper.set_align_planes_goal(make_vector_stamped(goal_normal), tip_link, make_vector_stamped(tip_normal),
                                           root_link)
-    return giskard_wrapper.plan_and_execute()
+    return giskard_wrapper.execute()
 
 
 def achieve_open_container_goal(tip_link: str, environment_link: str) -> 'MoveResult':
@@ -280,7 +280,7 @@ def achieve_open_container_goal(tip_link: str, environment_link: str) -> 'MoveRe
     """
     sync_worlds()
     giskard_wrapper.set_open_container_goal(tip_link, environment_link)
-    return giskard_wrapper.plan_and_execute()
+    return giskard_wrapper.execute()
 
 
 def achieve_close_container_goal(tip_link: str, environment_link: str) -> 'MoveResult':
@@ -294,7 +294,7 @@ def achieve_close_container_goal(tip_link: str, environment_link: str) -> 'MoveR
     """
     sync_worlds()
     giskard_wrapper.set_close_container_goal(tip_link, environment_link)
-    return giskard_wrapper.plan_and_execute()
+    return giskard_wrapper.execute()
 
 
 # Managing collisions
@@ -305,7 +305,7 @@ def achieve_gripper_motion_goal(motion: str):
     rospy.loginfo("giskard change_gripper_state: " + motion)
     giskard_wrapper.change_gripper_state(motion)
 
-    # return giskard_wrapper.plan_and_execute()
+    # return giskard_wrapper.execute()
 
 
 def allow_gripper_collision(gripper: str):
@@ -457,7 +457,7 @@ def move_head_to_human():
     continously moves head in direction of perceived human
     """
     giskard_wrapper.continuous_pointing_head()
-    giskard_wrapper.plan_and_execute(wait=False)
+    giskard_wrapper.execute(wait=False)
 
 
 def stop_looking():
@@ -467,7 +467,7 @@ def stop_looking():
 
     # moves hsr in standard position
     giskard_wrapper.take_pose("park")
-    giskard_wrapper.plan_and_execute(wait=False)
+    giskard_wrapper.execute(wait=False)
     rospy.loginfo("hsr looks forward instead of looking at human")
 
 
@@ -501,3 +501,6 @@ def place_objects(object, target, grasp):
 
     rospy.loginfo("placed object")
 
+def park_arms():
+    giskard_wrapper.take_pose("park")
+    giskard_wrapper.execute()
