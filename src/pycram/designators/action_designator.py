@@ -1050,6 +1050,9 @@ class DetectAction(ActionDesignatorDescription):
             query_result = DetectingMotion(technique=self.technique, object_type=self.object_type,
                                            state=self.state).resolve().perform()
 
+            if isinstance(query_result, dict):
+                return query_result
+
             if self.technique == 'human' and (self.state == "start" or self.state is None):
                 pose = Pose.from_pose_stamped(query_result)
                 pose.position.z = 0
