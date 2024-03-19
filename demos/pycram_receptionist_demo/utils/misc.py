@@ -1,42 +1,34 @@
-import rospy
-from pycram.designators.action_designator import NavigateAction
 from pycram.designators.motion_designator import TalkingMotion
-import pycram.external_interfaces.giskard as giskardpy
 from pycram.designators.object_designator import *
 from std_msgs.msg import String
-from demos.pycram_receptionist_demo.deprecated import talk_actions
-from deprecated import deprecated
+from pycram.helper import axis_angle_to_quaternion
+
 
 pub_nlp = rospy.Publisher('/startListener', String, queue_size=10)
 
 
+# pose variables
+
+# pose in front of the couch, hsr looks in direction of couch
+pose_couch = Pose([3, 5, 0], [0, 0, 1, 0])
+
+# pose in the passage between kitchen and living room
+robot_orientation = axis_angle_to_quaternion([0, 0, 1], 90)
+pose_kitchen_to_couch = Pose([4.2, 3, 0], robot_orientation)
+
+
+# talk functions
 def talk_request(data: list):
     """
-    callback function that takes the data from nlp (name and drink) and lets the robot talk
-    :param data: String "name drink"
+    function that takes the data from nlp (name and drink) and lets the robot talk
+    :param data: list ["name" "drink"]
     """
 
-    rospy.loginfo("in callback success")
-    toyas_text = "Hey " + data[0] + " your favorite drink is " + data[
-        1]
+    name, drink = data
+    toyas_text = f"Hey {name}, your favorite drink is {drink}"
     TalkingMotion(toyas_text).resolve().perform()
     rospy.sleep(1)
-    TalkingMotion("nice to meet you").resolve().perform()
-
-
-def talk_request_nlp(data: str):
-    """
-    callback function that takes the data from nlp (name and drink) and lets the robot talk
-    :param data: String "name drink"
-    """
-
-    rospy.loginfo("in callback success")
-    data = data.split(",")
-    toyas_text = "Hey " + data[0] + " your favorite drink is " + data[
-        1]
-    TalkingMotion(toyas_text).resolve().perform()
-    rospy.sleep(1)
-    TalkingMotion("nice to meet you").resolve().perform()
+    TalkingMotion("Nice to meet you").resolve().perform()
 
 
 def talk_error(data):
@@ -54,8 +46,8 @@ def introduce(name1, drink1, host_name, host_drink):
     """
     Text for robot to introduce two people to each other
     """
-    first = "Hey " + str(host_name) + " This is " + str(name1) + " and the favorite drink of your guest is " + str(drink1)
 
+    first = "Hey " + str(host_name) + " This is " + str(name1) + " and the favorite drink of your guest is " + str(drink1)
     second = str(name1) + " This is " + str(host_name) + " his favorite drink is " + str(host_drink)
     TalkingMotion(first).resolve().perform()
     rospy.sleep(3)
