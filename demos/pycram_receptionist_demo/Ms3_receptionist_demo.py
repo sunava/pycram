@@ -27,9 +27,19 @@ pub_nlp = rospy.Publisher('/startListener', String, queue_size=10)
 
 with real_robot:
 
-    # declare variables for humans
-    host = HumanDescription("Yannis", fav_drink="Tea")
-    guest1 = HumanDescription("guest1")
+    #wait for doorbell
+    bell_subscriber = rospy.Subscriber("doorbell", Bool, doorbell_cb)
+    while not doorbell:
+        # TODO: spin or sleep better?
+        rospy.spin()
+
+    # subscriber not needed anymore
+    bell_subscriber.unregister()
+
+    # question: is the hsr standing in front of the door already??
+    # giskardpy.opendoor()
+
+    TalkingMotion("Welcome, please step in").resolve().perform()
 
     # look for human
     DetectAction(technique='human', state='start').resolve().perform()
@@ -44,13 +54,50 @@ with real_robot:
     pub_nlp.publish("start listening")
 
     # receives name and drink via topic
-    x = rospy.Subscriber("nlp_out", String, talk_request_nlp)
+    rospy.Subscriber("nlp_out", String, talk_request_nlp)
 
     # failure handling
     rospy.Subscriber("nlp_feedback", Bool, talk_error)
 
     while not understood:
         rospy.sleep(1)
+
+    TalkingMotion("it is so noisy here, please confirm if i got your name right").resolve().perform()
+    rospy.sleep(1)
+    TalkingMotion("is your name " + guest1.name + "?").resolve().perform()
+
+    rospy.Subscriber("name_confirm", Bool, name_cb)
+
+
+    # stop looking
+    TalkingMotion("i will show you the living room now").resolve().perform()
+    rospy.sleep(1)
+    TalkingMotion("please step out of the way and follow me").resolve().perform()
+    rospy.loginfo("stop looking now")
+    giskardpy.stop_looking()
+
+    # stop perceiving human
+    rospy.loginfo("stop detecting")
+    DetectAction(technique='human', state='stop').resolve().perform()
+
+    # lead human to living room
+    # TODO: check if rospy.sleep is needed and how long
+    rospy.sleep(2)
+    NavigateAction([pose_kitchen_to_couch]).resolve().perform()
+    NavigateAction([pose_couch]).resolve().perform()
+    TalkingMotion("Welcome to the living room").resolve().perform()
+    rospy.sleep(1)
+
+    # search for free place to sit and host
+    # DetectAction(technique='human', state='stop').resolve().perform()
+
+    # point to free place
+    # giskardpy.point_to_seat
+
+    # introduce humans and look at them
+    # giskardpy.look()
+    introduce(guest1.name, guest1.fav_drink, host.name, host.fav_drink)
+
 
 
 
