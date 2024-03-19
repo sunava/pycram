@@ -5,6 +5,7 @@ from pycram.helper import axis_angle_to_quaternion
 
 
 pub_nlp = rospy.Publisher('/startListener', String, queue_size=10)
+understood = False
 
 
 # pose variables
@@ -19,16 +20,37 @@ pose_kitchen_to_couch = Pose([4.2, 3, 0], robot_orientation)
 
 # talk functions
 def talk_request(data: list):
+
     """
     function that takes the data from nlp (name and drink) and lets the robot talk
     :param data: list ["name" "drink"]
     """
-
+    global understood
     name, drink = data
     toyas_text = f"Hey {name}, your favorite drink is {drink}"
     TalkingMotion(toyas_text).resolve().perform()
     rospy.sleep(1)
     TalkingMotion("Nice to meet you").resolve().perform()
+    understood = True
+    return data
+
+def talk_request_nlp(data: String):
+
+    """
+    function that takes the data from nlp (name and drink) and lets the robot talk
+    :param data: String "name, drink"
+    """
+    global understood
+    data_list = data.data.split(",")
+    print(data_list)
+    name, drink = data_list
+    toyas_text = f"Hey {name}, your favorite drink is {drink}"
+    TalkingMotion(toyas_text).resolve().perform()
+    rospy.sleep(2)
+    TalkingMotion("Nice to meet you").resolve().perform()
+    understood = True
+    return data_list
+
 
 
 def talk_error(data):
