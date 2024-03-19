@@ -109,14 +109,17 @@ class ARMAR6MoveHead(ProcessModule):
         pose_in_tilt = local_transformer.transform_pose(target, robot.get_link_tf_frame("upper_neck"))
 
         new_pan = np.arctan2(pose_in_pan.position.y, pose_in_pan.position.x)
-        new_tilt = np.arctan2(pose_in_tilt.position.z, np.sqrt(pose_in_tilt.position.x ** 2 + pose_in_tilt.position.y ** 2))
+
+        # For some reason the values for position.y and position.z are swapped, so for now the formula is adjusted accordingly.
+        # Not guaranteed to work in all cases, depending on the reason why the values are swapped for this robot (maybe wrong urdf or something?)
+        new_tilt = - np.arctan2(pose_in_tilt.position.y, np.sqrt(pose_in_tilt.position.x ** 2 + pose_in_tilt.position.z ** 2))
+
 
         current_pan = robot.get_joint_state("neck_1_yaw")
         current_tilt = robot.get_joint_state("neck_2_pitch")
 
         robot.set_joint_state("neck_1_yaw", new_pan + current_pan)
-        # robot.set_joint_state("neck_2_pitch", new_tilt + current_tilt)
-        robot.set_joint_state("neck_2_pitch", new_tilt)
+        robot.set_joint_state("neck_2_pitch", new_tilt + current_tilt)
 
 
 

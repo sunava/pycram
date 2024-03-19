@@ -118,7 +118,7 @@ class Pr2MoveHead(ProcessModule):
         pose_in_tilt = local_transformer.transform_pose(target, robot.get_link_tf_frame("head_tilt_link"))
 
         new_pan = np.arctan2(pose_in_pan.position.y, pose_in_pan.position.x)
-        new_tilt = np.arctan2(pose_in_tilt.position.z, pose_in_tilt.position.x ** 2 + pose_in_tilt.position.y ** 2) * -1
+        new_tilt = np.arctan2(pose_in_tilt.position.z, np.sqrt(pose_in_tilt.position.x ** 2 + pose_in_tilt.position.y ** 2)) * -1
 
         current_pan = robot.get_joint_state("head_pan_joint")
         current_tilt = robot.get_joint_state("head_tilt_joint")
