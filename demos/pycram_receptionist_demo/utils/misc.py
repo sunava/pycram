@@ -6,6 +6,7 @@ from pycram.helper import axis_angle_to_quaternion
 pub_nlp = rospy.Publisher('/startListener', String, queue_size=10)
 understood = False
 doorbell = False
+name = False
 
 # Declare variables for humans
 host = HumanDescription("Yannis", fav_drink="ice tea")
@@ -44,16 +45,26 @@ def talk_request_nlp(data: String):
     function that takes the data from nlp (name and drink) and lets the robot talk
     :param data: String "name, drink"
     """
-    global understood
-    data_list = data.data.split(",")
-    name, drink = data_list
-    toyas_text = f"Hey {name}, your favorite drink is {drink}"
+    print(guest1.name)
+    if guest1.name == "guest1":
+        data_list = data.data.split(",")
+        name, drink = data_list
+        toyas_text = f"Hey {name}, your favorite drink is {drink}"
 
-    TalkingMotion(toyas_text).resolve().perform()
-    rospy.sleep(2)
-    TalkingMotion("Nice to meet you").resolve().perform()
+        TalkingMotion(toyas_text).resolve().perform()
+        rospy.sleep(2)
 
-    understood = True
+        guest1.set_name(name)
+        guest1.set_drink(drink)
+    else:
+        data_list = data.data.split(",")
+        name, drink = data_list
+        toyas_text = f"is your name {name} ?"
+        TalkingMotion(toyas_text).resolve().perform()
+        pub_nlp.publish("start")
+
+
+
 
 
 def talk_error(data):
@@ -85,13 +96,22 @@ def doorbell_cb(data):
     global doorbell
     doorbell = True
 
+
 def name_cb(data):
     """
     callback function for a subscriber to NLP script.
     is called when name was correctly understood
     """
-    global name
-    name = data
+    print("name cb:" + str(data))
+    if data.data:
+        TalkingMotion("perfect, nice to meet you").resolve().perform()
+        guest1.set_understood(True)
+    else:
+        TalkingMotion("i am sorry, please repeat your name loud and clear").resolve().perform()
+        rospy.sleep(1)
+        # TODO: only hear for Name
+        pub_nlp.publish("start listening")
+
 
 
 
