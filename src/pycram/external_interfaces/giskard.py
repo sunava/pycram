@@ -472,6 +472,35 @@ def stop_looking():
     rospy.loginfo("hsr looks forward instead of looking at human")
 
 
+def move_head_to_pose(pose: PointStamped):
+    """
+    moves head to given position
+    :param pose: pose that head will rotate to
+    """
+    # TODO: necessary? there is a LookAtAction?
+    # TODO: needs to be tested!
+    p_axis = Vector3Stamped
+    p_axis.vector = (0, 0, 1)
+    giskard_wrapper.set_pointing_goal(goal_point=pose,
+                                      tip_link="head_center_camera_frame",
+                                      pointing_axis=p_axis,
+                                      root_link="base_footprint")
+
+
+def move_arm_to_pose(pose: PointStamped):
+    """
+    moves arm to given position
+    :param pose: pose that arm will point to
+    """
+    # TODO: needs to be tested!
+    p_axis = Vector3Stamped
+    p_axis.vector = (0, 0, 1)
+    giskard_wrapper.set_pointing_goal(goal_point=pose,
+                                      tip_link="hand_gripper_tool_frame",
+                                      pointing_axis=p_axis,
+                                      root_link="map")
+
+
 def spawn_kitchen():
     env_urdf = rospy.get_param('kitchen_description')
     kitchen_pose = tf.lookup_pose('map', 'iai_kitchen/urdf_main')
