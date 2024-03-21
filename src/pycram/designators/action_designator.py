@@ -316,7 +316,7 @@ class PickUpAction(ActionDesignatorDescription):
 
             # Adjust object pose for top-grasping, if applicable
             if self.grasp == "top":
-                # Handle special cases for certain object types (e.g., Cutlery, Bowl)
+                # Handle special cases for certain object types (e.g., Cutlery, Metalbowl)
                 # Note: This includes hardcoded adjustments and should ideally be generalized
                 if self.object_designator.type == "Cutlery":
                     # todo: this z is the popcorn-table height, we need to define location to get that z otherwise it
@@ -351,7 +351,7 @@ class PickUpAction(ActionDesignatorDescription):
             #  depending on robot
             if robot.name == "hsrb":
                 if self.grasp == "top":
-                    if self.object_designator.type == "Bowl":
+                    if self.object_designator.type == "Metalbowl":
                         special_knowledge_offset.pose.position.y += 0.085
                         special_knowledge_offset.pose.position.x -= 0.03
 
@@ -362,7 +362,7 @@ class PickUpAction(ActionDesignatorDescription):
                 z = 0.04
                 if self.grasp == "top":
                     z = 0.025
-                    if self.object_designator.type == "Bowl":
+                    if self.object_designator.type == "Metalbowl":
                         z = 0.044
                 push_base.pose.position.z += z
             push_baseTm = lt.transform_pose(push_base, "map")

@@ -170,6 +170,7 @@ def achieve_joint_goal(goal_poses: Dict[str, float]) -> 'MoveResult':
     :return: MoveResult message for this goal
     """
     sync_worlds()
+    rospy.sleep(5)
     giskard_wrapper.set_joint_goal(goal_poses)
     return giskard_wrapper.plan_and_execute()
 
@@ -184,7 +185,7 @@ def achieve_cartesian_goal(goal_pose: Pose, tip_link: str, root_link: str) -> 'M
     :param root_link: The starting link of the chain which should be used to achieve this goal
     :return: MoveResult message for this goal
     """
-
+    sync_worlds()
     giskard_wrapper.avoid_all_collisions()
     giskard_wrapper.set_cart_goal(_pose_to_pose_stamped(goal_pose), tip_link, root_link)
     return giskard_wrapper.plan_and_execute()
