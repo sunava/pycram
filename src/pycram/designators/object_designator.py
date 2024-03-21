@@ -187,7 +187,7 @@ class HumanDescription:
     """
     Class that represents humans. this class does not spawn a human in a simulation.
     """
-    def __init__(self, name: String, fav_drink:  Optional = None):
+    def __init__(self, name: String, fav_drink:  Optional = None, pose: Optional = None):
         """
         :param name: name of human
         :param fav_drink: favorite drink of human
@@ -197,7 +197,8 @@ class HumanDescription:
         # characteristics to consider: height, hair color, and age.
         # self.human_pose = Fluent()
         self.name = name
-        self.fav_drink = fav_drink  # self.shirt_color = shirt_color  # self.gender = gender
+        self.fav_drink = fav_drink
+        self.pose = pose
 
         # self.human_pose_sub = rospy.Subscriber("/human_pose", PoseStamped, self.human_pose_cb)
 
@@ -225,3 +226,10 @@ class HumanDescription:
         :param new_drink: name of drink
         """
         self.fav_drink = new_drink
+
+    def set_pose(self, new_pose):
+        """
+        function for changing pose of human
+        :param new_pose: new pose of human
+        """
+        self.pose = new_pose

@@ -1,7 +1,6 @@
-import rospy
-
-from pycram.designators.action_designator import DetectAction, NavigateAction
-from demos.pycram_receptionist_demo.utils.misc import *
+from pycram.designators.action_designator import DetectAction, NavigateAction, LookAtAction
+from pycram.designators.motion_designator import TalkingMotion
+import demos.pycram_receptionist_demo.utils.misc as misc
 from pycram.process_module import real_robot
 import pycram.external_interfaces.giskard as giskardpy
 from pycram.ros.robot_state_updater import RobotStateUpdater
@@ -10,7 +9,6 @@ from pycram.designators.location_designator import *
 from pycram.designators.object_designator import *
 from pycram.bullet_world import BulletWorld, Object
 from std_msgs.msg import String, Bool
-import pycram.external_interfaces.navigate as moveBase
 
 world = BulletWorld("DIRECT")
 v = VizMarkerPublisher()
@@ -27,19 +25,20 @@ pub_nlp = rospy.Publisher('/startListener', String, queue_size=10)
 
 with real_robot:
 
-    #wait for doorbell
-    #bell_subscriber = rospy.Subscriber("doorbell", Bool, doorbell_cb)
-    #while not doorbell:
-    #    # TODO: spin or sleep better?
-    #    rospy.spin()
+    # wait for doorbell
+    bell_subscriber = rospy.Subscriber("doorbell", Bool, misc.doorbell_cb)
+    while not misc.doorbell:
+        # TODO: spin or sleep better?
+        # TODO: Failure Handling, when no bell is heard for a longer period of time
+        rospy.spin()
 
     # subscriber not needed anymore
-    #bell_subscriber.unregister()
+    bell_subscriber.unregister()
 
-    # question: is the hsr standing in front of the door already??
+    # NavigateAction([misc.pose_door]).resolve().perform()
     # giskardpy.opendoor()
 
-    TalkingMotion("Welcome, please step in").resolve().perform()
+    TalkingMotion("Welcome, please come in").resolve().perform()
 
     # look for human
     DetectAction(technique='human', state='start').resolve().perform()
@@ -54,26 +53,23 @@ with real_robot:
     pub_nlp.publish("start listening")
 
     # receives name and drink via topic
-    rospy.Subscriber("nlp_out", String, talk_request_nlp)
+    rospy.Subscriber("nlp_out", String, misc.talk_request_nlp)
 
     # failure handling
-    rospy.Subscriber("nlp_feedback", Bool, talk_error)
+    rospy.Subscriber("nlp_feedback", Bool, misc.talk_error)
 
-    while guest1.name == "guest1":
+    while misc.guest1.name == "guest1":
         rospy.sleep(1)
-        print(guest1.name)
-        print(understood)
 
     TalkingMotion("it is so noisy here, please confirm if i got your name right").resolve().perform()
     rospy.sleep(1)
-    TalkingMotion("is your name " + guest1.name + "?").resolve().perform()
+    TalkingMotion("is your name " + misc.guest1.name + "?").resolve().perform()
     pub_nlp.publish("start")
 
-    rospy.Subscriber("nlp_confirmation", Bool, name_cb)
+    rospy.Subscriber("nlp_confirmation", Bool, misc.name_cb)
 
-    while not guest1.understood:
+    while not misc.understood:
         rospy.sleep(1)
-        print(str(guest1.understood))
 
 
     # stop looking
@@ -81,6 +77,7 @@ with real_robot:
     rospy.sleep(1)
     TalkingMotion("please step out of the way and follow me").resolve().perform()
     rospy.loginfo("stop looking now")
+    # TODO: look in direction of navigation maybe?
     giskardpy.stop_looking()
 
     # stop perceiving human
@@ -90,21 +87,22 @@ with real_robot:
     # lead human to living room
     # TODO: check if rospy.sleep is needed and how long
     rospy.sleep(2)
-    #NavigateAction([pose_kitchen_to_couch]).resolve().perform()
-    #NavigateAction([pose_couch]).resolve().perform()
+    #NavigateAction([misc.pose_kitchen_to_couch]).resolve().perform()
+    #NavigateAction([misc.pose_couch]).resolve().perform()
     TalkingMotion("Welcome to the living room").resolve().perform()
     rospy.sleep(1)
 
     # search for free place to sit and host
-    # DetectAction(technique='human', state='stop').resolve().perform()
+    # TODO: get pose of host that sits in living room
+    # TODO: Failure Handling: scan room if no human detected on couch
+    human_pose = DetectAction(technique='human', state='start').resolve().perform()
+    print(human_pose)
+    misc.host.set_pose(human_pose)
+    # TODO: HSR looks to his right??
+    misc.guest1.set_pose()
 
     # point to free place
     # giskardpy.point_to_seat
 
     # introduce humans and look at them
-    # giskardpy.look()
-    introduce(guest1.name, guest1.fav_drink, host.name, host.fav_drink)
-
-
-
-
+    misc.introduce()

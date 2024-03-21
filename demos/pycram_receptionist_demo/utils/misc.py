@@ -4,9 +4,10 @@ from pycram.helper import axis_angle_to_quaternion
 
 # Publisher for NLP
 pub_nlp = rospy.Publisher('/startListener', String, queue_size=10)
+pub_pose = rospy.Publisher('/human_pose', PoseStamped, queue_size=10)
 understood = False
 doorbell = False
-name = False
+
 
 # Declare variables for humans
 host = HumanDescription("Yannis", fav_drink="ice tea")
@@ -16,6 +17,7 @@ guest2 = HumanDescription("guest2")
 # Pose variables
 # Pose in front of the couch, HSR looks in direction of couch
 pose_couch = Pose([3, 5, 0], [0, 0, 1, 0])
+pose_door = Pose([1.4, 0.25, 0], [0, 0, 1, 0])
 
 # Pose in the passage between kitchen and living room
 robot_orientation = axis_angle_to_quaternion([0, 0, 1], 90)
@@ -64,9 +66,6 @@ def talk_request_nlp(data: String):
         pub_nlp.publish("start")
 
 
-
-
-
 def talk_error(data):
     """
     callback function if no name/drink was heard
@@ -77,15 +76,33 @@ def talk_error(data):
     pub_nlp.publish("start listening")
 
 
-def introduce(name1, drink1, host_name, host_drink):
+def introduce(name_a: Optional[str] = guest1.name, drink_a: Optional[str] = guest1.fav_drink, pose_a: Optional[PoseStamped] = None,
+              name_b: Optional[str] = host.name, drink_b: Optional[str] = host.fav_drink, pose_b: Optional[PoseStamped] = None):
     """
-    Text for robot to introduce two people to each other
+    Text for robot to introduce two people to each other and alternate gaze
+    :param name_a: name of the person that gets introduced to person b first
+    :param drink_a: favorite drink of person a
+    :param pose_a: position of person a where the hsr will look at
+    :param name_b: name of the person that
+    :param drink_b: favorite drink of person b
+    :param pose_b: position of person b where the hsr will look at
     """
-    first = "Hey " + str(host_name) + " This is " + str(name1) + " and the favorite drink of your guest is " + str(drink1)
-    second = str(name1) + " This is " + str(host_name) + " his favorite drink is " + str(host_drink)
-    TalkingMotion(first).resolve().perform()
+    # TODO: needs to be tested!
+    if pose_b:
+        pub_pose.publish(pose_b)
+    TalkingMotion(f"Hey, {name_b}").resolve().perform()
+
+    if pose_a:
+        pub_pose.publish(pose_b)
+    TalkingMotion(f" This is {name_a} and their favorite drink is {drink_a}").resolve().perform()
+    rospy.sleep(2)
+    TalkingMotion(f"Hey, {name_a}").resolve().perform()
+
+    if pose_b:
+        pub_pose.publish(pose_b)
+    TalkingMotion(f" This is {name_b} and their favorite drink is {drink_b}").resolve().perform()
+
     rospy.sleep(3)
-    TalkingMotion(second).resolve().perform()
 
 
 def doorbell_cb(data):
@@ -102,10 +119,10 @@ def name_cb(data):
     callback function for a subscriber to NLP script.
     is called when name was correctly understood
     """
-    print("name cb:" + str(data))
+    global understood
     if data.data:
         TalkingMotion("perfect, nice to meet you").resolve().perform()
-        guest1.set_understood(True)
+        understood = True
     else:
         TalkingMotion("i am sorry, please repeat your name loud and clear").resolve().perform()
         rospy.sleep(1)
