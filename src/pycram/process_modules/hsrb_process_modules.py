@@ -325,6 +325,8 @@ class HSRBMoveHeadReal(ProcessModule):
 
         new_pan = np.arctan2(pose_in_pan.position.y, pose_in_pan.position.x)
         new_tilt = np.arctan2(pose_in_tilt.position.z, pose_in_tilt.position.x + pose_in_tilt.position.y)
+        # comment out the correct formula to test it on the hsrb before fully swapping it out
+        # new_tilt = np.arctan2(pose_in_tilt.position.z, np.sqrt(pose_in_tilt.position.x ** 2 + pose_in_tilt.position.y ** 2)) * -1
 
         current_pan = robot.get_joint_state("head_pan_joint")
         current_tilt = robot.get_joint_state("head_tilt_joint")
