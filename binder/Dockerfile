@@ -41,6 +41,8 @@ RUN rosdep update \
 USER ${NB_USER}
 RUN catkin build
 
+RUN pip install service_identity
+
 # Jupyter Config
 COPY --chown=${NB_USER}:users binder/jupyter-config.json /opt/conda/share/jupyter/lab/settings/overrides.json
 

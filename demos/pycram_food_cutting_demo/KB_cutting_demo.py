@@ -16,12 +16,7 @@ from IPython.display import display, clear_output, HTML
 import rospkg
 from pycram.context_knowledge import ContextConfig, generate_context
 
-# all available parameters
-tasks = [('Select',None),('Cutting Action', "Cutting Action"), ('Sawing', "Sawing"), ('Paring', "Paring"), ('Cutting', "Cutting"),
-         ('Carving', "Carving"), ('Slicing', "Slicing"), ('Snipping', "Snipping"), ('Slivering', "Slivering"),
-         ('Halving', "Halving"), ('Quartering (Unavailable)', None), ('Julienning (Unavailable)', None),
-         ('Dicing (Unavailable)', None), ('Mincing (Unavailable)', None), ('Cubing (Unavailable)', None),
-         ('Cubing (Unavailable)', None)]
+
 
 objects = [('Select', None), ('cucumber', "cucumber.stl"), ('strawberry', "strawberry.stl"), ('pumpkin', "pumpkin.stl"),
     ('banana', "banana.stl"), ('apple', "apple.stl"), ('citron', "citron.stl"),
@@ -30,6 +25,23 @@ objects = [('Select', None), ('cucumber', "cucumber.stl"), ('strawberry', "straw
     ('cherry (Unavailable)', None), ('bean (Unavailable)', None), ('lemon (Unavailable)', None),
     ('kumquat (Unavailable)', None), ('olive (Unavailable)', None)]
 
+# all available parameters
+tasks = [('Select',None),
+         ('Cutting',"cut:CuttingAction"),
+        ('Quartering', "cut:Quartering"),
+        ('Julienning (Unavailable)',"cut:Julienning"),
+        ('Halving',"cut:Halving"),
+        ('Dicing (Unavailable)', None)
+        ('Cutting',"soma:Cutting"),
+        ('Slicing',"soma:Slicing"),
+        ('Snipping',"cut:Snipping"),
+        ('Slivering',"cut:Slivering"),
+        ('Sawing',"cut:Sawing"),
+        ('Paring',"cut:Paring"),
+        ('Carving',"cut:Carving"),
+        ('Mincing (Unavailable)',None),
+        ('Cubing (Unavailable)',None),
+        ('Chopping (Unavailable)',None)]
 task = ""
 obj = ""
 
@@ -49,7 +61,7 @@ def robot_execute():
     global selected_task, selected_obj
     with output:
         output.clear_output()
-        cutting_simple(selected_obj, selected_task)
+        cutting(selected_obj, selected_task)
 
     output.clear_output()
 
@@ -78,68 +90,29 @@ def start_demo():
     display(execute_button, output)
 
 
-def cutting_simple(obj="cucumber.stl", technique="slicing"):
-    world = BulletWorld()
-    kitchen = Object("environment", ObjectType.ENVIRONMENT, "kitchen-small.urdf")
-    kitchen.set_color([0.5, 0.5, 0.5, 0.8])
-    #    name = "kitchen-small.urdf"
+def cutting(obj="cucumber.stl", technique="slicing"):
+    world = BulletWorld("DIRECT")
+    VizMarkerPublisher(interval=0.1)
 
-    #   package_path = rospack.get_path('pycram') + '/resources/' + name
-    #  urdf_string = helper.urdf_to_string(package_path)
+    current_context = generate_context("cutting-init", "apartment-small.urdf")
+    cutting_tool = current_context.get_cutting_tool()
 
-    robot = Object("pr2", "robot", "../../resources/" + robot_description.name + ".urdf")
-    robot_desig = ObjectDesignatorDescription(names=["pr2"]).resolve()
+    cutting_obj = current_context.get_cutting_objects()
+    name = "apartment-small.urdf"
+    robot_desig = BulletWorld.current_bullet_world.robot
 
-    # rospy.set_param('envi_description', kitchen.urdf_object)
-    robot.set_joint_state(robot_description.torso_joint, 0.24)
-    kitchen_desig = ObjectDesignatorDescription(names=["kitchen"])
-
-    VizMarkerPublisher(interval=0.05)
-
-    # Initialize a ROS package object
-
-    # #name = "apartment-small.urdf"
-    # rospack = rospkg.RosPack()
-    # package_path = rospack.get_path('pycram') + '/resources/' + name
-    # urdf_string = helper.urdf_to_string(package_path)
-    # rospy.set_param('kitchen_description', urdf_string)
-
-    # broadcaster = TFBroadcaster(interval=0.0002)
-    # viz = VizMarkerPublisher()
-    spawning_poses = {# 'bigknife': Pose([-0.95, 1.2, 1.3], [1, -1, 1, -1]),
-        'bigknife': Pose([0.9, 0.6, 0.8], [0, 0, 0, -1]), # 'bread': Pose([-0.85, 0.9, 0.90], [0, 0, -1, 1])
-        'bread': Pose([-0.85, 0.9, 0.90], [0, 0, -1, -1]), 'board': Pose([-0.85, 0.9, 0.85], [0, 0, -1, -1]),
-        'cucumber': Pose([-0.85, 0.9, 0.87], [0, 0, -1, -1])}
-    bigknife = Object("bigknife", "bigknife", "big-knife.stl", spawning_poses["bigknife"])
-    cucumber = Object("cucumber", "cucumber", obj, spawning_poses["cucumber"])
-    perceived_cucumber = ObjectDesignatorDescription.Object(cucumber.name, cucumber.type, cucumber)
-    board = Object("board", "board", "board.stl", spawning_poses["board"])
-    cucumber.set_color([0, 1, 0.04, 1])
-    board.set_color([0.4, 0.2, 0.06, 1])
-    bigknife.set_color([0.5, 0.5, 0.5, 1])
-    bigknife_BO = BelieveObject(names=["bigknife"])
-    bread_BO = BelieveObject(names=["bread"])
-    cucumber_BO = BelieveObject(names=["cucumber"])
-    rospy.loginfo("quering the KB")
     with simulated_robot:
         ParkArmsAction([Arms.BOTH]).resolve().perform()
-
         MoveTorsoAction([0.33]).resolve().perform()
-        grasp = robot_description.grasps.get_orientation_for_grasp("top")
-        arm = "left"
-        pickup_pose_knife = CostmapLocation(target=bigknife_BO.resolve(), reachable_for=robot_desig).resolve()
-        pickup_arm = pickup_pose_knife.reachable_arms[0]
-        NavigateAction(target_locations=[pickup_pose_knife.pose]).resolve().perform()
-        PickUpAction(object_designator_description=bigknife_BO, arms=["left"], grasps=["top"]).resolve().perform()
+        TransportAction(current_context=current_context, hold=True, target_object=cutting_tool.name).resolve().perform()
+        location_pose = Pose([1.7, 2, 0])
+        looking_pose = Pose([2.5, 2, 0.97])
+        NavigateAction([location_pose]).resolve().perform()
 
-        ParkArmsAction([Arms.BOTH]).resolve().perform()
-        original_quaternion = (0, 0, 0, 1)
-        rotation_axis = (0, 0, 1)
-        rotation_quaternion = helper.axis_angle_to_quaternion(rotation_axis, 180)
-        resulting_quaternion = helper.multiply_quaternions(original_quaternion, rotation_quaternion)
-        nav_pose = Pose([-0.3, 0.9, 0.0], resulting_quaternion)
-        NavigateAction(target_locations=[nav_pose]).resolve().perform()
-        LookAtAction(targets=[cucumber_BO.resolve().pose]).resolve().perform()
-
-        CuttingAction(perceived_cucumber, bigknife_BO, ["left"], technique).resolve().perform()
-        rospy.loginfo("Done with the task")
+        LookAtAction([looking_pose]).resolve().perform()
+        status, object_dict = DetectAction(technique='specific', object_type="object_to_be_cut").resolve().perform()
+        if status:
+            for key, value in object_dict.items():
+                detected_object = object_dict[key]
+                bigknife_BO = BelieveObject(names=["bigknife"]).resolve()
+                CuttingAction(detected_object, bigknife_BO, ["right"], "slicing").resolve().perform()
