@@ -279,6 +279,8 @@ def achieve_open_container_goal(tip_link: str, environment_link: str) -> 'MoveRe
     :return: MoveResult message for this goal
     """
     sync_worlds()
+    print(tip_link)
+    print(environment_link)
     giskard_wrapper.set_open_container_goal(tip_link, environment_link)
     return giskard_wrapper.execute()
 
@@ -504,3 +506,16 @@ def place_objects(object, target, grasp):
 def park_arms():
     giskard_wrapper.take_pose("park")
     giskard_wrapper.execute()
+
+
+  # def reaching(self,
+  #                #context,
+  #                grasp: str -> front top right left below
+  #                align -> frame (dh wrist frame aligned damit) -> aka tip_link, wenn aliugn leer dnan ignore
+  #                object_name: str, #(die spawned planning)
+  #                object_shape: str, #(cylinder oder something lese)
+  #                goal_pose: Optional[PoseStamped] = None,
+  #                object_size: Optional[Vector3] = None,
+  #                root_link: str = 'map',
+  #                tip_link: str = 'hand_palm_link',
+  #                velocity: float = 0.2): -> auch von planning

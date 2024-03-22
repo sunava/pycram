@@ -30,6 +30,7 @@ from ..orm.base import Quaternion, Position, Base
 from ..plan_failures import ObjectUnfetchable, ReachabilityFailure, EnvironmentUnreachable, GripperClosedCompletely
 from ..pose import Pose
 from ..robot_descriptions import robot_description
+from ..ros.viz_marker_publisher import ManualMarkerPublisher
 from ..task import with_tree
 
 
@@ -312,11 +313,12 @@ class PickUpAction(ActionDesignatorDescription):
             object = self.object_designator.bullet_world_object
             # Calculate the object's pose in the map frame
             oTm = object.get_pose()
-            execute = True
+            execute = False
 
             # Adjust object pose for top-grasping, if applicable
             if self.grasp == "top":
-                # Handle special cases for certain object types (e.g., Cutlery, Bowl)
+                print("Metalbowl from top")
+                # Handle special cases for certain object types (e.g., Cutlery, Metalbowl)
                 # Note: This includes hardcoded adjustments and should ideally be generalized
                 if self.object_designator.type == "Cutlery":
                     # todo: this z is the popcorn-table height, we need to define location to get that z otherwise it
@@ -351,7 +353,7 @@ class PickUpAction(ActionDesignatorDescription):
             #  depending on robot
             if robot.name == "hsrb":
                 if self.grasp == "top":
-                    if self.object_designator.type == "Bowl":
+                    if self.object_designator.type == "Metalbowl":
                         special_knowledge_offset.pose.position.y += 0.085
                         special_knowledge_offset.pose.position.x -= 0.03
 
@@ -362,7 +364,7 @@ class PickUpAction(ActionDesignatorDescription):
                 z = 0.04
                 if self.grasp == "top":
                     z = 0.025
-                    if self.object_designator.type == "Bowl":
+                    if self.object_designator.type == "Metalbowl":
                         z = 0.044
                 push_base.pose.position.z += z
             push_baseTm = lt.transform_pose(push_base, "map")
@@ -371,6 +373,8 @@ class PickUpAction(ActionDesignatorDescription):
             # Grasping from the top inherently requires calculating an offset, whereas front grasping involves
             # slightly pushing the object forward.
             rospy.logwarn("Offset now")
+            # m = ManualMarkerPublisher()
+            # m.create_marker("pose_pickup", special_knowledge_offsetTm)
             BulletWorld.current_bullet_world.add_vis_axis(special_knowledge_offsetTm)
             if execute:
                 MoveTCPMotion(special_knowledge_offsetTm, self.arm).resolve().perform()
@@ -475,7 +479,7 @@ class PlaceAction(ActionDesignatorDescription):
         def perform(self) -> None:
             lt = LocalTransformer()
             robot = BulletWorld.robot
-
+            execute = False
             # oTm = Object Pose in Frame map
             oTm = self.target_location
 
@@ -491,7 +495,9 @@ class PlaceAction(ActionDesignatorDescription):
             oTmG = lt.transform_pose(oTb, "map")
 
             rospy.logwarn("Placing now")
-            MoveTCPMotion(oTmG, self.arm).resolve().perform()
+            BulletWorld.current_bullet_world.add_vis_axis(oTmG)
+            if execute:
+              MoveTCPMotion(oTmG, self.arm).resolve().perform()
 
             tool_frame = robot_description.get_tool_frame(self.arm)
             push_base = lt.transform_pose(oTmG, robot.get_link_tf_frame(tool_frame))
@@ -504,7 +510,9 @@ class PlaceAction(ActionDesignatorDescription):
             push_baseTm = lt.transform_pose(push_base, "map")
 
             rospy.logwarn("Pushing now")
-            MoveTCPMotion(push_baseTm, self.arm).resolve().perform()
+            BulletWorld.current_bullet_world.add_vis_axis(push_baseTm)
+            if execute:
+                MoveTCPMotion(push_baseTm, self.arm).resolve().perform()
 
             # Finalize the placing by opening the gripper and lifting the arm
             rospy.logwarn("Open Gripper")
@@ -514,8 +522,8 @@ class PlaceAction(ActionDesignatorDescription):
             liftingTm = push_baseTm
             liftingTm.pose.position.z += 0.08
             BulletWorld.current_bullet_world.add_vis_axis(liftingTm)
-
-            MoveTCPMotion(liftingTm, self.arm).resolve().perform()
+            if execute:
+                MoveTCPMotion(liftingTm, self.arm).resolve().perform()
 
         def to_sql(self) -> ORMPlaceAction:
             return ORMPlaceAction(self.arm)
@@ -1005,7 +1013,7 @@ class OpenAction(ActionDesignatorDescription):
             GraspingAction.Action(self.arm, self.object_designator).perform()
             OpeningMotion(self.object_designator, self.arm).resolve().perform()
 
-            MoveGripperMotion("open", self.arm, allow_gripper_collision=True).resolve().perform()
+            #MoveGripperMotion("open", self.arm, allow_gripper_collision=True).resolve().perform()
 
         def to_sql(self) -> ORMOpenAction:
             return ORMOpenAction(self.arm)
@@ -1125,19 +1133,46 @@ class GraspingAction(ActionDesignatorDescription):
                 object_pose = self.object_desig.part_pose
             else:
                 object_pose = self.object_desig.bullet_world_object.get_pose()
+
+            # Initialize the local transformer and robot reference
             lt = LocalTransformer()
-            gripper_name = robot_description.get_tool_frame(self.arm)
+            robot = BulletWorld.robot  # Retrieve object and robot from designators
+            # Calculate the object's pose in the map frame
+            oTm = object_pose
+            execute = True
+            grasp = "front"
+            # Determine the grasp orientation and transform the pose to the base link frame
+            grasp_rotation = robot_description.grasps.get_orientation_for_grasp(grasp)
+            oTb = lt.transform_pose(oTm, robot.get_link_tf_frame("base_link"))
+            # Set pose to the grasp rotation
+            oTb.orientation = grasp_rotation
 
-            object_pose_in_gripper = lt.transform_pose(object_pose, BulletWorld.robot.get_link_tf_frame(gripper_name))
+            object_orientation = axis_angle_to_quaternion([1, 0, 0], 90)
+            q2 = [oTb.pose.orientation.x, oTb.pose.orientation.y,
+                  oTb.pose.orientation.z, oTb.pose.orientation.w]
+            new_qua = helper.multiply_quaternions(object_orientation, q2)
+            oTb.pose.orientation.x = new_qua[0]
+            oTb.pose.orientation.y = new_qua[1]
+            oTb.pose.orientation.z = new_qua[2]
+            oTb.pose.orientation.w = new_qua[3]
 
-            pre_grasp = object_pose_in_gripper.copy()
-            pre_grasp.pose.position.x -= 0.1
+            # Transform the pose to the map frame
+            oTmG = lt.transform_pose(oTb, "map")
 
-            MoveTCPMotion(pre_grasp, self.arm).resolve().perform()
-            MoveGripperMotion("open", self.arm).resolve().perform()
+            # Open the gripper before picking up the object
+            rospy.logwarn("Opening Gripper")
+            MoveGripperMotion(motion="open", gripper=self.arm).resolve().perform()
 
-            MoveTCPMotion(object_pose, self.arm, allow_gripper_collision=True).resolve().perform()
-            MoveGripperMotion("close", self.arm, allow_gripper_collision=True).resolve().perform()
+            # Move to the pre-grasp position and visualize the action
+            rospy.logwarn("Picking up now")
+
+            BulletWorld.current_bullet_world.add_vis_axis(oTmG)
+            if execute:
+                MoveTCPMotion(oTmG, self.arm).resolve().perform()
+            rospy.sleep(5)
+            # Open the gripper before picking up the object
+            rospy.logwarn("Opening Gripper")
+            MoveGripperMotion(motion="close", gripper=self.arm).resolve().perform()
 
         def to_sql(self) -> ORMGraspingAction:
             return ORMGraspingAction(self.arm)
