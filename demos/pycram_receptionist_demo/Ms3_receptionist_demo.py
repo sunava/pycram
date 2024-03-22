@@ -41,7 +41,8 @@ with real_robot:
     TalkingMotion("Welcome, please come in").resolve().perform()
 
     # look for human
-    DetectAction(technique='human', state='start').resolve().perform()
+    # TODO: test new technique
+    DetectAction(technique='attributes', state='start').resolve().perform()
     rospy.loginfo("human detected")
 
     # look at guest and introduce
@@ -94,12 +95,15 @@ with real_robot:
 
     # search for free place to sit and host
     # TODO: get pose of host that sits in living room
+    # TODO: get pose of free seat
     # TODO: Failure Handling: scan room if no human detected on couch
-    human_pose = DetectAction(technique='human', state='start').resolve().perform()
-    print(human_pose)
-    misc.host.set_pose(human_pose)
+    human_and_seat_pose = DetectAction(technique='location', state='start').resolve().perform()
+    print(human_and_seat_pose)
+    misc.host.set_pose(human_and_seat_pose)
     # TODO: HSR looks to his right??
     misc.guest1.set_pose()
+
+    # TODO: is it ok to seat guest bevore introducing??
 
     # point to free place
     # giskardpy.point_to_seat

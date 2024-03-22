@@ -12,7 +12,7 @@ from ..designators.motion_designator import *
 from ..enums import JointType, ObjectType
 from ..external_interfaces import giskard
 from ..external_interfaces.ik import request_ik
-from ..external_interfaces.robokudo import queryEmpty, queryHuman, stop_queryHuman
+from ..external_interfaces.robokudo import *
 from ..helper import _apply_ik
 from ..local_transformer import LocalTransformer
 from ..external_interfaces.navigate import queryPoseNav
@@ -345,12 +345,11 @@ class HSRBDetectingReal(ProcessModule):
 
     def _execute(self, desig: DetectingMotion.Motion) -> Any:
         # todo at the moment perception ignores searching for a specific object type so we do as well on real
-        if desig.technique == 'human' and (desig.state == "start" or desig.state == None):
+        if desig.technique == 'human':
             human_pose = queryHuman()
             pose = Pose.from_pose_stamped(human_pose)
             pose.position.z = 0
-            human = []
-            human.append(Object("human", ObjectType.HUMAN, "human_male.stl", pose=pose))
+            human = [Object("human", ObjectType.HUMAN, "human_male.stl", pose=pose)]
             object_dict = {}
 
             # Iterate over the list of objects and store each one in the dictionary
@@ -358,10 +357,16 @@ class HSRBDetectingReal(ProcessModule):
                 object_dict[obj.name] = obj
             return object_dict
 
-            return human_pose
-        elif desig.technique == 'human' and desig.state == "stop":
+        elif desig.state == "stop":
             stop_queryHuman()
             return "stopped"
+        elif desig.technique == 'location':
+            # TODO: test what and how Perception returns Query msg and make it fit rest of code
+            seat_human_pose = seat_queryHuman()
+            return seat_human_pose
+        elif desig.technique == 'attributes':
+            seat_human_pose = attributes_queryHuman()
+            return seat_human_pose
 
 
         query_result = queryEmpty(ObjectDesignatorDescription(types=[desig.object_type]))
