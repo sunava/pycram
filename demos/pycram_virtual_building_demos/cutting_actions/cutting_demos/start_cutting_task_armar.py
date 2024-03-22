@@ -3,7 +3,7 @@ import rospy
 from ipywidgets import HBox, Button, Output
 from IPython.display import display
 
-from demos.pycram_virtual_building_demos.cutting_actions.cutting_demos.cutting_task import start_cutting
+from .cutting_task import start_cutting
 from pycram.process_module import simulated_robot
 from pycram.designators.action_designator import *
 from pycram.enums import Arms

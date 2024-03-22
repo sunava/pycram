@@ -2,6 +2,8 @@ import ipywidgets as widgets
 import rospy
 from ipywidgets import HBox, Button, Output
 from IPython.display import display
+
+from .cutting_task import start_cutting
 from pycram.process_module import simulated_robot
 from pycram.designators.action_designator import *
 from pycram.enums import Arms
@@ -10,7 +12,6 @@ from pycram.designators.object_designator import BelieveObject
 from pycram.ros.viz_marker_publisher import VizMarkerPublisher
 from pycram.resolver.action.SPARQL import SPARQL
 from IPython.display import display, HTML, clear_output
-from .cutting_task import start_cutting
 
 objects = [(None, None), ('apple', "obo:FOODON_03301710"), ('avocado', "obo:FOODON_00003600"),
     ('banana', "obo:FOODON_00004183"), ('cucumber', "obo:FOODON_00003415"),
@@ -78,4 +79,3 @@ def start_demo():
     # This way, robot_execute will only be executed when the button is clicked, not when start_demo is called.
     execute_button.on_click(lambda x: robot_execute())
     display(execute_button, output)
-
