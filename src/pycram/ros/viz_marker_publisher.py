@@ -61,24 +61,32 @@ class VizMarkerPublisher:
         :return: An Array of Visualization Marker
         """
         marker_array = MarkerArray()
-        for obj in self.main_world.objects:
-            if obj.name == "floor":
+        objnew = False
+        for obj in BulletWorld.current_bullet_world.objects:
+            if obj.name in ["floor"]:
                 continue
+            if obj.name == "hsrb":
+                continue
+            if not obj.name in ["environment", "pr2"]:
+                objnew = True
             for link in obj.links.keys():
                 geom = obj.link_to_geometry[link]
                 if not geom:
                     continue
                 msg = Marker()
-                msg.header.frame_id = "map"
+                msg.header.frame_id = "simulated/map"
                 msg.ns = obj.name
                 msg.id = obj.links[link]
                 msg.type = Marker.MESH_RESOURCE
                 msg.action = Marker.ADD
                 link_pose = obj.get_link_pose(link).to_transform(link)
-                if obj.urdf_object.link_map[link].collision.origin:
-                    link_origin = Transform(obj.urdf_object.link_map[link].collision.origin.xyz,
-                                            list(quaternion_from_euler(
-                                                *obj.urdf_object.link_map[link].collision.origin.rpy)))
+                if hasattr(obj, "urdf_object"):
+                    if obj.urdf_object.link_map[link].collision.origin:
+                        link_origin = Transform(obj.urdf_object.link_map[link].collision.origin.xyz,
+                                                list(quaternion_from_euler(
+                                                    *obj.urdf_object.link_map[link].collision.origin.rpy)))
+                    else:
+                        link_origin = Transform()
                 else:
                     link_origin = Transform()
                 link_pose_with_origin = link_pose * link_origin
