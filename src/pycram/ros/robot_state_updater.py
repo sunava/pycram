@@ -27,7 +27,7 @@ class RobotStateUpdater:
         :param joint_state_topic: Name of the joint state topic, needs to publish sensor_msgs/JointState
         """
         self.tf_listener = tf.TransformListener()
-        time.sleep(1)
+        rospy.sleep(1)
         self.tf_topic = tf_topic
         self.joint_state_topic = joint_state_topic
 

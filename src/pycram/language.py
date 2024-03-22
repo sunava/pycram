@@ -292,7 +292,7 @@ class Monitor(Language):
                 except Exception as e:
                     self.exception_queue.put(e)
                     return
-                time.sleep(0.1)
+                rospy.sleep(0.1)
 
         t = threading.Thread(target=check_condition)
         t.start()

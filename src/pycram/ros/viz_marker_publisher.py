@@ -51,6 +51,7 @@ class VizMarkerPublisher:
             self.pub.publish(marker_array)
             time.sleep(self.interval)
 
+
     def _make_marker_array(self) -> MarkerArray:
         """
         Creates the Marker Array to be published. There is one Marker for link for each object in the Array, each Object
@@ -120,7 +121,16 @@ class VizMarkerPublisher:
                 elif type(geom) == urdf_parser_py.urdf.Sphere:
                     msg.type == Marker.SPHERE
                     msg.scale = Vector3(geom.radius * 2, geom.radius * 2, geom.radius * 2)
-
+                elif obj.customGeom:
+                    msg.type = Marker.CUBE
+                    x = geom["size"][0]
+                    y = geom["size"][1]
+                    z = geom["size"][2]
+                    msg.scale = Vector3(x, y, z)
+                if objnew:
+                    #color = obj.get_color()
+                    #msg.color = ColorRGBA(*color)
+                    objnew = False
                 marker_array.markers.append(msg)
         return marker_array
 

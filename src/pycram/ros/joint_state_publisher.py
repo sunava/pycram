@@ -53,7 +53,7 @@ class JointStatePublisher:
             # joint_state_msg.velocity = [joint_state[1] for joint_state in current_joint_states]
             self.joint_state_pub.publish(joint_state_msg)
             seq += 1
-            time.sleep(self.interval)
+            rospy.sleep(self.interval)
 
     def _stop_publishing(self) -> None:
         """

@@ -79,7 +79,7 @@ class BulletWorld:
         # files that can not be loaded
         p.setPhysicsEngineParameter(enableFileCaching=0)
         # Needed to let the other thread start the simulation, before Objects are spawned.
-        time.sleep(0.1)
+        rospy.sleep(0.1)
         if BulletWorld.current_bullet_world == None:
             BulletWorld.current_bullet_world = self
         self.vis_axis: Object = []
@@ -212,7 +212,7 @@ class BulletWorld:
                     callback[1]()
             if real_time:
                 # Simulation runs at 240 Hz
-                time.sleep(0.004167)
+                rospy.sleep(0.004167)
 
     def exit(self) -> None:
         """
@@ -221,7 +221,7 @@ class BulletWorld:
         """
         # True if this is NOT the shadow world since it has a reference to the
         # Shadow world
-        time.sleep(0.1)
+        rospy.sleep(0.1)
         if self.shadow_world:
             self.world_sync.terminate = True
             self.world_sync.join()
@@ -433,7 +433,7 @@ class Use_shadow_world():
 
     def __enter__(self):
         if not BulletWorld.current_bullet_world.is_shadow_world:
-            time.sleep(20 / 240)
+            rospy.sleep(20 / 240)
             # blocks until the adding queue is ready
             BulletWorld.current_bullet_world.world_sync.add_obj_queue.join()
             # **This is currently not used since the sleep(20/240) seems to be enough, but on weaker hardware this might
@@ -519,7 +519,7 @@ class WorldSync(threading.Thread):
 
             self.check_for_pause()
             # self.check_for_equal()
-            time.sleep(1 / 240)
+            rospy.sleep(1 / 240)
 
         self.add_obj_queue.join()
         self.remove_obj_queue.join()
@@ -529,7 +529,7 @@ class WorldSync(threading.Thread):
         Checks if :py:attr:`~self.pause_sync` is true and sleeps this thread until it isn't anymore.
         """
         while self.pause_sync:
-            time.sleep(0.1)
+            rospy.sleep(0.1)
 
     def check_for_equal(self) -> None:
         """
@@ -752,7 +752,7 @@ class Gui(threading.Thread):
                 if visible == 0:
                     cameraTargetPosition = (0.0, -50, 50)
                 p.resetBasePositionAndOrientation(sphereUid, cameraTargetPosition, [0, 0, 0, 1])
-                time.sleep(1. / 80.)
+                rospy.sleep(1. / 80.)
 
 
 class Object:
@@ -1258,7 +1258,7 @@ class Object:
         :param frame: Name of the TF frame from which the position should be taken
         """
         tf_listener = tf.TransformListener()
-        time.sleep(0.5)
+        rospy.sleep(0.5)
         position, orientation = tf_listener.lookupTransform(frame, "map", rospy.Time(0))
         position = [position[0][0] * -1,
                     position[0][1] * -1,

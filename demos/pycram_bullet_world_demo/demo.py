@@ -31,9 +31,12 @@ def move_and_detect(obj_type):
 
     LookAtAction(targets=[pick_pose]).resolve().perform()
 
-    object_desig = DetectAction(BelieveObject(types=[obj_type])).resolve().perform()
+    status, object_dict = DetectAction(technique='specific', object_type=obj_type).resolve().perform()
+    if status:
+        for key, value in object_dict.items():
+            detected_object = object_dict[key]
 
-    return object_desig
+    return detected_object
 
 
 with simulated_robot:
@@ -41,7 +44,7 @@ with simulated_robot:
 
     MoveTorsoAction([0.25]).resolve().perform()
 
-    milk_desig = move_and_detect(ObjectType.MILK)
+    milk_desig = move_and_detect("milk")
 
     TransportAction(milk_desig, ["left"], [Pose([4.8, 3.55, 0.8])]).resolve().perform()
 
