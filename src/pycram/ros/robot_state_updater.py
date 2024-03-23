@@ -79,3 +79,58 @@ class RobotStateUpdater:
         """
         self.tf_timer.shutdown()
         self.joint_state_timer.shutdown()
+
+
+
+class KitchenStateUpdater:
+    """
+    Updates the robot in the Bullet World with information of the real robot published to ROS topics.
+    Infos used to update the robot are:
+        * The current pose of the robot
+        * The current joint state of the robot
+    """
+
+    def __init__(self, tf_topic: str, joint_state_topic: str):
+        """
+        The robot state updater uses a TF topic and a joint state topic to get the current state of the robot.
+
+        :param tf_topic: Name of the TF topic, needs to publish geometry_msgs/TransformStamped
+        :param joint_state_topic: Name of the joint state topic, needs to publish sensor_msgs/JointState
+        """
+        self.tf_listener = tf.TransformListener()
+        rospy.sleep(1)
+        self.tf_topic = tf_topic
+        self.joint_state_topic = joint_state_topic
+
+        self.joint_state_timer = rospy.Timer(rospy.Duration(0.1), self._subscribe_joint_state)
+
+        atexit.register(self._stop_subscription)
+
+    def _subscribe_joint_state(self, msg: JointState) -> None:
+        """
+        Sets the current joint configuration of the robot in the bullet world to the configuration published on the topic.
+        Since this uses rospy.wait_for_message which can have errors when used with threads there might be an attribute error
+        in the rospy implementation.
+
+        :param msg: JointState message published to the topic.
+        """
+        try:
+            msg = rospy.wait_for_message(self.joint_state_topic, JointState)
+            for name, position in zip(msg.name, msg.position):
+                try:
+                    # Attempt to get the joint state. This might throw a KeyError if the joint name doesn't exist
+                    if BulletWorld.environment.get_joint_state(name) is None:
+                        continue
+                    # Set the joint state if the joint exists
+                    BulletWorld.environment.set_joint_state(name, position)
+                except KeyError:
+                    # Handle the case where the joint name does not exist
+                    pass
+        except AttributeError:
+            pass
+
+    def _stop_subscription(self) -> None:
+        """
+        Stops the Timer for TF and joint states and therefore the updating of the robot in the bullet world.
+        """
+        self.joint_state_timer.shutdown()
