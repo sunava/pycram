@@ -96,7 +96,8 @@ class Pr2Place(ProcessModule):
         # Transformations such that the target position is the position of the object and not the tcp
         object_pose = object.get_pose()
         local_tf = LocalTransformer()
-        tcp_to_object = local_tf.transform_pose(object_pose, robot.get_link_tf_frame(robot_description.get_tool_frame(arm)))
+        tcp_to_object = local_tf.transform_pose(object_pose,
+                                                robot.get_link_tf_frame(robot_description.get_tool_frame(arm)))
         target_diff = desig.target.to_transform("target").inverse_times(tcp_to_object.to_transform("object")).to_pose()
 
         _move_arm_tcp(target_diff, robot, arm)
@@ -176,8 +177,8 @@ class Pr2Detecting(ProcessModule):
         for obj in objects:
             perceived_objects.append(ObjectDesignatorDescription.Object(obj.name, obj.type, obj))
 
-            #todo: commented out since the visualisation is not working good bc of rendering one object
-            #if btr.visible(obj, robot.get_link_pose(cam_frame_name), front_facing_axis):
+            # todo: commented out since the visualisation is not working good bc of rendering one object
+            # if btr.visible(obj, robot.get_link_pose(cam_frame_name), front_facing_axis):
 
         # Iterate over the list of objects and store each one in the dictionary
         for i, obj in enumerate(perceived_objects):
@@ -217,6 +218,7 @@ class PR2MoveJoints(ProcessModule):
     """
     Process Module for generic joint movements, is not confined to the arms but can move any joint of the robot
     """
+
     def _execute(self, desig: MoveJointsMotion.Motion):
         robot = BulletWorld.robot
         robot.set_joint_states(dict(zip(desig.names, desig.positions)))
@@ -340,31 +342,7 @@ class Pr2DetectingReal(ProcessModule):
     """
 
     def _execute(self, designator: DetectingMotion.Motion) -> Any:
-        query_result = query(ObjectDesignatorDescription(types=[designator.object_type]))
-        # print(query_result)
-        obj_pose = query_result["ClusterPoseBBAnnotator"]
-
-        lt = LocalTransformer()
-        obj_pose = lt.transform_pose(obj_pose, BulletWorld.robot.get_link_tf_frame("torso_lift_link"))
-        obj_pose.orientation = [0, 0, 0, 1]
-        obj_pose.position.x += 0.05
-
-        bullet_obj = BulletWorld.current_bullet_world.get_objects_by_type(designator.object_type)
-        if bullet_obj:
-            bullet_obj[0].set_pose(obj_pose)
-            return bullet_obj[0]
-        elif designator.object_type == ObjectType.JEROEN_CUP:
-            cup = Object("cup", ObjectType.JEROEN_CUP, "jeroen_cup.stl", pose=obj_pose)
-            return cup
-        elif designator.object_type == ObjectType.BOWL:
-            bowl = Object("bowl", ObjectType.BOWL, "bowl.stl", pose=obj_pose)
-            return bowl
-
-
-        return bullet_obj[0]
-
-
-
+        return query(ObjectDesignatorDescription(types=[designator.object_type]))
 
 
 class Pr2MoveTCPReal(ProcessModule):

@@ -1068,8 +1068,96 @@ class DetectAction(ActionDesignatorDescription):
 
         @with_tree
         def perform(self) -> Any:
-            return DetectingMotion(technique=self.technique, object_type=self.object_type,
-                                   state=self.state).resolve().perform()
+            # todo at the moment perception ignores searching for a specific object type so we do as well on real
+
+            query_result = DetectingMotion(technique=self.technique, object_type=self.object_type,
+                                           state=self.state).resolve().perform()
+
+            if isinstance(query_result, dict):
+                return query_result
+
+            if self.technique == 'human' and (self.state == "start" or self.state is None):
+                pose = Pose.from_pose_stamped(query_result)
+                pose.position.z = 0
+                human = []
+                human.append(Object("human", ObjectType.HUMAN, "human_male.stl", pose=pose))
+                object_dict = {}
+
+                # Iterate over the list of objects and store each one in the dictionary
+                for i, obj in enumerate(human):
+                    object_dict[obj.name] = obj
+                return object_dict
+
+            elif self.technique == 'human' and self.state == "stop":
+                return query_result
+
+            perceived_objects = []
+            for i in range(0, len(query_result.res)):
+                # this has to be pose from pose stamped since we spawn the object with given header
+                obj_pose = Pose.from_pose_stamped(query_result.res[i].pose[0])
+                # obj_pose.orientation = [0, 0, 0, 1]
+                # obj_pose_tmp = query_result.res[i].pose[0]
+                obj_type = query_result.res[i].type
+                obj_size = query_result.res[i].shape_size
+                obj_color = query_result.res[i].color[0]
+                color_switch = {
+                    "red": [1, 0, 0, 1],
+                    "green": [0, 1, 0, 1],
+                    "blue": [0, 0, 1, 1],
+                    "black": [0, 0, 0, 1],
+                    "white": [1, 1, 1, 1],
+                    # add more colors if needed
+                }
+                color = color_switch.get(obj_color)
+                if color is None:
+                    color = [0, 0, 0, 1]
+
+                # atm this is the string size that describes the object but it is not the shape size thats why string
+                def extract_xyz_values(input_string):
+                    # Split the input string by commas and colon to separate key-value pairs
+                    # key_value_pairs = input_string.split(', ')
+
+                    # Initialize variables to store the X, Y, and Z values
+                    x_value = None
+                    y_value = None
+                    z_value = None
+
+                    for key in input_string:
+                        x_value = key.dimensions.x
+                        y_value = key.dimensions.y
+                        z_value = key.dimensions.z
+
+                    #
+                    # # Iterate through the key-value pairs to extract the values
+                    # for pair in key_value_pairs:
+                    #     key, value = pair.split(': ')
+                    #     if key == 'x':
+                    #         x_value = float(value)
+                    #     elif key == 'y':
+                    #         y_value = float(value)
+                    #     elif key == 'z':
+                    #         z_value = float(value)
+
+                    return x_value, y_value, z_value
+
+                x, y, z = extract_xyz_values(obj_size)
+                size = (x, z / 2, y)
+                size_box = (x / 2, z / 2, y / 2)
+                hard_size = (0.02, 0.02, 0.03)
+                id = BulletWorld.current_bullet_world.add_rigid_box(obj_pose, hard_size, color)
+                box_object = Object(obj_type + "_" + str(rospy.get_time()), obj_type, pose=obj_pose, color=color, id=id,
+                                    customGeom={"size": [hard_size[0], hard_size[1], hard_size[2]]})
+                box_object.set_pose(obj_pose)
+                box_desig = ObjectDesignatorDescription.Object(box_object.name, box_object.type, box_object)
+
+                perceived_objects.append(box_desig)
+
+            object_dict = {}
+
+            # Iterate over the list of objects and store each one in the dictionary
+            for i, obj in enumerate(perceived_objects):
+                object_dict[obj.name] = obj
+            return object_dict
 
         # def to_sql(self) -> ORMDetectAction:  #     return ORMDetectAction()  #  # def insert(self, session: sqlalchemy.orm.session.Session, *args, **kwargs) -> ORMDetectAction:  #     action = super().insert(session)  #  #     od = self.object_type.insert(session)  #     action.object_id = od.id  #  #     session.add(action)  #     session.commit()  #  #     return action
 
@@ -1429,7 +1517,7 @@ class CuttingAction(ActionDesignatorDescription):
             for x in slice_coordinates:
                 # Adjust slice pose based on object dimensions and orientation
                 tmp_pose = object_pose.copy()
-                tmp_pose.pose.position.y +=  obj_width #plus tool länge  # Offset position for slicing
+                tmp_pose.pose.position.y += obj_width  # plus tool länge  # Offset position for slicing
                 tmp_pose.pose.position.x = x  # Set slicing position
                 # tmp_pose.pose.position.z
                 sTm = local_tf.transform_pose(tmp_pose, "map")
@@ -1440,7 +1528,6 @@ class CuttingAction(ActionDesignatorDescription):
             for slice_pose in slice_poses:
                 # check if obj is facing the object
                 slice_pose = self.facing_robot(slice_pose, BulletWorld.robot)
-
 
                 perpendicular_pose = self.perpendicular_pose(slice_pose)
 
@@ -1457,7 +1544,7 @@ class CuttingAction(ActionDesignatorDescription):
                 lift_pose.pose.position.z += object_height  # Lift the tool above the object
 
                 BulletWorld.current_bullet_world.add_vis_axis(target_diff)
-                #BulletWorld.current_bullet_world.add_vis_axis(lift_pose)
+                # BulletWorld.current_bullet_world.add_vis_axis(lift_pose)
                 MoveTCPMotion(lift_pose, self.arm).resolve().perform()
                 MoveTCPMotion(target_diff, self.arm).resolve().perform()
                 MoveTCPMotion(lift_pose, self.arm).resolve().perform()
