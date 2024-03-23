@@ -53,6 +53,11 @@ class BulletWorld:
     Global reference to the spawned Object that represents the robot. The robot is identified by checking the name in the 
     URDF with the name of the URDF on the parameter server. 
     """
+    environment: Object = None
+    """
+    Global reference to the spawned Object that represents the environment. 
+    """
+    viz: bool = True
 
     # Check is for sphinx autoAPI to be able to work in a CI workflow
     if rosgraph.is_master_online():  # and "/pycram" not in rosnode.get_node_names():
@@ -814,7 +819,8 @@ class Object:
                 self.urdf_object = URDF.from_xml_string(f.read())
                 if self.urdf_object.name == robot_description.name and not BulletWorld.robot:
                     BulletWorld.robot = self
-
+                elif self.urdf_object.name == "iai-kitchen" and not BulletWorld.environment:
+                    BulletWorld.environment = self
             self.links[self.urdf_object.get_root()] = -1
             self.link_to_geometry = self._get_geometry_for_link()
             self._init_current_joint_states()
