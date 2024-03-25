@@ -1,0 +1,25 @@
+<launch>
+  <arg name="use_knowrob" default="false"/>
+
+<node pkg="kdl_ik_service" type="start_ros_server.py" name="kdl_ik_service" output="screen" />
+
+  <!-- HSRB -->
+  <group if="$(eval robot == 'hsr')">
+    <param name="robot_description"
+              textfile="$(find pycram)/resources/hsr.urdf"/>
+  </group>
+
+  <!-- Use Knowrob -->
+  <group if="$(eval use_knowrob)">
+      <include file="$(find knowrob)/launch/knowrob.launch"/>
+  </group>
+
+<!--
+  In ROS Noetic the xacro file for boxy doesnt seem to work, as a quick fix use the line above
+  <include file="$(find iai_boxy_description)/launch/upload_boxy.launch" />
+-->
+<!--
+<include file="$(find rosbridge_server)/launch/rosbridge_websocket.launch"/>
+-->
+
+</launch>
