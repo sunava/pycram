@@ -61,7 +61,7 @@ class ProcessModule:
         with self._lock:
             ret = self._execute(designator)
             if ProcessModule.execution_delay:
-                time.sleep(0.5)
+                rospy.sleep(0.5)
 
         return ret
 

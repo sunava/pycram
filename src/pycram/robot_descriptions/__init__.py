@@ -9,6 +9,7 @@ from .hsrb_description import HSRBDescription
 from .pr2_description import PR2Description
 from .ur5_description import UR5Description
 from .tiago_description import TiagoDescription
+from .armar6_description import ARMAR6Description
 from .. import utils
 from ..robot_description import RobotDescription
 
@@ -61,6 +62,8 @@ def update_robot_description(robot_name=None, from_ros=None):
         description = UR5Description
     elif "tiago_dual" in robot:
         description = TiagoDescription
+    elif "armar6" in robot:
+        description = ARMAR6Description
     else:
         logger.error("(robot-description) The given robot name %s has no description class.", robot_name)
         return None

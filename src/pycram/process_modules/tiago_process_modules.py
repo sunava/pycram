@@ -24,14 +24,14 @@ from ..external_interfaces import giskard
 from ..external_interfaces.robokudo import query
 
 try:
-    from pr2_controllers_msgs.msg import Pr2GripperCommandGoal, Pr2GripperCommandAction, Pr2
+    from tiago_controllers_msgs.msg import tiagoGripperCommandGoal, tiagoGripperCommandAction, tiago
 except ImportError:
     pass
 
 
 def _park_arms(arm):
     """
-    Defines the joint poses for the parking positions of the arms of PR2 and applies them to the
+    Defines the joint poses for the parking positions of the arms of tiago and applies them to the
     in the BulletWorld defined robot.
     :return: None
     """
@@ -45,7 +45,7 @@ def _park_arms(arm):
             robot.set_joint_state(joint, pose)
 
 
-class Pr2Navigation(ProcessModule):
+class tiagoNavigation(ProcessModule):
     """
     The process module to move the robot from one position to another.
     """
@@ -55,7 +55,7 @@ class Pr2Navigation(ProcessModule):
         robot.set_pose(desig.target)
 
 
-class Pr2PickUp(ProcessModule):
+class tiagoPickUp(ProcessModule):
     """
     This process module is for picking up a given object.
     The object has to be reachable for this process module to succeed.
@@ -78,7 +78,7 @@ class Pr2PickUp(ProcessModule):
         robot.attach(object, tool_frame)
 
 
-class Pr2Place(ProcessModule):
+class tiagoPlace(ProcessModule):
     """
     This process module places an object at the given position in world coordinate frame.
     """
@@ -96,15 +96,14 @@ class Pr2Place(ProcessModule):
         # Transformations such that the target position is the position of the object and not the tcp
         object_pose = object.get_pose()
         local_tf = LocalTransformer()
-        tcp_to_object = local_tf.transform_pose(object_pose,
-                                                robot.get_link_tf_frame(robot_description.get_tool_frame(arm)))
+        tcp_to_object = local_tf.transform_pose(object_pose, robot.get_link_tf_frame(robot_description.get_tool_frame(arm)))
         target_diff = desig.target.to_transform("target").inverse_times(tcp_to_object.to_transform("object")).to_pose()
 
         _move_arm_tcp(target_diff, robot, arm)
         robot.detach(object)
 
 
-class Pr2MoveHead(ProcessModule):
+class tiagoMoveHead(ProcessModule):
     """
     This process module moves the head to look at a specific point in the world coordinate frame.
     This point can either be a position or an object.
@@ -115,20 +114,20 @@ class Pr2MoveHead(ProcessModule):
         robot = BulletWorld.robot
 
         local_transformer = LocalTransformer()
-        pose_in_pan = local_transformer.transform_pose(target, robot.get_link_tf_frame("head_pan_link"))
-        pose_in_tilt = local_transformer.transform_pose(target, robot.get_link_tf_frame("head_tilt_link"))
+        pose_in_pan = local_transformer.transform_pose(target, robot.get_link_tf_frame("head_1_link"))
+        pose_in_tilt = local_transformer.transform_pose(target, robot.get_link_tf_frame("head_2_link"))
 
         new_pan = np.arctan2(pose_in_pan.position.y, pose_in_pan.position.x)
-        new_tilt = np.arctan2(pose_in_tilt.position.z, np.sqrt(pose_in_tilt.position.x ** 2 + pose_in_tilt.position.y ** 2)) * -1
+        new_tilt = - np.arctan2(pose_in_tilt.position.z, pose_in_tilt.position.x ** 2 + pose_in_tilt.position.y ** 2) * -1
 
-        current_pan = robot.get_joint_state("head_pan_joint")
-        current_tilt = robot.get_joint_state("head_tilt_joint")
+        current_pan = robot.get_joint_state("head_1_joint")
+        current_tilt = robot.get_joint_state("head_2_joint")
 
-        robot.set_joint_state("head_pan_joint", new_pan + current_pan)
-        robot.set_joint_state("head_tilt_joint", new_tilt + current_tilt)
+        robot.set_joint_state("head_1_joint", new_pan + current_pan)
+        robot.set_joint_state("head_2_joint", new_tilt + current_tilt)
 
 
-class Pr2MoveGripper(ProcessModule):
+class tiagoMoveGripper(ProcessModule):
     """
     This process module controls the gripper of the robot. They can either be opened or closed.
     Furthermore, it can only moved one gripper at a time.
@@ -142,7 +141,7 @@ class Pr2MoveGripper(ProcessModule):
             robot.set_joint_state(joint, state)
 
 
-class Pr2Detecting(ProcessModule):
+class tiagoDetecting(ProcessModule):
     """
     This process module tries to detect an object with the given type. To be detected the object has to be in
     the field of view of the robot.
@@ -177,8 +176,8 @@ class Pr2Detecting(ProcessModule):
         for obj in objects:
             perceived_objects.append(ObjectDesignatorDescription.Object(obj.name, obj.type, obj))
 
-            # todo: commented out since the visualisation is not working good bc of rendering one object
-            # if btr.visible(obj, robot.get_link_pose(cam_frame_name), front_facing_axis):
+            #todo: commented out since the visualisation is not working good bc of rendering one object
+            #if btr.visible(obj, robot.get_link_pose(cam_frame_name), front_facing_axis):
 
         # Iterate over the list of objects and store each one in the dictionary
         for i, obj in enumerate(perceived_objects):
@@ -187,7 +186,7 @@ class Pr2Detecting(ProcessModule):
         return object_dict
 
 
-class Pr2MoveTCP(ProcessModule):
+class tiagoMoveTCP(ProcessModule):
     """
     This process moves the tool center point of either the right or the left arm.
     """
@@ -199,7 +198,7 @@ class Pr2MoveTCP(ProcessModule):
         _move_arm_tcp(target, robot, desig.arm)
 
 
-class Pr2MoveArmJoints(ProcessModule):
+class tiagoMoveArmJoints(ProcessModule):
     """
     This process modules moves the joints of either the right or the left arm. The joint states can be given as
     list that should be applied or a pre-defined position can be used, such as "parking"
@@ -214,17 +213,16 @@ class Pr2MoveArmJoints(ProcessModule):
             robot.set_joint_states(desig.left_arm_poses)
 
 
-class PR2MoveJoints(ProcessModule):
+class tiagoMoveJoints(ProcessModule):
     """
     Process Module for generic joint movements, is not confined to the arms but can move any joint of the robot
     """
-
     def _execute(self, desig: MoveJointsMotion.Motion):
         robot = BulletWorld.robot
         robot.set_joint_states(dict(zip(desig.names, desig.positions)))
 
 
-class Pr2WorldStateDetecting(ProcessModule):
+class tiagoWorldStateDetecting(ProcessModule):
     """
     This process module detectes an object even if it is not in the field of view of the robot.
     """
@@ -234,7 +232,7 @@ class Pr2WorldStateDetecting(ProcessModule):
         return list(filter(lambda obj: obj.type == obj_type, BulletWorld.current_bullet_world.objects))[0]
 
 
-class Pr2Open(ProcessModule):
+class tiagoOpen(ProcessModule):
     """
     Low-level implementation of opening a container in the simulation. Assumes the handle is already grasped.
     """
@@ -254,7 +252,7 @@ class Pr2Open(ProcessModule):
                                                                   container_joint)[1])
 
 
-class Pr2Close(ProcessModule):
+class tiagoClose(ProcessModule):
     """
     Low-level implementation that lets the robot close a grasped container, in simulation
     """
@@ -284,13 +282,13 @@ def _move_arm_tcp(target: Pose, robot: Object, arm: str) -> None:
 
 
 ###########################################################
-########## Process Modules for the Real PR2 ###############
+########## Process Modules for the Real tiago ###############
 ###########################################################
 
 
-class Pr2NavigationReal(ProcessModule):
+class tiagoNavigationReal(ProcessModule):
     """
-    Process module for the real PR2 that sends a cartesian goal to giskard to move the robot base
+    Process module for the real tiago that sends a cartesian goal to giskard to move the robot base
     """
 
     def _execute(self, designator: MoveMotion.Motion) -> Any:
@@ -298,19 +296,19 @@ class Pr2NavigationReal(ProcessModule):
         giskard.achieve_cartesian_goal(designator.target, robot_description.base_link, "map")
 
 
-class Pr2PickUpReal(ProcessModule):
+class tiagoPickUpReal(ProcessModule):
 
     def _execute(self, designator: PickUpMotion.Motion) -> Any:
         pass
 
 
-class Pr2PlaceReal(ProcessModule):
+class tiagoPlaceReal(ProcessModule):
 
     def _execute(self, designator: MotionDesignatorDescription.Motion) -> Any:
         pass
 
 
-class Pr2MoveHeadReal(ProcessModule):
+class tiagoMoveHeadReal(ProcessModule):
     """
     Process module for the real robot to move that such that it looks at the given position. Uses the same calculation
     as the simulated one
@@ -321,33 +319,57 @@ class Pr2MoveHeadReal(ProcessModule):
         robot = BulletWorld.robot
 
         local_transformer = LocalTransformer()
-        pose_in_pan = local_transformer.transform_pose(target, robot.get_link_tf_frame("head_pan_link"))
-        pose_in_tilt = local_transformer.transform_pose(target, robot.get_link_tf_frame("head_tilt_link"))
+        pose_in_pan = local_transformer.transform_pose(target, robot.get_link_tf_frame("head_1_link"))
+        pose_in_tilt = local_transformer.transform_pose(target, robot.get_link_tf_frame("head_2_link"))
 
         new_pan = np.arctan2(pose_in_pan.position.y, pose_in_pan.position.x)
         new_tilt = np.arctan2(pose_in_tilt.position.z, pose_in_tilt.position.x ** 2 + pose_in_tilt.position.y ** 2) * -1
 
-        current_pan = robot.get_joint_state("head_pan_joint")
-        current_tilt = robot.get_joint_state("head_tilt_joint")
+        current_pan = robot.get_joint_state("head_1_joint")
+        current_tilt = robot.get_joint_state("head_2_joint")
 
         giskard.avoid_all_collisions()
-        giskard.achieve_joint_goal({"head_pan_joint": new_pan + current_pan,
-                                    "head_tilt_joint": new_tilt + current_tilt})
+        giskard.achieve_joint_goal({"head_1_joint": new_pan + current_pan,
+                                    "head_2_joint": new_tilt + current_tilt})
 
 
-class Pr2DetectingReal(ProcessModule):
+class tiagoDetectingReal(ProcessModule):
     """
-    Process Module for the real Pr2 that tries to detect an object fitting the given object description. Uses Robokudo
+    Process Module for the real tiago that tries to detect an object fitting the given object description. Uses Robokudo
     for perception of the environment.
     """
 
     def _execute(self, designator: DetectingMotion.Motion) -> Any:
-        return query(ObjectDesignatorDescription(types=[designator.object_type]))
+        query_result = query(ObjectDesignatorDescription(types=[designator.object_type]))
+        # print(query_result)
+        obj_pose = query_result["ClusterPoseBBAnnotator"]
+
+        lt = LocalTransformer()
+        obj_pose = lt.transform_pose(obj_pose, BulletWorld.robot.get_link_tf_frame("torso_lift_link"))
+        obj_pose.orientation = [0, 0, 0, 1]
+        obj_pose.position.x += 0.05
+
+        bullet_obj = BulletWorld.current_bullet_world.get_objects_by_type(designator.object_type)
+        if bullet_obj:
+            bullet_obj[0].set_pose(obj_pose)
+            return bullet_obj[0]
+        elif designator.object_type == ObjectType.JEROEN_CUP:
+            cup = Object("cup", ObjectType.JEROEN_CUP, "jeroen_cup.stl", pose=obj_pose)
+            return cup
+        elif designator.object_type == ObjectType.BOWL:
+            bowl = Object("bowl", ObjectType.BOWL, "bowl.stl", pose=obj_pose)
+            return bowl
 
 
-class Pr2MoveTCPReal(ProcessModule):
+        return bullet_obj[0]
+
+
+
+
+
+class tiagoMoveTCPReal(ProcessModule):
     """
-    Moves the tool center point of the real PR2 while avoiding all collisions
+    Moves the tool center point of the real tiago while avoiding all collisions
     """
 
     def _execute(self, designator: MoveTCPMotion.Motion) -> Any:
@@ -360,9 +382,9 @@ class Pr2MoveTCPReal(ProcessModule):
                                        robot_description.base_link)
 
 
-class Pr2MoveArmJointsReal(ProcessModule):
+class tiagoMoveArmJointsReal(ProcessModule):
     """
-    Moves the arm joints of the real PR2 to the given configuration while avoiding all collisions
+    Moves the arm joints of the real tiago to the given configuration while avoiding all collisions
     """
 
     def _execute(self, designator: MoveArmJointsMotion.Motion) -> Any:
@@ -375,7 +397,7 @@ class Pr2MoveArmJointsReal(ProcessModule):
         giskard.achieve_joint_goal(joint_goals)
 
 
-class Pr2MoveJointsReal(ProcessModule):
+class tiagoMoveJointsReal(ProcessModule):
     """
     Moves any joint using giskard, avoids all collisions while doint this.
     """
@@ -386,9 +408,9 @@ class Pr2MoveJointsReal(ProcessModule):
         giskard.achieve_joint_goal(name_to_position)
 
 
-class Pr2MoveGripperReal(ProcessModule):
+class tiagoMoveGripperReal(ProcessModule):
     """
-    Opens or closes the gripper of the real PR2, gripper uses an action server for this instead of giskard 
+    Opens or closes the gripper of the real tiago, gripper uses an action server for this instead of giskard
     """
 
     def _execute(self, designator: MoveGripperMotion.Motion) -> Any:
@@ -401,18 +423,18 @@ class Pr2MoveGripperReal(ProcessModule):
         def feedback_callback(msg):
             pass
 
-        goal = Pr2GripperCommandGoal()
+        goal = tiagoGripperCommandGoal()
         goal.command.position = 0.0 if designator.motion == "close" else 0.1
         goal.command.max_effort = 50.0
         controller_topic = "r_gripper_controller/gripper_action" if designator.gripper == "right" else "l_gripper_controller/gripper_action"
-        client = actionlib.SimpleActionClient(controller_topic, Pr2GripperCommandAction)
+        client = actionlib.SimpleActionClient(controller_topic, tiagoGripperCommandAction)
         rospy.loginfo("Waiting for action server")
         client.wait_for_server()
         client.send_goal(goal, active_cb=activate_callback, done_cb=done_callback, feedback_cb=feedback_callback)
         wait = client.wait_for_result()
 
 
-class Pr2OpenReal(ProcessModule):
+class tiagoOpenReal(ProcessModule):
     """
     Tries to open an already grasped container
     """
@@ -422,7 +444,7 @@ class Pr2OpenReal(ProcessModule):
                                             designator.object_part.name)
 
 
-class Pr2CloseReal(ProcessModule):
+class tiagoCloseReal(ProcessModule):
     """
     Tries to close an already grasped container
     """
@@ -432,10 +454,10 @@ class Pr2CloseReal(ProcessModule):
                                              designator.object_part.name)
 
 
-class Pr2Manager(ProcessModuleManager):
+class tiagoManager(ProcessModuleManager):
 
     def __init__(self):
-        super().__init__("pr2")
+        super().__init__("tiago_dual")
         self._navigate_lock = Lock()
         self._pick_up_lock = Lock()
         self._place_lock = Lock()
@@ -451,70 +473,70 @@ class Pr2Manager(ProcessModuleManager):
 
     def navigate(self):
         if ProcessModuleManager.execution_type == "simulated":
-            return Pr2Navigation(self._navigate_lock)
+            return tiagoNavigation(self._navigate_lock)
         elif ProcessModuleManager.execution_type == "real":
-            return Pr2NavigationReal(self._navigate_lock)
+            return tiagoNavigationReal(self._navigate_lock)
 
     def pick_up(self):
         if ProcessModuleManager.execution_type == "simulated":
-            return Pr2PickUp(self._pick_up_lock)
+            return tiagoPickUp(self._pick_up_lock)
         elif ProcessModuleManager.execution_type == "real":
-            return Pr2PickUpReal(self._pick_up_lock)
+            return tiagoPickUpReal(self._pick_up_lock)
 
     def place(self):
         if ProcessModuleManager.execution_type == "simulated":
-            return Pr2Place(self._place_lock)
+            return tiagoPlace(self._place_lock)
         elif ProcessModuleManager.execution_type == "real":
-            return Pr2PlaceReal(self._place_lock)
+            return tiagoPlaceReal(self._place_lock)
 
     def looking(self):
         if ProcessModuleManager.execution_type == "simulated":
-            return Pr2MoveHead(self._looking_lock)
+            return tiagoMoveHead(self._looking_lock)
         elif ProcessModuleManager.execution_type == "real":
-            return Pr2MoveHeadReal(self._looking_lock)
+            return tiagoMoveHeadReal(self._looking_lock)
 
     def detecting(self):
         if ProcessModuleManager.execution_type == "simulated":
-            return Pr2Detecting(self._detecting_lock)
+            return tiagoDetecting(self._detecting_lock)
         elif ProcessModuleManager.execution_type == "real":
-            return Pr2DetectingReal(self._detecting_lock)
+            return tiagoDetectingReal(self._detecting_lock)
 
     def move_tcp(self):
         if ProcessModuleManager.execution_type == "simulated":
-            return Pr2MoveTCP(self._move_tcp_lock)
+            return tiagoMoveTCP(self._move_tcp_lock)
         elif ProcessModuleManager.execution_type == "real":
-            return Pr2MoveTCPReal(self._move_tcp_lock)
+            return tiagoMoveTCPReal(self._move_tcp_lock)
 
     def move_arm_joints(self):
         if ProcessModuleManager.execution_type == "simulated":
-            return Pr2MoveArmJoints(self._move_arm_joints_lock)
+            return tiagoMoveArmJoints(self._move_arm_joints_lock)
         elif ProcessModuleManager.execution_type == "real":
-            return Pr2MoveArmJointsReal(self._move_arm_joints_lock)
+            return tiagoMoveArmJointsReal(self._move_arm_joints_lock)
 
     def world_state_detecting(self):
         if ProcessModuleManager.execution_type == "simulated" or ProcessModuleManager.execution_type == "real":
-            return Pr2WorldStateDetecting(self._world_state_detecting_lock)
+            return tiagoWorldStateDetecting(self._world_state_detecting_lock)
 
     def move_joints(self):
         if ProcessModuleManager.execution_type == "simulated":
-            return PR2MoveJoints(self._move_joints_lock)
+            return tiagoMoveJoints(self._move_joints_lock)
         elif ProcessModuleManager.execution_type == "real":
-            return Pr2MoveJointsReal(self._move_joints_lock)
+            return tiagoMoveJointsReal(self._move_joints_lock)
 
     def move_gripper(self):
         if ProcessModuleManager.execution_type == "simulated":
-            return Pr2MoveGripper(self._move_gripper_lock)
+            return tiagoMoveGripper(self._move_gripper_lock)
         elif ProcessModuleManager.execution_type == "real":
-            return Pr2MoveGripperReal(self._move_gripper_lock)
+            return tiagoMoveGripperReal(self._move_gripper_lock)
 
     def open(self):
         if ProcessModuleManager.execution_type == "simulated":
-            return Pr2Open(self._open_lock)
+            return tiagoOpen(self._open_lock)
         elif ProcessModuleManager.execution_type == "real":
-            return Pr2OpenReal(self._open_lock)
+            return tiagoOpenReal(self._open_lock)
 
     def close(self):
         if ProcessModuleManager.execution_type == "simulated":
-            return Pr2Close(self._close_lock)
+            return tiagoClose(self._close_lock)
         elif ProcessModuleManager.execution_type == "real":
-            return Pr2CloseReal(self._close_lock)
+            return tiagoCloseReal(self._close_lock)

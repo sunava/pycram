@@ -11,7 +11,7 @@ class TestCaseBulletWorldReasoning(BulletWorldTestCase):
     def test_contact(self):
         self.milk.set_pose(Pose([1, 1, 1]))
         self.cereal.set_pose(Pose([1, 1, 1]))
-        time.sleep(1)
+        rospy.sleep(1)
         self.assertTrue(btr.contact(self.milk, self.cereal))
 
     def test_visible(self):

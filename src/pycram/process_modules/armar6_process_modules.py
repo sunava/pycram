@@ -21,18 +21,21 @@ from ..process_module import ProcessModule
 
 def _park_arms(arm):
     """
-    Defines the joint poses for the parking positions of the arms of HSRB and applies them to the
+    Defines the joint poses for the parking positions of the arms of ARMAR6 and applies them to the
     in the BulletWorld defined robot.
     :return: None
     """
 
     robot = BulletWorld.robot
+    if arm == "right":
+        for joint, pose in robot_description.get_static_joint_chain("right", "park").items():
+            robot.set_joint_state(joint, pose)
     if arm == "left":
         for joint, pose in robot_description.get_static_joint_chain("left", "park").items():
             robot.set_joint_state(joint, pose)
 
 
-class HSRBNavigation(ProcessModule):
+class ARMAR6Navigation(ProcessModule):
     """
     The process module to move the robot from one position to another.
     """
@@ -42,7 +45,7 @@ class HSRBNavigation(ProcessModule):
         robot.set_pose(desig.target)
 
 
-class HSRBPickUp(ProcessModule):
+class ARMAR6PickUp(ProcessModule):
     """
     This process module is for picking up a given object.
     The object has to be reachable for this process module to succeed.
@@ -59,14 +62,13 @@ class HSRBPickUp(ProcessModule):
         target.orientation.w = grasp[3]
 
         arm = desig.arm
-        arm_short = "r" if arm == "right" else "l"
 
         _move_arm_tcp(target, robot, arm)
         tool_frame = robot_description.get_tool_frame(arm)
         robot.attach(object, tool_frame)
 
 
-class HSRBPlace(ProcessModule):
+class ARMAR6Place(ProcessModule):
     """
     This process module places an object at the given position in world coordinate frame.
     """
@@ -92,7 +94,7 @@ class HSRBPlace(ProcessModule):
         robot.detach(object)
 
 
-class HSRBMoveHead(ProcessModule):
+class ARMAR6MoveHead(ProcessModule):
     """
     This process module moves the head to look at a specific point in the world coordinate frame.
     This point can either be a position or an object.
@@ -103,20 +105,25 @@ class HSRBMoveHead(ProcessModule):
         robot = BulletWorld.robot
 
         local_transformer = LocalTransformer()
-        pose_in_pan = local_transformer.transform_pose(target, robot.get_link_tf_frame("head_pan_link"))
-        pose_in_tilt = local_transformer.transform_pose(target, robot.get_link_tf_frame("head_tilt_link"))
+        pose_in_pan = local_transformer.transform_pose(target, robot.get_link_tf_frame("middle_neck"))
+        pose_in_tilt = local_transformer.transform_pose(target, robot.get_link_tf_frame("upper_neck"))
 
         new_pan = np.arctan2(pose_in_pan.position.y, pose_in_pan.position.x)
-        new_tilt = np.arctan2(pose_in_tilt.position.z, pose_in_tilt.position.x ** 2 + pose_in_tilt.position.y ** 2) * -1
 
-        current_pan = robot.get_joint_state("head_pan_joint")
-        current_tilt = robot.get_joint_state("head_tilt_joint")
-
-        robot.set_joint_state("head_pan_joint", new_pan + current_pan)
-        robot.set_joint_state("head_tilt_joint", new_tilt + current_tilt)
+        # For some reason the values for position.y and position.z are swapped, so for now the formula is adjusted accordingly.
+        # Not guaranteed to work in all cases, depending on the reason why the values are swapped for this robot (maybe wrong urdf or something?)
+        new_tilt = - np.arctan2(pose_in_tilt.position.y, np.sqrt(pose_in_tilt.position.x ** 2 + pose_in_tilt.position.z ** 2))
 
 
-class HSRBMoveGripper(ProcessModule):
+        current_pan = robot.get_joint_state("neck_1_yaw")
+        current_tilt = robot.get_joint_state("neck_2_pitch")
+
+        robot.set_joint_state("neck_1_yaw", new_pan + current_pan)
+        robot.set_joint_state("neck_2_pitch", new_tilt + current_tilt)
+
+
+
+class ARMAR6MoveGripper(ProcessModule):
     """
     This process module controls the gripper of the robot. They can either be opened or closed.
     Furthermore, it can only moved one gripper at a time.
@@ -130,7 +137,7 @@ class HSRBMoveGripper(ProcessModule):
             robot.set_joint_state(joint, state)
 
 
-class HSRBDetecting(ProcessModule):
+class ARMAR6Detecting(ProcessModule):
     """
     This process module tries to detect an object with the given type. To be detected the object has to be in
     the field of view of the robot.
@@ -175,7 +182,7 @@ class HSRBDetecting(ProcessModule):
         return object_dict
 
 
-class HSRBMoveTCP(ProcessModule):
+class ARMAR6MoveTCP(ProcessModule):
     """
     This process moves the tool center point of either the right or the left arm.
     """
@@ -187,7 +194,7 @@ class HSRBMoveTCP(ProcessModule):
         _move_arm_tcp(target, robot, desig.arm)
 
 
-class HSRBMoveArmJoints(ProcessModule):
+class ARMAR6MoveArmJoints(ProcessModule):
     """
     This process modules moves the joints of either the right or the left arm. The joint states can be given as
     list that should be applied or a pre-defined position can be used, such as "parking"
@@ -202,7 +209,7 @@ class HSRBMoveArmJoints(ProcessModule):
             robot.set_joint_states(desig.left_arm_poses)
 
 
-class HSRBMoveJoints(ProcessModule):
+class ARMAR6MoveJoints(ProcessModule):
     """
     Process Module for generic joint movements, is not confined to the arms but can move any joint of the robot
     """
@@ -212,7 +219,7 @@ class HSRBMoveJoints(ProcessModule):
         robot.set_joint_states(dict(zip(desig.names, desig.positions)))
 
 
-class HSRBWorldStateDetecting(ProcessModule):
+class ARMAR6WorldStateDetecting(ProcessModule):
     """
     This process module detectes an object even if it is not in the field of view of the robot.
     """
@@ -222,7 +229,7 @@ class HSRBWorldStateDetecting(ProcessModule):
         return list(filter(lambda obj: obj.type == obj_type, BulletWorld.current_bullet_world.objects))[0]
 
 
-class HSRBOpen(ProcessModule):
+class ARMAR6Open(ProcessModule):
     """
     Low-level implementation of opening a container in the simulation. Assumes the handle is already grasped.
     """
@@ -241,7 +248,7 @@ class HSRBOpen(ProcessModule):
                                                               part_of_object.get_joint_limits(container_joint)[1])
 
 
-class HSRBClose(ProcessModule):
+class ARMAR6Close(ProcessModule):
     """
     Low-level implementation that lets the robot close a grasped container, in simulation
     """
@@ -270,13 +277,13 @@ def _move_arm_tcp(target: Pose, robot: Object, arm: str) -> None:
 
 
 ###########################################################
-########## Process Modules for the Real HSRB ###############
+########## Process Modules for the Real ARMAR6 ############
 ###########################################################
 
 
-class HSRBNavigationReal(ProcessModule):
+class ARMAR6NavigationReal(ProcessModule):
     """
-    Process module for the real HSRB that sends a cartesian goal to giskard to move the robot base
+    Process module for the real ARMAR6 that sends a cartesian goal to giskard to move the robot base
     """
 
     def _execute(self, designator: MoveMotion.Motion) -> Any:
@@ -284,9 +291,9 @@ class HSRBNavigationReal(ProcessModule):
         #giskard.achieve_cartesian_goal(designator.target, robot_description.base_link, "map")
         queryPoseNav(designator.target)
 
-class HSRBNavigationSemiReal(ProcessModule):
+class ARMAR6NavigationSemiReal(ProcessModule):
     """
-    Process module for the real HSRB that sends a cartesian goal to giskard to move the robot base
+    Process module for the real ARMAR6 that sends a cartesian goal to giskard to move the robot base
     """
 
     def _execute(self, designator: MoveMotion.Motion) -> Any:
@@ -294,13 +301,13 @@ class HSRBNavigationSemiReal(ProcessModule):
         giskard.achieve_cartesian_goal(designator.target, robot_description.base_link, "map")
         #queryPoseNav(designator.target)
 
-class HSRBPickUpReal(ProcessModule):
+class ARMAR6PickUpReal(ProcessModule):
 
     def _execute(self, designator: PickUpMotion.Motion) -> Any:
         pass
 
 
-class HSRBPlaceReal(ProcessModule):
+class ARMAR6PlaceReal(ProcessModule):
 
    # def _execute(self, designator: MotionDesignatorDescription.Motion) -> Any:
     #    pass
@@ -309,7 +316,7 @@ class HSRBPlaceReal(ProcessModule):
           giskard.place_objects(designator.object, designator.target, designator.grasp)
 
 
-class HSRBMoveHeadReal(ProcessModule):
+class ARMAR6MoveHeadReal(ProcessModule):
     """
     Process module for the real robot to move that such that it looks at the given position. Uses the same calculation
     as the simulated one
@@ -320,44 +327,122 @@ class HSRBMoveHeadReal(ProcessModule):
         robot = BulletWorld.robot
 
         local_transformer = LocalTransformer()
-        pose_in_pan = local_transformer.transform_pose(target, robot.get_link_tf_frame("head_pan_link"))
-        pose_in_tilt = local_transformer.transform_pose(target, robot.get_link_tf_frame("head_tilt_link"))
+        pose_in_pan = local_transformer.transform_pose(target, robot.get_link_tf_frame("middle_neck"))
+        pose_in_tilt = local_transformer.transform_pose(target, robot.get_link_tf_frame("upper_neck"))
 
         new_pan = np.arctan2(pose_in_pan.position.y, pose_in_pan.position.x)
         new_tilt = np.arctan2(pose_in_tilt.position.z, pose_in_tilt.position.x + pose_in_tilt.position.y)
-        # comment out the correct formula to test it on the hsrb before fully swapping it out
-        # new_tilt = np.arctan2(pose_in_tilt.position.z, np.sqrt(pose_in_tilt.position.x ** 2 + pose_in_tilt.position.y ** 2)) * -1
 
-        current_pan = robot.get_joint_state("head_pan_joint")
-        current_tilt = robot.get_joint_state("head_tilt_joint")
+        current_pan = robot.get_joint_state("neck_1_yaw")
+        current_tilt = robot.get_joint_state("neck_2_pitch")
 
         giskard.avoid_all_collisions()
         giskard.achieve_joint_goal(
-            {"head_pan_joint": new_pan + current_pan, "head_tilt_joint": new_tilt + current_tilt})
+            {"neck_1_yaw": new_pan + current_pan, "neck_2_pitch": new_tilt + current_tilt})
         giskard.achieve_joint_goal(
-            {"head_pan_joint": new_pan + current_pan, "head_tilt_joint": new_tilt + current_tilt})
+            {"neck_1_yaw": new_pan + current_pan, "neck_2_pitch": new_tilt + current_tilt})
 
 
-class HSRBDetectingReal(ProcessModule):
+class ARMAR6DetectingReal(ProcessModule):
     """
-    Process Module for the real HSRB that tries to detect an object fitting the given object description. Uses Robokudo
+    Process Module for the real ARMAR6 that tries to detect an object fitting the given object description. Uses Robokudo
     for perception of the environment.
     """
 
     def _execute(self, desig: DetectingMotion.Motion) -> Any:
         # todo at the moment perception ignores searching for a specific object type so we do as well on real
-        if desig.technique == 'human' and (desig.state == "start" or desig.state is None):
-            return queryHuman()
+        if desig.technique == 'human' and (desig.state == "start" or desig.state == None):
+            human_pose = queryHuman()
+            pose = Pose.from_pose_stamped(human_pose)
+            pose.position.z = 0
+            human = []
+            human.append(Object("human", ObjectType.HUMAN, "human_male.stl", pose=pose))
+            object_dict = {}
+
+            # Iterate over the list of objects and store each one in the dictionary
+            for i, obj in enumerate(human):
+                object_dict[obj.name] = obj
+            return object_dict
+
+            return human_pose
         elif desig.technique == 'human' and desig.state == "stop":
             stop_queryHuman()
             return "stopped"
 
-        return queryEmpty(ObjectDesignatorDescription(types=[desig.object_type]))
+
+        query_result = queryEmpty(ObjectDesignatorDescription(types=[desig.object_type]))
+        perceived_objects = []
+        for i in range(0, len(query_result.res)):
+            # this has to be pose from pose stamped since we spawn the object with given header
+            obj_pose = Pose.from_pose_stamped(query_result.res[i].pose[0])
+            #obj_pose.orientation = [0, 0, 0, 1]
+            # obj_pose_tmp = query_result.res[i].pose[0]
+            obj_type = query_result.res[i].type
+            obj_size = query_result.res[i].shape_size
+            obj_color = query_result.res[i].color[0]
+            color_switch = {
+                "red": [1, 0, 0, 1],
+                "green": [0, 1, 0, 1],
+                "blue": [0, 0, 1, 1],
+                "black": [0, 0, 0, 1],
+                "white": [1, 1, 1, 1],
+                # add more colors if needed
+            }
+            color = color_switch.get(obj_color)
+            if color is None:
+                color = [0, 0, 0, 1]
+
+            # atm this is the string size that describes the object but it is not the shape size thats why string
+            def extract_xyz_values(input_string):
+                # Split the input string by commas and colon to separate key-value pairs
+                #key_value_pairs = input_string.split(', ')
+
+                # Initialize variables to store the X, Y, and Z values
+                x_value = None
+                y_value = None
+                z_value = None
+
+                for key in input_string:
+                    x_value = key.dimensions.x
+                    y_value = key.dimensions.y
+                    z_value = key.dimensions.z
+
+                #
+                # # Iterate through the key-value pairs to extract the values
+                # for pair in key_value_pairs:
+                #     key, value = pair.split(': ')
+                #     if key == 'x':
+                #         x_value = float(value)
+                #     elif key == 'y':
+                #         y_value = float(value)
+                #     elif key == 'z':
+                #         z_value = float(value)
+
+                return x_value, y_value, z_value
+
+            x, y, z = extract_xyz_values(obj_size)
+            size = (x, z/2, y)
+            size_box = (x/2, z/2, y/2)
+            hard_size= (0.02, 0.02, 0.03)
+            id = BulletWorld.current_bullet_world.add_rigid_box(obj_pose, hard_size, color)
+            box_object = Object(obj_type + "_" + str(rospy.get_time()), obj_type, pose=obj_pose, color=color, id=id,
+                                customGeom={"size": [hard_size[0], hard_size[1], hard_size[2]]})
+            box_object.set_pose(obj_pose)
+            box_desig = ObjectDesignatorDescription.Object(box_object.name, box_object.type, box_object)
+
+            perceived_objects.append(box_desig)
+
+        object_dict = {}
+
+        # Iterate over the list of objects and store each one in the dictionary
+        for i, obj in enumerate(perceived_objects):
+            object_dict[obj.name] = obj
+        return object_dict
 
 
-class HSRBMoveTCPReal(ProcessModule):
+class ARMAR6MoveTCPReal(ProcessModule):
     """
-    Moves the tool center point of the real HSRB while avoiding all collisions
+    Moves the tool center point of the real ARMAR6 while avoiding all collisions
     """
 
     def _execute(self, designator: MoveTCPMotion.Motion) -> Any:
@@ -370,9 +455,9 @@ class HSRBMoveTCPReal(ProcessModule):
                                        "map")
 
 
-class HSRBMoveArmJointsReal(ProcessModule):
+class ARMAR6MoveArmJointsReal(ProcessModule):
     """
-    Moves the arm joints of the real HSRB to the given configuration while avoiding all collisions
+    Moves the arm joints of the real ARMAR6 to the given configuration while avoiding all collisions
     """
 
     def _execute(self, designator: MoveArmJointsMotion.Motion) -> Any:
@@ -383,7 +468,7 @@ class HSRBMoveArmJointsReal(ProcessModule):
         giskard.achieve_joint_goal(joint_goals)
 
 
-class HSRBMoveJointsReal(ProcessModule):
+class ARMAR6MoveJointsReal(ProcessModule):
     """
     Moves any joint using giskard, avoids all collisions while doint this.
     """
@@ -394,9 +479,9 @@ class HSRBMoveJointsReal(ProcessModule):
         giskard.achieve_joint_goal(name_to_position)
 
 
-class HSRBMoveGripperReal(ProcessModule):
+class ARMAR6MoveGripperReal(ProcessModule):
     """
-     Opens or closes the gripper of the real HSRB with the help of giskard.
+     Opens or closes the gripper of the real ARMAR6 with the help of giskard.
      """
 
     def _execute(self, designator: MoveGripperMotion.Motion) -> Any:
@@ -404,7 +489,8 @@ class HSRBMoveGripperReal(ProcessModule):
             from tmc_control_msgs.msg import GripperApplyEffortActionGoal
 
             if (designator.motion == "open"):
-                pub_gripper = rospy.Publisher('/hsrb/gripper_controller/grasp/goal', GripperApplyEffortActionGoal,
+                # TODO topic will need to be adjusted
+                pub_gripper = rospy.Publisher('/ARMAR6/gripper_controller/grasp/goal', GripperApplyEffortActionGoal,
                                               queue_size=10)
                 rate = rospy.Rate(10)
                 rospy.sleep(2)
@@ -413,7 +499,8 @@ class HSRBMoveGripperReal(ProcessModule):
                 pub_gripper.publish(msg)
 
             elif (designator.motion == "close"):
-                pub_gripper = rospy.Publisher('/hsrb/gripper_controller/grasp/goal', GripperApplyEffortActionGoal,
+                # TODO topic will need to be adjusted
+                pub_gripper = rospy.Publisher('/ARMAR6/gripper_controller/grasp/goal', GripperApplyEffortActionGoal,
                                               queue_size=10)
                 rate = rospy.Rate(10)
                 rospy.sleep(2)
@@ -422,10 +509,10 @@ class HSRBMoveGripperReal(ProcessModule):
                 pub_gripper.publish(msg)
 
         except ModuleNotFoundError as e:
-            rospy.logwarn("Failed to import TMC messages, HSR can not be used")
+            rospy.logwarn("Failed to import TMC messages, ARMAR can not be used")
 
 
-class HSRBOpenReal(ProcessModule):
+class ARMAR6OpenReal(ProcessModule):
     """
     Tries to open an already grasped container
     """
@@ -435,7 +522,7 @@ class HSRBOpenReal(ProcessModule):
                                             designator.object_part.name)
 
 
-class HSRBCloseReal(ProcessModule):
+class ARMAR6CloseReal(ProcessModule):
     """
     Tries to close an already grasped container
     """
@@ -445,7 +532,7 @@ class HSRBCloseReal(ProcessModule):
                                              designator.object_part.name)
 
 
-class HSRBTalkReal(ProcessModule):
+class ARMAR6TalkReal(ProcessModule):
     """
     Tries to close an already grasped container
     """
@@ -454,7 +541,7 @@ class HSRBTalkReal(ProcessModule):
         try:
             from tmc_msgs.msg import Voice
 
-
+            # TODO topic will need to be adjusted
             pub = rospy.Publisher('/talk_request', Voice, queue_size=10)
 
             # fill message of type Voice with required data:
@@ -467,13 +554,13 @@ class HSRBTalkReal(ProcessModule):
             pub.publish(texttospeech)
 
         except ModuleNotFoundError as e:
-            rospy.logwarn("Failed to import TMC messages, HSR can not be used")
+            rospy.logwarn("Failed to import TMC messages, ARMAR can not be used")
 
 
-class HSRBManager(ProcessModuleManager):
+class ARMAR6Manager(ProcessModuleManager):
 
     def __init__(self):
-        super().__init__("hsrb")
+        super().__init__("Armar6")
         self._navigate_lock = Lock()
         self._pick_up_lock = Lock()
         self._place_lock = Lock()
@@ -490,100 +577,100 @@ class HSRBManager(ProcessModuleManager):
 
     def navigate(self):
         if ProcessModuleManager.execution_type == "simulated":
-            return HSRBNavigation(self._navigate_lock)
+            return ARMAR6Navigation(self._navigate_lock)
         elif ProcessModuleManager.execution_type == "real":
-            return HSRBNavigationReal(self._navigate_lock)
+            return ARMAR6NavigationReal(self._navigate_lock)
         elif ProcessModuleManager.execution_type == "semi_real":
-            return HSRBNavigationSemiReal(self._navigate_lock)
+            return ARMAR6NavigationSemiReal(self._navigate_lock)
 
     def pick_up(self):
         if ProcessModuleManager.execution_type == "simulated":
-            return HSRBPickUp(self._pick_up_lock)
+            return ARMAR6PickUp(self._pick_up_lock)
         elif ProcessModuleManager.execution_type == "real":
-            return HSRBPickUpReal(self._pick_up_lock)
+            return ARMAR6PickUpReal(self._pick_up_lock)
         elif ProcessModuleManager.execution_type == "semi_real":
-            return HSRBPickUpReal(self._pick_up_lock)
+            return ARMAR6PickUpReal(self._pick_up_lock)
 
     def place(self):
         if ProcessModuleManager.execution_type == "simulated":
-            return HSRBPlace(self._place_lock)
+            return ARMAR6Place(self._place_lock)
         elif ProcessModuleManager.execution_type == "real":
-            return HSRBPlaceReal(self._place_lock)
+            return ARMAR6PlaceReal(self._place_lock)
         elif ProcessModuleManager.execution_type == "semi_real":
-            return HSRBPlaceReal(self._place_lock)
+            return ARMAR6PlaceReal(self._place_lock)
 
     def looking(self):
         if ProcessModuleManager.execution_type == "simulated":
-            return HSRBMoveHead(self._looking_lock)
+            return ARMAR6MoveHead(self._looking_lock)
         elif ProcessModuleManager.execution_type == "real":
-            return HSRBMoveHeadReal(self._looking_lock)
+            return ARMAR6MoveHeadReal(self._looking_lock)
         elif ProcessModuleManager.execution_type == "semi_real":
-            return HSRBMoveHeadReal(self._looking_lock)
+            return ARMAR6MoveHeadReal(self._looking_lock)
 
     def detecting(self):
         if ProcessModuleManager.execution_type == "simulated":
-            return HSRBDetecting(self._detecting_lock)
+            return ARMAR6Detecting(self._detecting_lock)
         elif ProcessModuleManager.execution_type == "real":
-            return HSRBDetectingReal(self._detecting_lock)
+            return ARMAR6DetectingReal(self._detecting_lock)
         elif ProcessModuleManager.execution_type == "semi_real":
-            return HSRBDetecting(self._detecting_lock)
+            return ARMAR6Detecting(self._detecting_lock)
 
     def move_tcp(self):
         if ProcessModuleManager.execution_type == "simulated":
-            return HSRBMoveTCP(self._move_tcp_lock)
+            return ARMAR6MoveTCP(self._move_tcp_lock)
         elif ProcessModuleManager.execution_type == "real":
-            return HSRBMoveTCPReal(self._move_tcp_lock)
+            return ARMAR6MoveTCPReal(self._move_tcp_lock)
         elif ProcessModuleManager.execution_type == "semi_real":
-            return HSRBMoveTCPReal(self._move_tcp_lock)
+            return ARMAR6MoveTCPReal(self._move_tcp_lock)
 
     def move_arm_joints(self):
         if ProcessModuleManager.execution_type == "simulated":
-            return HSRBMoveArmJoints(self._move_arm_joints_lock)
+            return ARMAR6MoveArmJoints(self._move_arm_joints_lock)
         elif ProcessModuleManager.execution_type == "real":
-            return HSRBMoveArmJointsReal(self._move_arm_joints_lock)
+            return ARMAR6MoveArmJointsReal(self._move_arm_joints_lock)
         elif ProcessModuleManager.execution_type == "semi_real":
-            return HSRBMoveArmJointsReal(self._move_arm_joints_lock)
+            return ARMAR6MoveArmJointsReal(self._move_arm_joints_lock)
 
     def world_state_detecting(self):
         if ProcessModuleManager.execution_type == "simulated" or ProcessModuleManager.execution_type == "real":
-            return HSRBWorldStateDetecting(self._world_state_detecting_lock)
+            return ARMAR6WorldStateDetecting(self._world_state_detecting_lock)
         elif ProcessModuleManager.execution_type == "semi_real":
-            return HSRBWorldStateDetecting(self._world_state_detecting_lock)
+            return ARMAR6WorldStateDetecting(self._world_state_detecting_lock)
 
     def move_joints(self):
         if ProcessModuleManager.execution_type == "simulated":
-            return HSRBMoveJoints(self._move_joints_lock)
+            return ARMAR6MoveJoints(self._move_joints_lock)
         elif ProcessModuleManager.execution_type == "real":
-            return HSRBMoveJointsReal(self._move_joints_lock)
+            return ARMAR6MoveJointsReal(self._move_joints_lock)
         elif ProcessModuleManager.execution_type == "semi_real":
-            return HSRBMoveJointsReal(self._move_joints_lock)
+            return ARMAR6MoveJointsReal(self._move_joints_lock)
 
     def move_gripper(self):
         if ProcessModuleManager.execution_type == "simulated":
-            return HSRBMoveGripper(self._move_gripper_lock)
+            return ARMAR6MoveGripper(self._move_gripper_lock)
         elif ProcessModuleManager.execution_type == "real":
-            return HSRBMoveGripperReal(self._move_gripper_lock)
+            return ARMAR6MoveGripperReal(self._move_gripper_lock)
         elif ProcessModuleManager.execution_type == "semi_real":
-            return HSRBMoveGripperReal(self._move_gripper_lock)
+            return ARMAR6MoveGripperReal(self._move_gripper_lock)
 
     def open(self):
         if ProcessModuleManager.execution_type == "simulated":
-            return HSRBOpen(self._open_lock)
+            return ARMAR6Open(self._open_lock)
         elif ProcessModuleManager.execution_type == "real":
-            return HSRBOpenReal(self._open_lock)
+            return ARMAR6OpenReal(self._open_lock)
         elif ProcessModuleManager.execution_type == "semi_real":
-            return HSRBOpenReal(self._open_lock)
+            return ARMAR6OpenReal(self._open_lock)
 
     def close(self):
         if ProcessModuleManager.execution_type == "simulated":
-            return HSRBClose(self._close_lock)
+            return ARMAR6Close(self._close_lock)
         elif ProcessModuleManager.execution_type == "real":
-            return HSRBCloseReal(self._close_lock)
+            return ARMAR6CloseReal(self._close_lock)
         elif ProcessModuleManager.execution_type == "semi_real":
-            return HSRBCloseReal(self._close_lock)
+            return ARMAR6CloseReal(self._close_lock)
 
     def talk(self):
         if ProcessModuleManager.execution_type == "real":
-            return HSRBTalkReal(self._talk_lock)
+            return ARMAR6TalkReal(self._talk_lock)
         elif ProcessModuleManager.execution_type == "semi_real":
-            return HSRBTalkReal(self._talk_lock)
+            return ARMAR6TalkReal(self._talk_lock)

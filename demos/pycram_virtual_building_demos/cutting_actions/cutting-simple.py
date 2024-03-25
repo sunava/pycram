@@ -8,8 +8,7 @@ from pycram.enums import Arms
 from pycram.designators.object_designator import *
 from pycram.designators.object_designator import BelieveObject
 import pycram.helper as helper
-command = "roslaunch your_package your_launch_file.launch"
-subprocess.Popen(command, shell=True)
+
 def cutting_simple(obj="cucumber.stl", technique="sclicing"):
     world = BulletWorld("DIRECT")
     rospack = rospkg.RosPack()
@@ -85,4 +84,4 @@ def cutting_simple(obj="cucumber.stl", technique="sclicing"):
         #              arms=["left"],
         #              grasps=["top"]).resolve().perform()
 
-#cutting_simple()
+cutting_simple()
