@@ -65,7 +65,7 @@ def setup_task_object_widgets():
 def start_demo():
     global output
     output = Output()
-    #setup_task_object_widgets()
+    setup_task_object_widgets()
     execute_button = Button(description="Start Demo")
     BulletWorld("DIRECT")
     VizMarkerPublisher(interval=0.1)
