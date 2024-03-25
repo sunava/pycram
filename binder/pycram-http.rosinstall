@@ -25,7 +25,7 @@ repositories:
     version: v1.5.1
   armar6_description:
     type: git
-    url: https://github.com/cram2/armar6_description.git
+    url: https://github.com/sunava/armar6_description
     version: main
   iai_tiago:
     type: git
