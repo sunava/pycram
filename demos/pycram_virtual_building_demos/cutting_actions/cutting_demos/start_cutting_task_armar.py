@@ -28,9 +28,6 @@ obj = ""
 selected_task = None
 selected_obj = None
 
-selected_task = "obo:FOODON_00003415"
-selected_obj = "soma:Slicing"
-
 def update_globals(task=None, obj=None):
     global selected_task, selected_obj
     if task is not None:
@@ -67,7 +64,7 @@ def setup_task_object_widgets():
 def start_demo():
     global output
     output = Output()
-    #setup_task_object_widgets()
+    setup_task_object_widgets()
     execute_button = Button(description="Start Demo")
     BulletWorld("DIRECT")
     VizMarkerPublisher(interval=0.1)
@@ -80,9 +77,5 @@ def start_demo():
     # x represents the button click event (which we don't use here),
     # and robot_execute(func) is the function call you want to happen when the button is clicked.
     # This way, robot_execute will only be executed when the button is clicked, not when start_demo is called.
-    #execute_button.on_click(lambda x: robot_execute())
-    #display(execute_button, output)
-    robot_execute()
-
-
-start_demo()
+    execute_button.on_click(lambda x: robot_execute())
+    display(execute_button, output)
