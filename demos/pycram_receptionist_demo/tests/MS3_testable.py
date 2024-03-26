@@ -42,7 +42,7 @@ with real_robot:
 
     # look for human
     # TODO: test new technique
-    DetectAction(technique='attributes', state='start').resolve().perform()
+    DetectAction(technique='human', state='start').resolve().perform()
     rospy.loginfo("human detected")
 
     # look at guest and introduce
@@ -79,7 +79,6 @@ with real_robot:
     while not misc.understood_drink:
         rospy.sleep(1)
 
-
     # stop looking
     TalkingMotion("i will show you the living room now").resolve().perform()
     rospy.sleep(1)
@@ -100,20 +99,26 @@ with real_robot:
     TalkingMotion("Welcome to the living room").resolve().perform()
     rospy.sleep(1)
 
-    # search for free place to sit and host
-    # TODO: get pose of host that sits in living room
-    # TODO: get pose of free seat
-    # TODO: Failure Handling: scan room if no human detected on couch
-    human_and_seat_pose = DetectAction(technique='location', state='start').resolve().perform()
-    print(human_and_seat_pose)
-    misc.host.set_pose(human_and_seat_pose)
-    # TODO: HSR looks to his right??
-    misc.guest1.set_pose()
+    TalkingMotion("please take a seat next to your host").resolve().perform()
+    rospy.sleep(4)
 
-    # TODO: is it ok to seat guest bevore introducing??
 
     # point to free place
     # giskardpy.point_to_seat
 
+    pose_host = PoseStamped
+    pose_host.pose.position.x = 1
+    pose_host.pose.position.y = 5.9
+    pose_host.pose.position.x = 1
+
+    pose_guest = PoseStamped
+    pose_guest.pose.position.x = 1
+    pose_guest.pose.position.y = 4.7
+    pose_guest.pose.position.x = 1
+
+    misc.host.set_pose(pose_host)
+    misc.guest1.set_pose(pose_guest)
+
     # introduce humans and look at them
+    giskardpy.move_head_to_human()
     misc.introduce()
