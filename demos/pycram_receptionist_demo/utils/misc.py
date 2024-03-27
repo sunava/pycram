@@ -5,8 +5,10 @@ from pycram.helper import axis_angle_to_quaternion
 # Publisher for NLP
 pub_nlp = rospy.Publisher('/startListener', String, queue_size=10)
 pub_pose = rospy.Publisher('/human_pose', PoseStamped, queue_size=10)
-understood = False
-doorbell = False
+understood_name = False
+understood_drink = False
+# TODO: set to False when NLP has implemented that feature
+doorbell = True
 
 
 # Declare variables for humans
@@ -16,12 +18,12 @@ guest2 = HumanDescription("guest2")
 
 # Pose variables
 # Pose in front of the couch, HSR looks in direction of couch
-pose_couch = Pose([3, 5, 0], [0, 0, 1, 0])
+pose_couch = Pose([2.7, 5, 0], [0, 0, 1, 0])
 pose_door = Pose([1.4, 0.25, 0], [0, 0, 1, 0])
 
 # Pose in the passage between kitchen and living room
 robot_orientation = axis_angle_to_quaternion([0, 0, 1], 90)
-pose_kitchen_to_couch = Pose([4.2, 3, 0], robot_orientation)
+pose_kitchen_to_couch = Pose([4.35, 3, 0], robot_orientation)
 
 
 def talk_request(data: list):
@@ -48,22 +50,25 @@ def talk_request_nlp(data: String):
     :param data: String "name, drink"
     """
     print(guest1.name)
+    data_list = data.data.split(",")
+    name, drink = data_list
     if guest1.name == "guest1":
-        data_list = data.data.split(",")
-        name, drink = data_list
         toyas_text = f"Hey {name}, your favorite drink is {drink}"
 
-        TalkingMotion(toyas_text).resolve().perform()
+        # TalkingMotion(toyas_text).resolve().perform()
         rospy.sleep(2)
 
         guest1.set_name(name)
         guest1.set_drink(drink)
-    else:
-        data_list = data.data.split(",")
-        name, drink = data_list
+    elif not understood_name:
         toyas_text = f"is your name {name} ?"
         TalkingMotion(toyas_text).resolve().perform()
         pub_nlp.publish("start")
+    elif understood_name and not understood_drink:
+        toyas_text = f"is your favorite drink {drink} ?"
+        TalkingMotion(toyas_text).resolve().perform()
+        pub_nlp.publish("start")
+
 
 
 def talk_error(data):
@@ -119,12 +124,16 @@ def name_cb(data):
     callback function for a subscriber to NLP script.
     is called when name was correctly understood
     """
-    global understood
-    if data.data:
-        TalkingMotion("perfect, nice to meet you").resolve().perform()
-        understood = True
+    global understood_name
+    global understood_drink
+    if data.data and not understood_name:
+        TalkingMotion("perfect").resolve().perform()
+        understood_name = True
+    elif data.data and not understood_drink:
+        TalkingMotion("alright, thank you and nice to meet you").resolve().perform()
+        understood_drink = True
     else:
-        TalkingMotion("i am sorry, please repeat your name loud and clear").resolve().perform()
+        TalkingMotion("i am sorry, please repeat yourself loud and clear").resolve().perform()
         rospy.sleep(1)
         # TODO: only hear for Name
         pub_nlp.publish("start listening")
