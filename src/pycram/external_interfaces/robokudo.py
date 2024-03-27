@@ -159,7 +159,6 @@ def queryHuman() -> Any:
         rospy.loginfo("Send query to Robokudo to perceive a human")
 
     def done_callback(state, result):
-        print("in done cb")
         rospy.loginfo("Finished perceiving")
         global human_bool
         human_bool = True
