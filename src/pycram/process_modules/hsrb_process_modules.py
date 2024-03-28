@@ -345,7 +345,7 @@ class HSRBDetectingReal(ProcessModule):
 
     def _execute(self, desig: DetectingMotion.Motion) -> Any:
         # todo at the moment perception ignores searching for a specific object type so we do as well on real
-        if desig.technique == 'human':
+        if desig.technique == 'human' and (desig.state == 'start' or desig.state == None):
             human_pose = queryHuman()
             pose = Pose.from_pose_stamped(human_pose)
             pose.position.z = 0

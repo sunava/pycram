@@ -232,4 +232,5 @@ class HumanDescription:
         function for changing pose of human
         :param new_pose: new pose of human
         """
+        print("in set pose")
         self.pose = new_pose

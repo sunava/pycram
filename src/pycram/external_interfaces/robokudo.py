@@ -160,6 +160,8 @@ def queryHuman() -> Any:
 
     def done_callback(state, result):
         rospy.loginfo("Finished perceiving")
+        global human_bool
+        human_bool = True
         global query_result
         query_result = result
 
@@ -174,19 +176,18 @@ def queryHuman() -> Any:
         human_bool = True
         human_pose = pose
 
-    def listener():
-        rospy.Subscriber("/human_pose", PoseStamped, callback)
-
-
-    object_goal = goal_msg = QueryGoal()
 
     client = actionlib.SimpleActionClient('robokudo/query', QueryAction)
     rospy.loginfo("Waiting for action server")
     client.wait_for_server()
+    object_goal = goal_msg = QueryGoal()
+    client.send_goal(object_goal, active_cb=active_callback, done_cb=done_callback, feedback_cb=feedback_callback)
+
+    # if no human is detected
     human_bool = False
     waiting_human = False
-    client.send_goal(object_goal, active_cb=active_callback, done_cb=done_callback, feedback_cb=feedback_callback)
-    listener()
+    rospy.Subscriber("/human_pose", PoseStamped, callback)
+
     while not human_bool:
         rospy.loginfo_throttle(3, "Waiting for human to be detected")
         pub = rospy.Publisher('/talk_request', Voice, queue_size=10)
@@ -196,10 +197,11 @@ def queryHuman() -> Any:
         if waiting_human:
             pub.publish(texttospeech)
         waiting_human = True
-        rospy.sleep(4)
+        rospy.sleep(5)
         pass
 
     return human_pose
+
 
 
 def stop_queryHuman() -> Any:
@@ -212,6 +214,7 @@ def stop_queryHuman() -> Any:
     client = actionlib.SimpleActionClient('robokudo/query', QueryAction)
     client.wait_for_server()
     client.cancel_all_goals()
+    print("get status: " + client.get_goal_status_text())
     rospy.loginfo("cancelled current goal")
 
 

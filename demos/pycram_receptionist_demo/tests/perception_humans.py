@@ -29,7 +29,7 @@ giskardpy.init_giskard_interface()
 
 
 
-def test():
+def p():
     with real_robot:
 
         DetectAction(technique='human', state='start').resolve().perform()
@@ -52,4 +52,4 @@ def test():
 
 
 if __name__ == '__main__':
-    test()
+    p()

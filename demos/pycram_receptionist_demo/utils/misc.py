@@ -1,6 +1,9 @@
+import rospy
+
 from pycram.designators.motion_designator import TalkingMotion
 from pycram.designators.object_designator import *
 from pycram.helper import axis_angle_to_quaternion
+#from ..tests.MS3_testable import *
 
 # Publisher for NLP
 pub_nlp = rospy.Publisher('/startListener', String, queue_size=10)
@@ -95,16 +98,21 @@ def introduce(name_a: Optional[str] = guest1.name, drink_a: Optional[str] = gues
     # TODO: needs to be tested!
     if pose_b:
         pub_pose.publish(pose_b)
+        rospy.sleep(3.5)
     TalkingMotion(f"Hey, {name_b}").resolve().perform()
 
+
     if pose_a:
-        pub_pose.publish(pose_b)
+        pub_pose.publish(pose_a)
+        rospy.sleep(3.5)
     TalkingMotion(f" This is {name_a} and their favorite drink is {drink_a}").resolve().perform()
     rospy.sleep(2)
     TalkingMotion(f"Hey, {name_a}").resolve().perform()
 
+
     if pose_b:
         pub_pose.publish(pose_b)
+        rospy.sleep(3.5)
     TalkingMotion(f" This is {name_b} and their favorite drink is {drink_b}").resolve().perform()
 
     rospy.sleep(3)
