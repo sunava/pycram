@@ -32,6 +32,13 @@ giskardpy.init_giskard_interface()
 def p():
     with real_robot:
 
+        # to signal the start of demo
+        TalkingMotion("Hello, i am ready for the test").resolve().perform()
+
+        # does the code work with the manipulation feature?
+        giskardpy.move_head_to_human()
+
+        # old Detection Query
         DetectAction(technique='human', state='start').resolve().perform()
 
         rospy.loginfo("human detected")
@@ -47,6 +54,18 @@ def p():
         DetectAction(technique='human', state='stop').resolve().perform()
 
         print("------------------------------- stop")
+
+        # new Query to detect attributes of a human
+        TalkingMotion("detecting attributes now").resolve().perform()
+        attributes = DetectAction(technique='attributes').resolve().perform()
+        rospy.loginfo("Attributes: " + str(attributes))
+        rospy.sleep(5)
+
+        # new Query for free seat
+        #TalkingMotion("detecting free seat now").resolve().perform()
+        #seat = DetectAction(technique='location', state='seat1').resolve().perform()
+        #rospy.loginfo("seat bool: " + str(attributes))
+        #rospy.sleep(5)
 
         print("end")
 

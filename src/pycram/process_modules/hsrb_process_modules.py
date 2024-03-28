@@ -366,8 +366,8 @@ class HSRBDetectingReal(ProcessModule):
             seat_human_pose = seat_queryHuman(seat)
             return seat_human_pose
         elif desig.technique == 'attributes':
-            seat_human_pose = attributes_queryHuman()
-            return seat_human_pose
+            human_pose_attr = attributes_queryHuman()
+            return human_pose_attr
 
 
         query_result = queryEmpty(ObjectDesignatorDescription(types=[desig.object_type]))
