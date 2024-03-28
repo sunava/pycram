@@ -38,34 +38,24 @@ def p():
         # does the code work with the manipulation feature?
         giskardpy.move_head_to_human()
 
-        # old Detection Query
-        DetectAction(technique='human', state='start').resolve().perform()
-
-        rospy.loginfo("human detected")
-
-        print("---------- " + "start")
-
-        rospy.loginfo("sleeping now")
-
-        rospy.sleep(5)
-
-        rospy.loginfo("sleep done stopping now")
-
-        DetectAction(technique='human', state='stop').resolve().perform()
-
-        print("------------------------------- stop")
-
         # new Query to detect attributes of a human
-        TalkingMotion("detecting attributes now").resolve().perform()
-        attributes = DetectAction(technique='attributes').resolve().perform()
-        rospy.loginfo("Attributes: " + str(attributes))
-        rospy.sleep(5)
+        # TalkingMotion("detecting attributes now").resolve().perform()
+        # attributes = DetectAction(technique='attributes').resolve().perform()
+        # rospy.loginfo("Attributes: " + str(attributes))
+
+        # rospy.sleep(5)
 
         # new Query for free seat
-        #TalkingMotion("detecting free seat now").resolve().perform()
-        #seat = DetectAction(technique='location', state='seat1').resolve().perform()
-        #rospy.loginfo("seat bool: " + str(attributes))
-        #rospy.sleep(5)
+        TalkingMotion("detecting free seat now").resolve().perform()
+        seat = DetectAction(technique='location', state='seat2').resolve().perform()
+        rospy.loginfo("seat bool: " + str(seat))
+        rospy.sleep(1)
+
+        TalkingMotion("detecting free seat number 2 now").resolve().perform()
+        seat = DetectAction(technique='location', state='seat1').resolve().perform()
+        rospy.loginfo("seat bool: " + str(seat))
+        rospy.sleep(3)
+
 
         print("end")
 

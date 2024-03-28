@@ -243,7 +243,6 @@ def seat_queryHuman(seat: str) -> Any:
     client = actionlib.SimpleActionClient('robokudo/query', QueryAction)
     rospy.loginfo("Waiting for action server")
     client.wait_for_server()
-    rospy.loginfo("Query to Perception: " + str(object_goal))
     client.send_goal(object_goal, active_cb=active_callback, done_cb=done_callback)
     # TODO: necessary?
     client.wait_for_result()
@@ -275,7 +274,6 @@ def attributes_queryHuman() -> Any:
     client = actionlib.SimpleActionClient('robokudo/query', QueryAction)
     rospy.loginfo("Waiting for action server")
     client.wait_for_server()
-    rospy.loginfo("Query to Perception: " + str(object_goal))
     client.send_goal(object_goal, active_cb=active_callback, done_cb=done_callback)
     # TODO: necessary?
     client.wait_for_result()
