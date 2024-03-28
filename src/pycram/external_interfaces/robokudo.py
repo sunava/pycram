@@ -215,9 +215,10 @@ def stop_queryHuman() -> Any:
     rospy.loginfo("cancelled current goal")
 
 
-def seat_queryHuman() -> Any:
+def seat_queryHuman(seat: str) -> Any:
     """
-    Sends a query to RoboKudo to look for a free place to sit and look for a human
+    Sends a query to RoboKudo to check if a place is free to sit
+    :param seat: name of the seat/region, that will be checked
     """
     init_robokudo_interface()
     from robokudo_msgs.msg import QueryAction, QueryGoal, QueryResult
@@ -235,7 +236,7 @@ def seat_queryHuman() -> Any:
 
     # fill Query with information so that perception looks for a seat
     object_goal = QueryGoal()
-    object_goal.obj.location = "seat" # aktivate region filter
+    object_goal.obj.location = seat # aktivate region filter
     object_goal.obj.attribute = ["attributes"] # gender, bright/dark top, x, hat or no hat
 
     client = actionlib.SimpleActionClient('robokudo/query', QueryAction)
