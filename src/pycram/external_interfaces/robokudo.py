@@ -176,7 +176,7 @@ def queryHuman() -> Any:
         human_bool = True
         human_pose = pose
 
-
+    # create client to communicate with perception
     client = actionlib.SimpleActionClient('robokudo/query', QueryAction)
     rospy.loginfo("Waiting for action server")
     client.wait_for_server()
@@ -218,9 +218,10 @@ def stop_queryHuman() -> Any:
     rospy.loginfo("cancelled current goal")
 
 
-def seat_queryHuman() -> Any:
+def seat_queryHuman(seat: str) -> Any:
     """
-    Sends a query to RoboKudo to look for a free place to sit and look for a human
+    Sends a query to RoboKudo to check if a place is free to sit
+    :param seat: name of the seat/region, that will be checked
     """
     init_robokudo_interface()
     from robokudo_msgs.msg import QueryAction, QueryGoal, QueryResult
@@ -235,15 +236,14 @@ def seat_queryHuman() -> Any:
         global query_result
         query_result = result.res
 
-
     # fill Query with information so that perception looks for a seat
     object_goal = QueryGoal()
-    object_goal.obj.location = "seat" # aktivate region filter
-    object_goal.obj.attribute = ["attributes"] # gender, bright/dark top, x, hat or no hat
+    object_goal.obj.location = seat # aktivate region filter
 
     client = actionlib.SimpleActionClient('robokudo/query', QueryAction)
     rospy.loginfo("Waiting for action server")
     client.wait_for_server()
+    rospy.loginfo("Query to Perception: " + str(object_goal))
     client.send_goal(object_goal, active_cb=active_callback, done_cb=done_callback)
     # TODO: necessary?
     client.wait_for_result()
@@ -268,8 +268,6 @@ def attributes_queryHuman() -> Any:
         global query_result
         query_result = result
 
-
-
     object_goal = QueryGoal()
     # Perception will detect gender, clothes, skin color, age
     object_goal.obj.attribute = ["attributes"]
@@ -277,6 +275,7 @@ def attributes_queryHuman() -> Any:
     client = actionlib.SimpleActionClient('robokudo/query', QueryAction)
     rospy.loginfo("Waiting for action server")
     client.wait_for_server()
+    rospy.loginfo("Query to Perception: " + str(object_goal))
     client.send_goal(object_goal, active_cb=active_callback, done_cb=done_callback)
     # TODO: necessary?
     client.wait_for_result()

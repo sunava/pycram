@@ -130,7 +130,6 @@ def demo_tst():
 
         # introduce humans and look at them
         giskardpy.move_head_to_human()
-        print("täsr" + misc.host.fav_drink)
         misc.introduce(pose_b=pose_host, pose_a=pose_guest)
 
 

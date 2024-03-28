@@ -362,11 +362,12 @@ class HSRBDetectingReal(ProcessModule):
             return "stopped"
         elif desig.technique == 'location':
             # TODO: test what and how Perception returns Query msg and make it fit rest of code
-            seat_human_pose = seat_queryHuman()
+            seat = desig.state
+            seat_human_pose = seat_queryHuman(seat)
             return seat_human_pose
         elif desig.technique == 'attributes':
-            seat_human_pose = attributes_queryHuman()
-            return seat_human_pose
+            human_pose_attr = attributes_queryHuman()
+            return human_pose_attr
 
 
         query_result = queryEmpty(ObjectDesignatorDescription(types=[desig.object_type]))
