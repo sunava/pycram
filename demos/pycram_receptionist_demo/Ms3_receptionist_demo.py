@@ -1,6 +1,4 @@
-from pycram.designators.action_designator import DetectAction, NavigateAction, LookAtAction
-from pycram.designators.motion_designator import TalkingMotion
-import demos.pycram_receptionist_demo.utils.misc as misc
+from pycram.designators.action_designator import DetectAction
 from demos.pycram_receptionist_demo.utils.new_misc import *
 from pycram.process_module import real_robot
 import pycram.external_interfaces.giskard as giskardpy
@@ -43,15 +41,16 @@ def data_cb(data):
 
 
 with real_robot:
+    
     # receive data from nlp via topic
     rospy.Subscriber("nlp_out", String, data_cb)
 
-    while not misc.doorbell:
+    while not doorbell:
         # TODO: spin or sleep better?
         # TODO: Failure Handling, when no bell is heard for a longer period of time
         rospy.spin()
 
-    # NavigateAction([misc.pose_door]).resolve().perform()
+    # NavigateAction([pose_door]).resolve().perform()
     # giskardpy.opendoor()
 
     TalkingMotion("Welcome, please come in").resolve().perform()
