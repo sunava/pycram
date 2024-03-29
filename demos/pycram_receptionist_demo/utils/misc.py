@@ -1,9 +1,6 @@
-import rospy
-
 from pycram.designators.motion_designator import TalkingMotion
 from pycram.designators.object_designator import *
 from pycram.helper import axis_angle_to_quaternion
-#from ..tests.MS3_testable import *
 
 # Publisher for NLP
 pub_nlp = rospy.Publisher('/startListener', String, queue_size=10)
@@ -12,12 +9,6 @@ understood_name = False
 understood_drink = False
 # TODO: set to False when NLP has implemented that feature
 doorbell = True
-
-
-# Declare variables for humans
-host = HumanDescription("Yannis", fav_drink="ice tea")
-guest1 = HumanDescription("guest1")
-guest2 = HumanDescription("guest2")
 
 # Pose variables
 # Pose in front of the couch, HSR looks in direction of couch
