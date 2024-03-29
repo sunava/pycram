@@ -23,7 +23,7 @@ robot = Object("hsrb", "robot", "../../resources/" + robot_description.name + ".
 robot_desig = ObjectDesignatorDescription(names=["hsrb"]).resolve()
 robot.set_color([0.5, 0.5, 0.9, 1])
 
-# carefull that u spawn the correct kitchen
+# careful that u spawn the correct kitchen
 kitchen = Object("kitchen", "environment", "kitchen.urdf")
 giskardpy.init_giskard_interface()
 

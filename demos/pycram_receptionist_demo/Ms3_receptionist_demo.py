@@ -1,6 +1,5 @@
-from pycram.designators.action_designator import DetectAction, NavigateAction, LookAtAction
-from pycram.designators.motion_designator import TalkingMotion
-import demos.pycram_receptionist_demo.utils.misc as misc
+from pycram.designators.action_designator import DetectAction
+from demos.pycram_receptionist_demo.utils.new_misc import *
 from pycram.process_module import real_robot
 import pycram.external_interfaces.giskard as giskardpy
 from pycram.ros.robot_state_updater import RobotStateUpdater
@@ -21,29 +20,46 @@ kitchen = Object("kitchen", "environment", "kitchen.urdf")
 giskardpy.init_giskard_interface()
 RobotStateUpdater("/tf", "/giskard_joint_states")
 
+# variables for communcation with nlp
 pub_nlp = rospy.Publisher('/startListener', String, queue_size=10)
+response = ""
+callback = False
+
+# Declare variables for humans
+host = HumanDescription("Yannis", fav_drink="ice tea")
+guest1 = HumanDescription("guest1")
+guest2 = HumanDescription("guest2")
+seat_number = 2
+
+
+def data_cb(data):
+    global response
+    global callback
+
+    response = data.data.split(",")
+    callback = True
+
 
 with real_robot:
+    
+    # receive data from nlp via topic
+    rospy.Subscriber("nlp_out", String, data_cb)
 
-    # wait for doorbell
-    bell_subscriber = rospy.Subscriber("doorbell", Bool, misc.doorbell_cb)
-    while not misc.doorbell:
+    while not doorbell:
         # TODO: spin or sleep better?
         # TODO: Failure Handling, when no bell is heard for a longer period of time
         rospy.spin()
 
-    # subscriber not needed anymore
-    bell_subscriber.unregister()
-
-    # NavigateAction([misc.pose_door]).resolve().perform()
+    # NavigateAction([pose_door]).resolve().perform()
     # giskardpy.opendoor()
 
     TalkingMotion("Welcome, please come in").resolve().perform()
 
     # look for human
-    # TODO: test new technique
-    DetectAction(technique='attributes', state='start').resolve().perform()
+    human_desig = DetectAction(technique='attributes', state='start').resolve().perform()
     rospy.loginfo("human detected")
+    # TODO: check what perception returns exactly
+    attr_list = human_desig.attribute
 
     # look at guest and introduce
     giskardpy.move_head_to_human()
@@ -53,32 +69,44 @@ with real_robot:
     # signal to start listening
     pub_nlp.publish("start listening")
 
-    # receives name and drink via topic
-    rospy.Subscriber("nlp_out", String, misc.talk_request_nlp)
-
-    # failure handling
-    rospy.Subscriber("nlp_feedback", Bool, misc.talk_error)
-
-    while misc.guest1.name == "guest1":
+    while not callback:
         rospy.sleep(1)
+    callback = False
 
-    TalkingMotion("it is so noisy here, please confirm if i got your name right").resolve().perform()
-    rospy.sleep(1)
-    TalkingMotion("is your name " + misc.guest1.name + "?").resolve().perform()
-    pub_nlp.publish("start")
+    if response[0] == "<GUEST>":
+        if response[1] != "<None>":
+            TalkingMotion("it is so noisy here, please confirm if i got your name right").resolve().perform()
+            guest1.set_drink(response[2])
+            rospy.sleep(1)
+            guest1.set_name(name_confirm(response[1]))
 
-    rospy.Subscriber("nlp_confirmation", Bool, misc.name_cb)
+        else:
+            # save heard drink
+            guest1.set_drink(response[2])
 
-    while not misc.understood_name:
-        rospy.sleep(1)
+            # ask for name again once
+            guest1.set_name(name_repeat())
 
-    # TODO: implement HRI for fav drink
-    TalkingMotion("is your favorite drink " + misc.guest1.fav_drink + "?").resolve().perform()
-    pub_nlp.publish("start")
+        # confirm favorite drink
+        guest1.set_drink(drink_confirm(guest1.fav_drink))
 
-    while not misc.understood_drink:
-        rospy.sleep(1)
+    else:
+        # two chances to get name and drink
+        i = 0
+        while i < 2:
+            TalkingMotion("please repeat your name and drink loud and clear").resolve().perform()
+            pub_nlp.publish("start")
 
+            while not callback:
+                rospy.sleep(1)
+            callback = False
+
+            if response[0] == "<GUEST>":
+                guest1.set_name(response[1])
+                guest1.set_drink(response[2])
+                break
+            else:
+                i += 1
 
     # stop looking
     TalkingMotion("i will show you the living room now").resolve().perform()
@@ -95,25 +123,48 @@ with real_robot:
     # lead human to living room
     # TODO: check if rospy.sleep is needed and how long
     rospy.sleep(2)
-    #NavigateAction([misc.pose_kitchen_to_couch]).resolve().perform()
-    #NavigateAction([misc.pose_couch]).resolve().perform()
+    # NavigateAction([misc.pose_kitchen_to_couch]).resolve().perform()
+    # NavigateAction([misc.pose_couch]).resolve().perform()
     TalkingMotion("Welcome to the living room").resolve().perform()
     rospy.sleep(1)
 
     # search for free place to sit and host
-    # TODO: get pose of host that sits in living room
-    # TODO: get pose of free seat
     # TODO: Failure Handling: scan room if no human detected on couch
-    human_and_seat_pose = DetectAction(technique='location', state='start').resolve().perform()
-    print(human_and_seat_pose)
-    misc.host.set_pose(human_and_seat_pose)
-    # TODO: HSR looks to his right??
-    misc.guest1.set_pose()
+    for i in range(seat_number):
+        state = "seat" + str(i)
+        seat_desig = DetectAction(technique='location', state=state).resolve().perform()
+        print(seat_desig)
+        # TODO get pose of occupied seat
+        if not seat_desig.occupied:
+            guest1.set_pose(seat_desig.pose)
+            # point to free place
+            # giskardpy.point_to_seat
+            TalkingMotion("please sit over there").resolve().perform()
+
+        # failure handling if all seats are taken
+        elif i+1 == seat_number:
+            guest1.set_pose(seat_desig.pose)
+            # point to free place
+            # giskardpy.point_to_seat
+            TalkingMotion("please sit over there").resolve().perform()
 
     # TODO: is it ok to seat guest bevore introducing??
 
-    # point to free place
-    # giskardpy.point_to_seat
+    pose_host = PoseStamped()
+    pose_host.header.frame_id = 'map'
+    pose_host.pose.position.x = 1.0
+    pose_host.pose.position.y = 5.9
+    pose_host.pose.position.z = 0.9
+
+    pose_guest = PoseStamped()
+    pose_guest.header.frame_id = 'map'
+    pose_guest.pose.position.x = 1.0
+    pose_guest.pose.position.y = 4.7
+    pose_guest.pose.position.z = 1.0
+
+    host.set_pose(pose_host)
+
+    guest1.set_pose(pose_guest)
 
     # introduce humans and look at them
-    misc.introduce()
+    introduce(host, guest1)
