@@ -1,3 +1,5 @@
+import rospy
+
 from pycram.designators.action_designator import DetectAction, NavigateAction
 from demos.pycram_receptionist_demo.utils.new_misc import *
 from pycram.process_module import real_robot
@@ -31,6 +33,12 @@ guest1 = HumanDescription("guest1")
 guest2 = HumanDescription("guest2")
 seat_number = 2
 
+def data_cb(data):
+    global response
+    global callback
+
+    response = data.data.split(",")
+    callback = True
 
 def demo_tst():
     """
@@ -39,14 +47,15 @@ def demo_tst():
     with real_robot:
         global callback
         global response
+        test_all = False
 
-        DetectAction(technique='human', state='start').resolve().perform()
+        rospy.Subscriber("nlp_out", String, data_cb)
+        # DetectAction(technique='human', state='start').resolve().perform()
         rospy.loginfo("human detected")
 
         giskardpy.move_head_to_human()
         TalkingMotion("Hello, i am Toya and my favorite drink is oil. What about you, talk to me?").resolve().perform()
-        rospy.sleep(1)
-
+        rospy.sleep(0.9)
         # signal to start listening
         pub_nlp.publish("start listening")
 
@@ -89,42 +98,46 @@ def demo_tst():
                 else:
                     i += 1
 
-        # stop looking
-        TalkingMotion("i will show you the living room now").resolve().perform()
+        if test_all:
+            # stop looking
+            TalkingMotion("i will show you the living room now").resolve().perform()
+            rospy.sleep(1)
+            TalkingMotion("please step out of the way and follow me").resolve().perform()
+            giskardpy.stop_looking()
+
+            # stop perceiving human
+            DetectAction(technique='human', state='stop').resolve().perform()
+
+            # lead human to living room
+            NavigateAction([pose_kitchen_to_couch]).resolve().perform()
+            NavigateAction([pose_couch]).resolve().perform()
+            TalkingMotion("Welcome to the living room").resolve().perform()
+            rospy.sleep(1)
+
+            TalkingMotion("please take a seat next to your host").resolve().perform()
+            rospy.sleep(2)
+
+            # hard coded poses for seat1 and seat2
+            pose_host = PoseStamped()
+            pose_host.header.frame_id = "/map"
+            pose_host.pose.position.x = 1
+            pose_host.pose.position.y = 5.9
+            pose_host.pose.position.z = 1
+
+            pose_guest = PoseStamped()
+            pose_guest.header.frame_id = "/map"
+            pose_guest.pose.position.x = 1
+            pose_guest.pose.position.y = 4.7
+            pose_guest.pose.position.z = 1
+
+            host.set_pose(pose_host)
+            guest1.set_pose(pose_guest)
+
+            # introduce humans and look at them
+            giskardpy.move_head_to_human()
+
+        TalkingMotion("Introducing now").resolve().perform()
         rospy.sleep(1)
-        TalkingMotion("please step out of the way and follow me").resolve().perform()
-        giskardpy.stop_looking()
-
-        # stop perceiving human
-        DetectAction(technique='human', state='stop').resolve().perform()
-
-        # lead human to living room
-        NavigateAction([pose_kitchen_to_couch]).resolve().perform()
-        NavigateAction([pose_couch]).resolve().perform()
-        TalkingMotion("Welcome to the living room").resolve().perform()
-        rospy.sleep(1)
-
-        TalkingMotion("please take a seat next to your host").resolve().perform()
-        rospy.sleep(2)
-
-        # hard coded poses for seat1 and seat2
-        pose_host = PoseStamped()
-        pose_host.header.frame_id = "/map"
-        pose_host.pose.position.x = 1
-        pose_host.pose.position.y = 5.9
-        pose_host.pose.position.z = 1
-
-        pose_guest = PoseStamped()
-        pose_guest.header.frame_id = "/map"
-        pose_guest.pose.position.x = 1
-        pose_guest.pose.position.y = 4.7
-        pose_guest.pose.position.z = 1
-
-        host.set_pose(pose_host)
-        guest1.set_pose(pose_guest)
-
-        # introduce humans and look at them
-        giskardpy.move_head_to_human()
         introduce(host, guest1)
 
 
@@ -172,4 +185,6 @@ def demo_tst2():
 
 
 
-demo_tst2()
+demo_tst()
+
+
