@@ -730,3 +730,46 @@ class TalkingMotion(MotionDesignatorDescription):
         :return: A resolved motion designator
         """
         return self.Motion(self.cmd)
+
+
+class PouringMotion(MotionDesignatorDescription):
+    """
+    Designator for pouring
+    """
+
+    @dataclasses.dataclass
+    class Motion(MotionDesignatorDescription.Motion):
+        direction: str
+        """
+        The direction that should be used for pouring. For example, 'left' or 'right'
+        """
+
+        angle: float
+        """
+        the angle to move the gripper to
+        """
+
+        def perform(self):
+            pm_manager = ProcessModuleManager.get_manager()
+            return pm_manager.pour().execute(self)
+
+    def __init__(self, direction: str, angle: float, resolver: Optional[Callable] = None):
+        """
+        Lets the robot pour based on the given parameter.
+
+        :param direction: The direction of the pouring
+        :param angle: The angle to move the gripper to
+        :param resolver: An alternative resolver
+        """
+        super().__init__(resolver)
+        self.cmd: str = 'pour'
+        self.direction: str = direction
+        self.angle: float = angle
+
+    def ground(self) -> Motion:
+        """
+        Default resolver for pouring motion designator, returns a resolved motion designator for the input parameters.
+
+        :return: A resolved motion designator
+        """
+        return self.Motion(self.cmd, self.direction, self.angle)
