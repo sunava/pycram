@@ -298,6 +298,19 @@ def achieve_close_container_goal(tip_link: str, environment_link: str) -> 'MoveR
     return giskard_wrapper.plan_and_execute()
 
 
+def achieve_tilting_goal(direction: str, angle: float):
+    """
+    tilts the gripper to the given angle
+
+    :param direction: The direction that should be used for pouring. For example, 'left' or 'right'.
+    :param angle: The angle that the robot tilts his gripper to
+    :return: MoveResult message for this goal
+    """
+    sync_worlds()
+    giskard_wrapper.tilting(direction, angle)
+    return giskard_wrapper.plan_and_execute()
+
+
 # Managing collisions
 def achieve_gripper_motion_goal(motion: str):
     """
@@ -519,7 +532,6 @@ def place_objects(object, target, grasp):
 
     from_above_objects = ["Bowl", "Metalmug", "Spoon", "Knife", "Fork"]
 
-
     context_from_above = {'action': 'placing', 'from_above': True}
     context_default = {'action': 'placing'}
 
@@ -530,4 +542,3 @@ def place_objects(object, target, grasp):
         giskard_wrapper.placing(context="align_vertical", goal_pose=target)
 
     rospy.loginfo("placed object")
-

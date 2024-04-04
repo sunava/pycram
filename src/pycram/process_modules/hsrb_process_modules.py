@@ -282,8 +282,9 @@ class HSRBNavigationReal(ProcessModule):
 
     def _execute(self, designator: MoveMotion.Motion) -> Any:
         rospy.logdebug(f"Sending goal to giskard to Move the robot")
-        #giskard.achieve_cartesian_goal(designator.target, robot_description.base_link, "map")
+        # giskard.achieve_cartesian_goal(designator.target, robot_description.base_link, "map")
         queryPoseNav(designator.target)
+
 
 class HSRBNavigationSemiReal(ProcessModule):
     """
@@ -293,7 +294,8 @@ class HSRBNavigationSemiReal(ProcessModule):
     def _execute(self, designator: MoveMotion.Motion) -> Any:
         rospy.logdebug(f"Sending goal to giskard to Move the robot")
         giskard.achieve_cartesian_goal(designator.target, robot_description.base_link, "map")
-        #queryPoseNav(designator.target)
+        # queryPoseNav(designator.target)
+
 
 class HSRBPickUpReal(ProcessModule):
 
@@ -303,11 +305,11 @@ class HSRBPickUpReal(ProcessModule):
 
 class HSRBPlaceReal(ProcessModule):
 
-   # def _execute(self, designator: MotionDesignatorDescription.Motion) -> Any:
+    # def _execute(self, designator: MotionDesignatorDescription.Motion) -> Any:
     #    pass
     def _execute(self, designator: PlaceMotion.Motion) -> Any:
-          giskard.avoid_all_collisions()
-          giskard.place_objects(designator.object, designator.target, designator.grasp)
+        giskard.avoid_all_collisions()
+        giskard.place_objects(designator.object, designator.target, designator.grasp)
 
 
 class HSRBMoveHeadReal(ProcessModule):
@@ -369,13 +371,12 @@ class HSRBDetectingReal(ProcessModule):
             human_pose_attr = attributes_queryHuman()
             return human_pose_attr
 
-
         query_result = queryEmpty(ObjectDesignatorDescription(types=[desig.object_type]))
         perceived_objects = []
         for i in range(0, len(query_result.res)):
             # this has to be pose from pose stamped since we spawn the object with given header
             obj_pose = Pose.from_pose_stamped(query_result.res[i].pose[0])
-            #obj_pose.orientation = [0, 0, 0, 1]
+            # obj_pose.orientation = [0, 0, 0, 1]
             # obj_pose_tmp = query_result.res[i].pose[0]
             obj_type = query_result.res[i].type
             obj_size = query_result.res[i].shape_size
@@ -395,7 +396,7 @@ class HSRBDetectingReal(ProcessModule):
             # atm this is the string size that describes the object but it is not the shape size thats why string
             def extract_xyz_values(input_string):
                 # Split the input string by commas and colon to separate key-value pairs
-                #key_value_pairs = input_string.split(', ')
+                # key_value_pairs = input_string.split(', ')
 
                 # Initialize variables to store the X, Y, and Z values
                 x_value = None
@@ -421,9 +422,9 @@ class HSRBDetectingReal(ProcessModule):
                 return x_value, y_value, z_value
 
             x, y, z = extract_xyz_values(obj_size)
-            size = (x, z/2, y)
-            size_box = (x/2, z/2, y/2)
-            hard_size= (0.02, 0.02, 0.03)
+            size = (x, z / 2, y)
+            size_box = (x / 2, z / 2, y / 2)
+            hard_size = (0.02, 0.02, 0.03)
             id = BulletWorld.current_bullet_world.add_rigid_box(obj_pose, hard_size, color)
             box_object = Object(obj_type + "_" + str(rospy.get_time()), obj_type, pose=obj_pose, color=color, id=id,
                                 customGeom={"size": [hard_size[0], hard_size[1], hard_size[2]]})
@@ -546,6 +547,15 @@ class HSRBTalkReal(ProcessModule):
         pub.publish(texttospeech)
 
 
+class HSRBPourReal(ProcessModule):
+    """
+    Tries to achieve the pouring motion
+    """
+
+    def _execute(self, designator: PouringMotion.Motion) -> Any:
+        giskard.achieve_tilting_goal(designator.direction, designator.angle)
+
+
 class HSRBManager(ProcessModuleManager):
 
     def __init__(self):
@@ -563,6 +573,7 @@ class HSRBManager(ProcessModuleManager):
         self._open_lock = Lock()
         self._close_lock = Lock()
         self._talk_lock = Lock()
+        self._pour_lock = Lock()
 
     def navigate(self):
         if ProcessModuleManager.execution_type == "simulated":
@@ -663,3 +674,9 @@ class HSRBManager(ProcessModuleManager):
             return HSRBTalkReal(self._talk_lock)
         elif ProcessModuleManager.execution_type == "semi_real":
             return HSRBTalkReal(self._talk_lock)
+
+    def pour(self):
+        if ProcessModuleManager.execution_type == "real":
+            return HSRBTalkReal(self._pour_lock)
+        elif ProcessModuleManager.execution_type == "semi_real":
+            return HSRBTalkReal(self._pour_lock)
