@@ -756,7 +756,6 @@ class PouringMotion(MotionDesignatorDescription):
     def __init__(self, direction: str, angle: float, resolver: Optional[Callable] = None):
         """
         Lets the robot pour based on the given parameter.
-
         :param direction: The direction of the pouring
         :param angle: The angle to move the gripper to
         :param resolver: An alternative resolver
@@ -769,7 +768,6 @@ class PouringMotion(MotionDesignatorDescription):
     def ground(self) -> Motion:
         """
         Default resolver for pouring motion designator, returns a resolved motion designator for the input parameters.
-
         :return: A resolved motion designator
         """
         return self.Motion(self.cmd, self.direction, self.angle)

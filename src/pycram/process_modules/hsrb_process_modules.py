@@ -555,7 +555,6 @@ class HSRBPourReal(ProcessModule):
     def _execute(self, designator: PouringMotion.Motion) -> Any:
         giskard.achieve_tilting_goal(designator.direction, designator.angle)
 
-
 class HSRBManager(ProcessModuleManager):
 
     def __init__(self):

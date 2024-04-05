@@ -414,7 +414,6 @@ class PickUpAction(ActionDesignatorDescription):
 
             return action
 
-
     def __init__(self,
                  object_designator_description: Union[ObjectDesignatorDescription, ObjectDesignatorDescription.Object],
                  arms: List[str], grasps: List[str], resolver=None):
@@ -497,7 +496,7 @@ class PlaceAction(ActionDesignatorDescription):
             rospy.logwarn("Placing now")
             BulletWorld.current_bullet_world.add_vis_axis(oTmG)
             if execute:
-              MoveTCPMotion(oTmG, self.arm).resolve().perform()
+                MoveTCPMotion(oTmG, self.arm).resolve().perform()
 
             tool_frame = robot_description.get_tool_frame(self.arm)
             push_base = lt.transform_pose(oTmG, robot.get_link_tf_frame(tool_frame))
@@ -1013,7 +1012,7 @@ class OpenAction(ActionDesignatorDescription):
             GraspingAction.Action(self.arm, self.object_designator).perform()
             OpeningMotion(self.object_designator, self.arm).resolve().perform()
 
-            #MoveGripperMotion("open", self.arm, allow_gripper_collision=True).resolve().perform()
+            # MoveGripperMotion("open", self.arm, allow_gripper_collision=True).resolve().perform()
 
         def to_sql(self) -> ORMOpenAction:
             return ORMOpenAction(self.arm)
@@ -1455,7 +1454,6 @@ class PouringAction(ActionDesignatorDescription):
     def __init__(self, target_locations: List[Pose], arms: List[str], directions: List[str], angles: List[float],
                  resolver=None):
         """
-
         :param target_locations: List of possible target locations to be poured into
         :param arms: List of possible arms that could be used
         :param directions: List of possible directions for the pouring direction
@@ -1473,7 +1471,6 @@ class PouringAction(ActionDesignatorDescription):
         """
         Default resolver that returns a performable designator with the first entries from the lists of possible
         parameter.
-
         :return: A performable designator
         """
         return self.Action(self.target_locations[0], self.arms[0], self.directions[0], self.angels[0])
