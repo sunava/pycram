@@ -540,6 +540,14 @@ class HSRBTalkReal(ProcessModule):
         pub.publish(texttospeech)
 
 
+class HSRBPourReal(ProcessModule):
+    """
+    Tries to achieve the pouring motion
+    """
+
+    def _execute(self, designator: PouringMotion.Motion) -> Any:
+        giskard.achieve_tilting_goal(designator.direction, designator.angle)
+
 class HSRBManager(ProcessModuleManager):
 
     def __init__(self):
@@ -557,6 +565,7 @@ class HSRBManager(ProcessModuleManager):
         self._open_lock = Lock()
         self._close_lock = Lock()
         self._talk_lock = Lock()
+        self._pour_lock = Lock()
 
     def navigate(self):
         if ProcessModuleManager.execution_type == "simulated":
@@ -657,3 +666,9 @@ class HSRBManager(ProcessModuleManager):
             return HSRBTalkReal(self._talk_lock)
         elif ProcessModuleManager.execution_type == "semi_real":
             return HSRBTalkReal(self._talk_lock)
+
+    def pour(self):
+        if ProcessModuleManager.execution_type == "real":
+            return HSRBPourReal(self._pour_lock)
+        elif ProcessModuleManager.execution_type == "semi_real":
+            return HSRBPourReal(self._pour_lock)
