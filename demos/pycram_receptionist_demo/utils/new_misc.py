@@ -160,3 +160,29 @@ def introduce(human1: HumanDescription, human2: HumanDescription):
     TalkingMotion(f" This is {human1.name} and their favorite drink is {human1.fav_drink}").resolve().perform()
 
     rospy.sleep(3)
+
+    def describe(human: HumanDescription):
+        """
+        HRI-function for describing a human more detailed.
+        the following will be stated: gender, headgear, clothing, brightness of clothes
+        :param human: human to be described
+        """
+
+        TalkingMotion(f"I will describe {human.name} further now").resolve().perform()
+        rospy.sleep(1)
+
+        # gender
+        TalkingMotion(f"i think your gender is {human.attributes[0]}").resolve().perform()
+        rospy.sleep(1)
+
+        # headgear or not
+        TalkingMotion(f"you are wearing {human.attributes[1]}").resolve().perform()
+        rospy.sleep(1)
+
+        # kind of clothes
+        TalkingMotion(f"you are wearing {human.attributes[2]}").resolve().perform()
+        rospy.sleep(1)
+
+        # brightness of clothes
+        TalkingMotion(f"your clothes are {human.attributes[3]}").resolve().perform()
+        rospy.sleep(1)
