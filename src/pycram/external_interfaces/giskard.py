@@ -306,7 +306,8 @@ def achieve_tilting_goal(direction: str, angle: float):
     :param angle: The angle that the robot tilts his gripper to
     :return: MoveResult message for this goal
     """
-    sync_worlds()
+    rospy.loginfo("pouring")
+    #sync_worlds()
     giskard_wrapper.tilting(direction, angle)
     return giskard_wrapper.plan_and_execute()
 

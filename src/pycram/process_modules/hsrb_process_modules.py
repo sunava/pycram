@@ -677,6 +677,6 @@ class HSRBManager(ProcessModuleManager):
 
     def pour(self):
         if ProcessModuleManager.execution_type == "real":
-            return HSRBTalkReal(self._pour_lock)
+            return HSRBPourReal(self._pour_lock)
         elif ProcessModuleManager.execution_type == "semi_real":
-            return HSRBTalkReal(self._pour_lock)
+            return HSRBPourReal(self._pour_lock)
