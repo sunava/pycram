@@ -1,60 +1,83 @@
 import rospy
+from std_msgs.msg import String
+from demos.pycram_receptionist_demo.utils.new_misc import *
+response = ""
+callback = False
 
-from pycram.designators.action_designator import DetectAction, NavigateAction
-from pycram.designators.motion_designator import TalkingMotion
-from pycram.fluent import Fluent
-from demos.pycram_receptionist_demo.utils.misc import *
-from pycram.helper import axis_angle_to_quaternion
-from pycram.process_module import real_robot
-import pycram.external_interfaces.giskard as giskardpy
-from pycram.external_interfaces.knowrob import get_guest_info
-from pycram.ros.robot_state_updater import RobotStateUpdater
-from pycram.ros.viz_marker_publisher import VizMarkerPublisher
-from pycram.designators.location_designator import *
-from pycram.designators.object_designator import *
-from pycram.bullet_world import BulletWorld, Object
-from std_msgs.msg import String, Bool
-from demos.pycram_receptionist_demo.deprecated import talk_actions
-import pycram.external_interfaces.navigate as moveBase
-
-world = BulletWorld("DIRECT")
-# /pycram/viz_marker topic bei Marker Array
-v = VizMarkerPublisher()
-
-robot = Object("hsrb", "robot", "../../resources/" + robot_description.name + ".urdf")
-robot_desig = ObjectDesignatorDescription(names=["hsrb"]).resolve()
-robot.set_color([0.5, 0.5, 0.9, 1])
-
-# carefull that u spawn the correct kitchen
-kitchen = Object("kitchen", "environment", "kitchen.urdf")
-giskardpy.init_giskard_interface()
-RobotStateUpdater("/tf", "/giskard_joint_states")
+# Declare variables for humans
+host = HumanDescription("Bob Ross", fav_drink="art")
+guest1 = HumanDescription("guest1")
+guest2 = HumanDescription("guest2")
+seat_number = 2
 
 pub_nlp = rospy.Publisher('/startListener', String, queue_size=10)
 
 
-def test():
-    with real_robot:
-        print("start demo")
-        #TalkingMotion("Hello we will test NLP now").resolve().perform()
-        #rospy.sleep(1)
+def data_cb(data):
+    global response
+    global callback
 
-        TalkingMotion("Hello, i am Toya and my favorite drink is oil. What about you, talk to me?").resolve().perform()
-        rospy.sleep(6)
-        pub_nlp.publish("start listening")
-
-        # failure handling
-        rospy.loginfo("before Subscriber")
-
-        # failure handling
-        rospy.Subscriber("nlp_feedback", Bool, talk_error)
-
-        # receives name and drink via topic
-        rospy.Subscriber("nlp_out", String, talk_request_nlp)
-
-        while True:
-            print("Hello")
+    response = data.data.split(",")
+    callback = True
 
 
-if __name__ == '__main__':
-    test()
+def misc_fct():
+    global response
+    global callback
+
+    rospy.Subscriber("/nlp_out", String, data_cb)
+
+    print("Hello, i am Toya and my favorite drink is oil. What about you, talk to me?")
+    rospy.sleep(1)
+
+    # signal to start listening
+    pub_nlp.publish("start listening")
+
+    while not callback:
+        rospy.sleep(1)
+        print("wait")
+    callback = False
+
+    if response[0] == "<GUEST>":
+        if response[1].strip() != "None":
+            print("it is so noisy here, please confirm if i got your name right")
+            guest1.set_drink(response[2])
+            rospy.sleep(2)
+            guest1.set_name(name_confirm(response[1]))
+
+        else:
+            # save heard drink
+            guest1.set_drink(response[2])
+
+            # ask for name again once
+            guest1.set_name(name_repeat())
+
+        # confirm favorite drink
+        guest1.set_drink(drink_confirm(guest1.fav_drink))
+
+    else:
+        # two chances to get name and drink
+        i = 0
+        while i < 2:
+            print("please repeat your name and drink loud and clear")
+            pub_nlp.publish("start")
+
+            while not callback:
+                rospy.sleep(1)
+            callback = False
+
+            if response[0] == "<GUEST>":
+                guest1.set_name(response[1])
+                guest1.set_drink(response[2])
+                break
+            else:
+                i += 1
+
+    # stop looking
+    print("i will show you the living room now")
+    print("hello " + str(guest1.name) + " your favorite drink is " + str(guest1.fav_drink))
+
+    print("end")
+
+
+misc_fct()

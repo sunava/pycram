@@ -1381,6 +1381,104 @@ class CuttingAction(ActionDesignatorDescription):
         return next(iter(self))
 
 
+class PouringAction(ActionDesignatorDescription):
+    """
+    Designator to let the robot perform a pouring action.
+    """
+
+    @dataclasses.dataclass
+    class Action(ActionDesignatorDescription.Action):
+        """
+        Action class for the Pouring action.
+        """
+
+        target_location: Pose
+        """
+        The Pose the robot should pour into.
+        """
+
+        arm: str
+        """
+        The arm that should be used for cutting.
+        """
+
+        direction: str
+        """
+        The direction that should be used for pouring. For example, 'left' or 'right'.
+        """
+
+        angle: float
+        """
+        the angle to move the gripper to.
+        """
+
+        @with_tree
+        def perform(self) -> None:
+            lt = LocalTransformer()
+            robot = BulletWorld.robot
+            # oTm = Object Pose in Frame map
+            oTm = self.target_location
+
+            # TODO add for other robots
+            if robot.name == "hsrb":
+                grasp_rotation = robot_description.grasps.get_orientation_for_grasp("front")
+                oTb = lt.transform_pose(oTm, robot.get_link_tf_frame("base_link"))
+                oTb.orientation = grasp_rotation
+                oTmG = lt.transform_pose(oTb, "map")
+
+                rospy.logwarn("Pouring now")
+                MoveTCPMotion(oTmG, self.arm).resolve().perform()
+
+                MoveTorsoAction([0.5]).resolve().perform()
+
+                kwargs = dict()
+
+                # taking in the predefined arm position for pouring
+                if self.arm in ["left", "both"]:
+                    kwargs["left_arm_config"] = "pour"
+                    MoveArmJointsMotion(**kwargs).resolve().perform()
+
+            PouringMotion(self.direction, self.angle).resolve().perform()
+
+            rospy.sleep(3)
+
+            if self.direction == "right":
+                PouringMotion("left", 0).resolve().perform()
+            else:
+                PouringMotion("right", 0).resolve().perform()
+
+            # Move away from the table
+            NavigateAction(
+                [Pose([robot.get_pose().pose.position.x - 0.1, robot.get_pose().pose.position.y,
+                       0])]).resolve().perform()
+
+    def __init__(self, target_locations: List[Pose], arms: List[str], directions: List[str], angles: List[float],
+                 resolver=None):
+        """
+
+        :param target_locations: List of possible target locations to be poured into
+        :param arms: List of possible arms that could be used
+        :param directions: List of possible directions for the pouring direction
+        :param angles: List of possible angles that the gripper tilts to
+        :param resolver: An optional resolver that returns a performable designator with elements from the lists of
+                         possible paramter
+        """
+        super().__init__(resolver)
+        self.target_locations: List[Pose] = target_locations
+        self.arms: List[str] = arms
+        self.directions: List[str] = directions
+        self.angels: List[float] = angles
+
+    def ground(self) -> Action:
+        """
+        Default resolver that returns a performable designator with the first entries from the lists of possible
+        parameter.
+
+        :return: A performable designator
+        """
+        return self.Action(self.target_locations[0], self.arms[0], self.directions[0], self.angels[0])
+
+
 class MixingAction(ActionDesignatorDescription):
     """
     Designator to let the robot perform a mixing action.

@@ -1,14 +1,15 @@
 <launch>
 
   <!-- starts rviz/bringup launch -->
-  <include file="/home/jule/common_ws/src/suturo_resources/suturo_bringup/launch/suturo_bringup.launch"/>
-  
-  
-  <node name="nlp" pkg="pycram" type="receptionist_starter.sh" />
-  
+  <include file="/home/suturo/suturo23_24/common_ws/src/suturo_resources/suturo_bringup/launch/suturo_bringup.launch"/>
 
-	
- 
+  <include file="/home/suturo/suturo23_24/common_ws/src/iai_hsr/hsr_velocity_controller/launch/switch_to_velocity_controllers.launch"/>
+
+  <node pkg="tf" type="static_transform_publisher" name="couch_boardcaster" args="0.81 5.25 0.3 0 0 0 1 /map /couch 100" />
+
+  <node name="run_receptionist_node" pkg="pycram" type="receptionist_starter_script" output="screen"/>
+
+
 
 </launch>
 

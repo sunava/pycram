@@ -9,7 +9,7 @@ from demos.pycram_hsrb_real_test_demos.utils.misc import *
 CUTLERY = ["Spoon", "Fork", "Knife", "Plasticknife"]
 
 # Wished objects for the Demo
-wished_sorted_obj_list = ["Metalplate", "Bowl", "Metalmug", "Fork", "Cerealbox"]
+wished_sorted_obj_list = ["Spoon", "Metalbowl"]
 
 
 # length of wished list for failure handling
@@ -42,6 +42,8 @@ apartment = Object("kitchen", ObjectType.ENVIRONMENT, "couch-kitchenmarch1.urdf"
 # Define orientation for objects
 object_orientation = axis_angle_to_quaternion([0, 0, 1], 180)
 
+giskardpy.sync_worlds()
+
 
 class PlacingZPose(Enum):
     """
@@ -52,7 +54,7 @@ class PlacingZPose(Enum):
     FORK = 0.8
     PLASTICKNIFE = 0.8
     KNIFE = 0.8
-    BOWL = 0.84
+    Metalbowl = 0.84
     MILKPACK = 0.88
     METALMUG = 0.8
     CEREALBOX = 0.9
@@ -75,7 +77,7 @@ def pickup_and_place_objects(sorted_obj: list):
         if sorted_obj[value].type in CUTLERY:
             sorted_obj[value].type = "Cutlery"
 
-        if sorted_obj[value].type in ["Bowl", "Cutlery"]:
+        if sorted_obj[value].type in ["Metalbowl", "Cutlery"]:
             grasp = "top"
 
         if sorted_obj[value].type == "Metalplate":
@@ -94,32 +96,33 @@ def pickup_and_place_objects(sorted_obj: list):
         # placing the object
         ParkArmsAction([Arms.LEFT]).resolve().perform()
         TalkingMotion("Navigating").resolve().perform()
-        navigate_to(1.8, 1.8, "long table")
-        navigate_to(4.1, y_pos, "long table")
-        TalkingMotion("Placing").resolve().perform()
-
-        z = get_z(sorted_obj[value].type)
-        if sorted_obj[value].type == "Metalplate":
-            # with special defined placing movement for the plate
-            PlaceGivenObjAction([sorted_obj[value].type], ["left"],
-                                [Pose([4.86, y_pos, z])],["front"]).resolve().perform()
-        else:
-            PlaceAction(sorted_obj[value], ["left"], [grasp],
-                        [Pose([4.87, y_pos, z])]).resolve().perform()
-
-        ParkArmsAction([Arms.LEFT]).resolve().perform()
-        TalkingMotion("Navigating").resolve().perform()
-        navigate_to(3.9, 2, "popcorn table")
-
-        # adjust y_pos for the next placing round
-        if sorted_obj[value].type == "Metalplate":
-            y_pos += 0.3
-        else:
-            y_pos += 0.16
-
-        # navigates back if a next object exists
+        MoveGripperMotion("open","left").resolve().perform()
+        # navigate_to(1.8, 1.8, "long table")
+        # navigate_to(4.1, y_pos, "long table")
+        # TalkingMotion("Placing").resolve().perform()
+        #
+        # z = get_z(sorted_obj[value].type)
+        # if sorted_obj[value].type == "Metalplate":
+        #     # with special defined placing movement for the plate
+        #     PlaceGivenObjAction([sorted_obj[value].type], ["left"],
+        #                         [Pose([4.86, y_pos, z])],["front"]).resolve().perform()
+        # else:
+        #     PlaceAction(sorted_obj[value], ["left"], [grasp],
+        #                 [Pose([4.87, y_pos, z])]).resolve().perform()
+        #
+        # ParkArmsAction([Arms.LEFT]).resolve().perform()
+        # TalkingMotion("Navigating").resolve().perform()
+        # navigate_to(3.9, 2, "popcorn table")
+        #
+        # # adjust y_pos for the next placing round
+        # if sorted_obj[value].type == "Metalplate":
+        #     y_pos += 0.3
+        # else:
+        #     y_pos += 0.16
+        #
+        # # navigates back if a next object exists
         if value + 1 < len(sorted_obj):
-            navigate_to(1.6, sorted_obj[value + 1].pose.position.y, "popcorn table")
+             navigate_to(1.6, sorted_obj[value + 1].pose.position.y, "popcorn table")
 
 
 def get_z(obj_type: str):
@@ -161,6 +164,7 @@ def navigate_and_detect():
     TalkingMotion("Perceiving").resolve().perform()
     try:
         object_desig = DetectAction(technique='all').resolve().perform()
+        giskardpy.sync_worlds()
     except PerceptionObjectNotFound:
         object_desig = {}
     return object_desig
@@ -223,7 +227,7 @@ with ((real_robot)):
 
             for val in range(len(wished_sorted_obj_list)):
                 grasp = "front"
-                if wished_sorted_obj_list[val] in (["Bowl"] + CUTLERY):
+                if wished_sorted_obj_list[val] in (["Metalbowl"] + CUTLERY):
                     grasp = "top"
 
                 print(f"next object is: {wished_sorted_obj_list[val]}")

@@ -23,33 +23,42 @@ robot = Object("hsrb", "robot", "../../resources/" + robot_description.name + ".
 robot_desig = ObjectDesignatorDescription(names=["hsrb"]).resolve()
 robot.set_color([0.5, 0.5, 0.9, 1])
 
-# carefull that u spawn the correct kitchen
+# careful that u spawn the correct kitchen
 kitchen = Object("kitchen", "environment", "kitchen.urdf")
 giskardpy.init_giskard_interface()
 
 
 
-def test():
+def p():
     with real_robot:
 
-        DetectAction(technique='human', state='start').resolve().perform()
+        # to signal the start of demo
+        TalkingMotion("Hello, i am ready for the test").resolve().perform()
 
-        rospy.loginfo("human detected")
+        # does the code work with the manipulation feature?
+        giskardpy.move_head_to_human()
 
-        print("---------- " + "start")
+        # new Query to detect attributes of a human
+        # TalkingMotion("detecting attributes now").resolve().perform()
+        # attributes = DetectAction(technique='attributes').resolve().perform()
+        # rospy.loginfo("Attributes: " + str(attributes))
 
-        rospy.loginfo("sleeping now")
+        # rospy.sleep(5)
 
-        rospy.sleep(5)
+        # new Query for free seat
+        TalkingMotion("detecting free seat now").resolve().perform()
+        seat = DetectAction(technique='location', state='seat2').resolve().perform()
+        rospy.loginfo("seat bool: " + str(seat))
+        rospy.sleep(1)
 
-        rospy.loginfo("sleep done stopping now")
+        TalkingMotion("detecting free seat number 2 now").resolve().perform()
+        seat = DetectAction(technique='location', state='seat1').resolve().perform()
+        rospy.loginfo("seat bool: " + str(seat))
+        rospy.sleep(3)
 
-        DetectAction(technique='human', state='stop').resolve().perform()
-
-        print("------------------------------- stop")
 
         print("end")
 
 
 if __name__ == '__main__':
-    test()
+    p()
