@@ -187,17 +187,22 @@ class HumanDescription:
     """
     Class that represents humans. this class does not spawn a human in a simulation.
     """
-    def __init__(self, name: String, fav_drink:  Optional = None):
+    def __init__(self, name: String, fav_drink:  Optional = None,
+                 pose: Optional = None, attributes: Optional = None):
         """
         :param name: name of human
         :param fav_drink: favorite drink of human
+        :param pose: last known pose of human
         """
 
         # TODO: coordinate with Perception on what is easy to implement
         # characteristics to consider: height, hair color, and age.
         # self.human_pose = Fluent()
         self.name = name
-        self.fav_drink = fav_drink  # self.shirt_color = shirt_color  # self.gender = gender
+        self.fav_drink = fav_drink
+        self.pose = pose
+        self.attributes = attributes
+
 
         # self.human_pose_sub = rospy.Subscriber("/human_pose", PoseStamped, self.human_pose_cb)
 
@@ -225,3 +230,18 @@ class HumanDescription:
         :param new_drink: name of drink
         """
         self.fav_drink = new_drink
+
+    def set_pose(self, new_pose):
+        """
+        function for changing pose of human
+        :param new_pose: new pose of human
+        """
+        print("in set pose")
+        self.pose = new_pose
+
+    def set_attributes(self, attribute_list):
+        """
+        function for setting attributes
+        :param attribute_list: list with attributes: gender, headgear, kind of clothes, bright/dark clothes
+        """
+        self.attributes = attribute_list
