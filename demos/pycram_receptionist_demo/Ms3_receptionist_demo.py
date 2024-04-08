@@ -1,4 +1,4 @@
-from pycram.designators.action_designator import DetectAction
+from pycram.designators.action_designator import DetectAction, NavigateAction
 from demos.pycram_receptionist_demo.utils.new_misc import *
 from pycram.process_module import real_robot
 import pycram.external_interfaces.giskard as giskardpy
@@ -37,6 +37,7 @@ def data_cb(data):
     global callback
 
     response = data.data.split(",")
+    response.append("None")
     callback = True
 
 
@@ -58,8 +59,11 @@ with real_robot:
     # look for human
     human_desig = DetectAction(technique='attributes', state='start').resolve().perform()
     rospy.loginfo("human detected")
+
     # TODO: check what perception returns exactly
     attr_list = human_desig.attribute
+    print(attr_list)
+    guest1.set_attributes(human_desig.attribute)
 
     # look at guest and introduce
     giskardpy.move_head_to_human()
@@ -74,6 +78,7 @@ with real_robot:
     callback = False
 
     if response[0] == "<GUEST>":
+        # success a name and intent was understood
         if response[1] != "<None>":
             TalkingMotion("it is so noisy here, please confirm if i got your name right").resolve().perform()
             guest1.set_drink(response[2])
@@ -123,8 +128,8 @@ with real_robot:
     # lead human to living room
     # TODO: check if rospy.sleep is needed and how long
     rospy.sleep(2)
-    # NavigateAction([misc.pose_kitchen_to_couch]).resolve().perform()
-    # NavigateAction([misc.pose_couch]).resolve().perform()
+    NavigateAction([pose_kitchen_to_couch]).resolve().perform()
+    NavigateAction([pose_couch]).resolve().perform()
     TalkingMotion("Welcome to the living room").resolve().perform()
     rospy.sleep(1)
 
@@ -168,3 +173,4 @@ with real_robot:
 
     # introduce humans and look at them
     introduce(host, guest1)
+

@@ -38,6 +38,7 @@ def data_cb(data):
     global callback
 
     response = data.data.split(",")
+    response.append("None")
     callback = True
 
 def demo_tst():
@@ -47,15 +48,16 @@ def demo_tst():
     with real_robot:
         global callback
         global response
-        test_all = False
+        test_all = True
 
         rospy.Subscriber("nlp_out", String, data_cb)
-        # DetectAction(technique='human', state='start').resolve().perform()
+        DetectAction(technique='human', state='start').resolve().perform()
         rospy.loginfo("human detected")
 
         giskardpy.move_head_to_human()
         TalkingMotion("Hello, i am Toya and my favorite drink is oil. What about you, talk to me?").resolve().perform()
         rospy.sleep(0.9)
+
         # signal to start listening
         pub_nlp.publish("start listening")
 
@@ -136,7 +138,6 @@ def demo_tst():
             # introduce humans and look at them
             giskardpy.move_head_to_human()
 
-        TalkingMotion("Introducing now").resolve().perform()
         rospy.sleep(1)
         introduce(host, guest1)
 
