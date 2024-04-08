@@ -31,30 +31,49 @@ giskardpy.init_giskard_interface()
 
 def p():
     with real_robot:
+        seat = True
+        attributes = False
 
-        # to signal the start of demo
-        TalkingMotion("Hello, i am ready for the test").resolve().perform()
+        if attributes:
+            # to signal the start of demo
+            # TalkingMotion("Hello, i am ready for the test").resolve().perform()
 
-        # does the code work with the manipulation feature?
-        giskardpy.move_head_to_human()
+            # does the code work with the manipulation feature?
+            giskardpy.move_head_to_human()
 
-        # new Query to detect attributes of a human
-        # TalkingMotion("detecting attributes now").resolve().perform()
-        # attributes = DetectAction(technique='attributes').resolve().perform()
-        # rospy.loginfo("Attributes: " + str(attributes))
+            # new Query to detect attributes of a human
+            TalkingMotion("detecting attributes now").resolve().perform()
+            desig = DetectAction(technique='attributes').resolve().perform()
+            rospy.loginfo("Attributes: " + str(desig))
+            print("#####################")
+            print(desig[1].res[0].attribute)
+            gender = desig[1].res[0].attribute[0][13:19]
+            clothes = desig[1].res[0].attribute[2][20:]
+            brightness_clothes = desig[1].res[0].attribute[1]
+            hat = desig[1].res[0].attribute[3][20:]
 
-        # rospy.sleep(5)
+            print("#####################")
+            print(gender)
+            print("#####################")
+            print(clothes)
+            print("#####################")
+            print(brightness_clothes)
+            print("#####################")
+            print(hat)
 
-        # new Query for free seat
-        TalkingMotion("detecting free seat now").resolve().perform()
-        seat = DetectAction(technique='location', state='seat2').resolve().perform()
-        rospy.loginfo("seat bool: " + str(seat))
-        rospy.sleep(1)
+            # rospy.sleep(5)
 
-        TalkingMotion("detecting free seat number 2 now").resolve().perform()
-        seat = DetectAction(technique='location', state='seat1').resolve().perform()
-        rospy.loginfo("seat bool: " + str(seat))
-        rospy.sleep(3)
+        if seat:
+            # new Query for free seat
+            TalkingMotion("detecting free seat now").resolve().perform()
+            seat = DetectAction(technique='location', state='seat2').resolve().perform()
+            rospy.loginfo("seat bool: " + str(seat))
+            rospy.sleep(1)
+
+            TalkingMotion("detecting free seat number 2 now").resolve().perform()
+            seat = DetectAction(technique='location', state='seat1').resolve().perform()
+            rospy.loginfo("seat bool: " + str(seat))
+            rospy.sleep(3)
 
 
         print("end")
