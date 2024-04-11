@@ -1416,7 +1416,12 @@ class PouringAction(ActionDesignatorDescription):
             lt = LocalTransformer()
             robot = BulletWorld.robot
             # oTm = Object Pose in Frame map
-            oTm = self.target_location
+            if self.direction == "right":
+                oTm = Pose([self.target_location.pose.position.x - 0.3, self.target_location.pose.position.y + 0.1,
+                           self.target_location.pose.position.z + 0.1], self.target_location.pose.orientation)
+            else:
+                oTm = Pose([self.target_location.pose.position.x - 0.3, self.target_location.pose.position.y - 0.1,
+                            self.target_location.pose.position.z + 0.12], self.target_location.pose.orientation)
 
             # TODO add for other robots
             if robot.name == "hsrb":
@@ -1426,30 +1431,34 @@ class PouringAction(ActionDesignatorDescription):
                 oTmG = lt.transform_pose(oTb, "map")
 
                 rospy.logwarn("Pouring now")
-                MoveTCPMotion(oTmG, self.arm).resolve().perform()
+                MoveTCPMotion(oTmG, self.arm, allow_gripper_collision=False).resolve().perform()
 
-                MoveTorsoAction([0.5]).resolve().perform()
+                MoveTorsoAction([0.35]).resolve().perform()
 
-                kwargs = dict()
+                NavigateAction(
+                        [Pose([robot.get_pose().pose.position.x + 0.23, robot.get_pose().pose.position.y,
+                               0], robot.get_pose().pose.orientation)]).resolve().perform()
 
-                # taking in the predefined arm position for pouring
-                if self.arm in ["left", "both"]:
-                    kwargs["left_arm_config"] = "pour"
-                    MoveArmJointsMotion(**kwargs).resolve().perform()
+                # kwargs = dict()
+                #
+                # # taking in the predefined arm position for pouring
+                # if self.arm in ["left", "both"]:
+                #     kwargs["left_arm_config"] = "pour"
+                #     MoveArmJointsMotion(**kwargs).resolve().perform()
 
-            PouringMotion(self.direction, self.angle).resolve().perform()
+                PouringMotion(self.direction, self.angle).resolve().perform()
 
-            rospy.sleep(3)
+                rospy.sleep(2)
 
-            if self.direction == "right":
-                PouringMotion("left", 0).resolve().perform()
-            else:
-                PouringMotion("right", 0).resolve().perform()
+                if self.direction == "right":
+                    PouringMotion("left", 0).resolve().perform()
+                else:
+                    PouringMotion("right", 0).resolve().perform()
 
-            # Move away from the table
-            NavigateAction(
-                [Pose([robot.get_pose().pose.position.x - 0.1, robot.get_pose().pose.position.y,
-                       0])]).resolve().perform()
+                # Move away from the table
+                NavigateAction(
+                    [Pose([robot.get_pose().pose.position.x - 0.1, robot.get_pose().pose.position.y,
+                           0])]).resolve().perform()
 
     def __init__(self, target_locations: List[Pose], arms: List[str], directions: List[str], angles: List[float],
                  resolver=None):

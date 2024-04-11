@@ -3,6 +3,7 @@ from pycram.process_module import real_robot, semi_real_robot
 from pycram.ros.robot_state_updater import RobotStateUpdater
 from pycram.ros.viz_marker_publisher import VizMarkerPublisher
 from demos.pycram_hsrb_real_test_demos.utils.misc import *
+from demos.pycram_hsrb_real_test_demos.utils.misc import sort_objects
 # from pycram.external_interfaces.knowrob import get_table_pose
 import pycram.helper as helper
 import rospkg
@@ -49,4 +50,14 @@ object_orientation = axis_angle_to_quaternion([0, 0, 1], 180)
 with ((real_robot)):
     rospy.loginfo("Starting demo")
     # ParkArmsAction([Arms.LEFT]).resolve().perform()
-    PouringMotion("right", 0).resolve().perform()
+    NavigateAction(target_locations=[Pose([4.1, 2, 0], [0, 0, 0, 1])]).resolve().perform()
+    #MoveTorsoAction([0.2]).resolve().perform()
+    LookAtAction(targets=[Pose([5.05, 1.9, 0.21], [0, 0, 0, 1])]).resolve().perform()
+    object_desig = DetectAction(technique='all').resolve().perform()
+    sort_objects = sort_objects(robot, object_desig, wished_sorted_obj_list=["Metalbowl"])
+    for value in range(len(sort_objects)):
+        PouringAction([sort_objects[value]], ["left"], ["right"], [-1.6]).resolve().perform()
+
+    #PouringAction([Pose([4, 2, 0.75], [0, 0, 0, 1])],["left"],["right"], [-1.6]).resolve().perform()
+    #PouringMotion("right", 0).resolve().perform()
+    #MoveTCPMotion(Pose([4, 2, 0.85], [0, 0, 0, 1]), "left").resolve().perform()
