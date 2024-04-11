@@ -637,12 +637,11 @@ class PlaceGivenObjAction(ActionDesignatorDescription):
                 MoveTCPMotion(oTmG, self.arm).resolve().perform()
 
                 MoveTorsoAction([0.62]).resolve().perform()
-
                 kwargs = dict()
 
-                # taking in the predefined arm position for placing
+                # taking in the predefined arm configuration for placing
                 if self.arm in ["left", "both"]:
-                    kwargs["left_arm_config"] = "place_human_given_obj"
+                    kwargs["left_arm_config"] = "place_plate"
                     MoveArmJointsMotion(**kwargs).resolve().perform()
 
                 # turning the gripper downwards to better drop the plate

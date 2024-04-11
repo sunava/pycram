@@ -447,9 +447,9 @@ class MoveArmJointsMotion(MotionDesignatorDescription):
                  left_arm_poses: Optional[dict] = None, right_arm_poses: Optional[dict] = None,
                  resolver: Optional[Callable] = None):
         """
-        Moves the arm joints, target positions can be either be pre-defined configurations (like 'park') or a dictionary
-        with joint names as keys and joint positions as values. If a configuration and a dictionary are given the
-        dictionary will be preferred.
+        Moves the arm joints, target positions can either be pre-defined configurations (like 'park') or a
+        dictionary with joint names as keys and joint positions as values. If a configuration and a
+        dictionary are given the dictionary will be preferred.
 
         :param left_arm_config: Target configuration for the left arm
         :param right_arm_config: Target configuration for the right arm
@@ -478,9 +478,9 @@ class MoveArmJointsMotion(MotionDesignatorDescription):
             left_poses = self.left_arm_poses
         elif self.left_arm_config == "park":
             left_poses = robot_description.get_static_joint_chain("left", self.left_arm_config)
-        # predefined arm motion for placing human given object
-        elif self.left_arm_config == "place_human_given_obj":
-            left_poses = robot_description.get_static_joint_chain("given_obj", self.left_arm_config)
+        # predefined arm motion for placing human given plate
+        elif self.left_arm_config == "place_plate":
+            left_poses = robot_description.get_static_joint_chain("placing_pos", self.left_arm_config)
         if self.right_arm_poses:
             right_poses = self.right_arm_poses
         elif self.right_arm_config:
