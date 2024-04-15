@@ -283,11 +283,15 @@ class Monitor(Language):
         def check_condition():
             while not self.kill_event.is_set():
                 try:
-                    if self.condition.get_value():
+                    cond = self.condition.get_value()
+                    if cond:
                         for child in self.children:
                             if hasattr(child, 'interrupt'):
                                 child.interrupt()
-                        self.exception_queue.put(PlanFailure("Condition met in Monitor"))
+                        if isinstance(cond, type) and issubclass(cond, Exception):
+                            self.exception_queue.put(cond)
+                        else:
+                            self.exception_queue.put(PlanFailure("Condition met in Monitor"))
                         return
                 except Exception as e:
                     self.exception_queue.put(e)

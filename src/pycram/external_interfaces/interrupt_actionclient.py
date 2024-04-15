@@ -12,11 +12,13 @@ class InterruptClient:
     def __init__(self):
         
         self.minor_interrupt = Fluent()
+        self.major_interrupt = Fluent()
 
         self.nlp_frequency = 10.0
         self.nlp_timestamp = 0.0
         self.command_queue = Fluent(value=[])
-        self.objects_in_use = []
+        self.objects_in_use = {}
+        self.age = 0
 
         # Initialize subscribers
         self.nlp_major_sub = rospy.Subscriber("/robot_major_interruption", message_to_robot, self.nlp_major_sub_cb)
@@ -40,13 +42,19 @@ class InterruptClient:
                     "command": interruption_msg.command,
                     "age": interruption_msg.age,
                     "confidence": interruption_msg.confidence,
-                    "add_object": interruption_msg.add_object,
-                    "del_object": interruption_msg.del_object
+                    #"add_object": interruption_msg.add_object,
+                    #"del_object": interruption_msg.del_object
                 }
             }
+            self.age = interruption_msg.age
             self.modify_objects_in_use(interruption_msg.add_object, interruption_msg.del_object)
             self.add_command(command_data)
-            self.minor_interrupt.set_value(True)
+            if category == "minor":
+                print("minor interrupt")
+                self.minor_interrupt.set_value(True)
+            else:
+                print("major interrupt")
+                self.major_interrupt.set_value(True)
             print(self.command_queue.get_value())
             self.nlp_timestamp = current_time
 
@@ -87,8 +95,14 @@ class InterruptClient:
 
     def modify_objects_in_use(self, add_object_info, remove_object_info):
 
-        [self.objects_in_use.append(obj) for obj in add_object_info if obj not in self.objects_in_use]
-        [self.objects_in_use.remove(obj) for obj in remove_object_info if obj in self.objects_in_use]
-        print("minor interrupt")
+        for obj in remove_object_info:
+            if obj.type in self.objects_in_use:
+                del self.objects_in_use[obj.type]
 
-        self.objects_in_use_pub.publish(message_objects_in_use(objects=self.objects_in_use))
+        for obj in add_object_info:
+            self.objects_in_use[obj.type] = obj
+
+        # [self.objects_in_use.append(obj) for obj in add_object_info if obj not in self.objects_in_use]
+        # [self.objects_in_use.remove(obj) for obj in remove_object_info if obj in self.objects_in_use]
+
+        self.objects_in_use_pub.publish(message_objects_in_use(objects=list(self.objects_in_use.values())))
