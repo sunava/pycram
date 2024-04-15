@@ -3,7 +3,7 @@ from typing import Union
 
 from .designator import DesignatorDescription
 from .language import Language, Monitor
-from .plan_failures import PlanFailure
+from .plan_failures import PlanFailure, MajorInterrupt
 
 
 class FailureHandling(Language):
@@ -177,4 +177,6 @@ class RetryMonitor(FailureHandling):
                         raise e
                     if self.recovery:
                         self.recovery.perform()
+                except MajorInterrupt as e:
+                    raise e
         return status, flatten(res)
