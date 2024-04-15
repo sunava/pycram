@@ -802,7 +802,7 @@
 		<collision>
 			<origin rpy="0.00000 -0.00000 0.00000" xyz="0.00000 0.00000 0.00000"/>
 			<geometry>
-				<mesh filename="package://armar6_description/mesh/obj/collision/hand_v3/palm_l_col.obj" scale="1.00000 1.00000 1.00000"/>
+				<mesh filename="package://armar6_description/mesh/stl/visual/hand_v3/palm_l.stl" scale="1.00000 1.00000 1.00000"/>
 			</geometry>
 		</collision>
 	</link>
@@ -832,7 +832,7 @@
 		<collision>
 			<origin rpy="0.00000 -0.00000 0.00000" xyz="0.00000 0.00000 0.00000"/>
 			<geometry>
-				<mesh filename="package://armar6_description/mesh/obj/collision/hand_v3/index_prox_col.obj" scale="1.00000 1.00000 1.00000"/>
+				<mesh filename="package://armar6_description/mesh/stl/visual/hand_v3/index_prox.stl" scale="1.00000 1.00000 1.00000"/>
 			</geometry>
 		</collision>
 	</link>
@@ -862,7 +862,7 @@
 		<collision>
 			<origin rpy="0.00000 -0.00000 0.00000" xyz="0.00000 0.00000 0.00000"/>
 			<geometry>
-				<mesh filename="package://armar6_description/mesh/obj/collision/hand_v3/index_inter_col.obj" scale="1.00000 1.00000 1.00000"/>
+				<mesh filename="package://armar6_description/mesh/stl/visual/hand_v3/index_inter.stl" scale="1.00000 1.00000 1.00000"/>
 			</geometry>
 		</collision>
 	</link>
@@ -892,7 +892,7 @@
 		<collision>
 			<origin rpy="3.14159 -0.00000 -3.14159" xyz="0.00000 0.00000 0.00000"/>
 			<geometry>
-				<mesh filename="package://armar6_description/mesh/obj/collision/hand_v3/index_dist_col.obj" scale="1.00000 1.00000 1.00000"/>
+				<mesh filename="package://armar6_description/mesh/stl/visual/hand_v3/index_dist.stl" scale="1.00000 1.00000 1.00000"/>
 			</geometry>
 		</collision>
 	</link>
@@ -951,7 +951,7 @@
 		<collision>
 			<origin rpy="0.00000 -0.00000 0.00000" xyz="0.00000 0.00000 0.00000"/>
 			<geometry>
-				<mesh filename="package://armar6_description/mesh/obj/collision/hand_v3/middle_prox_col.obj" scale="1.00000 1.00000 1.00000"/>
+				<mesh filename="package://armar6_description/mesh/stl/visual/hand_v3/middle_prox.stl" scale="1.00000 1.00000 1.00000"/>
 			</geometry>
 		</collision>
 	</link>
@@ -981,7 +981,7 @@
 		<collision>
 			<origin rpy="0.00000 -0.00000 0.00000" xyz="0.00000 0.00000 0.00000"/>
 			<geometry>
-				<mesh filename="package://armar6_description/mesh/obj/collision/hand_v3/middle_inter_col.obj" scale="1.00000 1.00000 1.00000"/>
+				<mesh filename="package://armar6_description/mesh/stl/visual/hand_v3/middle_inter.stl" scale="1.00000 1.00000 1.00000"/>
 			</geometry>
 		</collision>
 	</link>
@@ -1011,7 +1011,7 @@
 		<collision>
 			<origin rpy="3.14159 -0.00000 -3.14159" xyz="0.00000 0.00000 0.00000"/>
 			<geometry>
-				<mesh filename="package://armar6_description/mesh/obj/collision/hand_v3/middle_dist_col.obj" scale="1.00000 1.00000 1.00000"/>
+				<mesh filename="package://armar6_description/mesh/stl/visual/hand_v3/middle_dist.stl" scale="1.00000 1.00000 1.00000"/>
 			</geometry>
 		</collision>
 	</link>
@@ -1041,7 +1041,7 @@
 		<collision>
 			<origin rpy="0.00000 -0.00000 0.00000" xyz="0.00000 0.00000 0.00000"/>
 			<geometry>
-				<mesh filename="package://armar6_description/mesh/obj/collision/hand_v3/pinky_prox_col.obj" scale="1.00000 1.00000 1.00000"/>
+				<mesh filename="package://armar6_description/mesh/stl/visual/hand_v3/pinky_prox.stl" scale="1.00000 1.00000 1.00000"/>
 			</geometry>
 		</collision>
 	</link>
@@ -1071,7 +1071,7 @@
 		<collision>
 			<origin rpy="0.00000 -0.00000 0.00000" xyz="0.00000 0.00000 0.00000"/>
 			<geometry>
-				<mesh filename="package://armar6_description/mesh/obj/collision/hand_v3/pinky_inter_col.obj" scale="1.00000 1.00000 1.00000"/>
+				<mesh filename="package://armar6_description/mesh/stl/visual/hand_v3/pinky_inter.stl" scale="1.00000 1.00000 1.00000"/>
 			</geometry>
 		</collision>
 	</link>
@@ -1101,7 +1101,7 @@
 		<collision>
 			<origin rpy="-3.14159 -0.00000 3.14159" xyz="0.00000 0.00000 0.00000"/>
 			<geometry>
-				<mesh filename="package://armar6_description/mesh/obj/collision/hand_v3/pinky_dist_col.obj" scale="1.00000 1.00000 1.00000"/>
+				<mesh filename="package://armar6_description/mesh/stl/visual/hand_v3/pinky_dist.stl" scale="1.00000 1.00000 1.00000"/>
 			</geometry>
 		</collision>
 	</link>
@@ -1131,7 +1131,7 @@
 		<collision>
 			<origin rpy="0.00000 -0.00000 0.00000" xyz="0.00000 0.00000 0.00000"/>
 			<geometry>
-				<mesh filename="package://armar6_description/mesh/obj/collision/hand_v3/ring_prox_col.obj" scale="1.00000 1.00000 1.00000"/>
+				<mesh filename="package://armar6_description/mesh/stl/visual/hand_v3/ring_prox.stl" scale="1.00000 1.00000 1.00000"/>
 			</geometry>
 		</collision>
 	</link>
@@ -1161,7 +1161,7 @@
 		<collision>
 			<origin rpy="0.00000 -0.00000 0.00000" xyz="0.00000 0.00000 0.00000"/>
 			<geometry>
-				<mesh filename="package://armar6_description/mesh/obj/collision/hand_v3/ring_inter_col.obj" scale="1.00000 1.00000 1.00000"/>
+				<mesh filename="package://armar6_description/mesh/stl/visual/hand_v3/ring_inter.stl" scale="1.00000 1.00000 1.00000"/>
 			</geometry>
 		</collision>
 	</link>
@@ -1191,7 +1191,7 @@
 		<collision>
 			<origin rpy="1.57080 -0.00000 -3.14159" xyz="0.00000 0.00000 0.00000"/>
 			<geometry>
-				<mesh filename="package://armar6_description/mesh/obj/collision/hand_v3/ring_dist_col.obj" scale="1.00000 1.00000 1.00000"/>
+				<mesh filename="package://armar6_description/mesh/stl/visual/hand_v3/ring_dist.stl" scale="1.00000 1.00000 1.00000"/>
 			</geometry>
 		</collision>
 	</link>
@@ -1221,7 +1221,7 @@
 		<collision>
 			<origin rpy="0.00000 -0.00000 0.00000" xyz="0.00000 0.00000 0.00000"/>
 			<geometry>
-				<mesh filename="package://armar6_description/mesh/obj/collision/hand_v3/thumb_prox_col.obj" scale="1.00000 1.00000 1.00000"/>
+				<mesh filename="package://armar6_description/mesh/stl/visual/hand_v3/thumb_prox.stl" scale="1.00000 1.00000 1.00000"/>
 			</geometry>
 		</collision>
 	</link>
@@ -1251,7 +1251,7 @@
 		<collision>
 			<origin rpy="3.14159 -0.00000 -3.14159" xyz="0.00000 0.00000 0.00000"/>
 			<geometry>
-				<mesh filename="package://armar6_description/mesh/obj/collision/hand_v3/thumb_dist_col.obj" scale="1.00000 1.00000 1.00000"/>
+				<mesh filename="package://armar6_description/mesh/stl/visual/hand_v3/thumb_dist.stl" scale="1.00000 1.00000 1.00000"/>
 			</geometry>
 		</collision>
 	</link>
@@ -1340,7 +1340,7 @@
 		<collision>
 			<origin rpy="0.00000 -0.00000 0.00000" xyz="0.00000 0.00000 0.00000"/>
 			<geometry>
-				<mesh filename="package://armar6_description/mesh/obj/collision/hand_v3/palm_r_col.obj" scale="1.00000 1.00000 1.00000"/>
+				<mesh filename="package://armar6_description/mesh/stl/visual/hand_v3/palm_r.stl" scale="1.00000 1.00000 1.00000"/>
 			</geometry>
 		</collision>
 	</link>
@@ -1370,7 +1370,7 @@
 		<collision>
 			<origin rpy="0.00000 -0.00000 0.00000" xyz="0.00000 0.00000 0.00000"/>
 			<geometry>
-				<mesh filename="package://armar6_description/mesh/obj/collision/hand_v3/index_prox_col.obj" scale="1.00000 1.00000 1.00000"/>
+				<mesh filename="package://armar6_description/mesh/stl/visual/hand_v3/index_prox.stl" scale="1.00000 1.00000 1.00000"/>
 			</geometry>
 		</collision>
 	</link>
@@ -1400,7 +1400,7 @@
 		<collision>
 			<origin rpy="0.00000 -0.00000 0.00000" xyz="0.00000 0.00000 0.00000"/>
 			<geometry>
-				<mesh filename="package://armar6_description/mesh/obj/collision/hand_v3/index_inter_col.obj" scale="1.00000 1.00000 1.00000"/>
+				<mesh filename="package://armar6_description/mesh/stl/visual/hand_v3/index_inter.stl" scale="1.00000 1.00000 1.00000"/>
 			</geometry>
 		</collision>
 	</link>
@@ -1430,7 +1430,7 @@
 		<collision>
 			<origin rpy="3.14159 -0.00000 -3.14159" xyz="0.00000 0.00000 0.00000"/>
 			<geometry>
-				<mesh filename="package://armar6_description/mesh/obj/collision/hand_v3/index_dist_col.obj" scale="1.00000 1.00000 1.00000"/>
+				<mesh filename="package://armar6_description/mesh/stl/visual/hand_v3/index_dist.stl" scale="1.00000 1.00000 1.00000"/>
 			</geometry>
 		</collision>
 	</link>
@@ -1460,7 +1460,7 @@
 		<collision>
 			<origin rpy="0.00000 -0.00000 0.00000" xyz="0.00000 0.00000 0.00000"/>
 			<geometry>
-				<mesh filename="package://armar6_description/mesh/obj/collision/hand_v3/middle_prox_col.obj" scale="1.00000 1.00000 1.00000"/>
+				<mesh filename="package://armar6_description/mesh/stl/visual/hand_v3/middle_prox.stl" scale="1.00000 1.00000 1.00000"/>
 			</geometry>
 		</collision>
 	</link>
@@ -1490,7 +1490,7 @@
 		<collision>
 			<origin rpy="0.00000 -0.00000 0.00000" xyz="0.00000 0.00000 0.00000"/>
 			<geometry>
-				<mesh filename="package://armar6_description/mesh/obj/collision/hand_v3/middle_inter_col.obj" scale="1.00000 1.00000 1.00000"/>
+				<mesh filename="package://armar6_description/mesh/stl/visual/hand_v3/middle_inter.stl" scale="1.00000 1.00000 1.00000"/>
 			</geometry>
 		</collision>
 	</link>
@@ -1520,7 +1520,7 @@
 		<collision>
 			<origin rpy="3.14159 -0.00000 3.14159" xyz="0.00000 0.00000 0.00000"/>
 			<geometry>
-				<mesh filename="package://armar6_description/mesh/obj/collision/hand_v3/middle_dist_col.obj" scale="1.00000 1.00000 1.00000"/>
+				<mesh filename="package://armar6_description/mesh/stl/visual/hand_v3/middle_dist.stl" scale="1.00000 1.00000 1.00000"/>
 			</geometry>
 		</collision>
 	</link>
@@ -1550,7 +1550,7 @@
 		<collision>
 			<origin rpy="0.00000 -0.00000 0.00000" xyz="0.00000 0.00000 0.00000"/>
 			<geometry>
-				<mesh filename="package://armar6_description/mesh/obj/collision/hand_v3/pinky_prox_col.obj" scale="1.00000 1.00000 1.00000"/>
+				<mesh filename="package://armar6_description/mesh/stl/visual/hand_v3/pinky_prox.stl" scale="1.00000 1.00000 1.00000"/>
 			</geometry>
 		</collision>
 	</link>
@@ -1580,7 +1580,7 @@
 		<collision>
 			<origin rpy="0.00000 -0.00000 0.00000" xyz="0.00000 0.00000 0.00000"/>
 			<geometry>
-				<mesh filename="package://armar6_description/mesh/obj/collision/hand_v3/pinky_inter_col.obj" scale="1.00000 1.00000 1.00000"/>
+				<mesh filename="package://armar6_description/mesh/stl/visual/hand_v3/pinky_inter.stl" scale="1.00000 1.00000 1.00000"/>
 			</geometry>
 		</collision>
 	</link>
@@ -1610,7 +1610,7 @@
 		<collision>
 			<origin rpy="3.14159 -0.00000 -3.14159" xyz="0.00000 0.00000 0.00000"/>
 			<geometry>
-				<mesh filename="package://armar6_description/mesh/obj/collision/hand_v3/pinky_dist_col.obj" scale="1.00000 1.00000 1.00000"/>
+				<mesh filename="package://armar6_description/mesh/stl/visual/hand_v3/pinky_dist.stl" scale="1.00000 1.00000 1.00000"/>
 			</geometry>
 		</collision>
 	</link>
@@ -1669,7 +1669,7 @@
 		<collision>
 			<origin rpy="0.00000 -0.00000 0.00000" xyz="0.00000 0.00000 0.00000"/>
 			<geometry>
-				<mesh filename="package://armar6_description/mesh/obj/collision/hand_v3/ring_prox_col.obj" scale="1.00000 1.00000 1.00000"/>
+				<mesh filename="package://armar6_description/mesh/stl/visual/hand_v3/ring_prox.stl" scale="1.00000 1.00000 1.00000"/>
 			</geometry>
 		</collision>
 	</link>
@@ -1699,7 +1699,7 @@
 		<collision>
 			<origin rpy="0.00000 -0.00000 0.00000" xyz="0.00000 0.00000 0.00000"/>
 			<geometry>
-				<mesh filename="package://armar6_description/mesh/obj/collision/hand_v3/ring_inter_col.obj" scale="1.00000 1.00000 1.00000"/>
+				<mesh filename="package://armar6_description/mesh/stl/visual/hand_v3/ring_inter.stl" scale="1.00000 1.00000 1.00000"/>
 			</geometry>
 		</collision>
 	</link>
@@ -1729,7 +1729,7 @@
 		<collision>
 			<origin rpy="1.57080 -0.00000 -3.14159" xyz="0.00000 0.00000 0.00000"/>
 			<geometry>
-				<mesh filename="package://armar6_description/mesh/obj/collision/hand_v3/ring_dist_col.obj" scale="1.00000 1.00000 1.00000"/>
+				<mesh filename="package://armar6_description/mesh/stl/visual/hand_v3/ring_dist.stl" scale="1.00000 1.00000 1.00000"/>
 			</geometry>
 		</collision>
 	</link>
@@ -1759,7 +1759,7 @@
 		<collision>
 			<origin rpy="0.00000 -0.00000 0.00000" xyz="0.00000 0.00000 0.00000"/>
 			<geometry>
-				<mesh filename="package://armar6_description/mesh/obj/collision/hand_v3/thumb_prox_col.obj" scale="1.00000 1.00000 1.00000"/>
+				<mesh filename="package://armar6_description/mesh/stl/visual/hand_v3/thumb_prox.stl" scale="1.00000 1.00000 1.00000"/>
 			</geometry>
 		</collision>
 	</link>
@@ -1789,7 +1789,7 @@
 		<collision>
 			<origin rpy="3.14159 -0.00000 3.14159" xyz="0.00002 0.00000 -0.00003"/>
 			<geometry>
-				<mesh filename="package://armar6_description/mesh/obj/collision/hand_v3/thumb_dist_col.obj" scale="1.00000 1.00000 1.00000"/>
+				<mesh filename="package://armar6_description/mesh/stl/visual/hand_v3/thumb_dist.stl" scale="1.00000 1.00000 1.00000"/>
 			</geometry>
 		</collision>
 	</link>

@@ -13,15 +13,14 @@ from pycram.ros.viz_marker_publisher import VizMarkerPublisher
 from pycram.resolver.action.SPARQL import SPARQL
 from IPython.display import display, HTML, clear_output
 
+
 objects = [(None, None), ('apple', "obo:FOODON_03301710"), ('avocado', "obo:FOODON_00003600"),
-    ('banana', "obo:FOODON_00004183"), ('cucumber', "obo:FOODON_00003415"),
+    ('banana', "obo:FOODON_00004183")
     ('lemon', "obo:FOODON_03301441"), ('lime', "obo:FOODON_00003661"),
     ('orange', "obo:FOODON_03309832"),  ('tomato', "obo:FOODON_03309927")]
 
 # all available parameters
-tasks = [(None, None), ('Quartering', "cut:Quartering"),
-    ('Halving', "cut:Halving"), ('Cutting', "soma:Cutting"), ('Slicing', "soma:Slicing"), ('Snipping', "cut:Snipping"),
-    ('Slivering', "cut:Slivering"), ('Sawing', "cut:Sawing"), ('Paring', "cut:Paring"), ('Carving', "cut:Carving")]
+tasks = [(None, None),('Halving', "cut:Halving"), ('Cutting', "soma:Cutting"), ('Slicing', "soma:Slicing")]
 task = ""
 obj = ""
 
@@ -69,7 +68,7 @@ def start_demo():
     BulletWorld("DIRECT")
     VizMarkerPublisher(interval=0.1)
 
-    Object("pr2", ObjectType.ROBOT, "pr2.urdf", pose=Pose([1, 2, 0]))
+    Object("Armar6", ObjectType.ROBOT, "Armar6.urdf", pose=Pose([1, 2, 0]))
     Object("environment", ObjectType.ENVIRONMENT, "apartment-small.urdf")
 
     # Use a lambda function to defer the call to `robot_execute`

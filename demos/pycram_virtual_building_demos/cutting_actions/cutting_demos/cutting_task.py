@@ -72,12 +72,23 @@ def start_cutting(obj, technique):
         looking_pose = Pose([2.5, 2, 0.97])
         NavigateAction([location_pose]).resolve().perform()
 
-        knife_pose = Pose([2.0449586673391935, 1.5384467778416917, 1.2229705326966067],
-                          [0.14010099565491793, -0.7025332835765593, 0.15537176280408957, 0.6802046102510538])
+
+        if robot_description.name == "Armar6":
+            knife_pose = Pose([2.2049586673391935, 1.40084467778416917, 1.0229705326966067],
+                              [0, 0, 1, 1])
+        else:
+            knife_pose = Pose([2.0449586673391935, 1.5384467778416917, 1.2229705326966067],
+                              [0.14010099565491793, -0.7025332835765593, 0.15537176280408957, 0.6802046102510538])
+
         cutting_tool = Object("knife", "cutting_tool", "butter_knife.stl", knife_pose)
 
         tool_frame = robot_description.get_tool_frame("right")
         BulletWorld.current_bullet_world.robot.attach(object=cutting_tool, link=tool_frame)
+
+        if robot_description.name == "Armar6":
+            MoveGripperMotion(motion="close", gripper="right").resolve().perform()
+            location_pose = Pose([1.6, 2.5, 0])
+            NavigateAction([location_pose]).resolve().perform()
 
         LookAtAction([looking_pose]).resolve().perform()
         status, object_dict = DetectAction(technique='specific', object_type="object_to_be_cut").resolve().perform()
