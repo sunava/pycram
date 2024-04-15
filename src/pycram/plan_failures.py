@@ -6,6 +6,14 @@ class PlanFailure(Exception):
         Exception.__init__(self, *args, **kwargs)
 
 
+class MajorInterrupt(Exception):
+    """Implementation of Frontiers Major Interrupt."""
+
+    def __init__(self, *args, **kwargs):
+        """Create a new plan failure."""
+        Exception.__init__(self, *args, **kwargs)
+
+
 class NotALanguageExpression(PlanFailure):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -127,6 +135,7 @@ class ManipulationGoalNotReached(ManipulationLowLevelFailure):
 
 class IKError(PlanFailure):
     """Thrown when no inverse kinematics solution could be found"""
+
     def __init__(self, pose, base_frame):
         self.message = "Position {} in frame '{}' is not reachable for end effector".format(pose, base_frame)
         super(IKError, self).__init__(self.message)
