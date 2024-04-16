@@ -157,6 +157,7 @@ class ManualMarkerPublisher:
 
         :param topic_name: Name of the marker topic
         """
+        self.start_time = None
         self.marker_array_pub = rospy.Publisher(topic_name, MarkerArray, queue_size=10)
 
         self.marker_array = MarkerArray()
@@ -167,8 +168,6 @@ class ManualMarkerPublisher:
         self.color = None
         self.pose = None
         self.name = None
-
-        self.thread = threading.Thread(target=self._publish)
 
     def publish(self, pose: Pose, color=None, bulletworld_object=None, name=None):
         """
@@ -188,21 +187,21 @@ class ManualMarkerPublisher:
         self.color = color
         self.bulletworld_object = bulletworld_object
 
-        self.thread.start()
+        self.start_time = time.time()
+        thread = threading.Thread(target=self._publish)
+        thread.start()
         rospy.loginfo("Publishing pose visualization")
-        self.thread.join()
+        thread.join()
         rospy.logdebug("Stopped")
 
     def _publish(self):
         stop_thread = False
         duration = 1
         frequency = 0.2
-        start_time = time.time()
 
         while not stop_thread:
-            if time.time() - start_time > duration:
+            if time.time() - self.start_time > duration:
                 stop_thread = True
-
             if self.bulletworld_object is None:
                 self._publish_pose(name=self.name, pose=self.pose, color=self.color)
             else:
