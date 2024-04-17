@@ -244,4 +244,4 @@ class HumanDescription:
         function for setting attributes
         :param attribute_list: list with attributes: gender, headgear, kind of clothes, bright/dark clothes
         """
-        self.attributes = attribute_list
+        self.attributes = attribute_list[1]

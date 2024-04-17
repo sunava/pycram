@@ -1,4 +1,6 @@
 import rospy
+
+from pycram.designators.action_designator import LookAtAction
 from pycram.designators.object_designator import Pose, PoseStamped, HumanDescription
 from pycram.designators.motion_designator import TalkingMotion
 from pycram.helper import axis_angle_to_quaternion
@@ -12,7 +14,7 @@ response = ""
 callback = False
 
 # TODO: set to False when NLP has implemented that feature
-doorbell = True
+
 
 # Pose variables
 # Pose in front of the couch, HSR looks in direction of couch
@@ -143,11 +145,13 @@ def introduce(human1: HumanDescription, human2: HumanDescription):
     """
 
     if human1.pose:
+        LookAtAction(targets=[human1.pose]).resolve().perform()
         pub_pose.publish(human1.pose)
         rospy.sleep(3.5)
     TalkingMotion(f"Hey, {human1.name}").resolve().perform()
 
     if human2.pose:
+        LookAtAction(targets=[human2.pose]).resolve().perform()
         pub_pose.publish(human2.pose)
         rospy.sleep(3.5)
     TalkingMotion(f" This is {human2.name} and their favorite drink is {human2.fav_drink}").resolve().perform()
@@ -155,6 +159,7 @@ def introduce(human1: HumanDescription, human2: HumanDescription):
     TalkingMotion(f"Hey, {human2.name}").resolve().perform()
 
     if human1.pose:
+        LookAtAction(targets=[human1.pose]).resolve().perform()
         pub_pose.publish(human1.pose)
         rospy.sleep(3.5)
     TalkingMotion(f" This is {human1.name} and their favorite drink is {human1.fav_drink}").resolve().perform()
@@ -167,9 +172,12 @@ def describe(human: HumanDescription):
         the following will be stated: gender, headgear, clothing, brightness of clothes
         :param human: human to be described
         """
+        if human.pose:
+            LookAtAction(targets=[human.pose]).resolve().perform()
+            pub_pose.publish(human.pose)
 
-        # TalkingMotion(f"I will describe {human.name} further now").resolve().perform()
-        # rospy.sleep(1)
+        TalkingMotion(f"I will describe {human.name} further now").resolve().perform()
+        rospy.sleep(1)
 
         # gender
         TalkingMotion(f"i think your gender is {human.attributes[0]}").resolve().perform()

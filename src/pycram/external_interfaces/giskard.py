@@ -480,6 +480,8 @@ def stop_looking():
     stops the move_head_to_human function so that hsr looks forward
     """
 
+    # cancels all goals in giskard
+    # giskard_wrapper.cancel_all_goals()
     # moves hsr in standard position
     giskard_wrapper.take_pose("park")
     giskard_wrapper.plan_and_execute(wait=False)
@@ -493,7 +495,7 @@ def move_head_to_pose(pose: PointStamped):
     """
     # TODO: necessary? there is a LookAtAction?
     # TODO: needs to be tested!
-    p_axis = Vector3Stamped
+    p_axis = Vector3Stamped()
     p_axis.vector = (0, 0, 1)
     giskard_wrapper.set_pointing_goal(goal_point=pose,
                                       tip_link="head_center_camera_frame",
@@ -507,8 +509,12 @@ def move_arm_to_pose(pose: PointStamped):
     :param pose: pose that arm will point to
     """
     # TODO: needs to be tested!
-    p_axis = Vector3Stamped
-    p_axis.vector = (0, 0, 1)
+    print("in move arm")
+    p_axis = Vector3Stamped()
+    #p_axis.header.frame_id = "/map"
+    p_axis.vector.x = 0
+    p_axis.vector.y = 1
+    p_axis.vector.z = 1
     giskard_wrapper.set_pointing_goal(goal_point=pose,
                                       tip_link="hand_gripper_tool_frame",
                                       pointing_axis=p_axis,

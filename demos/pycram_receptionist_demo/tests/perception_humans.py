@@ -1,19 +1,13 @@
 import rospy
 
 from pycram.designators.action_designator import DetectAction, NavigateAction
-from pycram.designators.motion_designator import TalkingMotion
-from pycram.fluent import Fluent
-from pycram.helper import axis_angle_to_quaternion
 from pycram.process_module import semi_real_robot, real_robot
 import pycram.external_interfaces.giskard as giskardpy
-from pycram.ros.robot_state_updater import RobotStateUpdater
 from pycram.ros.viz_marker_publisher import VizMarkerPublisher
 from pycram.designators.location_designator import *
 from pycram.designators.object_designator import *
 from pycram.bullet_world import BulletWorld, Object
-from std_msgs.msg import String
-from demos.pycram_receptionist_demo.deprecated import talk_actions
-import pycram.external_interfaces.navigate as moveBase
+from demos.pycram_receptionist_demo.utils.new_misc import *
 
 world = BulletWorld("DIRECT")
 # /pycram/viz_marker topic bei Marker Array
@@ -26,42 +20,53 @@ robot.set_color([0.5, 0.5, 0.9, 1])
 # careful that u spawn the correct kitchen
 kitchen = Object("kitchen", "environment", "kitchen.urdf")
 giskardpy.init_giskard_interface()
+guest1 = HumanDescription("guest1")
 
 
 
 def p():
     with real_robot:
-        seat = True
-        attributes = False
+        seat = False
+        attributes = True
 
         if attributes:
             # to signal the start of demo
             # TalkingMotion("Hello, i am ready for the test").resolve().perform()
 
             # does the code work with the manipulation feature?
+            #
+
+
+            TalkingMotion("detecting attributes now").resolve().perform()
             giskardpy.move_head_to_human()
 
-            # new Query to detect attributes of a human
-            TalkingMotion("detecting attributes now").resolve().perform()
+
             desig = DetectAction(technique='attributes').resolve().perform()
-            rospy.loginfo("Attributes: " + str(desig))
-            print("#####################")
-            print(desig[1].res[0].attribute)
-            gender = desig[1].res[0].attribute[0][13:19]
-            clothes = desig[1].res[0].attribute[2][20:]
-            brightness_clothes = desig[1].res[0].attribute[1]
-            hat = desig[1].res[0].attribute[3][20:]
+            print("msgs from PPP: " + str(desig[1]))
+            guest1.set_attributes(desig)
 
-            print("#####################")
-            print(gender)
-            print("#####################")
-            print(clothes)
-            print("#####################")
-            print(brightness_clothes)
-            print("#####################")
-            print(hat)
 
-            # rospy.sleep(5)
+
+            DetectAction(technique='human').resolve().perform()
+
+            describe(guest1)
+
+
+            
+            rospy.sleep(3)
+
+            giskardpy.stop_looking()
+            DetectAction(technique='human', state='stop').resolve().perform()
+
+            rospy.sleep(3)
+
+            TalkingMotion("looking again").resolve().perform()
+            DetectAction(technique='human').resolve().perform()
+            giskardpy.move_head_to_human()
+
+            rospy.sleep(6)
+
+            TalkingMotion("demo over").resolve().perform()
 
         if seat:
             # new Query for free seat

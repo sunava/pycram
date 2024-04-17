@@ -346,30 +346,41 @@ class HSRBDetectingReal(ProcessModule):
     """
 
     def _execute(self, desig: DetectingMotion.Motion) -> Any:
+        """
+        specifies the query send to robokudo
+        :param desig.technique: if this is set to human the hsr searches for human and publishes the pose
+        to /human_pose. returns PoseStamped of Human.
+        this value can also be set to 'attributes' or 'location' to get the attributes and pose of a human or a bool
+        if a seat specified in the sematic map is taken
+        """
+
         # todo at the moment perception ignores searching for a specific object type so we do as well on real
         if desig.technique == 'human' and (desig.state == 'start' or desig.state == None):
             human_pose = queryHuman()
-            pose = Pose.from_pose_stamped(human_pose)
-            pose.position.z = 0
-            human = [Object("human", ObjectType.HUMAN, "human_male.stl", pose=pose)]
-            object_dict = {}
-
-            # Iterate over the list of objects and store each one in the dictionary
-            for i, obj in enumerate(human):
-                object_dict[obj.name] = obj
-            return object_dict
+            return human_pose
 
         elif desig.state == "stop":
             stop_queryHuman()
             return "stopped"
+
         elif desig.technique == 'location':
-            # TODO: test what and how Perception returns Query msg and make it fit rest of code
             seat = desig.state
             seat_human_pose = seat_queryHuman(seat)
             return seat_human_pose
+
         elif desig.technique == 'attributes':
             human_pose_attr = attributes_queryHuman()
-            return human_pose_attr
+
+            # extract information from query
+            gender = human_pose_attr.res[0].attribute[0][13:19]
+            if gender[0] != 'f':
+                gender = gender[:4]
+            clothes = human_pose_attr.res[0].attribute[2][20:]
+            brightness_clothes = human_pose_attr.res[0].attribute[1][5:]
+            hat = human_pose_attr.res[0].attribute[3][20:]
+            attr_list = [gender, hat, clothes, brightness_clothes]
+
+            return attr_list
 
         query_result = queryEmpty(ObjectDesignatorDescription(types=[desig.object_type]))
         perceived_objects = []
