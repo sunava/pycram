@@ -11,8 +11,8 @@ import pycram.external_interfaces.giskard as giskardpy
 
 world = BulletWorld("DIRECT")
 v = VizMarkerPublisher()
-robot = Object("hsrb", ObjectType.ROBOT, "hsrb.urdf", pose=Pose([1, 2, 0]))
-cereal = Object("cereal", "cereal", "breakfast_cereal.stl", pose=Pose([0, 0, 0]),
+robot = Object("hsrb", ObjectType.ROBOT, "../../../../resources/hsrb.urdf", pose=Pose([1, 2, 0]))
+cereal = Object("cereal", "cereal", "../../../../resources/breakfast_cereal.stl", pose=Pose([0, 0, 0]),
                 color=[0, 1, 0, 1])
 
 giskardpy.init_giskard_interface()

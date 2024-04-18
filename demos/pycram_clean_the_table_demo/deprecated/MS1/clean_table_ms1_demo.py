@@ -23,14 +23,14 @@ robot = Object("hsrb", ObjectType.ROBOT, "../../resources/" + "hsrb" + ".urdf")
 robot.set_color([0.5, 0.5, 0.9, 1])
 robot_desig = ObjectDesignatorDescription(names=["hsrb"]).resolve()
 
-kitchen = Object("kitchen", "environment", "kitchen.urdf")
+kitchen = Object("kitchen", "environment", "../../../../resources/kitchen.urdf")
 kitchen_desig = ObjectDesignatorDescription(names=["kitchen"])
 
-milk = Object("Milkpack", "milk", "milk.stl", pose=Pose([-2.7, 2.3, 0.43]), color=[1, 0, 0, 1])
-cereal = Object("Cerealbox", "cereal", "breakfast_cereal.stl", pose=Pose([-2.5, 2.3, 0.43], object_orientation), color=[0, 1, 0, 1])
-metalmug = Object("Metalmug", "metalmug", "bowl.stl", pose=Pose([-2.9, 2.3, 0.43], object_orientation), color=[0, 1, 0, 1])
-cheezels = Object("Crackerbox", "cheezels", "breakfast_cereal.stl", pose=Pose([-2.3, 2.3, 0.43], object_orientation), color=[0, 1, 0, 1])
-pringles = Object("Pringleschipscan", "pringles", "milk.stl", pose=Pose([-3.1, 2.3, 0.43]), color=[0, 1, 0, 1])
+milk = Object("Milkpack", "milk", "../../../../resources/milk.stl", pose=Pose([-2.7, 2.3, 0.43]), color=[1, 0, 0, 1])
+cereal = Object("Cerealbox", "cereal", "../../../../resources/breakfast_cereal.stl", pose=Pose([-2.5, 2.3, 0.43], object_orientation), color=[0, 1, 0, 1])
+metalmug = Object("Metalmug", "metalmug", "../../../../resources/bowl.stl", pose=Pose([-2.9, 2.3, 0.43], object_orientation), color=[0, 1, 0, 1])
+cheezels = Object("Crackerbox", "cheezels", "../../../../resources/breakfast_cereal.stl", pose=Pose([-2.3, 2.3, 0.43], object_orientation), color=[0, 1, 0, 1])
+pringles = Object("Pringleschipscan", "pringles", "../../../../resources/milk.stl", pose=Pose([-3.1, 2.3, 0.43]), color=[0, 1, 0, 1])
 
 
 milk_desig = BelieveObject(names=["Milkpack"])
