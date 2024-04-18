@@ -13,9 +13,9 @@ import sys
 world = BulletWorld("DIRECT")
 v = VizMarkerPublisher()
 
-robot = Object("hsrb", ObjectType.ROBOT,"hsrb.urdf", pose=Pose([1, 2, 0]))
+robot = Object("hsrb", ObjectType.ROBOT, "../../../resources/hsrb.urdf", pose=Pose([1, 2, 0]))
 robot_desig = ObjectDesignatorDescription(names=["hsrb"]).resolve()
-kitchen = Object("kitchen", "environment", "kitchen.urdf")
+kitchen = Object("kitchen", "environment", "../../../resources/kitchen.urdf")
 robot.set_joint_state(robot_description.torso_joint, 0.24)
 kitchen_desig = ObjectDesignatorDescription(names=["kitchen"])
 # spawning_poses = {

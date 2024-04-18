@@ -636,12 +636,11 @@ class PlaceGivenObjAction(ActionDesignatorDescription):
                 MoveTCPMotion(oTmG, self.arm).resolve().perform()
 
                 MoveTorsoAction([0.62]).resolve().perform()
-
                 kwargs = dict()
 
-                # taking in the predefined arm position for placing
+                # taking in the predefined arm configuration for placing
                 if self.arm in ["left", "both"]:
-                    kwargs["left_arm_config"] = "place_human_given_obj"
+                    kwargs["left_arm_config"] = "place_plate"
                     MoveArmJointsMotion(**kwargs).resolve().perform()
 
                 # turning the gripper downwards to better drop the plate
@@ -1418,7 +1417,7 @@ class PouringAction(ActionDesignatorDescription):
             # oTm = Object Pose in Frame map
             if self.direction == "right":
                 oTm = Pose([self.target_location.pose.position.x - 0.3, self.target_location.pose.position.y + 0.1,
-                           self.target_location.pose.position.z + 0.1], self.target_location.pose.orientation)
+                            self.target_location.pose.position.z + 0.1], self.target_location.pose.orientation)
             else:
                 oTm = Pose([self.target_location.pose.position.x - 0.3, self.target_location.pose.position.y - 0.1,
                             self.target_location.pose.position.z + 0.12], self.target_location.pose.orientation)
@@ -1436,8 +1435,8 @@ class PouringAction(ActionDesignatorDescription):
                 MoveTorsoAction([0.35]).resolve().perform()
 
                 NavigateAction(
-                        [Pose([robot.get_pose().pose.position.x + 0.23, robot.get_pose().pose.position.y,
-                               0], robot.get_pose().pose.orientation)]).resolve().perform()
+                    [Pose([robot.get_pose().pose.position.x + 0.23, robot.get_pose().pose.position.y,
+                           0], robot.get_pose().pose.orientation)]).resolve().perform()
 
                 # kwargs = dict()
                 #

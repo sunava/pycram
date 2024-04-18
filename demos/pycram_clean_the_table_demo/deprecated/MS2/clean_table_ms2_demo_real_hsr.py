@@ -21,7 +21,7 @@ v = VizMarkerPublisher()
 world.set_gravity([0, 0, -9.8])
 
 # turn robot and some object for 90 degrees
-object_orientation = axis_angle_to_quaternion([0, 0, 1], 90)
+object_orientation = axis_angle_to_quaternion([0, 0, 1], -90)
 transport_orientation = axis_angle_to_quaternion([0, 0, 1], 180)
 
 # Initialize objects in BulletWorld
@@ -30,14 +30,14 @@ robot.set_color([0.5, 0.5, 0.9, 1])
 robot_desig = ObjectDesignatorDescription(names=["hsrb"]).resolve()
 robot_pose = robot.get_pose()
 
-kitchen = Object("kitchen", "environment", "kitchen.urdf")
+kitchen = Object("kitchen", "environment", "../../../../resources/kitchen.urdf")
 kitchen_desig = BelieveObject(names=["kitchen"])
 
-fork = Object("Fork", "fork", "spoon.stl", pose=Pose([4.95, 2.73, 0.74]), color=[1, 0, 0, 1])
-spoon = Object("Spoon", "spoon", "spoon.stl", pose=Pose([4.95, 2.6, 0.74]), color=[0, 1, 0, 1])
-metalmug = Object("Metalmug", "metalmug", "bowl.stl", pose=Pose([4.95, 2.4, 0.765]), color=[0, 1, 0, 1])
-plate = Object("Plate", "plate", "board.stl", pose=Pose([4.95, 2.12, 0.735]), color=[0, 1, 0, 1])
-bowl = Object("Bowl", "bowl", "bowl.stl", pose=Pose([4.95, 1.8, 0.765]), color=[0, 1, 0, 1])
+fork = Object("Fork", "fork", "../../../../resources/spoon.stl", pose=Pose([-2.3, -0.4, 0.37], object_orientation), color=[1, 0, 0, 1])
+spoon = Object("Spoon", "spoon", "../../../../resources/spoon.stl", pose=Pose([-2.5, -0.4, 0.37], object_orientation), color=[0, 1, 0, 1])
+metalmug = Object("Metalmug", "metalmug", "../../../../resources/bowl.stl", pose=Pose([-2.6, -0.4, 0.39]), color=[0, 1, 0, 1])
+plate = Object("Plate", "plate", "../../../../resources/board.stl", pose=Pose([-2.9, -0.4, 0.36]), color=[0, 1, 0, 1])
+bowl = Object("Bowl", "bowl", "../../../../resources/bowl.stl", pose=Pose([-3.2, -0.4, 0.39]), color=[0, 1, 0, 1])
 
 fork_desig = BelieveObject(names=["Fork"])
 spoon_desig = BelieveObject(names=["Spoon"])
@@ -46,10 +46,11 @@ plate_desig = BelieveObject(names=["Plate"])
 bowl_desig = BelieveObject(names=["Bowl"])
 
 # initialize and sync giskard
+RobotStateUpdater("/tf", "/giskard_joint_states")
 giskardpy.init_giskard_interface()
 #giskardpy.sync_worlds()
 
-RobotStateUpdater("/tf", "/joint_states")
+
 
 
 def move_and_detect():
