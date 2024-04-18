@@ -471,7 +471,8 @@ def move_head_to_human():
     continously moves head in direction of perceived human
     """
     giskard_wrapper.continuous_pointing_head()
-    giskard_wrapper.execute(wait=False)
+    giskard_wrapper.execute(wait=False, add_default=False)
+
 
 
 def stop_looking():
