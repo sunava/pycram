@@ -1,4 +1,4 @@
-from pycram.designators.action_designator import DetectAction, NavigateAction
+from pycram.designators.action_designator import DetectAction, NavigateAction, OpenAction
 from demos.pycram_receptionist_demo.utils.new_misc import *
 from pycram.process_module import real_robot
 import pycram.external_interfaces.giskard as giskardpy
@@ -19,14 +19,16 @@ robot.set_color([0.5, 0.5, 0.9, 1])
 kitchen = Object("kitchen", "environment", "kitchen.urdf")
 giskardpy.init_giskard_interface()
 RobotStateUpdater("/tf", "/giskard_joint_states")
+kitchen_desig = ObjectDesignatorDescription(names=["kitchen"])
 
 # variables for communcation with nlp
 pub_nlp = rospy.Publisher('/startListener', String, queue_size=10)
 response = ""
 callback = False
+doorbell = True
 
 # Declare variables for humans
-host = HumanDescription("Yannis", fav_drink="ice tea")
+host = HumanDescription("Bob", fav_drink="coffee")
 guest1 = HumanDescription("guest1")
 guest2 = HumanDescription("guest2")
 seat_number = 2
@@ -48,22 +50,24 @@ with real_robot:
 
     while not doorbell:
         # TODO: spin or sleep better?
-        # TODO: Failure Handling, when no bell is heard for a longer period of time
         rospy.spin()
 
+    # TODO: find name of door handle
+    # link in rviz: iai_kitchen:arena:door_handle_inside
+    # door_handle_desig = ObjectPart(names=["door_handle_inside"], part_of=kitchen_desig.resolve())
+    # OpenAction(object_designator_description=door_handle_desig, arms=["left"]).resolve().perform()
     # NavigateAction([pose_door]).resolve().perform()
-    # giskardpy.opendoor()
 
-    TalkingMotion("Welcome, please come in").resolve().perform()
+    TalkingMotion("Welcome, please step in").resolve().perform()
 
     # look for human
-    human_desig = DetectAction(technique='attributes', state='start').resolve().perform()
+    attr_list = DetectAction(technique='attributes', state='start').resolve().perform()
     rospy.loginfo("human detected")
 
-    # TODO: check what perception returns exactly
-    attr_list = human_desig.attribute
+    guest1.set_attributes(attr_list)
     print(attr_list)
-    guest1.set_attributes(human_desig.attribute)
+
+    DetectAction(technique='human').resolve().perform()
 
     # look at guest and introduce
     giskardpy.move_head_to_human()
@@ -80,7 +84,7 @@ with real_robot:
     if response[0] == "<GUEST>":
         # success a name and intent was understood
         if response[1] != "<None>":
-            TalkingMotion("it is so noisy here, please confirm if i got your name right").resolve().perform()
+            TalkingMotion("please confirm if i got your name right").resolve().perform()
             guest1.set_drink(response[2])
             rospy.sleep(1)
             guest1.set_name(name_confirm(response[1]))
@@ -132,37 +136,22 @@ with real_robot:
     NavigateAction([pose_couch]).resolve().perform()
     TalkingMotion("Welcome to the living room").resolve().perform()
     rospy.sleep(1)
+    TalkingMotion("please take a seat next to your host").resolve().perform()
 
     # search for free place to sit and host
     # TODO: Failure Handling: scan room if no human detected on couch
-    for i in range(seat_number):
-        state = "seat" + str(i)
-        seat_desig = DetectAction(technique='location', state=state).resolve().perform()
-        print(seat_desig)
-        # TODO get pose of occupied seat
-        if not seat_desig.occupied:
-            guest1.set_pose(seat_desig.pose)
-            # point to free place
-            # giskardpy.point_to_seat
-            TalkingMotion("please sit over there").resolve().perform()
 
-        # failure handling if all seats are taken
-        elif i+1 == seat_number:
-            guest1.set_pose(seat_desig.pose)
-            # point to free place
-            # giskardpy.point_to_seat
-            TalkingMotion("please sit over there").resolve().perform()
 
     # TODO: is it ok to seat guest bevore introducing??
 
     pose_host = PoseStamped()
-    pose_host.header.frame_id = 'map'
+    pose_host.header.frame_id = '/map'
     pose_host.pose.position.x = 1.0
     pose_host.pose.position.y = 5.9
     pose_host.pose.position.z = 0.9
 
     pose_guest = PoseStamped()
-    pose_guest.header.frame_id = 'map'
+    pose_guest.header.frame_id = '/map'
     pose_guest.pose.position.x = 1.0
     pose_guest.pose.position.y = 4.7
     pose_guest.pose.position.z = 1.0
@@ -173,4 +162,5 @@ with real_robot:
 
     # introduce humans and look at them
     introduce(host, guest1)
+    describe(guest1)
 

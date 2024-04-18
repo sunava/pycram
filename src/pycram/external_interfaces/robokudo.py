@@ -148,6 +148,8 @@ def queryEmpty(object_desc: ObjectDesignatorDescription) -> ObjectDesignatorDesc
 def queryHuman() -> Any:
     """
     Sends a query to RoboKudo to look for a Human
+    returns a PoseStamped of pose where human is. keeps publishing it onto the
+    topic /human_pose
     """
     init_robokudo_interface()
     from robokudo_msgs.msg import QueryAction, QueryGoal, QueryResult
@@ -189,19 +191,9 @@ def queryHuman() -> Any:
     rospy.Subscriber("/human_pose", PoseStamped, callback)
 
     while not human_bool:
-        rospy.loginfo_throttle(3, "Waiting for human to be detected")
-        pub = rospy.Publisher('/talk_request', Voice, queue_size=10)
-        texttospeech = Voice()
-        texttospeech.language = 1
-        texttospeech.sentence = "please step in front of me"
-        if waiting_human:
-            pub.publish(texttospeech)
-        waiting_human = True
-        rospy.sleep(5)
-        pass
+        rospy.sleep(0.5)
 
     return human_pose
-
 
 
 def stop_queryHuman() -> Any:
