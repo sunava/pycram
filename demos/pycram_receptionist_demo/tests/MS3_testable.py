@@ -30,8 +30,8 @@ callback = False
 
 
 # Declare variables for humans
-host = HumanDescription("Angel", fav_drink="ice tea")
-guest1 = HumanDescription("guest1")
+host = HumanDescription("Lukas", fav_drink="Coffee")
+guest1 = HumanDescription("Jessica", fav_drink="Water")
 guest2 = HumanDescription("guest2")
 seat_number = 2
 
@@ -51,7 +51,7 @@ def demo_tst():
     with real_robot:
         global callback
         global response
-        test_all = True
+        test_all = False
 
         TalkingMotion("Hello").resolve().perform()
         giskardpy.move_head_to_human()
@@ -63,8 +63,9 @@ def demo_tst():
         DetectAction(technique='human', state='start').resolve().perform()
         rospy.loginfo("human detected")
 
-        TalkingMotion("I am Toya and my favorite drink is oil. What about you, talk to me loud and clear?").resolve().perform()
-        rospy.sleep(1.2)
+        giskardpy.move_head_to_human()
+        TalkingMotion("Hello, i am Toya and my favorite drink is oil. What about you, talk to me?").resolve().perform()
+        rospy.sleep(0.9)
 
         # signal to start listening
         pub_nlp.publish("start listening")
@@ -108,16 +109,17 @@ def demo_tst():
                 else:
                     i += 1
 
+
+        # stop looking
+        TalkingMotion("i will show you the living room now").resolve().perform()
+        rospy.sleep(1)
+        TalkingMotion("please step out of the way and follow me").resolve().perform()
+        giskardpy.stop_looking()
+
+        # stop perceiving human
+        DetectAction(technique='human', state='stop').resolve().perform()
+
         if test_all:
-            # stop looking
-            TalkingMotion("i will show you the living room now").resolve().perform()
-            rospy.sleep(1)
-            TalkingMotion("please step out of the way and follow me").resolve().perform()
-            giskardpy.stop_looking()
-
-            # stop perceiving human
-            DetectAction(technique='human', state='stop').resolve().perform()
-
             # lead human to living room
             NavigateAction([pose_kitchen_to_couch]).resolve().perform()
             NavigateAction([pose_couch]).resolve().perform()
@@ -186,34 +188,33 @@ def demo_tst2():
             #rospy.sleep(7)
             #DetectAction(technique='human', state='stop').resolve().perform()
 
-            pose_host = PoseStamped()
-            pose_host.header.frame_id = 'map'
-            pose_host.pose.position.x = 1.0
-            pose_host.pose.position.y = 5.9
-            pose_host.pose.position.z = 0.9
+        pose_host = PoseStamped()
+        pose_host.header.frame_id = '/map'
+        pose_host.pose.position.x = 1.0
+        pose_host.pose.position.y = 5.9
+        pose_host.pose.position.z = 0.9
 
-            pose_guest = PoseStamped()
-            pose_guest.header.frame_id = 'map'
-            pose_guest.pose.position.x = 1.0
-            pose_guest.pose.position.y = 4.7
-            pose_guest.pose.position.z = 1.0
+        pose_guest = PoseStamped()
+        pose_guest.header.frame_id = '/map'
+        pose_guest.pose.position.x = 1.0
+        pose_guest.pose.position.y = 4.7
+        pose_guest.pose.position.z = 1.0
 
-            host.set_pose(pose_host)
+        host.set_pose(pose_host)
+        guest1.set_pose(pose_guest)
 
-            guest1.set_pose(pose_guest)
+        # introduce humans and look at them
+        giskardpy.move_head_to_human()
+        rospy.sleep(3)
+        introduce(host, guest1)
 
-            # introduce humans and look at them
-            giskardpy.move_head_to_human()
-            rospy.sleep(3)
-            introduce(host, guest1)
-
-            rospy.sleep(2)
-            TalkingMotion("Introducing again").resolve().perform()
-            rospy.sleep(2)
-            introduce(host, guest1)
-
+        rospy.sleep(2)
+        TalkingMotion("Introducing again").resolve().perform()
+        rospy.sleep(2)
+        introduce(host, guest1)
 
 
-demo_tst()
-# demo_tst2()
+
+demo_tst2()
+
 

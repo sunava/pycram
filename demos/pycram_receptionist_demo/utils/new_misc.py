@@ -147,24 +147,26 @@ def introduce(human1: HumanDescription, human2: HumanDescription):
     if human1.pose:
         LookAtAction(targets=[human1.pose]).resolve().perform()
         pub_pose.publish(human1.pose)
-        rospy.sleep(3.5)
+        rospy.sleep(1.5)
     TalkingMotion(f"Hey, {human1.name}").resolve().perform()
+    rospy.sleep(1.5)
 
     if human2.pose:
         LookAtAction(targets=[human2.pose]).resolve().perform()
         pub_pose.publish(human2.pose)
-        rospy.sleep(3.5)
+        rospy.sleep(1)
     TalkingMotion(f" This is {human2.name} and their favorite drink is {human2.fav_drink}").resolve().perform()
     rospy.sleep(2)
     TalkingMotion(f"Hey, {human2.name}").resolve().perform()
+    rospy.sleep(1.5)
 
     if human1.pose:
         LookAtAction(targets=[human1.pose]).resolve().perform()
         pub_pose.publish(human1.pose)
-        rospy.sleep(3.5)
+        rospy.sleep(1.5)
     TalkingMotion(f" This is {human1.name} and their favorite drink is {human1.fav_drink}").resolve().perform()
 
-    rospy.sleep(3)
+    rospy.sleep(1)
 
 def describe(human: HumanDescription):
         """
