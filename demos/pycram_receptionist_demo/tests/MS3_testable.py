@@ -1,4 +1,5 @@
 import rospy
+from geometry_msgs.msg import PointStamped
 
 from pycram.designators.action_designator import DetectAction, NavigateAction
 from demos.pycram_receptionist_demo.utils.new_misc import *
@@ -27,6 +28,7 @@ pub_nlp = rospy.Publisher('/startListener', String, queue_size=10)
 response = ""
 callback = False
 
+
 # Declare variables for humans
 host = HumanDescription("Lukas", fav_drink="Coffee")
 guest1 = HumanDescription("Jessica", fav_drink="Water")
@@ -41,6 +43,7 @@ def data_cb(data):
     response.append("None")
     callback = True
 
+
 def demo_tst():
     """
     testing HRI and introduction and navigating
@@ -50,7 +53,13 @@ def demo_tst():
         global response
         test_all = False
 
+        TalkingMotion("Hello").resolve().perform()
+        giskardpy.move_head_to_human()
+
         rospy.Subscriber("nlp_out", String, data_cb)
+        desig = DetectAction(technique='attributes').resolve().perform()
+        guest1.set_attributes(desig)
+
         DetectAction(technique='human', state='start').resolve().perform()
         rospy.loginfo("human detected")
 
@@ -67,7 +76,7 @@ def demo_tst():
 
         if response[0] == "<GUEST>":
             if response[1] != "<None>":
-                TalkingMotion("it is so noisy here, please confirm if i got your name right").resolve().perform()
+                TalkingMotion("please confirm if i got your name right").resolve().perform()
                 guest1.set_drink(response[2])
                 rospy.sleep(1)
                 guest1.set_name(name_confirm(response[1]))
@@ -117,10 +126,18 @@ def demo_tst():
             TalkingMotion("Welcome to the living room").resolve().perform()
             rospy.sleep(1)
 
+            # hard coded poses for seat1 as PointStamped
+            pose_seat = PointStamped()
+            pose_seat.header.frame_id = "/map"
+            pose_seat.point.x = 1.1
+            pose_seat.point.y = 4.7
+            pose_seat.point.z = 1
+
+            giskardpy.move_arm_to_pose(pose_seat)
             TalkingMotion("please take a seat next to your host").resolve().perform()
             rospy.sleep(2)
 
-            # hard coded poses for seat1 and seat2
+            # hard coded poses for seat1 and seat2 as PoseStamped
             pose_host = PoseStamped()
             pose_host.header.frame_id = "/map"
             pose_host.pose.position.x = 1
@@ -148,14 +165,28 @@ def demo_tst2():
     just testing the gazing between humans -> introduce function
     """
     with real_robot:
+        jule = False
 
         TalkingMotion("Welcome, please come in").resolve().perform()
 
-        giskardpy.move_head_to_human()
+        pose_seat = PointStamped()
+        pose_seat.header.frame_id = "/map"
+        pose_seat.point.x = 1.1
+        pose_seat.point.y = 4.7
+        pose_seat.point.z = 1
 
-        TalkingMotion("Hello, i will alternaze gaze now").resolve().perform()
-        rospy.sleep(1)
+        giskardpy.move_arm_to_pose(pose_seat)
+        TalkingMotion("please take a seat next to your host").resolve().perform()
+        rospy.sleep(2)
 
+        if jule:
+            # look for human
+            # TODO: test new technique
+            #DetectAction(technique='human', state='start').resolve().perform()
+            rospy.loginfo("human detected")
+            #giskardpy.move_head_to_human()
+            #rospy.sleep(7)
+            #DetectAction(technique='human', state='stop').resolve().perform()
 
         pose_host = PoseStamped()
         pose_host.header.frame_id = '/map'

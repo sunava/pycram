@@ -1,4 +1,6 @@
 import rospy
+
+from pycram.designators.action_designator import LookAtAction
 from pycram.designators.object_designator import Pose, PoseStamped, HumanDescription
 from pycram.designators.motion_designator import TalkingMotion
 from pycram.helper import axis_angle_to_quaternion
@@ -12,7 +14,7 @@ response = ""
 callback = False
 
 # TODO: set to False when NLP has implemented that feature
-doorbell = True
+
 
 # Pose variables
 # Pose in front of the couch, HSR looks in direction of couch
@@ -143,12 +145,14 @@ def introduce(human1: HumanDescription, human2: HumanDescription):
     """
 
     if human1.pose:
+        LookAtAction(targets=[human1.pose]).resolve().perform()
         pub_pose.publish(human1.pose)
         rospy.sleep(1.5)
     TalkingMotion(f"Hey, {human1.name}").resolve().perform()
     rospy.sleep(1.5)
 
     if human2.pose:
+        LookAtAction(targets=[human2.pose]).resolve().perform()
         pub_pose.publish(human2.pose)
         rospy.sleep(1)
     TalkingMotion(f" This is {human2.name} and their favorite drink is {human2.fav_drink}").resolve().perform()
@@ -157,18 +161,22 @@ def introduce(human1: HumanDescription, human2: HumanDescription):
     rospy.sleep(1.5)
 
     if human1.pose:
+        LookAtAction(targets=[human1.pose]).resolve().perform()
         pub_pose.publish(human1.pose)
         rospy.sleep(1.5)
     TalkingMotion(f" This is {human1.name} and their favorite drink is {human1.fav_drink}").resolve().perform()
 
     rospy.sleep(1)
 
-    def describe(human: HumanDescription):
+def describe(human: HumanDescription):
         """
         HRI-function for describing a human more detailed.
         the following will be stated: gender, headgear, clothing, brightness of clothes
         :param human: human to be described
         """
+        if human.pose:
+            LookAtAction(targets=[human.pose]).resolve().perform()
+            pub_pose.publish(human.pose)
 
         TalkingMotion(f"I will describe {human.name} further now").resolve().perform()
         rospy.sleep(1)
@@ -178,13 +186,13 @@ def introduce(human1: HumanDescription, human2: HumanDescription):
         rospy.sleep(1)
 
         # headgear or not
-        TalkingMotion(f"you are wearing {human.attributes[1]}").resolve().perform()
+        TalkingMotion(f"you are {human.attributes[1]}").resolve().perform()
         rospy.sleep(1)
 
         # kind of clothes
-        TalkingMotion(f"you are wearing {human.attributes[2]}").resolve().perform()
+        TalkingMotion(f"you are  {human.attributes[2]}").resolve().perform()
         rospy.sleep(1)
 
         # brightness of clothes
-        TalkingMotion(f"your clothes are {human.attributes[3]}").resolve().perform()
+        TalkingMotion(f"you are wearing {human.attributes[3]}").resolve().perform()
         rospy.sleep(1)
