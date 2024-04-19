@@ -313,7 +313,7 @@ class PickUpAction(ActionDesignatorDescription):
             object = self.object_designator.bullet_world_object
             # Calculate the object's pose in the map frame
             oTm = object.get_pose()
-            execute = False
+            execute = True
 
             # Adjust object pose for top-grasping, if applicable
             if self.grasp == "top":
@@ -478,7 +478,7 @@ class PlaceAction(ActionDesignatorDescription):
         def perform(self) -> None:
             lt = LocalTransformer()
             robot = BulletWorld.robot
-            execute = False
+            execute = True
             # oTm = Object Pose in Frame map
             oTm = self.target_location
 

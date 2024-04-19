@@ -481,6 +481,8 @@ class MoveArmJointsMotion(MotionDesignatorDescription):
         # predefined arm motion for placing human given plate
         elif self.left_arm_config == "place_plate":
             left_poses = robot_description.get_static_joint_chain("placing_pos", self.left_arm_config)
+        elif self.left_arm_config == "pick_up_paper":
+            left_poses = robot_description.get_static_joint_chain("pick_up_paper_conf", self.left_arm_config)
         if self.right_arm_poses:
             right_poses = self.right_arm_poses
         elif self.right_arm_config:
