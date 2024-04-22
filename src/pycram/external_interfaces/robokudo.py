@@ -1,4 +1,6 @@
 import sys
+
+from geometry_msgs.msg import PoseStamped
 from typing_extensions import Callable
 
 import rospy
@@ -10,6 +12,7 @@ from pycram.datastructures.pose import Pose
 from pycram.local_transformer import LocalTransformer
 from pycram.world import World
 from pycram.datastructures.enums import ObjectType
+from ..plan_failures import PerceptionLowLevelFailure
 
 try:
     from robokudo_msgs.msg import ObjectDesignator as robokudo_ObjetDesignator
@@ -44,8 +47,9 @@ def init_robokudo_interface(func: Callable) -> Callable:
 
 def create_robokudo_action_client() -> Callable:
     """
-    Creates a new action client for the RoboKudo query interface and returns a function encapsulating the action client.
-    The returned function can be called with an ObjectDesigantor as parameter and returns the result of the action client.
+    Creates a new action client for the RoboKudo query interface and returns a function encapsulating the action
+    client. The returned function can be called with a technique and/or type as parameter and returns the result of
+    the action client.
 
     :return: A callable function encapsulating the action client
     """
@@ -89,20 +93,34 @@ def msg_from_obj_desig(obj_desc: ObjectDesignatorDescription) -> 'robokudo_Objet
     return obj_msg
 
 
-def make_query_goal_msg(obj_desc: ObjectDesignatorDescription) -> 'QueryGoal':
+def make_query_goal_msg(technique, object_type=None, object_color=None) -> 'QueryGoal':
     """
-    Creates a QueryGoal message from a PyCRAM Object designator description for the use of Querying RobotKudo.
+    Generates a QueryGoal message from a specific technique that describes what needs to be perceived for querying
+    RobotKudo. The default message is empty and gets filled with the given parameters. However, if the technique is
+    not 'human', 'color', or 'type', it will result in a broader perception where all objects are considered.
 
-    :param obj_desc: The PyCRAM object designator description that should be converted
-    :return: The RoboKudo QueryGoal for the given object designator description
+    :param technique: The technique that should be used for the query, e.g. type, color, human
+    :param object_type: The object type that should be perceived
+    :param object_color: The object color that should be perceived
+    :return: The RoboKudo QueryGoal message
     """
     goal_msg = QueryGoal()
-    goal_msg.obj.uid = str(id(obj_desc))
-    goal_msg.obj.obj_type = str(obj_desc.types[0].name)  # For testing purposes
-    if ObjectType.JEROEN_CUP == obj_desc.types[0]:
-        goal_msg.obj.color.append("blue")
-    elif ObjectType.BOWL == obj_desc.types[0]:
-        goal_msg.obj.color.append("red")
+    if technique == "type":
+        if not object_type:
+            raise PerceptionLowLevelFailure(
+                f"For technique='Type' the object_type must be set, but is {object_type}")
+
+        goal_msg.obj.obj_type = str(object_type)
+
+    elif technique == "color":
+        if not object_color:
+            raise PerceptionLowLevelFailure(
+                f"For technique='color' the object_color must be set, but is {object_color}")
+        goal_msg.obj.color.append(str(object_color))
+
+    elif technique == 'human':
+        goal_msg.obj.obj_type = "human"
+
     return goal_msg
 
 
@@ -133,3 +151,44 @@ def query(object_desc: ObjectDesignatorDescription) -> ObjectDesignatorDescripti
         pose_candidates[source] = pose
 
     return pose_candidates
+
+@init_robokudo_interface
+def query_empty(object_desc: ObjectDesignatorDescription):
+    """Sends a query to RoboKudo for an empty query."""
+    global robokudo_action_client
+    object_goal = make_query_goal_msg(object_desc)
+    robokudo_action_client(object_goal)
+
+    return query_result
+
+
+@init_robokudo_interface
+def query_human() -> PoseStamped:
+    """Sends a query to RoboKudo to look for a human."""
+    global robokudo_action_client
+    global human_bool
+    global human_pose
+
+    human_bool = False
+
+    def callback(pose):
+        global human_bool
+        human_bool = True
+        human_pose = pose
+
+    # Create client and send goal
+    rospy.Subscriber("/human_pose", PoseStamped, callback)
+    robokudo_action_client(QueryGoal())
+
+    while not human_bool:
+        rospy.sleep(0.5)
+
+    return human_pose
+
+
+@init_robokudo_interface
+def stop_query_human():
+    """Sends a query to RoboKudo to stop human detection."""
+    global robokudo_action_client
+    robokudo_action_client.cancel_all_goals()
+    rospy.loginfo("Cancelled current goal")
