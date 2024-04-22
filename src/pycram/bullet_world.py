@@ -763,7 +763,7 @@ class Object:
                  pose: Pose = None,
                  world: BulletWorld = None,
                  color: Optional[List[float]] = [1, 1, 1, 1],
-                 size: str = "Normal",
+                 size: str = "normal",
                  ignoreCachedFiles: Optional[bool] = False,
                  id: Optional[int] = None,
                  customGeom: Optional[Dict[str, List[float]]] = None):
@@ -787,7 +787,7 @@ class Object:
         self.local_transformer = LocalTransformer()
         self.name: str = name
         self.type: str = type
-        self.size: str = size
+        self.size: str = size.lower()
         self.color: List[float] = color
         self._current_link_poses = {}
         self._current_link_transforms = {}
