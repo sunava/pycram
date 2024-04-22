@@ -21,7 +21,7 @@ robot = Object("pr2", "robot", "pr2.urdf", pose=Pose([1, 2, 0]))
 apartment = Object("apartment", "environment", "apartment.urdf")
 
 milk1 = Object("milk1", "milk", "milk.stl", pose=Pose([2.5, 2, 1.02]), color=[0, 0, 1, 1])
-milk2 = Object("milk2", "milk", "milk.stl", pose=Pose([2.5, 1.7, 1.02]), color=[1, 0, 0, 1], size="Big")
+milk2 = Object("milk2", "milk", "milk.stl", pose=Pose([2.5, 1.7, 1.02]), color=[1, 0, 0, 1], size="big")
 bowl = Object("bowl", "bowl", "bowl.stl", pose=Pose([2.5, 2.2, 1.02]), color=[1, 1, 1, 1])
 
 cereal = Object("cereal", "cereal", "breakfast_cereal.stl", pose=Pose([2.5, 2.4, 1.05]), color=[0, 1, 0, 1])
@@ -103,8 +103,8 @@ def monitor_func():
     if fluent.minor_interrupt.get_value():
         obj = fluent.objects_in_use.get(obj_type, None)
         if obj:
-            new_attributes = (obj.type, obj.color, obj.name, obj.location, obj.size)
-            old_attributes = (obj_type, obj_color, obj_name, obj_location, obj_size)
+            new_attributes = (obj.type.lower(), obj.color, obj.name.lower(), obj.location, obj.size.lower())
+            old_attributes = (obj_type.lower(), obj_color, obj_name.lower(), obj_location, obj_size.lower())
 
             if new_attributes != old_attributes:
                 obj_type, obj_color, obj_name, obj_location, obj_size = new_attributes
@@ -130,8 +130,8 @@ def move_and_detect(obj_type, obj_size, obj_color):
     filtered_dict = {
         key: obj
         for key, obj in object_dict.items()
-        if ((obj_type is None or obj_type.strip() == "" or obj.bullet_world_object.type == obj_type) and
-            (obj_size is None or obj_size.strip() == "" or obj.bullet_world_object.size == obj_size) and
+        if ((obj_type is None or obj_type.strip() == "" or obj.bullet_world_object.type.lower() == obj_type.lower()) and
+            (obj_size is None or obj_size.strip() == "" or obj.bullet_world_object.size.lower() == obj_size.lower()) and
             (obj_color is None or obj_color == [] or obj.bullet_world_object.color == obj_color))
     }
 
