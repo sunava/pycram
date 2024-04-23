@@ -511,14 +511,15 @@ def move_arm_to_pose(pose: PointStamped):
     # TODO: needs to be tested!
     print("in move arm")
     p_axis = Vector3Stamped()
-    #p_axis.header.frame_id = "/map"
+    p_axis.header.frame_id = "hand_gripper_tool_frame"
     p_axis.vector.x = 0
-    p_axis.vector.y = 1
+    p_axis.vector.y = 0
     p_axis.vector.z = 1
     giskard_wrapper.set_pointing_goal(goal_point=pose,
                                       tip_link="hand_gripper_tool_frame",
                                       pointing_axis=p_axis,
                                       root_link="map")
+    giskard_wrapper.execute()
 
 
 def spawn_kitchen():

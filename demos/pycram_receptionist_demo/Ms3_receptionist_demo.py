@@ -1,5 +1,9 @@
+import rospy
+from geometry_msgs.msg import PointStamped
+
 from pycram.designators.action_designator import DetectAction, NavigateAction, OpenAction
 from demos.pycram_receptionist_demo.utils.new_misc import *
+from pycram.enums import ObjectType
 from pycram.process_module import real_robot
 import pycram.external_interfaces.giskard as giskardpy
 from pycram.ros.robot_state_updater import RobotStateUpdater
@@ -16,10 +20,12 @@ robot = Object("hsrb", "robot", "../../resources/" + robot_description.name + ".
 robot_desig = ObjectDesignatorDescription(names=["hsrb"]).resolve()
 robot.set_color([0.5, 0.5, 0.9, 1])
 
-kitchen = Object("kitchen", "environment", "kitchen.urdf")
+kitchen = Object("kitchen", ObjectType.ENVIRONMENT, "couch-whole_kitchen2.urdf")
 giskardpy.init_giskard_interface()
 RobotStateUpdater("/tf", "/giskard_joint_states")
 kitchen_desig = ObjectDesignatorDescription(names=["kitchen"])
+
+
 
 # variables for communcation with nlp
 pub_nlp = rospy.Publisher('/startListener', String, queue_size=10)
@@ -54,8 +60,8 @@ with real_robot:
 
     # TODO: find name of door handle
     # link in rviz: iai_kitchen:arena:door_handle_inside
-    # door_handle_desig = ObjectPart(names=["door_handle_inside"], part_of=kitchen_desig.resolve())
-    # OpenAction(object_designator_description=door_handle_desig, arms=["left"]).resolve().perform()
+    door_handle_desig = ObjectPart(names=["door_handle_inside"], part_of=kitchen_desig.resolve())
+    OpenAction(object_designator_description=door_handle_desig, arms=["left"]).resolve().perform()
     # NavigateAction([pose_door]).resolve().perform()
 
     TalkingMotion("Welcome, please step in").resolve().perform()
@@ -121,46 +127,55 @@ with real_robot:
     TalkingMotion("i will show you the living room now").resolve().perform()
     rospy.sleep(1)
     TalkingMotion("please step out of the way and follow me").resolve().perform()
-    rospy.loginfo("stop looking now")
-    # TODO: look in direction of navigation maybe?
-    giskardpy.stop_looking()
 
-    # stop perceiving human
-    rospy.loginfo("stop detecting")
+    # stop looking at human
+    rospy.loginfo("stop looking now")
+    giskardpy.stop_looking()
     DetectAction(technique='human', state='stop').resolve().perform()
 
     # lead human to living room
-    # TODO: check if rospy.sleep is needed and how long
-    rospy.sleep(2)
     NavigateAction([pose_kitchen_to_couch]).resolve().perform()
     NavigateAction([pose_couch]).resolve().perform()
+
+
     TalkingMotion("Welcome to the living room").resolve().perform()
-    rospy.sleep(1)
+
+    pose_seat = PointStamped()
+    pose_seat.header.frame_id = "map"
+    pose_seat.point.x = 0.8
+    pose_seat.point.y = 4.8
+    pose_seat.point.z = 1.0
+
+    pose_seat1 = PoseStamped()
+    pose_seat1.header.frame_id = "/map"
+    pose_seat1.pose.position.x = 0.8
+    pose_seat1.pose.position.y = 4.8
+    pose_seat1.pose.position.z = 1
+
+    giskardpy.move_arm_to_pose(pose_seat)
+
+    giskardpy.move_head_to_human()
+    pub_pose.publish(pose_seat1)
     TalkingMotion("please take a seat next to your host").resolve().perform()
 
-    # search for free place to sit and host
-    # TODO: Failure Handling: scan room if no human detected on couch
-
-
-    # TODO: is it ok to seat guest bevore introducing??
-
+    #TODO: include Perception and get pose from them
     pose_host = PoseStamped()
     pose_host.header.frame_id = '/map'
-    pose_host.pose.position.x = 1.0
-    pose_host.pose.position.y = 5.9
+    pose_host.pose.position.x = 0.9
+    pose_host.pose.position.y = 5.5
     pose_host.pose.position.z = 0.9
 
     pose_guest = PoseStamped()
     pose_guest.header.frame_id = '/map'
-    pose_guest.pose.position.x = 1.0
-    pose_guest.pose.position.y = 4.7
-    pose_guest.pose.position.z = 1.0
+    pose_guest.pose.position.x = 0.8
+    pose_guest.pose.position.y = 4.8
+    pose_guest.pose.position.z = 1
 
     host.set_pose(pose_host)
-
     guest1.set_pose(pose_guest)
 
     # introduce humans and look at them
     introduce(host, guest1)
     describe(guest1)
+    giskardpy.stop_looking()
 

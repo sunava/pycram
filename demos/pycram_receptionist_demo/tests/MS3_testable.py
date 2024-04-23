@@ -1,8 +1,10 @@
 import rospy
 from geometry_msgs.msg import PointStamped
 
-from pycram.designators.action_designator import DetectAction, NavigateAction
+from pycram.designators.action_designator import DetectAction, NavigateAction, OpenAction
 from demos.pycram_receptionist_demo.utils.new_misc import *
+from pycram.designators.motion_designator import MoveGripperMotion
+from pycram.enums import ObjectType
 from pycram.process_module import real_robot
 import pycram.external_interfaces.giskard as giskardpy
 from pycram.ros.robot_state_updater import RobotStateUpdater
@@ -19,9 +21,10 @@ robot = Object("hsrb", "robot", "../../resources/" + robot_description.name + ".
 robot_desig = ObjectDesignatorDescription(names=["hsrb"]).resolve()
 robot.set_color([0.5, 0.5, 0.9, 1])
 
-kitchen = Object("kitchen", "environment", "kitchen.urdf")
+kitchen = Object("kitchen", ObjectType.ENVIRONMENT, "suturo_lab_version_2.urdf")
 giskardpy.init_giskard_interface()
 RobotStateUpdater("/tf", "/giskard_joint_states")
+kitchen_desig = BelieveObject(names=["kitchen"])
 
 # variables for communcation with nlp
 pub_nlp = rospy.Publisher('/startListener', String, queue_size=10)
@@ -53,7 +56,9 @@ def demo_tst():
         global response
         test_all = False
 
+        rospy.sleep(5)
         TalkingMotion("Hello").resolve().perform()
+
         giskardpy.move_head_to_human()
 
         rospy.Subscriber("nlp_out", String, data_cb)
@@ -64,8 +69,10 @@ def demo_tst():
         rospy.loginfo("human detected")
 
         giskardpy.move_head_to_human()
+        describe(guest1)
+        rospy.sleep(10)
         TalkingMotion("Hello, i am Toya and my favorite drink is oil. What about you, talk to me?").resolve().perform()
-        rospy.sleep(0.9)
+
 
         # signal to start listening
         pub_nlp.publish("start listening")
@@ -165,56 +172,82 @@ def demo_tst2():
     just testing the gazing between humans -> introduce function
     """
     with real_robot:
-        jule = False
+        pub_pose = rospy.Publisher('/human_pose', PoseStamped, queue_size=10)
 
-        TalkingMotion("Welcome, please come in").resolve().perform()
+
+        TalkingMotion("Welcome to the living room").resolve().perform()
 
         pose_seat = PointStamped()
-        pose_seat.header.frame_id = "/map"
-        pose_seat.point.x = 1.1
-        pose_seat.point.y = 4.7
-        pose_seat.point.z = 1
+        pose_seat.header.frame_id = "map"
+        pose_seat.point.x = 0.8
+        pose_seat.point.y = 5.8
+        pose_seat.point.z = 1.0
 
+        pose_seat1 = PoseStamped()
+        pose_seat1.header.frame_id = "/map"
+        pose_seat1.pose.position.x = 0.8
+        pose_seat1.pose.position.y = 5.8
+        pose_seat1.pose.position.z = 1
+
+        pose1 = robot.get_pose()
+        print(pose1)
+        q1= axis_angle_to_quaternion(axis=[0, 0, 1], angle=90)
+        pose1.pose.orientation.x = q1[0]
+        pose1.pose.orientation.y = q1[1]
+        pose1.pose.orientation.z = q1[2]
+        pose1.pose.orientation.w = q1[3]
+        NavigateAction([pose1]).resolve().perform()
+        #pub_pose.publish(pose_seat1)
         giskardpy.move_arm_to_pose(pose_seat)
-        TalkingMotion("please take a seat next to your host").resolve().perform()
-        rospy.sleep(2)
 
-        if jule:
-            # look for human
-            # TODO: test new technique
-            #DetectAction(technique='human', state='start').resolve().perform()
-            rospy.loginfo("human detected")
-            #giskardpy.move_head_to_human()
-            #rospy.sleep(7)
-            #DetectAction(technique='human', state='stop').resolve().perform()
+        giskardpy.move_head_to_human()
+
+        TalkingMotion("please take a seat next to your host").resolve().perform()
+
+        # search for free place to sit and host
+        # TODO: Failure Handling: scan room if no human detected on couch
+
+        # TODO: is it ok to seat guest bevore introducing??
 
         pose_host = PoseStamped()
         pose_host.header.frame_id = '/map'
-        pose_host.pose.position.x = 1.0
-        pose_host.pose.position.y = 5.9
+        pose_host.pose.position.x = 0.9
+        pose_host.pose.position.y = 5.5
         pose_host.pose.position.z = 0.9
 
         pose_guest = PoseStamped()
         pose_guest.header.frame_id = '/map'
-        pose_guest.pose.position.x = 1.0
-        pose_guest.pose.position.y = 4.7
-        pose_guest.pose.position.z = 1.0
+        pose_guest.pose.position.x = 0.8
+        pose_guest.pose.position.y = 4.8
+        pose_guest.pose.position.z = 1
 
         host.set_pose(pose_host)
+
         guest1.set_pose(pose_guest)
 
         # introduce humans and look at them
-        giskardpy.move_head_to_human()
-        rospy.sleep(3)
         introduce(host, guest1)
+        describe(guest1)
 
-        rospy.sleep(2)
-        TalkingMotion("Introducing again").resolve().perform()
-        rospy.sleep(2)
-        introduce(host, guest1)
+def open_tst():
+    """
+    just testing the gazing between humans -> introduce function
+    """
+    with real_robot:
+
+        TalkingMotion("Opening now").resolve().perform()
+        # link in rviz: iai_kitchen:arena:door_handle_inside
+        # obj = BulletWorld.current_bullet_world.objects
+        # for objects in obj:
+            # print(objects.links)
+        MoveGripperMotion(motion="close", gripper="left").resolve().perform()
+        door_handle_desig = ObjectPart(names=["iai_kitchen:arena:door_handle_inside"], part_of=kitchen_desig.resolve())
+        OpenAction(object_designator_description=door_handle_desig, arms=["left"]).resolve().perform()
+
 
 
 
 demo_tst2()
+#open_tst()
 
 

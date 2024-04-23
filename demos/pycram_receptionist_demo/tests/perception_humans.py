@@ -18,24 +18,23 @@ robot_desig = ObjectDesignatorDescription(names=["hsrb"]).resolve()
 robot.set_color([0.5, 0.5, 0.9, 1])
 
 # careful that u spawn the correct kitchen
-kitchen = Object("kitchen", "environment", "kitchen.urdf")
+kitchen = Object("kitchen", "environment", "suturo_lab_version_1.urdf")
 giskardpy.init_giskard_interface()
 guest1 = HumanDescription("guest1")
 
+for obj in world.current_bullet_world.objects:
+    print(obj)
 
+kitchen.set_joint_state("iai_kitchen:arena:door_origin_revolute_joint", 1)
 
 def p():
     with real_robot:
-        seat = False
-        attributes = True
+        seat = True
+        attributes = False
 
         if attributes:
             # to signal the start of demo
             # TalkingMotion("Hello, i am ready for the test").resolve().perform()
-
-            # does the code work with the manipulation feature?
-            #
-
 
             TalkingMotion("detecting attributes now").resolve().perform()
             giskardpy.move_head_to_human()
@@ -51,8 +50,6 @@ def p():
 
             describe(guest1)
 
-
-            
             rospy.sleep(3)
 
             giskardpy.stop_looking()
@@ -70,6 +67,11 @@ def p():
 
         if seat:
             # new Query for free seat
+            TalkingMotion("detecting free seat on whole couch now").resolve().perform()
+            seat = DetectAction(technique='location', state='sofa').resolve().perform()
+            rospy.loginfo("seat bool: " + str(seat))
+            rospy.sleep(2)
+
             TalkingMotion("detecting free seat now").resolve().perform()
             seat = DetectAction(technique='location', state='seat2').resolve().perform()
             rospy.loginfo("seat bool: " + str(seat))
@@ -84,5 +86,5 @@ def p():
         print("end")
 
 
-if __name__ == '__main__':
-    p()
+# if __name__ == '__main__':
+#     p()

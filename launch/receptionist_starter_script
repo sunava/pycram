@@ -1,9 +1,16 @@
 #!/bin/bash
 
+# Perception mit starten
+
+#source activate
+#rosrun robokudo main.py _ae=receptionist _ros_pkg=milestone1
+
 # Führe Rasa aus
 source /home/suturo/suturo23_24/nlp_ws/venv/bin/activate
 cd /home/suturo/suturo23_24/nlp_ws/src/Rasa/rasa
 rasa run --enable-api
+
+
 
 # cd /home/suturo/suturo23_24/nlp_ws/src/suturo_nlp/activate_language_processing/scripts
 # python3 nlp_receptionist.py
