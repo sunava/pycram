@@ -10,7 +10,7 @@ from demos.pycram_clean_the_table_demo.utils.misc import *
 CUTLERY = ["Spoon", "Fork", "Knife", "Plasticknife"]
 
 # Wished objects for the Demo
-wished_sorted_obj_list = ["Fork"]
+wished_sorted_obj_list = ["Fork", "Spoon"]
 
 
 # length of wished list for failure handling
@@ -50,11 +50,11 @@ class PlacingXPose(Enum):
     """
     Differentiate the z pose for placing
     """
-    CUTLERY = 2.6
-    SPOON = 2.6
-    FORK = 2.6
-    PLASTICKNIFE = 2.6
-    KNIFE = 2.6
+    CUTLERY = 2.55
+    SPOON = 2.55
+    FORK = 2.55
+    PLASTICKNIFE = 2.55
+    KNIFE = 2.55
     METALBOWL = 3.0
     METALMUG = 2.9
     METALPLATE = 2.9
@@ -64,11 +64,11 @@ class PlacingYPose(Enum):
     """
     Differentiate the z pose for placing
     """
-    CUTLERY = -1.54
-    SPOON = -1.54
-    FORK = -1.54
-    PLASTICKNIFE = -1.54
-    KNIFE = -1.54
+    CUTLERY = -1.56
+    SPOON = -1.56
+    FORK = -1.56
+    PLASTICKNIFE = -1.56
+    KNIFE = -1.56
     METALBOWL = -1.7
     METALMUG = -1.74
     METALPLATE = -1.74
@@ -138,6 +138,7 @@ def pickup_and_place_objects(sorted_obj: list):
 
         # navigates back if a next object exists
         if value + 1 < len(sorted_obj):
+            NavigateAction(target_locations=[Pose([2.35, 0.3, 0], [0, 0, 1, 1])]).resolve().perform()
             navigate_to("popcorn table", sorted_obj[value + 1].pose.position.y, )
 
 
@@ -204,8 +205,9 @@ with ((real_robot)):
     ParkArmsAction([Arms.LEFT]).resolve().perform()
 
     TalkingMotion("Navigating").resolve().perform()
-
-    #navigate_to("dishwasher")
+    # NavigateAction(target_locations=[Pose([2.35, 0.3, 0], [0, 0, -1, 1])]).resolve().perform()
+    #
+    # navigate_to("dishwasher_left")
     handle_desig = ObjectPart(names=["iai_kitchen/sink_area_dish_washer_door_handle"], part_of=apart_desig.resolve())
 
     # x_y_pos = get_pos("Metalmug")
@@ -225,7 +227,7 @@ with ((real_robot)):
     sorted_obj = sort_objects(robot, object_desig, wished_sorted_obj_list)
 
     # picking up and placing objects
-    #pickup_and_place_objects(sorted_obj)
+    pickup_and_place_objects(sorted_obj)
 
     # # failure handling part 1
     # new_sorted_obj = []
