@@ -123,11 +123,12 @@ def pickup_and_place_objects(sorted_obj: list):
             grasp = "top"
 
         # change object x pose if the grasping pose is too far in the table
+        # TODO: Wert von table_pose anpassen
         if sorted_obj[value].type == "Cutlery" and sorted_obj[value].pose.position.x < table_pose - 0.125:
             sorted_obj[value].pose.position.x += 0.1
 
-            TalkingMotion("Picking up with: " + grasp).resolve().perform()
-            try_pick_up(robot, sorted_obj[value], grasp)
+        TalkingMotion("Picking up with: " + grasp).resolve().perform()
+        try_pick_up(robot, sorted_obj[value], grasp)
 
         place_objects(True, sorted_obj, value, grasp)
         #
