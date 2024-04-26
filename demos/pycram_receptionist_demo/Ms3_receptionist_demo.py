@@ -60,8 +60,8 @@ with real_robot:
 
     # TODO: find name of door handle
     # link in rviz: iai_kitchen:arena:door_handle_inside
-    door_handle_desig = ObjectPart(names=["door_handle_inside"], part_of=kitchen_desig.resolve())
-    OpenAction(object_designator_description=door_handle_desig, arms=["left"]).resolve().perform()
+    # door_handle_desig = ObjectPart(names=["door_handle_inside"], part_of=kitchen_desig.resolve())
+    # OpenAction(object_designator_description=door_handle_desig, arms=["left"]).resolve().perform()
     # NavigateAction([pose_door]).resolve().perform()
 
     TalkingMotion("Welcome, please step in").resolve().perform()

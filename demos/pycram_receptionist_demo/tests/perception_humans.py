@@ -18,12 +18,12 @@ robot_desig = ObjectDesignatorDescription(names=["hsrb"]).resolve()
 robot.set_color([0.5, 0.5, 0.9, 1])
 
 # careful that u spawn the correct kitchen
-kitchen = Object("kitchen", "environment", "suturo_lab_version_1.urdf")
+kitchen = Object("kitchen", "environment", "suturo_lab_version_2.urdf")
 giskardpy.init_giskard_interface()
 guest1 = HumanDescription("guest1")
 
-for obj in world.current_bullet_world.objects:
-    print(obj)
+#for obj in world.current_bullet_world.objects:
+#   print(obj)
 
 kitchen.set_joint_state("iai_kitchen:arena:door_origin_revolute_joint", 1)
 
@@ -67,24 +67,25 @@ def p():
 
         if seat:
             # new Query for free seat
-            TalkingMotion("detecting free seat on whole couch now").resolve().perform()
-            seat = DetectAction(technique='location', state='sofa').resolve().perform()
-            rospy.loginfo("seat bool: " + str(seat))
-            rospy.sleep(2)
+            # TalkingMotion("detecting free seat on whole couch now").resolve().perform()
+            # seat = DetectAction(technique='location', state='sofa').resolve().perform()
+            # rospy.loginfo("seat bool: " + str(seat))
 
-            TalkingMotion("detecting free seat now").resolve().perform()
-            seat = DetectAction(technique='location', state='seat2').resolve().perform()
-            rospy.loginfo("seat bool: " + str(seat))
+            TalkingMotion("detecting").resolve().perform()
+            seat1 = DetectAction(technique='location', state='seat2').resolve().perform()
+            # rospy.loginfo("seat bool: " + str(seat1))
+
+            # print(seat1[1][0])
+            # print("##################")
             rospy.sleep(1)
 
-            TalkingMotion("detecting free seat number 2 now").resolve().perform()
-            seat = DetectAction(technique='location', state='seat1').resolve().perform()
-            rospy.loginfo("seat bool: " + str(seat))
-            rospy.sleep(3)
-
+            # TalkingMotion("detecting free seat number 2 now").resolve().perform()
+            #seat = DetectAction(technique='location', state='seat1').resolve().perform()
+            #rospy.loginfo("seat bool: " + str(seat))
+            #rospy.sleep(3)
 
         print("end")
 
 
-# if __name__ == '__main__':
-#     p()
+if __name__ == '__main__':
+     p()

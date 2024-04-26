@@ -522,6 +522,19 @@ def move_arm_to_pose(pose: PointStamped):
     giskard_wrapper.execute()
 
 
+def grasp_doorhandle(handle_name: str):
+
+    print("open door with handle")
+
+    giskard_wrapper.set_hsrb_door_handle_grasp(handle_name=handle_name)
+    giskard_wrapper.execute()
+
+def open_doorhandle(handle_name: str):
+
+    giskard_wrapper.set_hsrb_open_door_goal(door_handle_link=handle_name)
+    giskard_wrapper.execute()
+
+
 def spawn_kitchen():
     env_urdf = rospy.get_param('kitchen_description')
     kitchen_pose = tf.lookup_pose('map', 'iai_kitchen/urdf_main')

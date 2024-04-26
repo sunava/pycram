@@ -56,14 +56,13 @@ def demo_tst():
         global response
         test_all = False
 
-        rospy.sleep(5)
         TalkingMotion("Hello").resolve().perform()
 
         HeadFollowAction('start')
 
         rospy.Subscriber("nlp_out", String, data_cb)
-        desig = DetectAction(technique='attributes').resolve().perform()
-        guest1.set_attributes(desig)
+        # desig = DetectAction(technique='attributes').resolve().perform()
+        # guest1.set_attributes(desig)
 
         DetectAction(technique='human', state='start').resolve().perform()
         rospy.loginfo("human detected")
@@ -228,7 +227,7 @@ def open_tst():
 
 
 
-demo_tst2()
+demo_tst()
 #open_tst()
 
 

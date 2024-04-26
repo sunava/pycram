@@ -1149,13 +1149,19 @@ class GraspingAction(ActionDesignatorDescription):
             q2 = [oTb.pose.orientation.x, oTb.pose.orientation.y,
                   oTb.pose.orientation.z, oTb.pose.orientation.w]
             new_qua = helper.multiply_quaternions(object_orientation, q2)
+
             oTb.pose.orientation.x = new_qua[0]
             oTb.pose.orientation.y = new_qua[1]
             oTb.pose.orientation.z = new_qua[2]
             oTb.pose.orientation.w = new_qua[3]
 
-            # Transform the pose to the map frame
-            oTmG = lt.transform_pose(oTb, "map")
+            tool_frame = robot_description.get_tool_frame(self.arm)
+            oTgt = lt.transform_pose(oTb, robot.get_link_tf_frame(tool_frame))
+            z = oTgt.pose.position.z
+            oTgt.pose.position.z = z - 0.01
+            oTmgt = lt.transform_pose(oTgt, "map")
+            oTgt.pose.position.z = z - 0.01
+            oTmG = lt.transform_pose(oTgt, "map")
 
             # Open the gripper before picking up the object
             rospy.logwarn("Opening Gripper")
@@ -1164,12 +1170,14 @@ class GraspingAction(ActionDesignatorDescription):
             # Move to the pre-grasp position and visualize the action
             rospy.logwarn("Picking up now")
 
+            BulletWorld.current_bullet_world.add_vis_axis(oTmgt)
             BulletWorld.current_bullet_world.add_vis_axis(oTmG)
             if execute:
-                MoveTCPMotion(oTmG, self.arm).resolve().perform()
+                MoveTCPMotion(oTmgt, self.arm).resolve().perform()
+                # MoveTCPMotion(oTmG, self.arm).resolve().perform()
             rospy.sleep(5)
             # Open the gripper before picking up the object
-            rospy.logwarn("Opening Gripper")
+            rospy.logwarn("Closing Gripper")
             MoveGripperMotion(motion="close", gripper=self.arm).resolve().perform()
 
         def to_sql(self) -> ORMGraspingAction:
@@ -1414,29 +1422,36 @@ class PouringAction(ActionDesignatorDescription):
         def perform(self) -> None:
             lt = LocalTransformer()
             robot = BulletWorld.robot
-            # oTm = Object Pose in Frame map
-            if self.direction == "right":
-                oTm = Pose([self.target_location.pose.position.x - 0.3, self.target_location.pose.position.y + 0.1,
-                            self.target_location.pose.position.z + 0.1], self.target_location.pose.orientation)
-            else:
-                oTm = Pose([self.target_location.pose.position.x - 0.3, self.target_location.pose.position.y - 0.1,
-                            self.target_location.pose.position.z + 0.12], self.target_location.pose.orientation)
 
             # TODO add for other robots
             if robot.name == "hsrb":
+                # oTm = Object Pose in Frame map
+                if self.direction == "right":
+                    oTm = Pose(
+                        [self.target_location.pose.position.x - 0.008, self.target_location.pose.position.y + 0.095,
+                         self.target_location.pose.position.z + 0.13], self.target_location.pose.orientation) # y + 0.095
+                    # oTm = Pose([self.target_location.pose.position.x - 0.3, self.target_location.pose.position.y + 0.1,
+                    # self.target_location.pose.position.z + 0.1], self.target_location.pose.orientation)
+                else:
+                    oTm = Pose(
+                        [self.target_location.pose.position.x - 0.008, self.target_location.pose.position.y - 0.15,
+                         self.target_location.pose.position.z + 0.13], self.target_location.pose.orientation)
+                    # oTm = Pose([self.target_location.pose.position.x - 0.3, self.target_location.pose.position.y - 0.1,
+                    # self.target_location.pose.position.z + 0.1], self.target_location.pose.orientation)
                 grasp_rotation = robot_description.grasps.get_orientation_for_grasp("front")
                 oTb = lt.transform_pose(oTm, robot.get_link_tf_frame("base_link"))
                 oTb.orientation = grasp_rotation
                 oTmG = lt.transform_pose(oTb, "map")
 
                 rospy.logwarn("Pouring now")
+                MoveTorsoAction([0.37]).resolve().perform()
                 MoveTCPMotion(oTmG, self.arm, allow_gripper_collision=False).resolve().perform()
 
-                MoveTorsoAction([0.35]).resolve().perform()
+                # MoveTorsoAction([0.35]).resolve().perform()
 
-                NavigateAction(
-                    [Pose([robot.get_pose().pose.position.x + 0.23, robot.get_pose().pose.position.y,
-                           0], robot.get_pose().pose.orientation)]).resolve().perform()
+                # NavigateAction(
+                # [Pose([robot.get_pose().pose.position.x + 0.2, robot.get_pose().pose.position.y,
+                # 0], robot.get_pose().pose.orientation)]).resolve().perform()
 
                 # kwargs = dict()
                 #
@@ -1447,7 +1462,7 @@ class PouringAction(ActionDesignatorDescription):
 
                 PouringMotion(self.direction, self.angle).resolve().perform()
 
-                rospy.sleep(2)
+                rospy.sleep(3)
 
                 if self.direction == "right":
                     PouringMotion("left", 0).resolve().perform()
@@ -1456,7 +1471,7 @@ class PouringAction(ActionDesignatorDescription):
 
                 # Move away from the table
                 NavigateAction(
-                    [Pose([robot.get_pose().pose.position.x - 0.1, robot.get_pose().pose.position.y,
+                    [Pose([robot.get_pose().pose.position.x - 0.15, robot.get_pose().pose.position.y,
                            0])]).resolve().perform()
 
     def __init__(self, target_locations: List[Pose], arms: List[str], directions: List[str], angles: List[float],

@@ -36,6 +36,7 @@ def data_cb(data):
     global callback
 
     response = data.data.split(",")
+    response.append("None")
     callback = True
 
 
@@ -52,6 +53,7 @@ def name_confirm(name):
     rospy.Subscriber("nlp_out", String, data_cb)
 
     TalkingMotion("is your name " + str(name) + "?").resolve().perform()
+    rospy.sleep(0.8)
     pub_nlp.publish("start now")
 
     while not callback:
@@ -64,6 +66,7 @@ def name_confirm(name):
         return name
     else:
         TalkingMotion("please repeat your name").resolve().perform()
+        rospy.sleep(0.6)
         pub_nlp.publish("start")
 
         while not callback:
@@ -90,6 +93,7 @@ def name_repeat():
 
     while not got_name:
         TalkingMotion("i am sorry, please repeat your name").resolve().perform()
+        rospy.sleep(0.7)
         pub_nlp.publish("start")
 
         while not callback:
@@ -116,7 +120,7 @@ def drink_confirm(drink):
     rospy.Subscriber("nlp_out", String, data_cb)
 
     TalkingMotion("is your favorite drink " + str(drink) + "?").resolve().perform()
-    rospy.sleep(1)
+    rospy.sleep(0.6)
     pub_nlp.publish("start")
 
     while not callback:
@@ -129,6 +133,7 @@ def drink_confirm(drink):
         return drink
     else:
         TalkingMotion("i am sorry, please repeat the drink").resolve().perform()
+        rospy.sleep(0.6)
         pub_nlp.publish("start")
 
         while not callback:

@@ -367,6 +367,9 @@ class HSRBDetectingReal(ProcessModule):
         elif desig.technique == 'location':
             seat = desig.state
             seat_human_pose = seat_queryHuman(seat)
+            print("##################")
+            # print(seat_human_pose[1][0])
+            print("##################")
             return seat_human_pose
 
         elif desig.technique == 'attributes':
