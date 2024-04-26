@@ -1,7 +1,7 @@
 import rospy
 from geometry_msgs.msg import PointStamped
 
-from pycram.designators.action_designator import DetectAction, NavigateAction, OpenAction
+from pycram.designators.action_designator import *
 from demos.pycram_receptionist_demo.utils.new_misc import *
 from pycram.enums import ObjectType
 from pycram.process_module import real_robot
@@ -76,7 +76,7 @@ with real_robot:
     DetectAction(technique='human').resolve().perform()
 
     # look at guest and introduce
-    giskardpy.move_head_to_human()
+    HeadFollowAction('start')
     TalkingMotion("Hello, i am Toya and my favorite drink is oil. What about you, talk to me?").resolve().perform()
     rospy.sleep(1)
 
@@ -130,7 +130,7 @@ with real_robot:
 
     # stop looking at human
     rospy.loginfo("stop looking now")
-    giskardpy.stop_looking()
+    HeadFollowAction('stop')
     DetectAction(technique='human', state='stop').resolve().perform()
 
     # lead human to living room
@@ -140,21 +140,15 @@ with real_robot:
 
     TalkingMotion("Welcome to the living room").resolve().perform()
 
-    pose_seat = PointStamped()
-    pose_seat.header.frame_id = "map"
-    pose_seat.point.x = 0.8
-    pose_seat.point.y = 4.8
-    pose_seat.point.z = 1.0
-
     pose_seat1 = PoseStamped()
     pose_seat1.header.frame_id = "/map"
     pose_seat1.pose.position.x = 0.8
     pose_seat1.pose.position.y = 4.8
     pose_seat1.pose.position.z = 1
 
-    giskardpy.move_arm_to_pose(pose_seat)
+    PointingMotion(0.8, 4.8, 1.0)
 
-    giskardpy.move_head_to_human()
+    HeadFollowAction('start')
     pub_pose.publish(pose_seat1)
     TalkingMotion("please take a seat next to your host").resolve().perform()
 

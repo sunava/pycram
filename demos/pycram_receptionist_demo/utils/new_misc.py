@@ -20,6 +20,11 @@ callback = False
 # Pose in front of the couch, HSR looks in direction of couch
 pose_couch = Pose([2.7, 5, 0], [0, 0, 1, 0])
 pose_door = Pose([1.4, 0.25, 0], [0, 0, 1, 0])
+pose_red_seat = [1.1, 4.6, 1]
+pose_blue_seat = [1.1, 5.9, 1]
+wall_seat_left = [1.8, 6.1, 1]
+wall_seat_right = [2.6, 6.1, 1]
+
 
 # Pose in the passage between kitchen and living room
 robot_orientation = axis_angle_to_quaternion([0, 0, 1], 90)
@@ -193,3 +198,16 @@ def describe(human: HumanDescription):
         # brightness of clothes
         TalkingMotion(f"you are wearing {human.attributes[3]}").resolve().perform()
         rospy.sleep(1)
+
+
+def toPoseStamped(x_cord: float, y_cord: float, z_cord: float) -> PoseStamped:
+    """
+    function to transform floats to PoseStamped in '/map' frame
+    """
+    pose = PoseStamped()
+    pose.header.frame_id = "/map"
+    pose.pose.position.x = x_cord
+    pose.pose.position.y = y_cord
+    pose.pose.position.z = z_cord
+
+    return pose

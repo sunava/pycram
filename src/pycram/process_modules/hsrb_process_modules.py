@@ -4,6 +4,7 @@ from typing import Any
 
 import numpy as np
 import rospy
+from geometry_msgs.msg import PointStamped
 from tmc_control_msgs.msg import GripperApplyEffortActionGoal
 from tmc_msgs.msg import Voice
 
@@ -566,6 +567,33 @@ class HSRBPourReal(ProcessModule):
     def _execute(self, designator: PouringMotion.Motion) -> Any:
         giskard.achieve_tilting_goal(designator.direction, designator.angle)
 
+
+class HSRBHeadFollowReal(ProcessModule):
+    """
+    HSR will move head to pose that is published on topic /human_pose
+    """
+
+    def _execute(self, designator: HeadFollowMotion.Motion) -> Any:
+        if designator.state == 'stop':
+            giskard.stop_looking()
+        else:
+            giskard.move_head_to_human()
+
+
+class HSRBPointingReal(ProcessModule):
+    """
+    HSR will move head to pose that is published on topic /human_pose
+    """
+
+    def _execute(self, designator: PointingMotion.Motion) -> Any:
+        pointing_pose = PointStamped()
+        pointing_pose.header.frame_id = "map"
+        pointing_pose.point.x = designator.x_coordinate
+        pointing_pose.point.y = designator.y_coordinate
+        pointing_pose.point.z = designator.z_coordinate
+        giskard.move_arm_to_pose(pointing_pose)
+
+
 class HSRBManager(ProcessModuleManager):
 
     def __init__(self):
@@ -584,6 +612,8 @@ class HSRBManager(ProcessModuleManager):
         self._close_lock = Lock()
         self._talk_lock = Lock()
         self._pour_lock = Lock()
+        self._head_follow_lock = Lock()
+        self._pointing_lock = Lock()
 
     def navigate(self):
         if ProcessModuleManager.execution_type == "simulated":
@@ -690,3 +720,15 @@ class HSRBManager(ProcessModuleManager):
             return HSRBPourReal(self._pour_lock)
         elif ProcessModuleManager.execution_type == "semi_real":
             return HSRBPourReal(self._pour_lock)
+
+    def head_follow(self):
+        if ProcessModuleManager.execution_type == "real":
+            return HSRBHeadFollowReal(self._head_follow_lock)
+        elif ProcessModuleManager.execution_type == "semi_real":
+            return HSRBHeadFollowReal(self._head_follow_lock)
+
+    def pointing(self):
+        if ProcessModuleManager.execution_type == "real":
+            return HSRBPourReal(self._pointing_lock)
+        elif ProcessModuleManager.execution_type == "semi_real":
+            return HSRBPointingReal(self._pointing_lock)

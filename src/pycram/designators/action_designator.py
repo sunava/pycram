@@ -1630,3 +1630,47 @@ class MixingAction(ActionDesignatorDescription):
         """
         return self.Action(self.object_designator_description.ground(),
                            self.object_tool_designator_description.ground(), self.arms[0], self.grasps[0])
+
+
+class HeadFollowAction(ActionDesignatorDescription):
+    """
+    Continuously move head to human closest to robot
+    """
+
+    @dataclasses.dataclass
+    class Action(ActionDesignatorDescription.Action):
+
+        state: str
+        """
+        defines if the robot should start/stop looking at human
+        """
+
+        @with_tree
+        def perform(self) -> None:
+            HeadFollowMotion(self.state)
+
+        #def insert(self, session: sqlalchemy.orm.session.Session, **kwargs) -> ORMAction:
+        #    print("in insert parkArms")
+        #    action = super().insert(session)
+        #    session.add(action)
+        #    session.commit()
+        #    return action
+
+    def __init__(self, state: str, resolver=None):
+        """
+        Moves the arms in the pre-defined parking position. Arms are taken from pycram.enum.Arms
+
+        :param state: defines if the robot should start/stop looking at human
+        :param resolver: An optional resolver that returns a performable designator from the designator description
+        """
+        super().__init__(resolver)
+        self.state = state
+
+    def ground(self) -> Action:
+        """
+        Default resolver that returns a performable designator with the first element of the list of possible arms
+
+        :return: A performable designator
+        """
+        return self.Action(self.arms[0])
+

@@ -773,3 +773,84 @@ class PouringMotion(MotionDesignatorDescription):
         :return: A resolved motion designator
         """
         return self.Motion(self.cmd, self.direction, self.angle)
+
+
+class HeadFollowMotion(MotionDesignatorDescription):
+    """
+    Designator for moving head to human (to pose on topic /human_pose)
+    """
+
+    @dataclasses.dataclass
+    class Motion(MotionDesignatorDescription.Motion):
+        state: str
+        """
+        defines if robot should start/stop looking at humans
+        """
+
+        def perform(self):
+            pm_manager = ProcessModuleManager.get_manager()
+            return pm_manager.head_follow().execute(self)
+
+    def __init__(self, state: str, resolver: Optional[Callable] = None):
+        """
+        Lets the robot pour based on the given parameter.
+        :param state: defines start or stopping of Motion
+        :param resolver: An alternative resolver
+        """
+        super().__init__(resolver)
+        self.cmd: str = 'head_follow'
+        self.state: str = state
+
+    def ground(self) -> Motion:
+        """
+        Default resolver for pouring motion designator, returns a resolved motion designator for the input parameters.
+        :return: A resolved motion designator
+        """
+        return self.Motion(self.cmd, self.state)
+
+
+class PointingMotion(MotionDesignatorDescription):
+    """
+    Designator for pointing to given coordinates
+    Robot rotates one hand to pose
+    """
+
+    @dataclasses.dataclass
+    class Motion(MotionDesignatorDescription.Motion):
+        x_coordinate: float
+        """
+        x coordinate where the robot points to (in map frame)
+        """
+        y_coordinate: float
+        """
+        y coordinate where the robot points to (in map frame)
+        """
+        z_coordinate: float
+        """
+        z coordinate where the robot points to (in map frame)
+        """
+
+        def perform(self):
+            pm_manager = ProcessModuleManager.get_manager()
+            return pm_manager.pointing().execute(self)
+
+    def __init__(self, x_coordinate: float, y_coordinate: float, z_coordinate: float, resolver: Optional[Callable] = None):
+        """
+        Lets the robot pour based on the given parameter.
+        :param x_coordinate: x coordinate where the robot points to (in map frame)
+        :param y_coordinate: y coordinate where the robot points to (in map frame)
+        :param z_coordinate: z coordinate where the robot points to (in map frame)
+        :param resolver: An alternative resolver
+        """
+        super().__init__(resolver)
+        self.cmd: str = 'pointing'
+        self.x_coordinate = x_coordinate
+        self.y_coordinate = y_coordinate
+        self.z_coordinate = z_coordinate
+
+    def ground(self) -> Motion:
+        """
+        Default resolver for pouring motion designator, returns a resolved motion designator for the input parameters.
+        :return: A resolved motion designator
+        """
+        return self.Motion(self.cmd, self.x_coordinate, self.y_coordinate, self.z_coordinate)
