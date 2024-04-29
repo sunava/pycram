@@ -25,6 +25,10 @@ with real_robot:
     # optional goal: open cabinet door
     # idea: perceiving cabinet once in the beginning and classifying shelfs?
     door_handle_desig = ObjectPart(names=["cabinet_handle"], part_of=kitchen_desig.resolve())
+
+    # position hsr in front of door for opening
+    pre_pose = Pose()
+    NavigateAction([pre_pose]).resolve().perform()
     OpenAction(object_designator_description=door_handle_desig, arms=["left"]).resolve().perform()
 
     # loop so that robots stores 5 objects
@@ -48,6 +52,9 @@ with real_robot:
 
         # pick up chosen object and navigate to cabinet
         try:
+            # position robot accuratly before picking up necessary?
+            pre_pose = Pose()
+            NavigateAction([pre_pose]).resolve().perform()
             PickUpAction(obj, ["left"], ["front"]).resolve().perform()
         except (EnvironmentUnreachable, GripperClosedCompletely):
             # failure handling
@@ -69,7 +76,14 @@ with real_robot:
         place_pose = knowrob.get_self_to_place(sorted_obj_list, obj)
 
         # place object in shelf with objects of same category
-        PlaceAction(obj, ["left"], ["front"], [place_pose]).resolve().perform()
+        try:
+            PlaceAction(obj, ["left"], ["front"], [place_pose]).resolve().perform()
+        except:
+            ParkArmsAction([Arms.LEFT]).resolve().perform()
+            TalkingMotion("please place the object for me. i will let go of object").resolve().perform()
+            time.sleep(4)
+            MoveGripperMotion("open", "left").resolve().perform()
+
         ParkArmsAction([Arms.LEFT]).resolve().perform()
 
     # end of demo
