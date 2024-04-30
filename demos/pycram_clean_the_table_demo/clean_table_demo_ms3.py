@@ -10,7 +10,7 @@ from demos.pycram_clean_the_table_demo.utils.misc import *
 CUTLERY = ["Spoon", "Fork", "Knife", "Plasticknife"]
 
 # Wished objects for the Demo
-wished_sorted_obj_list = ["Fork", "Spoon"]
+wished_sorted_obj_list = ["Fork", "Metalplate"]
 
 
 # length of wished list for failure handling
@@ -111,8 +111,11 @@ def pickup_and_place_objects(sorted_obj: list):
         ParkArmsAction([Arms.LEFT]).resolve().perform()
         TalkingMotion("Navigating").resolve().perform()
         NavigateAction(target_locations=[Pose([2.35, 0.3, 0], [0, 0, -1, 1])]).resolve().perform()
+
+        if sorted_obj[value].type == "Metalplate":
+            MoveJointsMotion(["arm_roll_joint"], [-1.5]).resolve().perform()
         x_y_pos = get_pos(sorted_obj[value].type)
-        print(type(x_y_pos))
+
         x_pos = x_y_pos[0]
         y_pos = x_y_pos[1]
         # TODO: Please check before trying!!!!!!
@@ -187,7 +190,7 @@ def navigate_and_detect():
 
     # popcorn table
     # TODO: Check if object_orientation is actually needed or not
-    LookAtAction(targets=[Pose([0.8, 1.8, 0.21], object_orientation)]).resolve().perform()  # 0.18 vanessa
+   # LookAtAction(targets=[Pose([0.8, 1.8, 0.21], object_orientation)]).resolve().perform()  # 0.18 vanessa
     TalkingMotion("Perceiving").resolve().perform()
     try:
         object_desig = DetectAction(technique='all').resolve().perform()
@@ -198,7 +201,7 @@ def navigate_and_detect():
 
 
 # Main interaction sequence with real robot
-with ((real_robot)):
+with ((semi_real_robot)):
     rospy.loginfo("Starting demo")
     TalkingMotion("Starting demo").resolve().perform()
    # MoveGripperMotion(motion="open", gripper="left").resolve().perform()
@@ -230,89 +233,96 @@ with ((real_robot)):
     pickup_and_place_objects(sorted_obj)
 
     # # failure handling part 1
-    # new_sorted_obj = []
-    # print(f"length of sorted obj: {len(sorted_obj)}")
-    #
-    # # if not all needed objects found, the robot will perceive and pick up and
-    # # place new-found objects again.
-    # if len(sorted_obj) < LEN_WISHED_SORTED_OBJ_LIST:
-    #     print("first Check")
-    #     for value in sorted_obj:
-    #         # remove objects that were seen and transported so far except the silverware
-    #         if value.type in wished_sorted_obj_list:
-    #             wished_sorted_obj_list.remove(value.type)
-    #
-    #     new_object_desig = navigate_and_detect()
-    #     new_sorted_obj = sort_objects(robot, new_object_desig, wished_sorted_obj_list)
-    #     pickup_and_place_objects(new_sorted_obj)
-    #
-    #     # failure handling part 2
-    #     final_sorted_obj = sorted_obj + new_sorted_obj
-    #     if len(final_sorted_obj) < LEN_WISHED_SORTED_OBJ_LIST:
-    #         navigate_to("popcorn table")
-    #         print("second Check")
-    #
-    #         for value in final_sorted_obj:
-    #             # remove all objects that were seen and transported so far
-    #             if value.type in wished_sorted_obj_list:
-    #                 wished_sorted_obj_list.remove(value.type)
-    #             # if the type is cutlery, the real type is not easily reproducible.
-    #             # remove one cutlery object of the list with the highest chance that it was found and transported.
-    #             if value.type == "Cutlery":
-    #                 if "Fork" in wished_sorted_obj_list:
-    #                     print("deleted fork")
-    #                     wished_sorted_obj_list.remove("Fork")
-    #                 elif "Spoon" in wished_sorted_obj_list:
-    #                     print("deleted spoon")
-    #                     wished_sorted_obj_list.remove("Spoon")
-    #                 elif "Plasticknife" in wished_sorted_obj_list:
-    #                     print("deleted knife")
-    #                     wished_sorted_obj_list.remove("Plasticknife")
-    #
-    #         for val in range(len(wished_sorted_obj_list)):
-    #             grasp = "front"
-    #             # todo vielleicht metalbowl hier rausnehmen und von front platzieren
-    #             if wished_sorted_obj_list[val] in (["Metalbowl", "Metalplate"]):
-    #                 grasp = "top"
-    #
-    #             print(f"next object is: {wished_sorted_obj_list[val]}")
-    #             TalkingMotion(f"Can you please give me the {wished_sorted_obj_list[val]} "
-    #                           f"on the table?").resolve().perform()
-    #             time.sleep(4)
-    #             MoveGripperMotion("close", "left").resolve().perform()
-    #
-    #             ParkArmsAction([Arms.LEFT]).resolve().perform()
-    #             TalkingMotion("Navigating").resolve().perform()
-    #             # navigate_to(True, 1.8, "long table")
-    #             # navigate_to(False, y_pos, "long table")
-    #             x_y_pos = get_pos(wished_sorted_obj_list[val])
-    #             x_pos = x_y_pos[0]
-    #             y_pos = x_y_pos[1]
-    #             # TODO: Please check before trying!!!!!!
-    #             # navigate_to(2.0, -0.2, "dishwasher")
-     #NavigateAction(target_locations=[Pose([2.35, 0.3, 0], [0, 0, -1, 1])]).resolve().perform()
-    #             if x_pos == 2.9:
-    #                 navigate_to("dishwasher_left")
-    #             else:
-    #                 navigate_to("dishwasher_right")
-    #
-    #             TalkingMotion("Placing").resolve().perform()
-    #             # Todo: Bowl vielleicht mit front grasp fallen lassen, metalmug vielleicht hand erst komplett drehen und dann dropen?
-    #             # obj = ObjectDesignatorDescription([wished_sorted_obj_list[val]],[wished_sorted_obj_list[val]])
-    #             # obj2 = Object(name=wished_sorted_obj_list[val], type=wished_sorted_obj_list[val])
-    #             # object_desig = BelieveObject(obj2)
-    #             # #todo was mit placingAction machen, plate wird sonst falsch platziert, aber wie erzeuge ich mir eine eigene description ohne perception
-    #             # PlaceAction(object_desig, ["left"], [grasp],
-    #             #             [Pose([x_pos, y_pos, 0.3])]).resolve().perform()
-    #
-    #             # navigates back if a next object exists
-    #             # todo sollen wir ihn echt zum tisch navigieren lassen, wenn er das objekt vom menschen bekommt?
-    #             if val + 1 < len(wished_sorted_obj_list):
-    #                 TalkingMotion("Navigating").resolve().perform()
-    #                 # navigate_to(True, 2, "popcorn table")
-    #                 # navigate_to(False, 1.8, "popcorn table")
-    #                 #navigate_to(3.9, 2, "popcorn table")
-    #                 navigate_to(popcorn table")
+    new_sorted_obj = []
+    print(f"length of sorted obj: {len(sorted_obj)}")
+
+    # if not all needed objects found, the robot will perceive and pick up and
+    # place new-found objects again.
+    if len(sorted_obj) < LEN_WISHED_SORTED_OBJ_LIST:
+        print("first Check")
+        for value in sorted_obj:
+            # remove objects that were seen and transported so far except the silverware
+            if value.type in wished_sorted_obj_list:
+                wished_sorted_obj_list.remove(value.type)
+
+        new_object_desig = navigate_and_detect()
+        new_sorted_obj = sort_objects(robot, new_object_desig, wished_sorted_obj_list)
+        pickup_and_place_objects(new_sorted_obj)
+
+        # failure handling part 2
+        final_sorted_obj = sorted_obj + new_sorted_obj
+        if len(final_sorted_obj) < LEN_WISHED_SORTED_OBJ_LIST:
+            navigate_to("popcorn table", 1.8)
+            print("second Check")
+
+            for value in final_sorted_obj:
+                # remove all objects that were seen and transported so far
+                if value.type in wished_sorted_obj_list:
+                    wished_sorted_obj_list.remove(value.type)
+                # if the type is cutlery, the real type is not easily reproducible.
+                # remove one cutlery object of the list with the highest chance that it was found and transported.
+                if value.type == "Cutlery":
+                    if "Fork" in wished_sorted_obj_list:
+                        print("deleted fork")
+                        wished_sorted_obj_list.remove("Fork")
+                    elif "Spoon" in wished_sorted_obj_list:
+                        print("deleted spoon")
+                        wished_sorted_obj_list.remove("Spoon")
+                    elif "Plasticknife" in wished_sorted_obj_list:
+                        print("deleted knife")
+                        wished_sorted_obj_list.remove("Plasticknife")
+
+            for val in range(len(wished_sorted_obj_list)):
+                grasp = "front"
+                # todo vielleicht metalbowl hier rausnehmen und von front platzieren
+                # if wished_sorted_obj_list[val] in (["Metalbowl", "Metalplate"]):
+                #     grasp = "top"
+
+                print(f"next object is: {wished_sorted_obj_list[val]}")
+                TalkingMotion(f"Can you please give me the {wished_sorted_obj_list[val]} "
+                              f"on the table?").resolve().perform()
+                time.sleep(4)
+                MoveGripperMotion("close", "left").resolve().perform()
+
+                ParkArmsAction([Arms.LEFT]).resolve().perform()
+                TalkingMotion("Navigating").resolve().perform()
+                # navigate_to(True, 1.8, "long table")
+                # navigate_to(False, y_pos, "long table")
+                x_y_pos = get_pos(wished_sorted_obj_list[val])
+                x_pos = x_y_pos[0]
+                y_pos = x_y_pos[1]
+                # TODO: Please check before trying!!!!!!
+                # navigate_to(2.0, -0.2, "dishwasher")
+                NavigateAction(target_locations=[Pose([2.35, 0.3, 0], [0, 0, -1, 1])]).resolve().perform()
+                if wished_sorted_obj_list[val] == "Metalplate":
+                    MoveJointsMotion(["arm_roll_joint"], [-1.5]).resolve().perform()
+                if x_pos <= 2.9:
+                    navigate_to("dishwasher_left")
+                else:
+                    navigate_to("dishwasher_right")
+
+                TalkingMotion("Placing").resolve().perform()
+                # Todo: Bowl vielleicht mit front grasp fallen lassen, metalmug vielleicht hand erst komplett drehen und dann dropen?
+                # obj = ObjectDesignatorDescription([wished_sorted_obj_list[val]],[wished_sorted_obj_list[val]])
+                # obj2 = Object(name=wished_sorted_obj_list[val], type=wished_sorted_obj_list[val])
+                # object_desig = BelieveObject(obj2)
+                # #todo was mit placingAction machen, plate wird sonst falsch platziert, aber wie erzeuge ich mir eine eigene description ohne perception
+                if wished_sorted_obj_list[val] == "Metalplate":
+                    PlaceGivenObjAction([wished_sorted_obj_list[val]], ["left"],
+                                        [Pose([x_pos, y_pos, 0.3])], [grasp], False).resolve().perform()
+                else:
+                    PlaceGivenObjAction([wished_sorted_obj_list[val]], ["left"],
+                            [Pose([x_pos, y_pos, 0.3])],[grasp]).resolve().perform()
+                ParkArmsAction([Arms.LEFT]).resolve().perform()
+                # navigates back if a next object exists
+                # todo sollen wir ihn echt zum tisch navigieren lassen, wenn er das objekt vom menschen bekommt?
+                if val + 1 < len(wished_sorted_obj_list):
+                    TalkingMotion("Navigating").resolve().perform()
+                    # navigate_to(True, 2, "popcorn table")
+                    # navigate_to(False, 1.8, "popcorn table")
+                    #navigate_to(3.9, 2, "popcorn table")
+                    NavigateAction(target_locations=[Pose([2.35, 0.3, 0], [0, 0, 1, 1])]).resolve().perform()
+                    navigate_to("popcorn table", 1.8)
 
     rospy.loginfo("Done!")
     TalkingMotion("Done").resolve().perform()

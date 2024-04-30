@@ -618,6 +618,11 @@ class PlaceGivenObjAction(ActionDesignatorDescription):
         Grasp that defines how to place the given object
         """
 
+        on_table: Optional[bool]
+        """
+        When placing a plate needed to differentiate between placing in a dishwasher and placing on the table. 
+        Default is placing on a table.
+        """
         @with_tree
         def perform(self) -> None:
             lt = LocalTransformer()
@@ -627,6 +632,7 @@ class PlaceGivenObjAction(ActionDesignatorDescription):
 
             # TODO add for other robots
             if self.object_type == "Metalplate" and robot.name == "hsrb":
+
                 grasp_rotation = robot_description.grasps.get_orientation_for_grasp("front")
                 oTb = lt.transform_pose(oTm, robot.get_link_tf_frame("base_link"))
                 oTb.orientation = grasp_rotation
@@ -634,21 +640,21 @@ class PlaceGivenObjAction(ActionDesignatorDescription):
 
                 rospy.logwarn("Placing now")
                 MoveTCPMotion(oTmG, self.arm).resolve().perform()
+                if self.on_table:
+                    MoveTorsoAction([0.62]).resolve().perform()
+                    kwargs = dict()
 
-                MoveTorsoAction([0.62]).resolve().perform()
-                kwargs = dict()
+                    # taking in the predefined arm configuration for placing
+                    if self.arm in ["left", "both"]:
+                        kwargs["left_arm_config"] = "place_plate"
+                        MoveArmJointsMotion(**kwargs).resolve().perform()
 
-                # taking in the predefined arm configuration for placing
-                if self.arm in ["left", "both"]:
-                    kwargs["left_arm_config"] = "place_plate"
-                    MoveArmJointsMotion(**kwargs).resolve().perform()
+                    # turning the gripper downwards to better drop the plate
+                    MoveJointsMotion(["wrist_flex_joint"], [-0.8]).resolve().perform()
 
-                # turning the gripper downwards to better drop the plate
-                MoveJointsMotion(["wrist_flex_joint"], [-0.8]).resolve().perform()
-
-                # correct a possible sloped orientation
-                NavigateAction(
-                    [Pose([robot.get_pose().pose.position.x, robot.get_pose().pose.position.y, 0])]).resolve().perform()
+                    # correct a possible sloped orientation
+                    NavigateAction(
+                        [Pose([robot.get_pose().pose.position.x, robot.get_pose().pose.position.y, 0])]).resolve().perform()
 
                 MoveGripperMotion(motion="open", gripper="left").resolve().perform()
 
@@ -696,7 +702,7 @@ class PlaceGivenObjAction(ActionDesignatorDescription):
 
     def __init__(self,
                  object_types: List[str], arms: List[str], target_locations: List[Pose], grasps: List[str],
-                 resolver=None):
+                 on_table: Optional[bool]=True, resolver=None):
         """
         Lets the robot place a human given object. The description needs an object type describing the object that
         should be placed, an arm that should be used as well as the target location where the object should be placed
@@ -714,6 +720,7 @@ class PlaceGivenObjAction(ActionDesignatorDescription):
         self.arms: List[str] = arms
         self.grasps: List[str] = grasps
         self.target_locations: List[Pose] = target_locations
+        self.on_table: bool = on_table
 
     def ground(self) -> Action:
         """
@@ -722,7 +729,7 @@ class PlaceGivenObjAction(ActionDesignatorDescription):
 
         :return: A performable designator
         """
-        return self.Action(self.object_types[0], self.arms[0], self.target_locations[0], self.grasps[0])
+        return self.Action(self.object_types[0], self.arms[0], self.target_locations[0], self.grasps[0], self.on_table)
 
 
 class NavigateAction(ActionDesignatorDescription):
