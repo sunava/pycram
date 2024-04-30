@@ -67,3 +67,10 @@ class State(Enum):
     RUNNING = 2
     INTERRUPTED = 3
 
+class FilterConfig(Enum):
+    """
+    Declare existing filter methods.
+    Currently supported: Butterworth
+    """
+    butterworth = 1
+    
