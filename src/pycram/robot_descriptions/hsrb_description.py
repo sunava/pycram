@@ -33,7 +33,6 @@ class HSRBDescription(RobotDescription):
         arm_carry = {"park": [0, 1.5, -1.85, 0]}
         arm_placing_plate = {"place_plate": [-1.8, 0, -0.5, -1.5]}
         arm_pick_up_paper = {"pick_up_paper": [-2.0, -0.17, -0.14, -0.9]}
-        arm_pouring = {"pour": [-1.423, 0, -0.1755, 0]} #wrist_roll: 0.026
         gripper_links = ["hand_l_distal_link", "hand_l_spring_proximal_link", "hand_palm_link",
                          "hand_r_distal_link", "hand_r_spring_proximal_link", "hand_gripper_tool_frame"]
         gripper_joints = ["hand_l_proximal_joint", "hand_r_proximal_joint", "hand_motor_joint"]
@@ -51,17 +50,12 @@ class HSRBDescription(RobotDescription):
         arm_manip_placing_plate = ManipulatorDescription(arm_inter_placing_plate, tool_frame="hand_gripper_tool_frame",
                                             gripper_description=gripper)
 
-        arm_chain_pouring = ChainDescription("pouring", arm_joints, arm_links, static_joint_states=arm_pouring)
-        arm_inter_pouring = InteractionDescription(arm_chain_pouring, "wrist_roll_link")
-        arm_manip_pouring = ManipulatorDescription(arm_inter_pouring, tool_frame="hand_gripper_tool_frame",
-                                                   gripper_description=gripper)
-
         arm_chain_paper = ChainDescription("pick_up_paper_conf", arm_joints, arm_links, static_joint_states=arm_pick_up_paper)
         arm_inter_paper = InteractionDescription(arm_chain_paper, "wrist_roll_link")
         arm_manip_paper = ManipulatorDescription(arm_inter_paper, tool_frame="hand_gripper_tool_frame",
                                                    gripper_description=gripper)
 
-        self.add_chains({"placing_pos": arm_manip_placing_plate,"pick_up_paper_conf": arm_manip_paper, "left": arm_manip, "pouring": arm_manip_pouring, })
+        self.add_chains({"placing_pos": arm_manip_placing_plate,"pick_up_paper_conf": arm_manip_paper, "left": arm_manip})
     
         self.add_static_gripper_chains("left", {"open": [0.3], "close": [0.0]})
         self.grasps = GraspingDescription(
