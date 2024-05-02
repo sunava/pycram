@@ -1,7 +1,9 @@
 import itertools
 import time
 from typing import Any, Union
+from geometry_msgs.msg import WrenchStamped
 
+from pycram.ros.force_torque_sensor import ForceTorqueSensor
 import itertools
 import math
 import rospy
@@ -17,6 +19,7 @@ from ..bullet_world import BulletWorld
 from ..designator import ActionDesignatorDescription
 from ..enums import Arms, ObjectType
 from ..helper import multiply_quaternions, axis_angle_to_quaternion
+from ..language import Monitor
 from ..local_transformer import LocalTransformer
 from ..orm.action_designator import (ParkArmsAction as ORMParkArmsAction, NavigateAction as ORMNavigateAction,
                                      PickUpAction as ORMPickUpAction, PlaceAction as ORMPlaceAction,
@@ -27,7 +30,8 @@ from ..orm.action_designator import (ParkArmsAction as ORMParkArmsAction, Naviga
                                      GraspingAction as ORMGraspingAction)
 
 from ..orm.base import Quaternion, Position, Base
-from ..plan_failures import ObjectUnfetchable, ReachabilityFailure, EnvironmentUnreachable, GripperClosedCompletely
+from ..plan_failures import ObjectUnfetchable, ReachabilityFailure, EnvironmentUnreachable, GripperClosedCompletely, \
+    SensorMonitoringCondition
 from ..pose import Pose
 from ..robot_descriptions import robot_description
 from ..ros.viz_marker_publisher import ManualMarkerPublisher
@@ -443,6 +447,17 @@ class PickUpAction(ActionDesignatorDescription):
 
         return self.Action(obj_desig, self.arms[0], self.grasps[0])
 
+fts = ForceTorqueSensor(robot_name='hsrb')
+pr = True
+def monitor_func():
+    der: WrenchStamped() = fts.get_last_value()
+    print(abs(der.wrench.force.y))
+    if abs(der.wrench.force.y) > 0.45:
+        print(abs(der.wrench.force.y))
+        print(abs(der.wrench.torque.y))
+        return SensorMonitoringCondition
+    return False
+
 
 class PlaceAction(ActionDesignatorDescription):
     """
@@ -512,17 +527,31 @@ class PlaceAction(ActionDesignatorDescription):
             BulletWorld.current_bullet_world.add_vis_axis(push_baseTm)
             if execute:
                 MoveTCPMotion(push_baseTm, self.arm).resolve().perform()
+            if self.object_designator.type == "Metalplate":
+               # rTb = Pose([0,-0.1,0], [0,0,0,1],"base_link")
+                rospy.logwarn("sidepush monitoring")
+                TalkingMotion("sidepush.").resolve().perform()
+                side_push = Pose([push_baseTm.pose.position.x, push_baseTm.pose.position.y + 0.05, push_baseTm.pose.position.z],
+                                 [push_baseTm.orientation.x, push_baseTm.orientation.y,push_baseTm.orientation.z,push_baseTm.orientation.w])
+                try:
+                     plan = MoveTCPMotion(side_push, self.arm) >> Monitor(monitor_func)
+                     plan.perform()
+                except (SensorMonitoringCondition):
+                     rospy.logwarn("Open Gripper")
+                     MoveGripperMotion(motion="open", gripper=self.arm).resolve().perform()
 
-            # Finalize the placing by opening the gripper and lifting the arm
-            rospy.logwarn("Open Gripper")
-            MoveGripperMotion(motion="open", gripper=self.arm).resolve().perform()
+            # # Finalize the placing by opening the gripper and lifting the arm
+            # rospy.logwarn("Open Gripper")
+            # MoveGripperMotion(motion="open", gripper=self.arm).resolve().perform()
+            #
+            # rospy.logwarn("Lifting now")
+            # liftingTm = push_baseTm
+            # liftingTm.pose.position.z += 0.08
+            # BulletWorld.current_bullet_world.add_vis_axis(liftingTm)
+            # if execute:
+            #     MoveTCPMotion(liftingTm, self.arm).resolve().perform()
 
-            rospy.logwarn("Lifting now")
-            liftingTm = push_baseTm
-            liftingTm.pose.position.z += 0.08
-            BulletWorld.current_bullet_world.add_vis_axis(liftingTm)
-            if execute:
-                MoveTCPMotion(liftingTm, self.arm).resolve().perform()
+
 
         def to_sql(self) -> ORMPlaceAction:
             return ORMPlaceAction(self.arm)
@@ -1015,7 +1044,7 @@ class OpenAction(ActionDesignatorDescription):
 
         @with_tree
         def perform(self) -> Any:
-            GraspingAction.Action(self.arm, self.object_designator).perform()
+            #GraspingAction.Action(self.arm, self.object_designator).perform()
             OpeningMotion(self.object_designator, self.arm).resolve().perform()
 
             # MoveGripperMotion("open", self.arm, allow_gripper_collision=True).resolve().perform()
@@ -1669,7 +1698,7 @@ class HeadFollowAction(ActionDesignatorDescription):
 
         @with_tree
         def perform(self) -> None:
-            HeadFollowMotion(self.state)
+            HeadFollowMotion(self.state).resolve().perform()
 
         #def insert(self, session: sqlalchemy.orm.session.Session, **kwargs) -> ORMAction:
         #    print("in insert parkArms")
@@ -1694,5 +1723,5 @@ class HeadFollowAction(ActionDesignatorDescription):
 
         :return: A performable designator
         """
-        return self.Action(self.arms[0])
+        return self.Action(self.state)
 

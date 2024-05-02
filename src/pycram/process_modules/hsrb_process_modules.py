@@ -10,7 +10,7 @@ from tmc_msgs.msg import Voice
 
 import pycram.bullet_world_reasoning as btr
 from ..designators.motion_designator import *
-from ..enums import JointType, ObjectType
+from ..enums import JointType, ObjectType, State
 from ..external_interfaces import giskard
 from ..external_interfaces.ik import request_ik
 from ..external_interfaces.robokudo import *
@@ -237,7 +237,7 @@ class HSRBOpen(ProcessModule):
         goal_pose = btr.link_pose_for_joint_config(part_of_object, {
             container_joint: part_of_object.get_joint_limits(container_joint)[1] - 0.05}, desig.object_part.name)
 
-        _move_arm_tcp(goal_pose, BulletWorld.robot, desig.arm)
+        #_move_arm_tcp(goal_pose, BulletWorld.robot, desig.arm)
 
         desig.object_part.bullet_world_object.set_joint_state(container_joint,
                                                               part_of_object.get_joint_limits(container_joint)[1])
@@ -367,13 +367,13 @@ class HSRBDetectingReal(ProcessModule):
         elif desig.technique == 'location':
             seat = desig.state
             seat_human_pose = seat_queryHuman(seat)
-            print("##################")
-            # print(seat_human_pose[1][0])
-            print("##################")
-            return seat_human_pose
+            return seat_human_pose[0].attribute[0][9:]
 
         elif desig.technique == 'attributes':
             human_pose_attr = attributes_queryHuman()
+            print("###############")
+            print(human_pose_attr)
+            print("###############")
 
             # extract information from query
             gender = human_pose_attr.res[0].attribute[0][13:19]
@@ -469,6 +469,7 @@ class HSRBMoveTCPReal(ProcessModule):
             giskard.allow_gripper_collision(designator.arm)
         giskard.achieve_cartesian_goal(pose_in_map, robot_description.get_tool_frame(designator.arm),
                                        "map")
+        return State.SUCCEEDED, "Nice"
 
 
 class HSRBMoveArmJointsReal(ProcessModule):
@@ -493,7 +494,7 @@ class HSRBMoveJointsReal(ProcessModule):
         name_to_position = dict(zip(designator.names, designator.positions))
         giskard.avoid_all_collisions()
         giskard.achieve_joint_goal(name_to_position)
-
+        return State.SUCCEEDED, "Nice"
 
 class HSRBMoveGripperReal(ProcessModule):
     """
@@ -732,6 +733,6 @@ class HSRBManager(ProcessModuleManager):
 
     def pointing(self):
         if ProcessModuleManager.execution_type == "real":
-            return HSRBPourReal(self._pointing_lock)
+            return HSRBPointingReal(self._pointing_lock)
         elif ProcessModuleManager.execution_type == "semi_real":
             return HSRBPointingReal(self._pointing_lock)

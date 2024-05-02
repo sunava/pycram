@@ -531,6 +531,7 @@ def grasp_doorhandle(handle_name: str):
 
 def open_doorhandle(handle_name: str):
 
+
     giskard_wrapper.set_hsrb_open_door_goal(door_handle_link=handle_name)
     giskard_wrapper.execute()
 

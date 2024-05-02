@@ -25,12 +25,12 @@ guest1 = HumanDescription("guest1")
 #for obj in world.current_bullet_world.objects:
 #   print(obj)
 
-kitchen.set_joint_state("iai_kitchen:arena:door_origin_revolute_joint", 1)
+#kitchen.set_joint_state("iai_kitchen:arena:door_origin_revolute_joint", 1)
 
 def p():
     with real_robot:
-        seat = True
-        attributes = False
+        seat = False
+        attributes = True
 
         if attributes:
             # to signal the start of demo
@@ -41,38 +41,33 @@ def p():
 
 
             desig = DetectAction(technique='attributes').resolve().perform()
-            print("msgs from PPP: " + str(desig[1]))
-            guest1.set_attributes(desig)
+            print("msgs from PPP: " + str(desig))
+            # guest1.set_attributes(desig)
 
 
 
-            DetectAction(technique='human').resolve().perform()
-
-            describe(guest1)
-
-            rospy.sleep(3)
-
-            giskardpy.stop_looking()
-            DetectAction(technique='human', state='stop').resolve().perform()
-
-            rospy.sleep(3)
-
-            TalkingMotion("looking again").resolve().perform()
-            DetectAction(technique='human').resolve().perform()
-            giskardpy.move_head_to_human()
-
-            rospy.sleep(6)
 
             TalkingMotion("demo over").resolve().perform()
 
         if seat:
             # new Query for free seat
-            # TalkingMotion("detecting free seat on whole couch now").resolve().perform()
-            # seat = DetectAction(technique='location', state='sofa').resolve().perform()
-            # rospy.loginfo("seat bool: " + str(seat))
-
+            #TalkingMotion("detecting free seat on whole couch now").resolve().perform()
+            #seat = DetectAction(technique='location', state='sofa').resolve().perform()
+            #rospy.loginfo("seat bool: " + str(seat))
+            print("start")
             TalkingMotion("detecting").resolve().perform()
-            seat1 = DetectAction(technique='location', state='seat2').resolve().perform()
+            seat1 = DetectAction(technique='location', state='seat1').resolve().perform()
+            seat1 = seat1[1]
+            if seat1.strip() == "false":
+                TalkingMotion("the seat is free").resolve().perform()
+            else:
+                TalkingMotion("the seat is not free").resolve().perform()
+                rospy.sleep(2)
+                TalkingMotion("detecting seat number 2 now").resolve().perform()
+                seat = DetectAction(technique='location', state='seat2').resolve().perform()
+                seat = seat[1]
+                if seat.strip() == "false":
+                    TalkingMotion("the seat is free").resolve().perform()
             # rospy.loginfo("seat bool: " + str(seat1))
 
             # print(seat1[1][0])

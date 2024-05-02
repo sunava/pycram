@@ -798,7 +798,7 @@ class HeadFollowMotion(MotionDesignatorDescription):
         :param resolver: An alternative resolver
         """
         super().__init__(resolver)
-        self.cmd: str = 'head_follow'
+        self.cmd: str = 'headfollow'
         self.state: str = state
 
     def ground(self) -> Motion:
@@ -806,7 +806,7 @@ class HeadFollowMotion(MotionDesignatorDescription):
         Default resolver for pouring motion designator, returns a resolved motion designator for the input parameters.
         :return: A resolved motion designator
         """
-        return self.Motion(self.cmd, self.state)
+        return self.Motion(self.cmd,state=self.state)
 
 
 class PointingMotion(MotionDesignatorDescription):
