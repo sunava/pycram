@@ -29,6 +29,8 @@ from .orm.motion_designator import (Motion as ORMMotionDesignator)
 from .orm.base import Quaternion, Position, Base, RobotState, ProcessMetaData
 from .task import with_tree
 
+from .external_interfaces import giskard
+
 
 class DesignatorError(Exception):
     """Implementation of designator errors."""
@@ -411,6 +413,10 @@ class MotionDesignatorDescription(DesignatorDescription, Language):
             motion.process_metadata_id = metadata.id
 
             return motion
+
+    def interrupt(self):
+        if giskard.giskard_wrapper:
+            giskard.giskard_wrapper.interrupt()
 
     def ground(self) -> Motion:
         """Fill all missing parameters and pass the designator to the process module. """
