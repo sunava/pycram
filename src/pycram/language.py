@@ -4,6 +4,8 @@ from __future__ import annotations
 import queue
 import time
 from typing import Iterable, Optional, Callable, Dict, Any, List, Union, Tuple
+
+import rospy
 from anytree import NodeMixin, Node, PreOrderIter, RenderTree
 
 from .enums import State
@@ -115,7 +117,7 @@ class Language(NodeMixin):
     def __rshift__(self, other: Language):
         """
         Operator for Monitors, this always makes the Monitor the parent of the other expression.
-        
+
         :param other: Another Language expression
         :return: The Monitor which is now the new root node.
         """
@@ -145,7 +147,7 @@ class Language(NodeMixin):
         the reversed operator of __mul__ which allows to write:
 
         .. code-block:: python
-        
+
             2 * ParkAction()
 
         :param other: An integer which states how often the Language expression should be repeated
@@ -207,6 +209,7 @@ class Repeat(Language):
     """
     Executes all children a given number of times.
     """
+
     def perform(self):
         """
         Behaviour of repeat, executes all children in a loop as often as stated on initialization.
@@ -254,6 +257,7 @@ class Monitor(Language):
         thread which continuously checks if the condition is True. When the condition is True the interrupt function of
         the child will be called.
     """
+
     def __init__(self, condition: Union[Callable, Fluent] = None):
         """
         When initializing a Monitor a condition must be provided. The condition is a callable or a Fluent which returns \
@@ -283,21 +287,28 @@ class Monitor(Language):
         def check_condition():
             while not self.kill_event.is_set():
                 try:
-                    if self.condition.get_value():
+                    cond = self.condition.get_value()
+                    if cond:
                         for child in self.children:
                             if hasattr(child, 'interrupt'):
                                 child.interrupt()
-                        self.exception_queue.put(PlanFailure("Condition met in Monitor"))
+                        if isinstance(cond, type) and issubclass(cond, Exception):
+                            self.exception_queue.put(cond)
+                        else:
+                            self.exception_queue.put(PlanFailure("Condition met in Monitor"))
                         return
                 except Exception as e:
                     self.exception_queue.put(e)
                     return
-                time.sleep(0.1)
+                rospy.sleep(0.1)
 
         t = threading.Thread(target=check_condition)
         t.start()
         try:
-            state, result = self.children[0].perform()
+            try:
+                state, result = self.children[0].perform()
+            except NotImplementedError:
+                state, result = self.children[0].resolve().perform()
             if not self.exception_queue.empty():
                 print("Raising PlanFailure")
                 raise self.exception_queue.get()
@@ -539,13 +550,14 @@ class TryAll(Language):
                     self.root.exceptions[self].append(e)
                 else:
                     self.root.exceptions[self] = [e]
+
         for index, child in enumerate(self.children):
             if self.interrupted:
                 state = State.FAILED
                 break
             t = threading.Thread(target=lambda: lang_call(child, index))
-            t.start()
             self.threads.append(t)
+            t.start()
         for thread in self.threads:
             thread.join()
         with results_lock:
@@ -591,14 +603,20 @@ class Code(Language):
         self.kwargs: Dict[str, Any] = kwargs
         self.perform = self.execute
 
-    def execute(self) -> Tuple[State, Tuple[Any]]:
+    def execute(self) -> Any:
         """
         Execute the code with its arguments
 
         :returns: State.SUCCEEDED, and anything that the function associated with this object will return.
         """
-        return State.SUCCEEDED, self.function(**self.kwargs)
+        child_state = State.SUCCEEDED
+        ret_val = self.function(**self.kwargs)
+        if isinstance(ret_val, tuple):
+            child_state, child_result = ret_val
+        else:
+            child_result = ret_val
+
+        return child_state, child_result
 
     def interrupt(self) -> None:
         raise NotImplementedError
-
