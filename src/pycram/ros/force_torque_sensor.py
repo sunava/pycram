@@ -212,19 +212,18 @@ class ForceTorqueSensor:
         """
         self.force_torque_subscriber.unregister()
 
-    def last_data_values(self, is_filtered=True, amount=1) -> List[WrenchStamped]:
+    def get_last_value(self, is_filtered=True) -> WrenchStamped:
         """
         Get the most current data values.
 
         :param is_filtered: Decides about using filtered or raw data
-        :param amount: Declares the amount of data to return.
 
         :return: A list containing the most current values (newest are first)
         """
         status = self.filtered if is_filtered else self.unfiltered
-        return self.whole_data[status][::-amount]
+        return self.whole_data[status][-1]
 
-    def get_derivatives(self, is_filtered=True) -> WrenchStamped:
+    def get_derivative(self, is_filtered=True) -> WrenchStamped:
         """
         Calculate the derivative of current data.
 
