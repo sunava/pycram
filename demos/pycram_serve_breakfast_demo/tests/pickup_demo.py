@@ -69,9 +69,24 @@ with ((real_robot)):
         grasp = "front"
         if sort_objects[value].type in ["Spoon", "Fork", "Knife", "Plasticknife"]:
             sort_objects[value].type = "Cutlery"
+        if sort_objects[value].type in ["Mueslibox", "Cerealbox", "Crackerbox"]:
+            sort_objects[value].type = "Cerealbox"
+        # if sort_objects[value].type in ["Milkpackja", "Milkpackbaeren"]:
+            # sort_objects[value].type = "Milkpack"
 
         if sort_objects[value].type in ["Metalbowl", "Cutlery"]:
             grasp = "top"
+            if sort_objects[value].pose.position.z >= 0.65:
+                sort_objects[value].pose.position.z = 0.715
+            elif sort_objects[value].pose.position.z >= 0.4:
+                sort_objects[value].pose.position.z = 0.46
+            else:
+                sort_objects[value].pose.position.z = 0.07
 
         TalkingMotion("Picking up with: " + grasp).resolve().perform()
         try_pick_up(robot, sort_objects[value], grasp)
+
+        # Move away from the table
+        # NavigateAction([Pose([robot.get_pose().pose.position.x - 0.15, robot.get_pose().pose.position.y,
+                              #0])]).resolve().perform()
+
