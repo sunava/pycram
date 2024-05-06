@@ -55,22 +55,20 @@ def demo_tst():
     with real_robot:
         global callback
         global response
-        test_all = True
+        test_all = False
 
-        TalkingMotion("Hello").resolve().perform()
-        rospy.sleep(2)
 
-        HeadFollowAction(state='start').resolve().perform()
+        #HeadFollowAction(state='start').resolve().perform()
 
         rospy.Subscriber("nlp_out", String, data_cb)
-        desig = DetectAction(technique='attributes').resolve().perform()
-        guest1.set_attributes(desig)
+        #desig = DetectAction(technique='attributes').resolve().perform()
+        #guest1.set_attributes(desig)
 
-        DetectAction(technique='human', state='start').resolve().perform()
-        rospy.loginfo("human detected")
+        #DetectAction(technique='human', state='start').resolve().perform()
+        #rospy.loginfo("human detected")
 
         TalkingMotion("Hello, i am Toya and my favorite drink is oil. What about you, talk to me?").resolve().perform()
-        rospy.sleep(2)
+        rospy.sleep(3)
         # signal to start listening
         pub_nlp.publish("start listening")
 
@@ -217,7 +215,7 @@ def open_tst():
         #MoveGripperMotion(motion="close", gripper="left").resolve().perform()
         # door_handle_desig = ObjectPart(names=["iai_kitchen:arena:door_handle_inside"], part_of=kitchen_desig.resolve())
         # OpenAction(object_designator_description=door_handle_desig, arms=["left"]).resolve().perform()
-        # giskardpy.grasp_doorhandle("iai_kitchen/iai_kitchen:arena:door_handle_inside")
+        #giskardpy.grasp_doorhandle("iai_kitchen/iai_kitchen:arena:door_handle_inside")
         MoveGripperMotion(motion="close", gripper="left").resolve().perform()
         giskardpy.open_doorhandle("kitchen_2/iai_kitchen:arena:door_handle_inside")
 

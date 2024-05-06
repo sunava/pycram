@@ -230,6 +230,7 @@ def seat_queryHuman(seat: str) -> Any:
 
     # fill Query with information so that perception looks for a seat
     object_goal = QueryGoal()
+
     object_goal.obj.location = seat # aktivate region filter
 
     client = actionlib.SimpleActionClient('robokudo/query', QueryAction)

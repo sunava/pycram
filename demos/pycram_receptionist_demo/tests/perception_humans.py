@@ -1,6 +1,7 @@
 import rospy
 
-from pycram.designators.action_designator import DetectAction, NavigateAction
+from pycram.designators.action_designator import DetectAction, NavigateAction, HeadFollowAction
+from pycram.designators.motion_designator import PointingMotion
 from pycram.process_module import semi_real_robot, real_robot
 import pycram.external_interfaces.giskard as giskardpy
 from pycram.ros.viz_marker_publisher import VizMarkerPublisher
@@ -36,48 +37,37 @@ def p():
             # to signal the start of demo
             # TalkingMotion("Hello, i am ready for the test").resolve().perform()
 
+
             TalkingMotion("detecting attributes now").resolve().perform()
-            giskardpy.move_head_to_human()
+            rospy.sleep(2)
 
-
-            desig = DetectAction(technique='attributes').resolve().perform()
+            HeadFollowAction('start').resolve().perform()
+            desig = DetectAction(technique='human', state='start').resolve().perform()
+            # desig = DetectAction(technique='attributes').resolve().perform()
             print("msgs from PPP: " + str(desig))
-            # guest1.set_attributes(desig)
+            #if desig != "False":
+             #   guest1.set_attributes(desig)
 
+             #   describe(guest1)
+               # rospy.sleep(2)
 
-
-
-            TalkingMotion("demo over").resolve().perform()
+            TalkingMotion("attributes over").resolve().perform()
 
         if seat:
             # new Query for free seat
             #TalkingMotion("detecting free seat on whole couch now").resolve().perform()
-            #seat = DetectAction(technique='location', state='sofa').resolve().perform()
-            #rospy.loginfo("seat bool: " + str(seat))
+            seat = DetectAction(technique='location', state='sofa').resolve().perform()
+            rospy.loginfo(seat[1])
+            #rospy.sleep(2)
+
+            print("########################")
+            print(seat[1][1][1])
+            if seat[1][1][1] == 'occupied:false':
+                print(seat[1][1][2][2:])
+                PointingMotion(float(seat[1][1][2][2:]), float(seat[1][1][3][2:]), float(seat[1][1][4][2:])).resolve().perform()
+
             print("start")
-            TalkingMotion("detecting").resolve().perform()
-            seat1 = DetectAction(technique='location', state='seat1').resolve().perform()
-            seat1 = seat1[1]
-            if seat1.strip() == "false":
-                TalkingMotion("the seat is free").resolve().perform()
-            else:
-                TalkingMotion("the seat is not free").resolve().perform()
-                rospy.sleep(2)
-                TalkingMotion("detecting seat number 2 now").resolve().perform()
-                seat = DetectAction(technique='location', state='seat2').resolve().perform()
-                seat = seat[1]
-                if seat.strip() == "false":
-                    TalkingMotion("the seat is free").resolve().perform()
-            # rospy.loginfo("seat bool: " + str(seat1))
 
-            # print(seat1[1][0])
-            # print("##################")
-            rospy.sleep(1)
-
-            # TalkingMotion("detecting free seat number 2 now").resolve().perform()
-            #seat = DetectAction(technique='location', state='seat1').resolve().perform()
-            #rospy.loginfo("seat bool: " + str(seat))
-            #rospy.sleep(3)
 
         print("end")
 

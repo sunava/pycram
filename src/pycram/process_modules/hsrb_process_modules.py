@@ -5,6 +5,7 @@ from typing import Any
 import numpy as np
 import rospy
 from geometry_msgs.msg import PointStamped
+from robokudo_msgs.msg import QueryGoal, QueryResult
 from tmc_control_msgs.msg import GripperApplyEffortActionGoal
 from tmc_msgs.msg import Voice
 
@@ -367,13 +368,30 @@ class HSRBDetectingReal(ProcessModule):
         elif desig.technique == 'location':
             seat = desig.state
             seat_human_pose = seat_queryHuman(seat)
-            return seat_human_pose[0].attribute[0][9:]
+            # if only one seat is checked
+            if seat != "sofa":
+                return seat_human_pose[0].attribute[0][9:].split(',')
+            # when whole sofa gets checked, a list of lists is returned
+            res = []
+            for i in seat_human_pose[0].attribute:
+                res.append(i[9:].split(','))
+            return res
 
         elif desig.technique == 'attributes':
             human_pose_attr = attributes_queryHuman()
-            print("###############")
             print(human_pose_attr)
-            print("###############")
+            counter = 0
+            # wait for human to come
+            while not human_pose_attr.res and counter < 6:
+                human_pose_attr = attributes_queryHuman()
+                counter += 1
+                if counter > 3:
+                    TalkingMotion("please step in front of me").resolve().perform()
+                    rospy.sleep(2)
+
+            if counter >= 3:
+                return "False"
+
 
             # extract information from query
             gender = human_pose_attr.res[0].attribute[0][13:19]
@@ -383,8 +401,8 @@ class HSRBDetectingReal(ProcessModule):
             brightness_clothes = human_pose_attr.res[0].attribute[1][5:]
             hat = human_pose_attr.res[0].attribute[3][20:]
             attr_list = [gender, hat, clothes, brightness_clothes]
-
             return attr_list
+
 
         query_result = queryEmpty(ObjectDesignatorDescription(types=[desig.object_type]))
         perceived_objects = []
@@ -395,7 +413,7 @@ class HSRBDetectingReal(ProcessModule):
             # obj_pose_tmp = query_result.res[i].pose[0]
             obj_type = query_result.res[i].type
             obj_size = query_result.res[i].shape_size
-            obj_color = query_result.res[i].color[0]
+            #obj_color = query_result.res[i].color[0]
             color_switch = {
                 "red": [1, 0, 0, 1],
                 "green": [0, 1, 0, 1],
@@ -404,9 +422,9 @@ class HSRBDetectingReal(ProcessModule):
                 "white": [1, 1, 1, 1],
                 # add more colors if needed
             }
-            color = color_switch.get(obj_color)
-            if color is None:
-                color = [0, 0, 0, 1]
+            #olor = color_switch.get(obj_color)
+            #if color is None:
+                #color = [0, 0, 0, 1]
 
             # atm this is the string size that describes the object but it is not the shape size thats why string
             def extract_xyz_values(input_string):
@@ -437,11 +455,11 @@ class HSRBDetectingReal(ProcessModule):
                 return x_value, y_value, z_value
 
             x, y, z = extract_xyz_values(obj_size)
-            size = (x, z / 2, y)
-            size_box = (x / 2, z / 2, y / 2)
+            #size = (x, z / 2, y)
+            #size_box = (x / 2, z / 2, y / 2)
             hard_size = (0.02, 0.02, 0.03)
-            id = BulletWorld.current_bullet_world.add_rigid_box(obj_pose, hard_size, color)
-            box_object = Object(obj_type + "_" + str(rospy.get_time()), obj_type, pose=obj_pose, color=color, id=id,
+            id = BulletWorld.current_bullet_world.add_rigid_box(obj_pose, hard_size, [0, 0, 0, 1])
+            box_object = Object(obj_type + "_" + str(rospy.get_time()), obj_type, pose=obj_pose, color=[0, 0, 0, 1], id=id,
                                 customGeom={"size": [hard_size[0], hard_size[1], hard_size[2]]})
             box_object.set_pose(obj_pose)
             box_desig = ObjectDesignatorDescription.Object(box_object.name, box_object.type, box_object)
