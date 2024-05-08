@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# !/usr/bin/env python3
 import time
 
 from pycram.designators.action_designator import *
@@ -43,6 +44,7 @@ nav_pose = None
 original_pose = None
 obj_desig = None
 
+
 def color_map(color):
     color_switch = {
         "red": [1, 0, 0, 1],
@@ -60,7 +62,7 @@ def color_map(color):
 
 def age_map(age):
     global nav_pose, place_pose
-    if age > 64:
+    if age == 1:
         nav_pose = Pose([4, 3.8, 0])
         place_pose = Pose([4.8, 3.8, 0.8])
     else:
@@ -78,7 +80,7 @@ def get_place_pose(object_type):
         ('milk', 'old'): Pose([4.8, 4, 0.8]),
         ('milk', 'young'): Pose([3, 4, 1.02], [0, 0, 1, 0])
     }
-    age_case = 'old' if age > 64 else 'young'
+    age_case = 'old' if age == 1 else 'young'
     pose = poses.get((object_type, age_case))
     return pose
 
@@ -93,7 +95,7 @@ def get_nav_pose(object_type):
         ('milk', 'old'): Pose([4, 4, 0]),
         ('milk', 'young'): Pose([3.9, 4, 0], [0, 0, 1, 0])
     }
-    age_case = 'old' if age > 64 else 'young'
+    age_case = 'old' if age == 1 else 'young'
     pose = poses.get((object_type, age_case))
     return pose
 
@@ -155,6 +157,7 @@ def announce_bring(name: str, type: str, color: str, location: str, size: str):
 
 
 def announce_recovery():
+    from_robot_publish("Recovery", False, True, True, "Recovery_location_placeholder")
     print("Recovering from Interrupt")
     print("I am not interruptable here at the moment")
 
@@ -171,6 +174,12 @@ def place_and_pick_new_obj(old_desig, location, obj_type, obj_size, obj_color):
     obj_desig = move_and_detect(obj_type, obj_size, obj_color)
     PickUpAction.Action(obj_desig, "left", "front").perform()
     ParkArmsAction([Arms.BOTH]).resolve().perform()
+
+
+def from_robot_publish(step, interrupt, move_arm, move_base, destination_location):
+    global obj_type, obj_color, obj_name, obj_location, obj_size
+    fluent.publish_from_robot(step, interrupt, obj_type, obj_color, obj_name, obj_location, obj_size, move_arm,
+                              move_base, obj_location, destination_location)
 
 
 with simulated_robot:
@@ -209,12 +218,14 @@ with simulated_robot:
         ParkArmsAction.Action(Arms.BOTH).perform()
 
         ###### Pickup Object ######
+        from_robot_publish("picking_up", True, True, False, "")
         PickUpAction.Action(obj_desig, "left", "front").perform()
 
         ###### Park robot ######
         ParkArmsAction.Action(Arms.BOTH).perform()
 
         ###### Construct subplan ######
+        from_robot_publish("transporting", True, False, True, "Place_location_placeholder")
         plan = NavigateAction([get_nav_pose(obj_type)]) + announce >> Monitor(monitor_func)
 
         ###### Announce Navigation action and wait ######
@@ -228,6 +239,7 @@ with simulated_robot:
         RetryMonitor(plan, max_tries=5, recovery=recover).perform()
 
         ###### Hand the object according to Scenario 5 ######
+        from_robot_publish("placing", True, True, False, "Place_location_placeholder")
         PlaceAction(obj_desig, ["left"], ["front"], [get_place_pose(obj_type)]).resolve().perform()
         ParkArmsAction([Arms.BOTH]).resolve().perform()
 
@@ -258,12 +270,14 @@ with simulated_robot:
         ParkArmsAction.Action(Arms.BOTH).perform()
 
         ###### Pickup Object ######
+        from_robot_publish("picking_up", True, True, False, "")
         PickUpAction.Action(obj_desig, "left", "front").perform()
 
         ###### Park robot ######
         ParkArmsAction.Action(Arms.BOTH).perform()
 
         ###### Construct subplan ######
+        from_robot_publish("transporting", True, False, True, "Place_location_placeholder")
         plan = NavigateAction([get_nav_pose(obj_type)]) + announce >> Monitor(monitor_func)
 
         ###### Announce Navigation action and wait ######
@@ -277,6 +291,7 @@ with simulated_robot:
         RetryMonitor(plan, max_tries=5, recovery=recover).perform()
 
         ###### Hand the object according to Scenario 5 ######
+        from_robot_publish("placing", True, True, False, "Place_location_placeholder")
         PlaceAction(obj_desig, ["left"], ["front"], [get_place_pose(obj_type)]).resolve().perform()
         ParkArmsAction([Arms.BOTH]).resolve().perform()
 
@@ -307,12 +322,14 @@ with simulated_robot:
         ParkArmsAction.Action(Arms.BOTH).perform()
 
         ###### Pickup Object ######
+        from_robot_publish("picking_up", True, True, False, "")
         PickUpAction.Action(obj_desig, "left", "front").perform()
 
         ###### Park robot ######
         ParkArmsAction.Action(Arms.BOTH).perform()
 
         ###### Construct subplan ######
+        from_robot_publish("transporting", True, False, True, "Place_location_placeholder")
         plan = NavigateAction([get_nav_pose(obj_type)]) + announce >> Monitor(monitor_func)
 
         ###### Announce Navigation action and wait ######
@@ -326,5 +343,6 @@ with simulated_robot:
         RetryMonitor(plan, max_tries=5, recovery=recover).perform()
 
         ###### Hand the object according to Scenario 5 ######
+        from_robot_publish("placing", True, True, False, "Place_location_placeholder")
         PlaceAction(obj_desig, ["left"], ["front"], [get_place_pose(obj_type)]).resolve().perform()
         ParkArmsAction([Arms.BOTH]).resolve().perform()
