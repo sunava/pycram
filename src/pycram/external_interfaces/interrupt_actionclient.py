@@ -71,23 +71,23 @@ class InterruptClient:
     def get_objects_in_use(self):
         return self.objects_in_use
 
-    def publish_from_robot(self, step, interruptable, object_info, move_arm, move_base, current_location,
+    def publish_from_robot(self, step, interruptable, type, color, name, location, size, move_arm, move_base, current_location,
                            destination_location):
         obj_msg = dict_object(
-            type=object_info.type,
-            color=object_info.color,
-            name=object_info.name,
-            location="not supported yet",  # object_info.location,
-            size=object_info.size
+            type=type,
+            color=color,
+            name=name,
+            location= location,
+            size=size
         )
 
         from_robot_msg = message_from_robot(
             step=step,
             interruptable=interruptable,
-            object=obj_msg,
+            object=[obj_msg],
             move_arm=move_arm,
             move_base=move_base,
-            current_location=current_location,
+            current_location=location,
             destination_location=destination_location
         )
 
