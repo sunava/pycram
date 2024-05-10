@@ -6,7 +6,7 @@ from ..pose import Pose
 from ..robot_descriptions import robot_description
 from ..bullet_world import BulletWorld, Object
 
-from typing import List, Tuple, Dict
+from typing import List, Tuple, Dict, Optional
 from geometry_msgs.msg import PoseStamped, PointStamped, QuaternionStamped, Vector3Stamped
 
 giskard_wrapper = None
@@ -269,7 +269,7 @@ def achieve_align_planes_goal(goal_normal: List[float], tip_link: str, tip_norma
     return giskard_wrapper.execute()
 
 
-def achieve_open_container_goal(tip_link: str, environment_link: str) -> 'MoveResult':
+def achieve_open_container_goal(tip_link: str, environment_link: str, goal_state: Optional[float] = None) -> 'MoveResult':
     """
     Tries to open a container in an environment, this only works if the container was added as a URDF. This goal assumes
     that the handle was already grasped. Can only handle container with 1 DOF
@@ -278,10 +278,14 @@ def achieve_open_container_goal(tip_link: str, environment_link: str) -> 'MoveRe
     :param environment_link: The name of the handle for this container.
     :return: MoveResult message for this goal
     """
-    sync_worlds()
     print(tip_link)
     print(environment_link)
-    giskard_wrapper.set_open_container_goal(tip_link, environment_link)
+    if goal_state is None:
+        giskard_wrapper.set_open_container_goal(tip_link, environment_link)
+    else:
+        giskard_wrapper.set_open_container_goal(tip_link, environment_link, goal_joint_state=goal_state)
+
+    giskard_wrapper.allow_all_collisions()
     return giskard_wrapper.execute()
 
 
@@ -527,13 +531,19 @@ def grasp_doorhandle(handle_name: str):
     print("open door with handle")
 
     giskard_wrapper.set_hsrb_door_handle_grasp(handle_name=handle_name)
+    giskard_wrapper.allow_all_collisions()
+    giskard_wrapper.execute()
+
+def grasp_handle(handle_name):
+    giskard_wrapper.set_hsrb_dishwasher_door_handle_grasp(handle_name)
     giskard_wrapper.execute()
 
 def open_doorhandle(handle_name: str):
 
 
     giskard_wrapper.set_hsrb_open_door_goal(door_handle_link=handle_name)
-    giskard_wrapper.execute()
+    giskard_wrapper.allow_all_collisions()
+    giskard_wrapper.execute(add_default=False)
 
 
 def spawn_kitchen():

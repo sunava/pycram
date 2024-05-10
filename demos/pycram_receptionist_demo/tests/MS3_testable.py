@@ -21,7 +21,7 @@ robot = Object("hsrb", "robot", "../../resources/" + robot_description.name + ".
 robot_desig = ObjectDesignatorDescription(names=["hsrb"]).resolve()
 robot.set_color([0.5, 0.5, 0.9, 1])
 
-kitchen = Object("kitchen", ObjectType.ENVIRONMENT, "suturo_lab_version_3.urdf")
+kitchen = Object("kitchen", ObjectType.ENVIRONMENT, "suturo_lab_version_8.urdf")
 giskardpy.init_giskard_interface()
 giskardpy.sync_worlds()
 RobotStateUpdater("/tf", "/giskard_joint_states")
@@ -159,19 +159,20 @@ def demo_tst2():
         # perceive attributes of human
         desig = DetectAction(technique='attributes').resolve().perform()
         guest1.set_attributes(desig)
-
+        d = DetectAction(technique='human', state='start').resolve().perform()
+        print(d)
         # look and point to free seat
 
-        pub_pose.publish(toPoseStamped(pose_red_seat[0], pose_red_seat[1], pose_red_seat[2]))
-        rospy.sleep(2)
-        PointingMotion(pose_blue_seat[0], pose_blue_seat[1], pose_blue_seat[2]).resolve().perform()
+        #pub_pose.publish(toPoseStamped(pose_red_seat[0], pose_red_seat[1], pose_red_seat[2]))
+        #rospy.sleep(2)
+        #PointingMotion(pose_blue_seat[0], pose_blue_seat[1], pose_blue_seat[2]).resolve().perform()
         TalkingMotion("please take a seat next to your host").resolve().perform()
-        HeadFollowAction('start').resolve().perform()
+        #HeadFollowAction('start').resolve().perform()
 
         # set pose of humans intern
-        host.set_pose(toPoseStamped(pose_red_seat[0], pose_red_seat[1], pose_red_seat[2]))
-        guest1.set_pose(toPoseStamped(pose_blue_seat[0], pose_blue_seat[1], pose_blue_seat[2]))
-        rospy.sleep(2)
+        #host.set_pose(toPoseStamped(pose_red_seat[0], pose_red_seat[1], pose_red_seat[2]))
+        #guest1.set_pose(toPoseStamped(pose_blue_seat[0], pose_blue_seat[1], pose_blue_seat[2]))
+        #rospy.sleep(2)
 
         # introduce humans and look at them
         introduce(host, guest1)
@@ -180,6 +181,7 @@ def demo_tst2():
         describe(guest1)
         rospy.sleep(3)
         TalkingMotion("end of demo").resolve().perform()
+        DetectAction(technique='human', state='stop').resolve().perform()
 
 
 def rotate_robot():
@@ -207,7 +209,7 @@ def open_tst():
     """
     with real_robot:
 
-        TalkingMotion("Opening now").resolve().perform()
+        TalkingMotion("Test").resolve().perform()
         # link in rviz: iai_kitchen:arena:door_handle_inside
         # obj = BulletWorld.current_bullet_world.objects
         # for objects in obj:
@@ -215,15 +217,31 @@ def open_tst():
         #MoveGripperMotion(motion="close", gripper="left").resolve().perform()
         # door_handle_desig = ObjectPart(names=["iai_kitchen:arena:door_handle_inside"], part_of=kitchen_desig.resolve())
         # OpenAction(object_designator_description=door_handle_desig, arms=["left"]).resolve().perform()
-        #giskardpy.grasp_doorhandle("iai_kitchen/iai_kitchen:arena:door_handle_inside")
-        MoveGripperMotion(motion="close", gripper="left").resolve().perform()
-        giskardpy.open_doorhandle("kitchen_2/iai_kitchen:arena:door_handle_inside")
+        pose1 = robot.get_pose()
+        pose2 = robot.get_complete_joint_state()
+        print(pose1)
+        print("++++++++++++++++++")
+        print(pose2)
+
+        # Pre-Pose
+        # pose1 = Pose([1.64, 0.15, 0], [0, 0, 1, 0])
+        # NavigateAction([pose1]).resolve().perform()
+        # MoveJointsMotion(["wrist_roll_joint"], [-1.57]).resolve().perform()
+        # MoveTorsoAction([0.35]).resolve().perform()
+        #
+        # # grasp door
+        # giskardpy.grasp_doorhandle("iai_kitchen/iai_kitchen:arena:door_handle_inside")
+        # MoveGripperMotion(motion="close", gripper="left").resolve().perform()
+        #
+        # # open door
+        # giskardpy.open_doorhandle("kitchen_2/iai_kitchen:arena:door_handle_inside")
+        TalkingMotion("end").resolve().perform()
 
 
 
 
 
-demo_tst()
-# open_tst()
+#demo_tst()
+open_tst()
 
 
