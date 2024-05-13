@@ -4,6 +4,8 @@ from __future__ import annotations
 import queue
 import time
 from typing import Iterable, Optional, Callable, Dict, Any, List, Union, Tuple
+
+import rospy
 from anytree import NodeMixin, Node, PreOrderIter, RenderTree
 
 from .enums import State
@@ -283,11 +285,15 @@ class Monitor(Language):
         def check_condition():
             while not self.kill_event.is_set():
                 try:
-                    if self.condition.get_value():
+                    cond = self.condition.get_value()
+                    if cond:
                         for child in self.children:
                             if hasattr(child, 'interrupt'):
                                 child.interrupt()
-                        self.exception_queue.put(PlanFailure("Condition met in Monitor"))
+                        if isinstance(cond, type) and issubclass(cond, Exception):
+                            self.exception_queue.put(cond)
+                        else:
+                            self.exception_queue.put(PlanFailure("Condition met in Monitor"))
                         return
                 except Exception as e:
                     self.exception_queue.put(e)

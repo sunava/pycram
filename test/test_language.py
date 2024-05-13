@@ -1,9 +1,11 @@
 import threading
+import time
 import unittest
 from pycram.designators.action_designator import *
 from pycram.enums import ObjectType, State
+from pycram.failure_handling import RetryMonitor
 from pycram.fluent import Fluent
-from pycram.plan_failures import PlanFailure
+from pycram.plan_failures import PlanFailure, NotALanguageExpression
 from pycram.pose import Pose
 from pycram.language import Sequential, Language, Parallel, TryAll, TryInOrder, Monitor, Repeat, Code, RenderTree
 from pycram.process_module import simulated_robot
@@ -112,6 +114,80 @@ class LanguageTestCase(test_bullet_world.BulletWorldTest):
 
         self.assertRaises(AttributeError, lambda: Monitor(monitor_func) >> Monitor(monitor_func))
 
+    def test_retry_monitor_construction(self):
+        act = ParkArmsAction([Arms.BOTH])
+        act2 = MoveTorsoAction([0.3])
+
+        def monitor_func():
+            time.sleep(1)
+            return True
+
+        def recovery1():
+            return
+
+        recover1 = Code(lambda: recovery1())
+        recovery = {NotALanguageExpression: recover1}
+
+        subplan = act + act2 >> Monitor(monitor_func)
+        plan = RetryMonitor(subplan, max_tries=6, recovery=recovery)
+        self.assertEqual(len(plan.recovery), 1)
+        self.assertIsInstance(plan.designator_description, Monitor)
+
+    def test_retry_monitor_tries(self):
+        act = ParkArmsAction([Arms.BOTH])
+        act2 = MoveTorsoAction([0.3])
+        tries_counter = 0
+
+        def monitor_func():
+            nonlocal tries_counter
+            tries_counter += 1
+            return True
+
+        subplan = act + act2 >> Monitor(monitor_func)
+        plan = RetryMonitor(subplan, max_tries=6)
+        try:
+            plan.resolve().perform()
+        except PlanFailure as e:
+            pass
+        self.assertEqual(tries_counter, 6)
+
+    def test_retry_monitor_recovery(self):
+        recovery1_counter = 0
+        recovery2_counter = 0
+
+        def monitor_func():
+            if not hasattr(monitor_func, 'tries_counter'):
+                monitor_func.tries_counter = 0
+            if monitor_func.tries_counter % 2:
+                monitor_func.tries_counter += 1
+                return NotALanguageExpression
+            monitor_func.tries_counter += 1
+            return PlanFailure
+
+        def recovery1():
+            nonlocal recovery1_counter
+            recovery1_counter += 1
+
+        def recovery2():
+            nonlocal recovery2_counter
+            recovery2_counter += 1
+
+        recover1 = Code(lambda: recovery1())
+        recover2 = Code(lambda: recovery2())
+        recovery = {NotALanguageExpression: recover1,
+                    PlanFailure: recover2}
+
+        act = ParkArmsAction([Arms.BOTH])
+        act2 = MoveTorsoAction([0.3])
+        subplan = act + act2 >> Monitor(monitor_func)
+        plan = RetryMonitor(subplan, max_tries=6, recovery=recovery)
+        try:
+            plan.resolve().perform()
+        except PlanFailure as e:
+            pass
+        self.assertEqual(recovery1_counter, 2)
+        self.assertEqual(recovery2_counter, 3)
+
     def test_repeat_construction(self):
         act = ParkArmsAction([Arms.BOTH])
         act2 = MoveTorsoAction([0.3])
@@ -167,6 +243,7 @@ class LanguageTestCase(test_bullet_world.BulletWorldTest):
 
         def check_thread_id(main_id):
             self.assertNotEquals(main_id, threading.get_ident())
+
         act = Code(check_thread_id, {"main_id": threading.get_ident()})
         act2 = Code(check_thread_id, {"main_id": threading.get_ident()})
         act3 = Code(check_thread_id, {"main_id": threading.get_ident()})
@@ -180,6 +257,7 @@ class LanguageTestCase(test_bullet_world.BulletWorldTest):
 
         def inc(var):
             var.set_value(var.get_value() + 1)
+
         plan = Code(lambda: inc(test_var)) * 10
         with simulated_robot:
             plan.perform()
@@ -188,6 +266,7 @@ class LanguageTestCase(test_bullet_world.BulletWorldTest):
     def test_exception_sequential(self):
         def raise_except():
             raise PlanFailure
+
         act = NavigateAction([Pose()])
         code = Code(raise_except)
 
@@ -201,6 +280,7 @@ class LanguageTestCase(test_bullet_world.BulletWorldTest):
     def test_exception_try_in_order(self):
         def raise_except():
             raise PlanFailure
+
         act = NavigateAction([Pose()])
         code = Code(raise_except)
 
@@ -215,6 +295,7 @@ class LanguageTestCase(test_bullet_world.BulletWorldTest):
     def test_exception_parallel(self):
         def raise_except():
             raise PlanFailure
+
         act = NavigateAction([Pose()])
         code = Code(raise_except)
 
@@ -229,6 +310,7 @@ class LanguageTestCase(test_bullet_world.BulletWorldTest):
     def test_exception_try_all(self):
         def raise_except():
             raise PlanFailure
+
         act = NavigateAction([Pose()])
         code = Code(raise_except)
 
