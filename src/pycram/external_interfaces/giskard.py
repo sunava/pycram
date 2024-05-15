@@ -534,8 +534,8 @@ def grasp_doorhandle(handle_name: str):
     giskard_wrapper.allow_all_collisions()
     giskard_wrapper.execute()
 
-def grasp_handle(handle_name):
-    giskard_wrapper.set_hsrb_dishwasher_door_handle_grasp(handle_name)
+def grasp_handle(handle_name: str):
+    giskard_wrapper.set_hsrb_dishwasher_door_handle_grasp(handle_name, grasp_bar_offset=0.035)
     giskard_wrapper.execute()
 
 def open_doorhandle(handle_name: str):

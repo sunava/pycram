@@ -1,17 +1,17 @@
 from enum import Enum
 
-from pycram.process_module import real_robot, semi_real_robot
+from demos.pycram_clean_the_table_demo.utils.misc import *
+from pycram.process_module import real_robot
 from pycram.ros.robot_state_updater import RobotStateUpdater
 from pycram.ros.viz_marker_publisher import VizMarkerPublisher
-from demos.pycram_clean_the_table_demo.utils.misc import *
+
 # from pycram.external_interfaces.knowrob import get_table_pose
 
 # list of cutlery objects
 CUTLERY = ["Spoon", "Fork", "Knife", "Plasticknife"]
 
 # Wished objects for the Demo
-wished_sorted_obj_list = ["Fork", "Metalplate"]
-
+wished_sorted_obj_list = ["Metalplate"]
 
 # length of wished list for failure handling
 LEN_WISHED_SORTED_OBJ_LIST = len(wished_sorted_obj_list)
@@ -23,7 +23,7 @@ y_pos = 1.66
 table_pose = 1.04
 
 # Initialize the Bullet world for simulation
-world = BulletWorld()
+world = BulletWorld("DIRECT")
 
 # Visualization Marker Publisher for ROS
 v = VizMarkerPublisher()
@@ -38,12 +38,13 @@ giskardpy.init_giskard_interface()
 robot.set_color([0.5, 0.5, 0.9, 1])
 
 # Create environmental objects
-apartment = Object("kitchen", ObjectType.ENVIRONMENT, "couch-whole_kitchen2.urdf")
-apart_desig= BelieveObject(names=["kitchen"])
+apartment = Object("kitchen", ObjectType.ENVIRONMENT, "suturo_lab_version_6.urdf")
+apart_desig = BelieveObject(names=["kitchen"])
 # Define orientation for objects
 object_orientation = axis_angle_to_quaternion([0, 0, 1], 180)
 
 giskardpy.sync_worlds()
+print(apartment.get_joint_limits("sink_area_dish_washer_door_joint"))
 
 
 class PlacingXPose(Enum):
@@ -71,7 +72,7 @@ class PlacingYPose(Enum):
     KNIFE = -1.56
     METALBOWL = -1.7
     METALMUG = -1.74
-    METALPLATE = -1.74
+    METALPLATE = -1.63
 
 
 def pickup_and_place_objects(sorted_obj: list):
@@ -84,7 +85,7 @@ def pickup_and_place_objects(sorted_obj: list):
 
     for value in range(len(sorted_obj)):
         print("first navigation")
-
+        z = 0.48
         # define grasping pose
         grasp = "front"
         if sorted_obj[value].type in CUTLERY:
@@ -98,7 +99,8 @@ def pickup_and_place_objects(sorted_obj: list):
             MoveGripperMotion("open", "left").resolve().perform()
             time.sleep(3)
             MoveGripperMotion("close", "left").resolve().perform()
-            grasp = "top"
+            grasp = "front"
+            z = 0.495
         else:
             # change object x pose if the grasping pose is too far in the table
             if sorted_obj[value].type == "Cutlery" and sorted_obj[value].pose.position.x < table_pose - 0.125:
@@ -119,25 +121,39 @@ def pickup_and_place_objects(sorted_obj: list):
         x_pos = x_y_pos[0]
         y_pos = x_y_pos[1]
         # TODO: Please check before trying!!!!!!
-        #navigate_to(2.0, -0.2, "dishwasher")
+        # navigate_to(2.0, -0.2, "dishwasher")
         if x_pos >= 2.9:
-             navigate_to("dishwasher_left")
+            navigate_to("dishwasher_left")
         else:
-             navigate_to("dishwasher_right")
+            navigate_to("dishwasher_right")
 
         TalkingMotion("Placing").resolve().perform()
         if sorted_obj[value].type in ["Cutlery", "Metalbowl"]:
             grasp = "front"
 
-
-        #Todo: Bowl vielleicht mit front grasp fallen lassen, metalmug vielleicht hand erst komplett drehen und dann dropen?
+        # Todo: Bowl vielleicht mit front grasp fallen lassen, metalmug vielleicht hand erst komplett drehen und dann dropen?
         PlaceAction(sorted_obj[value], ["left"], [grasp],
-                       [Pose([x_pos, y_pos, 0.48])]).resolve().perform()
+                    [Pose([x_pos, y_pos, z])]).resolve().perform()
 
-        ParkArmsAction([Arms.LEFT]).resolve().perform()
-        TalkingMotion("Navigating").resolve().perform()
-        #Todo: ist zwischenschritt von navigieren hier notwendig, da dishwasher seitwärts vom hsr? vielleicht für generalisierung notwendig
-       # navigate_to(3.9, 2, "popcorn table")
+        # rospy.logwarn("sidepush monitoring")
+        # TalkingMotion("side luca is here behind me hahahaha.").resolve().perform()
+        # side_push = Pose([robot.pose.position.x, push_baseTm.pose.position.y + 0.05, push_baseTm.pose.position.z])
+        # plan = MoveTCPMotion(side_push, self.arm) >> Monitor(monitor_func)
+        # plan.perform()
+        # # Finalize the placing by opening the gripper and lifting the arm
+        # rospy.logwarn("Open Gripper")
+        # MoveGripperMotion(motion="open", gripper=self.arm).resolve().perform()
+        #
+        # rospy.logwarn("Lifting now")
+        # liftingTm = push_baseTm
+        # liftingTm.pose.position.z += 0.08
+        # BulletWorld.current_bullet_world.add_vis_axis(liftingTm)
+        # if execute:
+        #     MoveTCPMotion(liftingTm, self.arm).resolve().perform()
+        # ParkArmsAction([Arms.LEFT]).resolve().perform()
+        # TalkingMotion("Navigating").resolve().perform()
+        # Todo: ist zwischenschritt von navigieren hier notwendig, da dishwasher seitwärts vom hsr? vielleicht für generalisierung notwendig
+        # navigate_to(3.9, 2, "popcorn table")
 
         # navigates back if a next object exists
         if value + 1 < len(sorted_obj):
@@ -165,7 +181,7 @@ def navigate_to(table_name: str, y: Optional[float] = None):
     :param y: y pose to navigate to
     :param table_name: defines the name of the table to move to
     """
-    #Todo anpassen, vielleicht nur noch einmal y notwendig und sonst vorgeben
+    # Todo anpassen, vielleicht nur noch einmal y notwendig und sonst vorgeben
     if table_name == "popcorn table" and y is not None:
         NavigateAction(target_locations=[Pose([1.7, y, 0], [0, 0, 1, 0])]).resolve().perform()
     elif table_name == "dishwasher_left":
@@ -173,7 +189,7 @@ def navigate_to(table_name: str, y: Optional[float] = None):
     elif table_name == "dishwasher_right":
         NavigateAction(target_locations=[Pose([2.1, -1.53, 0], [0, 0, 0, 1])]).resolve().perform()
     elif table_name == "dishwasher":
-        NavigateAction(target_locations=[Pose([2.7, -0.8, 0], [0, 0, -1, 1])]).resolve().perform()
+        NavigateAction(target_locations=[Pose([2.55, -0.8, 0], [0, 0, -1, 1])]).resolve().perform()
     else:
         rospy.logerr("Failure. Y-Value must be set for the navigateAction to the popcorn table")
 
@@ -186,11 +202,11 @@ def navigate_and_detect():
     """
     TalkingMotion("Navigating").resolve().perform()
     # navigate_to(False, 1.8, "popcorn table")
-    navigate_to( "popcorn table", 1.8)  # 1.6
+    navigate_to("popcorn table", 1.8)  # 1.6
 
     # popcorn table
     # TODO: Check if object_orientation is actually needed or not
-   # LookAtAction(targets=[Pose([0.8, 1.8, 0.21], object_orientation)]).resolve().perform()  # 0.18 vanessa
+    LookAtAction(targets=[Pose([0.8, 1.8, 0.21], object_orientation)]).resolve().perform()  # 0.18 vanessa
     TalkingMotion("Perceiving").resolve().perform()
     try:
         object_desig = DetectAction(technique='all').resolve().perform()
@@ -200,133 +216,229 @@ def navigate_and_detect():
     return object_desig
 
 
+def open_dishwasher(handle_name, door_name):
+    MoveGripperMotion("open", "left").resolve().perform()
+    giskardpy.grasp_handle(handle_name)
+
+    MoveGripperMotion("close", "left").resolve().perform()
+
+    giskardpy.achieve_open_container_goal(robot_description.get_tool_frame("left"), handle_name, goal_state=0.8)
+    MoveGripperMotion("open", "left").resolve().perform()
+
+    giskardpy.giskard_wrapper.set_hsrb_dishwasher_door_around(handle_name)
+    giskardpy.giskard_wrapper.execute()
+
+    MoveGripperMotion("close", "left").resolve().perform()
+
+    giskardpy.giskard_wrapper.set_hsrb_align_to_push_door_goal(handle_name, door_name)
+    giskardpy.giskard_wrapper.execute()
+
+    giskardpy.giskard_wrapper.set_hsrb_pre_push_door_goal(handle_name=handle_name, hinge_frame_id=door_name)
+    giskardpy.giskard_wrapper.allow_all_collisions()
+    giskardpy.giskard_wrapper.execute()
+
+    giskardpy.achieve_open_container_goal(robot_description.get_tool_frame("left"), handle_name, goal_state=1.3)
+
+
 # Main interaction sequence with real robot
-with ((semi_real_robot)):
+with ((real_robot)):
     rospy.loginfo("Starting demo")
     TalkingMotion("Starting demo").resolve().perform()
-   # MoveGripperMotion(motion="open", gripper="left").resolve().perform()
-    ParkArmsAction([Arms.LEFT]).resolve().perform()
+    # MoveGripperMotion(motion="open", gripper="left").resolve().perform()
+    #ParkArmsAction([Arms.LEFT]).resolve().perform()
 
-    TalkingMotion("Navigating").resolve().perform()
+    # side_push = Pose([robot.pose.position.x, push_baseTm.pose.position.y + 0.05, push_baseTm.pose.position.z])
+    # MoveJointsMotion([robot_description.torso_joint], [0])
+    # TalkingMotion("Test now").resolve().perform()
+    # plan = MoveJointsMotion([robot_description.torso_joint], [0.55]) >> Monitor(monitor_func)
+    # plan.perform()
+
+    # print(robot.get_orientation())
+    # NavigateAction([rTd.pose.position.x, rTd.pose.position.y + 0.1, 0]).resolve().perform()
+    # TalkingMotion("Navigating").resolve().perform()
     # NavigateAction(target_locations=[Pose([2.35, 0.3, 0], [0, 0, -1, 1])]).resolve().perform()
-    #
-    # navigate_to("dishwasher_left")
-    handle_desig = ObjectPart(names=["iai_kitchen/sink_area_dish_washer_door_handle"], part_of=apart_desig.resolve())
 
-    # x_y_pos = get_pos("Metalmug")
-    # print(type(x_y_pos))
+    # robot_pos = robot.get_pose()
+    # robot_orient = robot.get_orientation()
+    # NavigateAction(target_locations=[Pose([], [robot_orient.x, robot_orient.y, robot_orient.z, robot_orient.w])]).resolve().perform()
+    handle_name = "sink_area_dish_washer_door_handle"
+    door_name = "sink_area_dish_washer_door"
+    open_dishwasher(handle_name, door_name)
+    # MoveGripperMotion("open", "left").resolve().perform()
+    # giskardpy.grasp_handle(handle_name)
+    # MoveGripperMotion("close", "left").resolve().perform()
+
+
+    # handle_desig = ObjectPart(names=[handle_name], part_of=apart_desig.resolve())
+    # navigate_to("dishwasher")
+    #
+    # #MoveJointsMotion(["arm_roll_joint"], [-1.5]).resolve().perform()
+    # giskardpy.grasp_doorhandle(handle_name)
+    # print(handle_desig.part_of.pose)
+    # GraspingAction.Action(Arms.LEFT, handle_desig).perform()
+
+
+
+    #
+
+    # #MoveTorsoAction([0.3]).resolve().perform()
+    # #kwargs = dict()
+    #
+    # # taking in the predefined arm configuration for placing
+    #
+    # kwargs["left_arm_config"] = "open_dishwasher"
+    # MoveArmJointsMotion(**kwargs).resolve().perform()
+
+    # MoveGripperMotion("close", "left").resolve().perform()
+    #
+
+    # MoveGripperMotion("open", "left").resolve().perform()
+
+    # OpeningMotion(handle_desig, "left").resolve().perform()
+
+    # # mvb = Pose([0,-0.2, 0],[0,0,0,1], "base_link")
+    # # NavigateAction([mvb]).resolve().perform()
+    # # ParkArmsAction([Arms.LEFT]).resolve().perform()
+    # TalkingMotion("Opening from side").resolve().perform()
+
+    # giskardpy.achieve_open_container_goal(robot_description.get_tool_frame("left"),
+    #                                       handle_name,
+    #                                       goal_state=0.8)
+    #
+    # giskardpy.giskard_wrapper.set_hsrb_dishwasher_door_around(handle_name)
+    # giskardpy.giskard_wrapper.execute()
+    #
+    # MoveGripperMotion("close", "left").resolve().perform()
+    #
+    # giskardpy.giskard_wrapper.set_hsrb_align_to_push_door_goal(handle_name, door_name)
+    # giskardpy.giskard_wrapper.execute()
+    #
+    # giskardpy.giskard_wrapper.set_hsrb_pre_push_door_goal(handle_name=handle_name, hinge_frame_id=door_name)
+    # giskardpy.giskard_wrapper.allow_all_collisions()
+    # giskardpy.giskard_wrapper.execute()
+    #
+    # giskardpy.achieve_open_container_goal(robot_description.get_tool_frame("left"),
+    #                                       handle_name,
+    #                                       goal_state=1.25)
+
+    # giskardpy.finish_open_dishwasher_goal()
+    # ParkArmsAction([Arms.LEFT]).resolve().perform()
+    # MoveGripperMotion("open", self.arm, allow_gripper_collision=True).resolve().perform()
+
+    # x_y_pos = get_pos("Metalplate")
+    # # print(type(x_y_pos))
     # x_pos = x_y_pos[0]
     # y_pos = x_y_pos[1]
-    #MoveGripperMotion(motion="close", gripper="left").resolve().perform()
-    # PlaceGivenObjAction(["Metalmug"], ["left"],
-    #                      [Pose([x_pos, y_pos, 0.48])], ["front"]).resolve().perform()
+    # #MoveGripperMotion(motion="close", gripper="left").resolve().perform()
+    # navigate_to("dishwasher_left")
+    # PlaceGivenObjAction(["Metalplate"], ["left"],
+    #                       [Pose([x_pos, y_pos, 0.48])], ["front"], False).resolve().perform()
 
-    #OpenAction(object_designator_description=handle_desig, arms=["left"]).resolve().perform()
-    #TalkingMotion("Please pull out the lower rack.").resolve().perform()
-    # detect objects
-    object_desig = navigate_and_detect()
-
-    # sort objects based on distance and which we like to keep
-    sorted_obj = sort_objects(robot, object_desig, wished_sorted_obj_list)
-
-    # picking up and placing objects
-    pickup_and_place_objects(sorted_obj)
+    #  OpenAction(object_designator_description=handle_desig, arms=["left"]).resolve().perform()
+    #  #TalkingMotion("Please pull out the lower rack.").resolve().perform()
+    #  # detect objects
+    #  object_desig = navigate_and_detect()
+    # #
+    # # # sort objects based on distance and which we like to keep
+    #  sorted_obj = sort_objects(robot, object_desig, wished_sorted_obj_list)
+    # #
+    # #  #picking up and placing objects
+    #  pickup_and_place_objects(sorted_obj)
 
     # # failure handling part 1
-    new_sorted_obj = []
-    print(f"length of sorted obj: {len(sorted_obj)}")
-
-    # if not all needed objects found, the robot will perceive and pick up and
-    # place new-found objects again.
-    if len(sorted_obj) < LEN_WISHED_SORTED_OBJ_LIST:
-        print("first Check")
-        for value in sorted_obj:
-            # remove objects that were seen and transported so far except the silverware
-            if value.type in wished_sorted_obj_list:
-                wished_sorted_obj_list.remove(value.type)
-
-        new_object_desig = navigate_and_detect()
-        new_sorted_obj = sort_objects(robot, new_object_desig, wished_sorted_obj_list)
-        pickup_and_place_objects(new_sorted_obj)
-
-        # failure handling part 2
-        final_sorted_obj = sorted_obj + new_sorted_obj
-        if len(final_sorted_obj) < LEN_WISHED_SORTED_OBJ_LIST:
-            navigate_to("popcorn table", 1.8)
-            print("second Check")
-
-            for value in final_sorted_obj:
-                # remove all objects that were seen and transported so far
-                if value.type in wished_sorted_obj_list:
-                    wished_sorted_obj_list.remove(value.type)
-                # if the type is cutlery, the real type is not easily reproducible.
-                # remove one cutlery object of the list with the highest chance that it was found and transported.
-                if value.type == "Cutlery":
-                    if "Fork" in wished_sorted_obj_list:
-                        print("deleted fork")
-                        wished_sorted_obj_list.remove("Fork")
-                    elif "Spoon" in wished_sorted_obj_list:
-                        print("deleted spoon")
-                        wished_sorted_obj_list.remove("Spoon")
-                    elif "Plasticknife" in wished_sorted_obj_list:
-                        print("deleted knife")
-                        wished_sorted_obj_list.remove("Plasticknife")
-
-            for val in range(len(wished_sorted_obj_list)):
-                grasp = "front"
-                # todo vielleicht metalbowl hier rausnehmen und von front platzieren
-                # if wished_sorted_obj_list[val] in (["Metalbowl", "Metalplate"]):
-                #     grasp = "top"
-
-                print(f"next object is: {wished_sorted_obj_list[val]}")
-                TalkingMotion(f"Can you please give me the {wished_sorted_obj_list[val]} "
-                              f"on the table?").resolve().perform()
-                time.sleep(4)
-                MoveGripperMotion("close", "left").resolve().perform()
-
-                ParkArmsAction([Arms.LEFT]).resolve().perform()
-                TalkingMotion("Navigating").resolve().perform()
-                # navigate_to(True, 1.8, "long table")
-                # navigate_to(False, y_pos, "long table")
-                x_y_pos = get_pos(wished_sorted_obj_list[val])
-                x_pos = x_y_pos[0]
-                y_pos = x_y_pos[1]
-                # TODO: Please check before trying!!!!!!
-                # navigate_to(2.0, -0.2, "dishwasher")
-                NavigateAction(target_locations=[Pose([2.35, 0.3, 0], [0, 0, -1, 1])]).resolve().perform()
-                if wished_sorted_obj_list[val] == "Metalplate":
-                    MoveJointsMotion(["arm_roll_joint"], [-1.5]).resolve().perform()
-                if x_pos <= 2.9:
-                    navigate_to("dishwasher_left")
-                else:
-                    navigate_to("dishwasher_right")
-
-                TalkingMotion("Placing").resolve().perform()
-                # Todo: Bowl vielleicht mit front grasp fallen lassen, metalmug vielleicht hand erst komplett drehen und dann dropen?
-                # obj = ObjectDesignatorDescription([wished_sorted_obj_list[val]],[wished_sorted_obj_list[val]])
-                # obj2 = Object(name=wished_sorted_obj_list[val], type=wished_sorted_obj_list[val])
-                # object_desig = BelieveObject(obj2)
-                # #todo was mit placingAction machen, plate wird sonst falsch platziert, aber wie erzeuge ich mir eine eigene description ohne perception
-                if wished_sorted_obj_list[val] == "Metalplate":
-                    PlaceGivenObjAction([wished_sorted_obj_list[val]], ["left"],
-                                        [Pose([x_pos, y_pos, 0.3])], [grasp], False).resolve().perform()
-                else:
-                    PlaceGivenObjAction([wished_sorted_obj_list[val]], ["left"],
-                            [Pose([x_pos, y_pos, 0.3])],[grasp]).resolve().perform()
-                ParkArmsAction([Arms.LEFT]).resolve().perform()
-                # navigates back if a next object exists
-                # todo sollen wir ihn echt zum tisch navigieren lassen, wenn er das objekt vom menschen bekommt?
-                if val + 1 < len(wished_sorted_obj_list):
-                    TalkingMotion("Navigating").resolve().perform()
-                    # navigate_to(True, 2, "popcorn table")
-                    # navigate_to(False, 1.8, "popcorn table")
-                    #navigate_to(3.9, 2, "popcorn table")
-                    NavigateAction(target_locations=[Pose([2.35, 0.3, 0], [0, 0, 1, 1])]).resolve().perform()
-                    navigate_to("popcorn table", 1.8)
+    # new_sorted_obj = []
+    # print(f"length of sorted obj: {len(sorted_obj)}")
+    #
+    # # if not all needed objects found, the robot will perceive and pick up and
+    # # place new-found objects again.
+    # if len(sorted_obj) < LEN_WISHED_SORTED_OBJ_LIST:
+    #     print("first Check")
+    #     for value in sorted_obj:
+    #         # remove objects that were seen and transported so far except the silverware
+    #         if value.type in wished_sorted_obj_list:
+    #             wished_sorted_obj_list.remove(value.type)
+    #
+    #     new_object_desig = navigate_and_detect()
+    #     new_sorted_obj = sort_objects(robot, new_object_desig, wished_sorted_obj_list)
+    #     pickup_and_place_objects(new_sorted_obj)
+    #
+    #     # failure handling part 2
+    #     final_sorted_obj = sorted_obj + new_sorted_obj
+    #     if len(final_sorted_obj) < LEN_WISHED_SORTED_OBJ_LIST:
+    #         navigate_to("popcorn table", 1.8)
+    #         print("second Check")
+    #
+    #         for value in final_sorted_obj:
+    #             # remove all objects that were seen and transported so far
+    #             if value.type in wished_sorted_obj_list:
+    #                 wished_sorted_obj_list.remove(value.type)
+    #             # if the type is cutlery, the real type is not easily reproducible.
+    #             # remove one cutlery object of the list with the highest chance that it was found and transported.
+    #             if value.type == "Cutlery":
+    #                 if "Fork" in wished_sorted_obj_list:
+    #                     print("deleted fork")
+    #                     wished_sorted_obj_list.remove("Fork")
+    #                 elif "Spoon" in wished_sorted_obj_list:
+    #                     print("deleted spoon")
+    #                     wished_sorted_obj_list.remove("Spoon")
+    #                 elif "Plasticknife" in wished_sorted_obj_list:
+    #                     print("deleted knife")
+    #                     wished_sorted_obj_list.remove("Plasticknife")
+    #
+    #         for val in range(len(wished_sorted_obj_list)):
+    #             grasp = "front"
+    #             # todo vielleicht metalbowl hier rausnehmen und von front platzieren
+    #             # if wished_sorted_obj_list[val] in (["Metalbowl", "Metalplate"]):
+    #             #     grasp = "top"
+    #
+    #             print(f"next object is: {wished_sorted_obj_list[val]}")
+    #             TalkingMotion(f"Can you please give me the {wished_sorted_obj_list[val]} "
+    #                           f"on the table?").resolve().perform()
+    #             time.sleep(4)
+    #             MoveGripperMotion("close", "left").resolve().perform()
+    #
+    #             ParkArmsAction([Arms.LEFT]).resolve().perform()
+    #             TalkingMotion("Navigating").resolve().perform()
+    #             # navigate_to(True, 1.8, "long table")
+    #             # navigate_to(False, y_pos, "long table")
+    #             x_y_pos = get_pos(wished_sorted_obj_list[val])
+    #             x_pos = x_y_pos[0]
+    #             y_pos = x_y_pos[1]
+    #             # TODO: Please check before trying!!!!!!
+    #             # navigate_to(2.0, -0.2, "dishwasher")
+    #             NavigateAction(target_locations=[Pose([2.35, 0.3, 0], [0, 0, -1, 1])]).resolve().perform()
+    #             if wished_sorted_obj_list[val] == "Metalplate":
+    #                 MoveJointsMotion(["arm_roll_joint"], [-1.5]).resolve().perform()
+    #             if x_pos <= 2.9:
+    #                 navigate_to("dishwasher_left")
+    #             else:
+    #                 navigate_to("dishwasher_right")
+    #
+    #             TalkingMotion("Placing").resolve().perform()
+    #             # Todo: Bowl vielleicht mit front grasp fallen lassen, metalmug vielleicht hand erst komplett drehen und dann dropen?
+    #             # obj = ObjectDesignatorDescription([wished_sorted_obj_list[val]],[wished_sorted_obj_list[val]])
+    #             # obj2 = Object(name=wished_sorted_obj_list[val], type=wished_sorted_obj_list[val])
+    #             # object_desig = BelieveObject(obj2)
+    #             # #todo was mit placingAction machen, plate wird sonst falsch platziert, aber wie erzeuge ich mir eine eigene description ohne perception
+    #             if wished_sorted_obj_list[val] == "Metalplate":
+    #                 PlaceGivenObjAction([wished_sorted_obj_list[val]], ["left"],
+    #                                     [Pose([x_pos, y_pos, 0.3])], [grasp], False).resolve().perform()
+    #             else:
+    #                 PlaceGivenObjAction([wished_sorted_obj_list[val]], ["left"],
+    #                         [Pose([x_pos, y_pos, 0.3])],[grasp]).resolve().perform()
+    #             ParkArmsAction([Arms.LEFT]).resolve().perform()
+    #             # navigates back if a next object exists
+    #             # todo sollen wir ihn echt zum tisch navigieren lassen, wenn er das objekt vom menschen bekommt?
+    #             if val + 1 < len(wished_sorted_obj_list):
+    #                 TalkingMotion("Navigating").resolve().perform()
+    #                 # navigate_to(True, 2, "popcorn table")
+    #                 # navigate_to(False, 1.8, "popcorn table")
+    #                 #navigate_to(3.9, 2, "popcorn table")
+    #                 NavigateAction(target_locations=[Pose([2.35, 0.3, 0], [0, 0, 1, 1])]).resolve().perform()
+    #                 navigate_to("popcorn table", 1.8)
 
     rospy.loginfo("Done!")
     TalkingMotion("Done").resolve().perform()
-
 
 # def navigate_to(turn_around, y, table_name):
 #     """
@@ -350,3 +462,14 @@ with ((semi_real_robot)):
 #      #                         table.posestamped.pose.position.z], [table.posestamped.pose.orientation.x,
 #      #                         table.posestamped.pose.orientation.y, table.posestamped.pose.orientation.z,
 #      #                                                             table.posestamped.pose.orientation.w])]).resolve().perform()]).resolve().perform()
+
+
+# lt = LocalTransformer()
+#     tf_buffer = tf2_ros.Buffer(rospy.Duration(100.0))
+#     tf_listener = tf2_ros.TransformListener(tf_buffer)
+#     transform = tf_buffer.lookup_transform("sink_area_dish_washer_main", "base_link", 0, rospy.Duration(1.0))
+#     base_link = PoseStamped()
+#     base_link.header.frame_id = "base_link"
+#     pose_transformed = tf2_geometry_msgs.do_transform_pose(base_link ,transform)
+#     rTb = Pose(frame= "base_link")
+#     rTd = lt.transform_pose(rTb, "iai_kitchen/sink_area_dish_washer_main")
