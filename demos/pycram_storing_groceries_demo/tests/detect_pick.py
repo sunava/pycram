@@ -40,6 +40,7 @@ with real_robot:
         PickUpAction(obj, ["left"], ["front"]).resolve().perform()
         ParkArmsAction([Arms.LEFT]).resolve().perform()
         MoveTorsoAction([0.05]).resolve().perform()
+        MoveTorsoAction([0.1]).resolve().perform()
 
     TalkingMotion("test end").resolve().perform()
 

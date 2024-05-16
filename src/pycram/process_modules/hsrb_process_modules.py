@@ -368,18 +368,20 @@ class HSRBDetectingReal(ProcessModule):
         elif desig.technique == 'location':
             seat = desig.state
             seat_human_pose = seat_queryHuman(seat)
+            #print(seat_human_pose[0].attribute[0].split(','))
+            #print(seat_human_pose[0].attribute[1])
             # if only one seat is checked
             if seat != "sofa":
                 return seat_human_pose[0].attribute[0][9:].split(',')
             # when whole sofa gets checked, a list of lists is returned
             res = []
             for i in seat_human_pose[0].attribute:
-                res.append(i[9:].split(','))
+                res.append(i.split(',')[1:])
+
             return res
 
         elif desig.technique == 'attributes':
             human_pose_attr = attributes_queryHuman()
-            print(human_pose_attr)
             counter = 0
             # wait for human to come
             while not human_pose_attr.res and counter < 6:
@@ -394,12 +396,12 @@ class HSRBDetectingReal(ProcessModule):
 
 
             # extract information from query
-            gender = human_pose_attr.res[0].attribute[0][13:19]
+            gender = human_pose_attr.res[0].attribute[3][13:19]
             if gender[0] != 'f':
                 gender = gender[:4]
-            clothes = human_pose_attr.res[0].attribute[2][20:]
-            brightness_clothes = human_pose_attr.res[0].attribute[1][5:]
-            hat = human_pose_attr.res[0].attribute[3][20:]
+            clothes = human_pose_attr.res[0].attribute[1][20:]
+            brightness_clothes = human_pose_attr.res[0].attribute[0][5:]
+            hat = human_pose_attr.res[0].attribute[2][20:]
             attr_list = [gender, hat, clothes, brightness_clothes]
             return attr_list
 
@@ -408,6 +410,7 @@ class HSRBDetectingReal(ProcessModule):
             query_result = queryRegion(region)
         else:
             query_result = queryEmpty(ObjectDesignatorDescription(types=[desig.object_type]))
+            
         perceived_objects = []
         for i in range(0, len(query_result.res)):
             # this has to be pose from pose stamped since we spawn the object with given header
