@@ -403,8 +403,11 @@ class HSRBDetectingReal(ProcessModule):
             attr_list = [gender, hat, clothes, brightness_clothes]
             return attr_list
 
-
-        query_result = queryEmpty(ObjectDesignatorDescription(types=[desig.object_type]))
+        elif desig.technique == 'region':
+            region = desig.state
+            query_result = queryRegion(region)
+        else:
+            query_result = queryEmpty(ObjectDesignatorDescription(types=[desig.object_type]))
         perceived_objects = []
         for i in range(0, len(query_result.res)):
             # this has to be pose from pose stamped since we spawn the object with given header

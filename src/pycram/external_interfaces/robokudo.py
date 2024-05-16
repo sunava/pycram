@@ -133,7 +133,6 @@ def queryEmpty(object_desc: ObjectDesignatorDescription) -> ObjectDesignatorDesc
         pass
 
     object_goal = goal_msg = QueryGoal()
-
     client = actionlib.SimpleActionClient('robokudo/query', QueryAction)
     rospy.loginfo("Waiting for action server")
     client.wait_for_server()
@@ -144,6 +143,41 @@ def queryEmpty(object_desc: ObjectDesignatorDescription) -> ObjectDesignatorDesc
 
     return query_result
 
+def queryRegion(region: str) -> ObjectDesignatorDescription.Object:
+    """
+    Sends a query to RoboKudo to look for an object that fits the description given by the Object designator description.
+    For sending the query to RoboKudo a simple action client will be created and the Object designator description is
+    sent as a goal.
+
+    :param object_desc: The object designator description which describes the object that should be perceived
+    :return: An object designator for the found object, if there was an object that fitted the description.
+    """
+    init_robokudo_interface()
+    from robokudo_msgs.msg import QueryAction, QueryGoal, QueryResult
+
+    global query_result
+
+    def active_callback():
+        rospy.loginfo("Send query to Robokudo to scan a specific region")
+
+    def done_callback(state, result):
+        rospy.loginfo("Finished perceiving")
+        global query_result
+        #Todo is result.res needed instead?
+        query_result = result
+
+    def feedback_callback(msg):
+        pass
+
+    object_goal = QueryGoal()
+    object_goal.obj.location = region
+    client = actionlib.SimpleActionClient('robokudo/query', QueryAction)
+    rospy.loginfo("Waiting for action server")
+    client.wait_for_server()
+    client.send_goal(object_goal, active_cb=active_callback, done_cb=done_callback, feedback_cb=feedback_callback)
+    client.wait_for_result()
+
+    return query_result
 
 def queryHuman() -> Any:
     """
