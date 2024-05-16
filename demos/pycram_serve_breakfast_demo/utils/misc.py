@@ -6,7 +6,6 @@ from pycram.designators.motion_designator import *
 import pycram.external_interfaces.giskard as giskardpy
 from pycram.designators.object_designator import *
 from std_msgs.msg import String
-from demos.pycram_receptionist_demo.deprecated import talk_actions
 from deprecated import deprecated
 
 
@@ -64,3 +63,35 @@ def get_bowl(obj_dict: dict):
             if value.type == "Metalbowl":
                 return value
     return None
+
+
+def get_free_spaces(obj_dict: dict):
+    free_places_tuples = []
+    sorted_places = []
+
+    if len(obj_dict) == 0:
+        return sorted_places
+
+    first, *remaining = obj_dict
+    for dictionary in remaining:
+        for value in dictionary.values():
+            locations_list = value.attribute
+            for location in locations_list:
+                seperated_location = location.split(",")
+                occupied = eval(seperated_location[1])
+                if occupied:
+                    x = float(seperated_location[2])
+                    y = float(seperated_location[3])
+                    z = float(seperated_location[4])
+                    free_places_tuples.append((Pose([x, y, z]), y))
+
+    sorted_list = sorted(free_places_tuples, key=lambda y_pose: y_pose[1])
+    sorted_places = [tup[0] for tup in sorted_list]
+
+    # print which objects are in the final list
+    test_list = []
+    for test_object in sorted_places:
+        test_list.append(test_object.pose)
+    print(test_list)
+
+    return sorted_places
