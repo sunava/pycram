@@ -183,6 +183,8 @@ def queryHuman() -> Any:
     rospy.loginfo("Waiting for action server")
     client.wait_for_server()
     object_goal = goal_msg = QueryGoal()
+    object_goal.type = 'detect'
+    object_goal.obj.type = 'human'
     client.send_goal(object_goal, active_cb=active_callback, done_cb=done_callback, feedback_cb=feedback_callback)
 
     # if no human is detected
@@ -231,7 +233,7 @@ def seat_queryHuman(seat: str) -> Any:
     # fill Query with information so that perception looks for a seat
     object_goal = QueryGoal()
 
-    object_goal.obj.location = seat # aktivate region filter
+    object_goal.obj.location = str(seat) # aktivate region filter
 
     client = actionlib.SimpleActionClient('robokudo/query', QueryAction)
     rospy.loginfo("Waiting for action server")
@@ -261,7 +263,7 @@ def attributes_queryHuman() -> Any:
         query_result = result
 
     object_goal = QueryGoal()
-    # Perception will detect gender, clothes, skin color, age
+    # Perception will detect brightness of clothes, kind of clothes, headgear and gender
     object_goal.obj.attribute = ["attributes"]
 
     client = actionlib.SimpleActionClient('robokudo/query', QueryAction)
