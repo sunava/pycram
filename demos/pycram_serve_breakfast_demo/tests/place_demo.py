@@ -57,4 +57,5 @@ with ((real_robot)):
     rospy.loginfo("Starting demo")
 
     NavigateAction(target_locations=[Pose([4, 2, 0], [0, 0, 0, 1])]).resolve().perform()
-    PlaceGivenObjAction(["Cerealbox"], ["left"], [Pose([4.86, 2, 0.8])], ["front"]).resolve().perform()
+    PlaceGivenObjAction(["Metalbowl"], ["left"], [Pose([4.86, 2, 0.88])], ["top"]).resolve().perform()
+    ParkArmsAction([Arms.LEFT]).resolve().perform()
