@@ -143,6 +143,7 @@ def queryEmpty(object_desc: ObjectDesignatorDescription) -> ObjectDesignatorDesc
 
     return query_result
 
+
 def queryRegion(region: str) -> ObjectDesignatorDescription.Object:
     """
     Sends a query to RoboKudo to look for an object that fits the description given by the Object designator description.
@@ -164,13 +165,13 @@ def queryRegion(region: str) -> ObjectDesignatorDescription.Object:
         rospy.loginfo("Finished perceiving")
         global query_result
         #Todo is result.res needed instead?
-        query_result = result
+        query_result = result.rese
 
     def feedback_callback(msg):
         pass
 
     object_goal = QueryGoal()
-    object_goal.obj.location = region
+    object_goal.obj.location = str(region)
     client = actionlib.SimpleActionClient('robokudo/query', QueryAction)
     rospy.loginfo("Waiting for action server")
     client.wait_for_server()

@@ -1,6 +1,3 @@
-import rospy
-from geometry_msgs.msg import PointStamped
-
 from pycram.designators.action_designator import *
 from demos.pycram_receptionist_demo.utils.new_misc import *
 from pycram.enums import ObjectType
@@ -34,7 +31,7 @@ callback = False
 doorbell = True
 
 # Declare variables for humans
-host = HumanDescription("Jessica", fav_drink="water")
+host = HumanDescription("Leonie", fav_drink="water")
 guest1 = HumanDescription("guest1")
 guest2 = HumanDescription("guest2")
 seat_number = 2
@@ -62,7 +59,7 @@ with real_robot:
         rospy.spin()
 
     # Pre-Pose for door opening
-    pose1 = Pose([1.7, 0.52, 0], [0, 0, 1, 0])
+    pose1 = Pose([1.5, 0.52, 0], [0, 0, 1, 0])
     NavigateAction([pose1]).resolve().perform()
     MoveJointsMotion(["wrist_roll_joint"], [-1.57]).resolve().perform()
     MoveTorsoAction([0.35]).resolve().perform()
@@ -78,11 +75,13 @@ with real_robot:
     # move away from door
     pose2 = Pose([2.2, 1.0, 0], [0, 0, 1, 0])
     NavigateAction([pose2]).resolve().perform()
-    ParkArmsAction([Arms.LEFT]).resolve().perform()
 
-    TalkingMotion("Welcome, please step in").resolve().perform()
-    MoveTorsoAction([0.1]).resolve().perform()
+    park = ParkArmsAction([Arms.LEFT]).resolve()
+    talk = TalkingMotion("Welcome, please step in").resolve()
+    torso = MoveTorsoAction([0.1]).resolve()
 
+    plan = park | talk | torso
+    plan.perform()
     # look for human
     attr_list = DetectAction(technique='attributes', state='start').resolve().perform()
     rospy.loginfo("human detected")

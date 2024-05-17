@@ -1,3 +1,5 @@
+import time
+
 import rospy
 from geometry_msgs.msg import PointStamped
 
@@ -14,7 +16,7 @@ from pycram.designators.object_designator import *
 from pycram.bullet_world import BulletWorld, Object
 from std_msgs.msg import String, Bool
 
-world = BulletWorld("DIRECT")
+world = BulletWorld()
 v = VizMarkerPublisher()
 
 robot = Object("hsrb", "robot", "../../resources/" + robot_description.name + ".urdf")
@@ -32,12 +34,12 @@ pub_nlp = rospy.Publisher('/startListener', String, queue_size=10)
 response = ""
 callback = False
 
-
 # Declare variables for humans
 host = HumanDescription("Lukas", fav_drink="Coffee")
 guest1 = HumanDescription("Jessica", fav_drink="Water")
 guest2 = HumanDescription("guest2")
 seat_number = 2
+
 
 def data_cb(data):
     global response
@@ -57,15 +59,14 @@ def demo_tst():
         global response
         test_all = False
 
-
-        #HeadFollowAction(state='start').resolve().perform()
+        # HeadFollowAction(state='start').resolve().perform()
 
         rospy.Subscriber("nlp_out", String, data_cb)
-        #desig = DetectAction(technique='attributes').resolve().perform()
-        #guest1.set_attributes(desig)
+        # desig = DetectAction(technique='attributes').resolve().perform()
+        # guest1.set_attributes(desig)
 
-        #DetectAction(technique='human', state='start').resolve().perform()
-        #rospy.loginfo("human detected")
+        # DetectAction(technique='human', state='start').resolve().perform()
+        # rospy.loginfo("human detected")
 
         TalkingMotion("Hello, i am Toya and my favorite drink is oil. What about you, talk to me?").resolve().perform()
         rospy.sleep(3)
@@ -111,7 +112,6 @@ def demo_tst():
                 else:
                     i += 1
 
-
         # stop looking
         TalkingMotion("i will show you the living room now").resolve().perform()
         rospy.sleep(1)
@@ -150,7 +150,6 @@ def demo_tst2():
     just testing the gazing between humans -> introduce function
     """
     with real_robot:
-
         pub_pose = rospy.Publisher('/human_pose', PoseStamped, queue_size=10)
         TalkingMotion("Welcome to the living room").resolve().perform()
         HeadFollowAction('start').resolve().perform()
@@ -163,21 +162,21 @@ def demo_tst2():
         print(d)
         # look and point to free seat
 
-        #pub_pose.publish(toPoseStamped(pose_red_seat[0], pose_red_seat[1], pose_red_seat[2]))
-        #rospy.sleep(2)
-        #PointingMotion(pose_blue_seat[0], pose_blue_seat[1], pose_blue_seat[2]).resolve().perform()
+        # pub_pose.publish(toPoseStamped(pose_red_seat[0], pose_red_seat[1], pose_red_seat[2]))
+        # rospy.sleep(2)
+        # PointingMotion(pose_blue_seat[0], pose_blue_seat[1], pose_blue_seat[2]).resolve().perform()
         TalkingMotion("please take a seat next to your host").resolve().perform()
-        #HeadFollowAction('start').resolve().perform()
+        # HeadFollowAction('start').resolve().perform()
 
         # set pose of humans intern
-        #host.set_pose(toPoseStamped(pose_red_seat[0], pose_red_seat[1], pose_red_seat[2]))
-        #guest1.set_pose(toPoseStamped(pose_blue_seat[0], pose_blue_seat[1], pose_blue_seat[2]))
-        #rospy.sleep(2)
+        # host.set_pose(toPoseStamped(pose_red_seat[0], pose_red_seat[1], pose_red_seat[2]))
+        # guest1.set_pose(toPoseStamped(pose_blue_seat[0], pose_blue_seat[1], pose_blue_seat[2]))
+        # rospy.sleep(2)
 
         # introduce humans and look at them
         introduce(host, guest1)
 
-        #describe guest one
+        # describe guest one
         describe(guest1)
         rospy.sleep(3)
         TalkingMotion("end of demo").resolve().perform()
@@ -189,7 +188,6 @@ def rotate_robot():
     rotate hsr around z axis
     """
     with real_robot:
-
         # current robot pose
         pose1 = robot.get_pose()
         print(pose1)
@@ -208,7 +206,6 @@ def open_tst():
     just opening door
     """
     with real_robot:
-
         TalkingMotion("Test").resolve().perform()
         # pose1 = robot.get_pose()
         # pose2 = robot.get_complete_joint_state()
@@ -234,12 +231,35 @@ def open_tst():
         TalkingMotion("end").resolve().perform()
 
 
+def partesr():
+
+    with real_robot:
+        MoveTorsoAction([0.1]).resolve().perform()
+        time.sleep(2)
+        print(robot.links)
+        print(robot.get_link_pose("hand_l_finger_tip_frame"))
+        MoveGripperMotion(motion="close", gripper="left").resolve().perform()
+        print(robot.get_complete_joint_state())
+
+        print(robot.get_link_pose("hand_l_finger_tip_frame"))
+
+        # park = ParkArmsAction([Arms.LEFT]).resolve()
+        # talk = TalkingMotion("Welcome, please step in").resolve()
+        # torso = MoveTorsoAction([0.1]).resolve()
+        #
+        # plan = park | torso
+        #
+        # plan.perform()
 
 
+# demo_tst()
+# open_tst()
+partesr()
 
-
-
-#demo_tst()
-open_tst()
-
+# TODO: Faliure handling
+# Menschen nicht sehen
+# Navigieren, bis sie Pose erreicht, neu navigieren bis Punkt erreicht
+# für Platze kein freier Platz erkannt -> andere Head pose usw.
+# optional: wenn Mensch vor einem wahrgenommen -> call vom Roboter, dass Mensch hinten bleibt
+# Menschen usw nicht außerhalb der Arena wahrnehmen
 

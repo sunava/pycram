@@ -18,7 +18,7 @@ while not callback:
     rospy.sleep(1)
 
 rospy.sleep(8)
-pub_nlp.publish(f"<GUEST>, Bob, coffee")
+pub_nlp.publish(f"<GUEST>, Lucas, coffee")
 callback = False
 
 while not callback:

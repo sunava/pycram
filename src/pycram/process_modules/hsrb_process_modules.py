@@ -460,7 +460,7 @@ class HSRBDetectingReal(ProcessModule):
 
                 return x_value, y_value, z_value
 
-            x, y, z = extract_xyz_values(obj_size)
+            x, y, ze = extract_xyz_values(obj_size)
             #size = (x, z / 2, y)
             #size_box = (x / 2, z / 2, y / 2)
             hard_size = (0.02, 0.02, 0.03)
