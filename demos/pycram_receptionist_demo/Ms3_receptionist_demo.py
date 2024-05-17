@@ -20,7 +20,7 @@ robot = Object("hsrb", "robot", "../../resources/" + robot_description.name + ".
 robot_desig = ObjectDesignatorDescription(names=["hsrb"]).resolve()
 robot.set_color([0.5, 0.5, 0.9, 1])
 
-kitchen = Object("kitchen", ObjectType.ENVIRONMENT, "couch-whole_kitchen2.urdf")
+kitchen = Object("kitchen", ObjectType.ENVIRONMENT, "suturo_lab_version_8.urdf")
 giskardpy.init_giskard_interface()
 RobotStateUpdater("/tf", "/giskard_joint_states")
 kitchen_desig = ObjectDesignatorDescription(names=["kitchen"])
@@ -34,7 +34,7 @@ callback = False
 doorbell = True
 
 # Declare variables for humans
-host = HumanDescription("Bob", fav_drink="coffee")
+host = HumanDescription("Jessica", fav_drink="water")
 guest1 = HumanDescription("guest1")
 guest2 = HumanDescription("guest2")
 seat_number = 2
@@ -50,7 +50,10 @@ def data_cb(data):
 
 
 with real_robot:
-    
+    DetectAction(technique='human', state='stop').resolve().perform()
+
+    TalkingMotion("start").resolve().perform()
+
     # receive data from nlp via topic
     rospy.Subscriber("nlp_out", String, data_cb)
 
@@ -58,13 +61,27 @@ with real_robot:
         # TODO: spin or sleep better?
         rospy.spin()
 
-    # TODO: find name of door handle
-    # link in rviz: iai_kitchen:arena:door_handle_inside
-    # door_handle_desig = ObjectPart(names=["door_handle_inside"], part_of=kitchen_desig.resolve())
-    # OpenAction(object_designator_description=door_handle_desig, arms=["left"]).resolve().perform()
-    # NavigateAction([pose_door]).resolve().perform()
+    # Pre-Pose for door opening
+    pose1 = Pose([1.7, 0.52, 0], [0, 0, 1, 0])
+    NavigateAction([pose1]).resolve().perform()
+    MoveJointsMotion(["wrist_roll_joint"], [-1.57]).resolve().perform()
+    MoveTorsoAction([0.35]).resolve().perform()
+
+    # grasp door
+    giskardpy.grasp_doorhandle("iai_kitchen/iai_kitchen:arena:door_handle_inside")
+    MoveGripperMotion(motion="close", gripper="left").resolve().perform()
+
+    # open door
+    giskardpy.open_doorhandle("kitchen_2/iai_kitchen:arena:door_handle_inside")
+    MoveGripperMotion(motion="open", gripper="left").resolve().perform()
+
+    # move away from door
+    pose2 = Pose([2.2, 1.0, 0], [0, 0, 1, 0])
+    NavigateAction([pose2]).resolve().perform()
+    ParkArmsAction([Arms.LEFT]).resolve().perform()
 
     TalkingMotion("Welcome, please step in").resolve().perform()
+    MoveTorsoAction([0.1]).resolve().perform()
 
     # look for human
     attr_list = DetectAction(technique='attributes', state='start').resolve().perform()
@@ -76,7 +93,7 @@ with real_robot:
     DetectAction(technique='human').resolve().perform()
 
     # look at guest and introduce
-    HeadFollowAction('start')
+    HeadFollowAction('start').resolve().perform()
     TalkingMotion("Hello, i am Toya and my favorite drink is oil. What about you, talk to me?").resolve().perform()
     rospy.sleep(1)
 
@@ -130,46 +147,35 @@ with real_robot:
 
     # stop looking at human
     rospy.loginfo("stop looking now")
-    HeadFollowAction('stop')
+    HeadFollowAction('stop').resolve().perform()
     DetectAction(technique='human', state='stop').resolve().perform()
 
     # lead human to living room
     NavigateAction([pose_kitchen_to_couch]).resolve().perform()
     NavigateAction([pose_couch]).resolve().perform()
 
-
     TalkingMotion("Welcome to the living room").resolve().perform()
+    host_pose = DetectAction(technique='human').resolve().perform()
+    host.set_pose(host_pose[1])
+    host_pose = DetectAction(technique='human', state='stop').resolve().perform()
+    seat = DetectAction(technique='location', state="sofa").resolve().perform()
+    for place in seat[1]:
+        if place[0] == 'False':
+            PointingMotion(float(place[1]), float(place[2]), float(place[3])).resolve().perform()
+            pose_guest1 = PoseStamped()
+            pose_guest1.header.frame_id = "/map"
+            pose_guest1.pose.position.x = float(place[1])
+            pose_guest1.pose.position.y = float(place[2])
+            pose_guest1.pose.position.z = float(place[3])
+            guest1.set_pose(pose_guest1)
+            break
 
-    pose_seat1 = PoseStamped()
-    pose_seat1.header.frame_id = "/map"
-    pose_seat1.pose.position.x = 0.8
-    pose_seat1.pose.position.y = 4.8
-    pose_seat1.pose.position.z = 1
-
-    PointingMotion(0.8, 4.8, 1.0)
-
-    HeadFollowAction('start')
-    pub_pose.publish(pose_seat1)
+    HeadFollowAction('start').resolve().perform()
+    pub_pose.publish(guest1.pose)
     TalkingMotion("please take a seat next to your host").resolve().perform()
-
-    #TODO: include Perception and get pose from them
-    pose_host = PoseStamped()
-    pose_host.header.frame_id = '/map'
-    pose_host.pose.position.x = 0.9
-    pose_host.pose.position.y = 5.5
-    pose_host.pose.position.z = 0.9
-
-    pose_guest = PoseStamped()
-    pose_guest.header.frame_id = '/map'
-    pose_guest.pose.position.x = 0.8
-    pose_guest.pose.position.y = 4.8
-    pose_guest.pose.position.z = 1
-
-    host.set_pose(pose_host)
-    guest1.set_pose(pose_guest)
 
     # introduce humans and look at them
     introduce(host, guest1)
     describe(guest1)
-    giskardpy.stop_looking()
+    HeadFollowAction('stop').resolve().perform()
 

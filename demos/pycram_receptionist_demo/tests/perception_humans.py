@@ -1,7 +1,7 @@
 import rospy
 
-from pycram.designators.action_designator import DetectAction, NavigateAction, HeadFollowAction
-from pycram.designators.motion_designator import PointingMotion
+from pycram.designators.action_designator import *
+from pycram.designators.motion_designator import *
 from pycram.process_module import semi_real_robot, real_robot
 import pycram.external_interfaces.giskard as giskardpy
 from pycram.ros.viz_marker_publisher import VizMarkerPublisher
@@ -30,46 +30,78 @@ guest1 = HumanDescription("guest1")
 
 def p():
     with real_robot:
-        seat = False
-        attributes = True
+        seat = True
+        attributes = False
 
         if attributes:
             # to signal the start of demo
             # TalkingMotion("Hello, i am ready for the test").resolve().perform()
+            ParkArmsAction([Arms.LEFT]).resolve().perform()
 
+            TalkingMotion("Welcome, please step in").resolve().perform()
+            MoveTorsoAction([0.1]).resolve().perform()
 
-            TalkingMotion("detecting attributes now").resolve().perform()
+            TalkingMotion("detecting human now").resolve().perform()
             rospy.sleep(2)
+            desig = DetectAction(technique='human', state='start').resolve().perform()
+            HeadFollowAction('start').resolve().perform()
+            pub_nlp.publish("start listening")
+            # desig = DetectAction(technique='attributes').resolve().perform()
+
+
+            desig2 = DetectAction(technique='attributes').resolve().perform()
+            print("msgs from PPP: " + str(desig2))
+
+            desig = DetectAction(technique='human', state='start').resolve().perform()
 
             HeadFollowAction('start').resolve().perform()
+            rospy.sleep(4)
+            desig = DetectAction(technique='human', state='stop').resolve().perform()
+
+            rospy.sleep(4)
+            TalkingMotion("detecting human now").resolve().perform()
             desig = DetectAction(technique='human', state='start').resolve().perform()
-            # desig = DetectAction(technique='attributes').resolve().perform()
-            print("msgs from PPP: " + str(desig))
+            #print(desig[1].pose)
+            #guest1.set_pose(desig[1])
+
+            # PointingMotion(guest1.pose.position.x, guest1.pose.position.y, guest1.pose.position.z).resolve().perform()
+            #print("msgs from PPP: " + str(desig))
             #if desig != "False":
-             #   guest1.set_attributes(desig)
+            # guest1.set_attributes(desig)
 
-             #   describe(guest1)
+            # describe(guest1)
                # rospy.sleep(2)
-
+            rospy.sleep(3)
             TalkingMotion("attributes over").resolve().perform()
+            desig = DetectAction(technique='human', state='stop').resolve().perform()
+
+
+            #DetectAction(technique='human', state='stop').resolve().perform()
+
+            #pub_pose.publish(guest1.pose)
+            # desig = DetectAction(technique='human', state='stop').resolve().perform()
 
         if seat:
             # new Query for free seat
             #TalkingMotion("detecting free seat on whole couch now").resolve().perform()
-            seat = DetectAction(technique='location', state='sofa').resolve().perform()
+            seat = DetectAction(technique='location', state="sofa").resolve().perform()
             rospy.loginfo(seat[1])
             #rospy.sleep(2)
-
-            print("########################")
-            print(seat[1][1][1])
-            if seat[1][1][1] == 'occupied:false':
-                print(seat[1][1][2][2:])
-                PointingMotion(float(seat[1][1][2][2:]), float(seat[1][1][3][2:]), float(seat[1][1][4][2:])).resolve().perform()
-
-            print("start")
+            for place in seat[1]:
+                print(place)
+                print(place[0])
+                if place[0] == 'False':
+                    PointingMotion(float(place[1]), float(place[2]), float(place[3])).resolve().perform()
+                    print("free")
 
 
-        print("end")
+            #print("########################")
+            #print(seat[1][1][1])
+            #if seat[1][0][0] == 'False':
+                #print(seat[1][0][1])
+                #PointingMotion(float(seat[1][1][1]), float(seat[1][1][2]), float(seat[1][1][3])).resolve().perform()
+
+
 
 
 if __name__ == '__main__':

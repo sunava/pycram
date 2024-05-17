@@ -210,32 +210,30 @@ def open_tst():
     with real_robot:
 
         TalkingMotion("Test").resolve().perform()
-        # link in rviz: iai_kitchen:arena:door_handle_inside
-        # obj = BulletWorld.current_bullet_world.objects
-        # for objects in obj:
-            # print(objects.links)
-        #MoveGripperMotion(motion="close", gripper="left").resolve().perform()
-        # door_handle_desig = ObjectPart(names=["iai_kitchen:arena:door_handle_inside"], part_of=kitchen_desig.resolve())
-        # OpenAction(object_designator_description=door_handle_desig, arms=["left"]).resolve().perform()
-        pose1 = robot.get_pose()
-        pose2 = robot.get_complete_joint_state()
-        print(pose1)
-        print("++++++++++++++++++")
-        print(pose2)
+        # pose1 = robot.get_pose()
+        # pose2 = robot.get_complete_joint_state()
 
         # Pre-Pose
-        # pose1 = Pose([1.64, 0.15, 0], [0, 0, 1, 0])
-        # NavigateAction([pose1]).resolve().perform()
-        # MoveJointsMotion(["wrist_roll_joint"], [-1.57]).resolve().perform()
-        # MoveTorsoAction([0.35]).resolve().perform()
-        #
-        # # grasp door
-        # giskardpy.grasp_doorhandle("iai_kitchen/iai_kitchen:arena:door_handle_inside")
-        # MoveGripperMotion(motion="close", gripper="left").resolve().perform()
-        #
-        # # open door
-        # giskardpy.open_doorhandle("kitchen_2/iai_kitchen:arena:door_handle_inside")
+        pose1 = Pose([1.6, 0.2, 0], [0, 0, 1, 0])
+        NavigateAction([pose1]).resolve().perform()
+        MoveJointsMotion(["wrist_roll_joint"], [-1.57]).resolve().perform()
+        MoveTorsoAction([0.35]).resolve().perform()
+
+        # grasp door
+        giskardpy.grasp_doorhandle("iai_kitchen/iai_kitchen:arena:door_handle_inside")
+        MoveGripperMotion(motion="close", gripper="left").resolve().perform()
+
+        # open door
+        giskardpy.open_doorhandle("kitchen_2/iai_kitchen:arena:door_handle_inside")
+        MoveGripperMotion(motion="open", gripper="left").resolve().perform()
+
+        pose2 = Pose([2.2, 0.55, 0], [0, 0, 1, 0])
+        NavigateAction([pose2]).resolve().perform()
+        ParkArmsAction([Arms.LEFT]).resolve().perform()
+
         TalkingMotion("end").resolve().perform()
+
+
 
 
 

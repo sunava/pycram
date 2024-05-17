@@ -17,7 +17,7 @@ rospy.init_node('talker', anonymous=True)
 while not callback:
     rospy.sleep(1)
 
-rospy.sleep(4)
+rospy.sleep(8)
 pub_nlp.publish(f"<GUEST>, Bob, coffee")
 callback = False
 
