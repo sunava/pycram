@@ -14,7 +14,7 @@ from demos.pycram_hsrb_real_test_demos.utils.misc import try_pick_up
 CUTLERY = ["Spoon", "Fork", "Knife", "Plasticknife"]
 
 # Wished objects for the Demo
-wished_sorted_obj_list = ["Metalbowl", "Cerealbox", "Milkpack", "Spoon"]
+wished_sorted_obj_list = ["Metalbowl", "Mueslibox", "Milkpackja", "Spoon"]
 
 # length of wished list for failure handling
 LEN_WISHED_SORTED_OBJ_LIST = len(wished_sorted_obj_list)
@@ -275,6 +275,40 @@ def get_z(obj_type: str):
     """
     return PlacingZPose[obj_type.upper()].value
 
+def remove_objects(value):
+    # remove all objects that were seen and transported so far
+    if value.type in wished_sorted_obj_list:
+        wished_sorted_obj_list.remove(value.type)
+    # if the type is cutlery, the real type is not easily reproducible.
+    # remove one cutlery object of the list with the highest chance that it was found and transported.
+    if value.type == "Cutlery":
+        if "Spoon" in wished_sorted_obj_list:
+            print("deleted fork")
+            wished_sorted_obj_list.remove("Fork")
+        elif "Fork" in wished_sorted_obj_list:
+            print("deleted spoon")
+            wished_sorted_obj_list.remove("Spoon")
+        elif "Plasticknife" in wished_sorted_obj_list:
+            print("deleted knife")
+            wished_sorted_obj_list.remove("Plasticknife")
+
+    if value.type == "Cearealbox":
+        if "Mueslibox" in wished_sorted_obj_list:
+            print("deleted Mueslibox")
+            wished_sorted_obj_list.remove("Mueslibox")
+        elif "Cerealbox" in wished_sorted_obj_list:
+            print("deleted Cerealbox")
+            wished_sorted_obj_list.remove("Cerealbox")
+        elif "Crackerbox" in wished_sorted_obj_list:
+            print("deleted Crackerbox")
+            wished_sorted_obj_list.remove("Crackerbox")
+
+    if value.type == "Milkpack":
+        if "Milkpackja" in wished_sorted_obj_list:
+            print("deleted Milkpackja")
+            wished_sorted_obj_list.remove("Milkpackja")
+
+
 
 with ((real_robot)):
     rospy.loginfo("Starting demo")
@@ -303,8 +337,7 @@ with ((real_robot)):
         print("first Check")
         for value in sorted_obj:
             # remove objects that were seen and transported so far except the silverware
-            if value.type in wished_sorted_obj_list:
-                wished_sorted_obj_list.remove(value.type)
+            remove_objects(value)
 
         TalkingMotion("Navigating").resolve().perform()
         navigate_to(2.1, 1.87, "shelf")
@@ -320,20 +353,7 @@ with ((real_robot)):
 
             for value in final_sorted_obj:
                 # remove all objects that were seen and transported so far
-                if value.type in wished_sorted_obj_list:
-                    wished_sorted_obj_list.remove(value.type)
-                # if the type is cutlery, the real type is not easily reproducible.
-                # remove one cutlery object of the list with the highest chance that it was found and transported.
-                if value.type == "Cutlery":
-                    if "Spoon" in wished_sorted_obj_list:
-                        print("deleted fork")
-                        wished_sorted_obj_list.remove("Fork")
-                    elif "Fork" in wished_sorted_obj_list:
-                        print("deleted spoon")
-                        wished_sorted_obj_list.remove("Spoon")
-                    elif "Plasticknife" in wished_sorted_obj_list:
-                        print("deleted knife")
-                        wished_sorted_obj_list.remove("Plasticknife")
+                remove_objects(value)
 
             for val in range(len(wished_sorted_obj_list)):
                 grasp = "front"

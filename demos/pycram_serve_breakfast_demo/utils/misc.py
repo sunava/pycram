@@ -18,6 +18,7 @@ def sort_objects(obj_dict: dict, wished_sorted_obj_list: list):
     :param wished_sorted_obj_list: list of object types we like to keep
     :return: distance sorted list of seen and wished to keep objects
     """
+    tuples_list = []
     sorted_objects = []
 
     if len(obj_dict) == 0:
@@ -27,8 +28,11 @@ def sort_objects(obj_dict: dict, wished_sorted_obj_list: list):
     first, *remaining = obj_dict
     # calculate euclidian distance for all found object in a list of tupels
     for dictionary in remaining:
-        sorted_objects = sorted(filter(lambda x: x in wished_sorted_obj_list, dictionary.values()),
-                                key=lambda x: wished_sorted_obj_list.index(x))
+        for value in dictionary.values():
+            if value.type in wished_sorted_obj_list:
+                tuples_list.append((value, wished_sorted_obj_list.index(value.type)))
+
+    sorted_objects = [x[0] for x in sorted(tuples_list, key=lambda index: index[1])]
 
     # print which objects are in the final list
     test_list = []
@@ -65,25 +69,23 @@ def get_bowl(obj_dict: dict):
     return None
 
 
-def get_free_spaces(obj_dict: dict):
+def get_free_spaces(obj_dict):
     free_places_tuples = []
     sorted_places = []
 
     if len(obj_dict) == 0:
         return sorted_places
 
-    first, *remaining = obj_dict
-    for dictionary in remaining:
-        for value in dictionary.values():
-            locations_list = value.attribute
-            for location in locations_list:
-                seperated_location = location.split(",")
-                occupied = eval(seperated_location[1])
-                if occupied:
-                    x = float(seperated_location[2])
-                    y = float(seperated_location[3])
-                    z = float(seperated_location[4])
-                    free_places_tuples.append((Pose([x, y, z]), y))
+    for location in obj_dict:
+        seperated_location = location.split(",")
+        occupied = eval(seperated_location[1])
+        if not occupied:
+            location_pose = PoseStamped()
+            location_pose.header.frame_id = "/map"
+            location_pose.pose.position.x = float(seperated_location[2])
+            location_pose.pose.position.y = float(seperated_location[3])
+            location_pose.pose.position.z = float(seperated_location[4])
+            free_places_tuples.append((location_pose, location_pose.pose.position.y))
 
     sorted_list = sorted(free_places_tuples, key=lambda y_pose: y_pose[1])
     sorted_places = [tup[0] for tup in sorted_list]
