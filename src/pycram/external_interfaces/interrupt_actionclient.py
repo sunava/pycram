@@ -87,7 +87,7 @@ class InterruptClient:
             object=[obj_msg],
             move_arm=move_arm,
             move_base=move_base,
-            current_location=location,
+            current_location=current_location,
             destination_location=destination_location
         )
 
