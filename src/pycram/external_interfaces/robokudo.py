@@ -165,7 +165,7 @@ def queryRegion(region: str) -> ObjectDesignatorDescription.Object:
         rospy.loginfo("Finished perceiving")
         global query_result
         #Todo is result.res needed instead?
-        query_result = result.rese
+        query_result = result.res
 
     def feedback_callback(msg):
         pass

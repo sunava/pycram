@@ -602,7 +602,7 @@ class GraspingDishwasherHandleMotion(MotionDesignatorDescription):
         @with_tree
         def perform(self):
             pm_manager = ProcessModuleManager.get_manager()
-            return pm_manager.grasp_dischwasher_handle().execute(self)
+            return pm_manager.grasp_dishwasher_handle().execute(self)
 
     def __init__(self, handle_name: str, arm: str, resolver: Optional[Callable] = None):
         """
@@ -649,7 +649,7 @@ class HalfOpeningDishwasherMotion(MotionDesignatorDescription):
         @with_tree
         def perform(self):
             pm_manager = ProcessModuleManager.get_manager()
-            return pm_manager.halfOpenDischwasher().execute(self)
+            return pm_manager.half_open_dishwasher().execute(self)
 
     def __init__(self, handle_name: str, goal_state_half_open: float, arm: str, resolver: Optional[Callable] = None):
         """
@@ -694,7 +694,7 @@ class MoveArmAroundMotion(MotionDesignatorDescription):
         @with_tree
         def perform(self):
             pm_manager = ProcessModuleManager.get_manager()
-            return pm_manager.moveArmAroundDischwasher().execute(self)
+            return pm_manager.move_arm_around_dishwasher().execute(self)
 
     def __init__(self, handle_name: str, arm: str, resolver: Optional[Callable] = None):
         """
@@ -745,7 +745,7 @@ class FullOpeningDishwasherMotion(MotionDesignatorDescription):
         @with_tree
         def perform(self):
             pm_manager = ProcessModuleManager.get_manager()
-            return pm_manager.fullOpenDischwasher().execute(self)
+            return pm_manager.full_open_dishwasher().execute(self)
 
     def __init__(self, handle_name: str, door_name: str, goal_state_full_open: float, arm: str, resolver: Optional[Callable] = None):
         """

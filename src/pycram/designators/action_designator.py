@@ -1023,6 +1023,7 @@ class DetectAction(ActionDesignatorDescription):
 
         return self.Action(technique=self.technique, object_designator=self.object_designator, state=self.state)
 
+
 class OpenDishwasherAction(ActionDesignatorDescription):
     """
     Opens a container like object
@@ -1071,11 +1072,10 @@ class OpenDishwasherAction(ActionDesignatorDescription):
             MoveGripperMotion("close", self.arm).resolve().perform()
             FullOpeningDishwasherMotion(self.handle_name, self.door_name, self.goal_state_full_open, self.arm).resolve().perform()
 
-            talk = TalkingMotion("Please pull out the lower rack")
-            park = ParkArmsAction([self.arm])
-            gripper_open = MoveGripperMotion("open", self.arm)
-            plan = talk | park | gripper_open
-            plan.perform()
+            ParkArmsAction([self.arm]).resolve().perform()
+            MoveGripperMotion("open", self.arm).resolve().perform()
+            #plan = talk | park | gripper_open
+            #plan.perform()
 
     def __init__(self, handle_name: str, door_name: str, goal_state_half_open: float, goal_state_full_open: float, arms: List[str], resolver=None):
         """
