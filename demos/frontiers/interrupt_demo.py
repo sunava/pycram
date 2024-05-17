@@ -33,12 +33,12 @@ robot_desig = BelieveObject(names=["pr2"])
 apartment_desig = BelieveObject(names=["apartment"])
 
 fluent = InterruptClient()
-obj_type = None
-obj_color = None
-obj_name = None
-obj_location = None
-obj_size = None
-age = None
+obj_type = ""
+obj_color = ""
+obj_name = ""
+obj_location = ""
+obj_size = ""
+age = ""
 place_pose = None
 nav_pose = None
 original_pose = None
@@ -151,13 +151,14 @@ def announce_pick(name: str, type: str, color: str, location: str, size: str):
 
 def announce_bring(name: str, type: str, color: str, location: str, size: str):
     print(f"I will now bring the {size.lower()} {color.lower()} {type.lower()} to you")
-    print(f"I am now interruptable for 5 seconds")
-    time.sleep(5)
+    from_robot_publish("transporting", True, False, True, "countertop", "table")
+    print(f"I am now interruptable for 10 seconds")
+    time.sleep(10)
     print(f"I am not interruptable any more")
 
 
 def announce_recovery():
-    from_robot_publish("Recovery", False, True, True, "Recovery_location_placeholder")
+    from_robot_publish("Recovery", False, True, True, "table", "countertop")
     print("Recovering from Interrupt")
     print("I am not interruptable here at the moment")
 
@@ -176,10 +177,10 @@ def place_and_pick_new_obj(old_desig, location, obj_type, obj_size, obj_color):
     ParkArmsAction([Arms.BOTH]).resolve().perform()
 
 
-def from_robot_publish(step, interrupt, move_arm, move_base, destination_location):
+def from_robot_publish(step, interrupt, move_arm, move_base, robot_location, destination_location):
     global obj_type, obj_color, obj_name, obj_location, obj_size
     fluent.publish_from_robot(step, interrupt, obj_type, obj_color, obj_name, obj_location, obj_size, move_arm,
-                              move_base, obj_location, destination_location)
+                              move_base, robot_location, destination_location)
 
 
 with simulated_robot:
@@ -187,8 +188,8 @@ with simulated_robot:
     ParkArmsAction.Action(Arms.BOTH).perform()
 
     MoveTorsoAction([0.25]).resolve().perform()
-
-    print("before wait for")
+    from_robot_publish("initial", True, False, False, "countertop", "")
+    print("Waiting for a human command")
     fluent.minor_interrupt.pulsed().wait_for()
     obj = fluent.objects_in_use.get("bowl", None)
     if obj:
@@ -200,7 +201,7 @@ with simulated_robot:
 
         fluent.minor_interrupt.set_value(False)
         age = fluent.age
-        print("after wait for")
+        print("Received human command")
 
         ###### Announce object and wait ######
         announce = Code(lambda: announce_pick(obj_name, obj_type, obj_color, obj_location, obj_size))
@@ -218,18 +219,17 @@ with simulated_robot:
         ParkArmsAction.Action(Arms.BOTH).perform()
 
         ###### Pickup Object ######
-        from_robot_publish("picking_up", True, True, False, "")
+        from_robot_publish("picking_up", True, True, False, "countertop", "")
         PickUpAction.Action(obj_desig, "left", "front").perform()
 
         ###### Park robot ######
         ParkArmsAction.Action(Arms.BOTH).perform()
 
-        ###### Construct subplan ######
-        from_robot_publish("transporting", True, False, True, "Place_location_placeholder")
-        plan = NavigateAction([get_nav_pose(obj_type)]) + announce >> Monitor(monitor_func)
-
         ###### Announce Navigation action and wait ######
         announce = Code(lambda: announce_bring(obj_name, obj_type, obj_color, obj_location, obj_size))
+
+        ###### Construct subplan ######
+        plan = NavigateAction([get_nav_pose(obj_type)]) + announce >> Monitor(monitor_func)
 
         ###### Construct recovery behaviour (Navigate to island => place object => detect new object => pick up new object ######
         recover = Code(lambda: announce_recovery()) + NavigateAction([Pose([1.7, 1.9, 0])]) + Code(
@@ -239,7 +239,7 @@ with simulated_robot:
         RetryMonitor(plan, max_tries=5, recovery=recover).perform()
 
         ###### Hand the object according to Scenario 5 ######
-        from_robot_publish("placing", True, True, False, "Place_location_placeholder")
+        from_robot_publish("placing", True, True, False, "table", "")
         PlaceAction(obj_desig, ["left"], ["front"], [get_place_pose(obj_type)]).resolve().perform()
         ParkArmsAction([Arms.BOTH]).resolve().perform()
 
@@ -270,18 +270,18 @@ with simulated_robot:
         ParkArmsAction.Action(Arms.BOTH).perform()
 
         ###### Pickup Object ######
-        from_robot_publish("picking_up", True, True, False, "")
+        from_robot_publish("picking_up", True, True, False, "countertop", "")
         PickUpAction.Action(obj_desig, "left", "front").perform()
 
         ###### Park robot ######
         ParkArmsAction.Action(Arms.BOTH).perform()
 
-        ###### Construct subplan ######
-        from_robot_publish("transporting", True, False, True, "Place_location_placeholder")
-        plan = NavigateAction([get_nav_pose(obj_type)]) + announce >> Monitor(monitor_func)
 
         ###### Announce Navigation action and wait ######
         announce = Code(lambda: announce_bring(obj_name, obj_type, obj_color, obj_location, obj_size))
+
+        ###### Construct subplan ######
+        plan = NavigateAction([get_nav_pose(obj_type)]) + announce >> Monitor(monitor_func)
 
         ###### Construct recovery behaviour (Navigate to island => place object => detect new object => pick up new object ######
         recover = Code(lambda: announce_recovery()) + NavigateAction([Pose([1.7, 2, 0])]) + Code(
@@ -291,7 +291,7 @@ with simulated_robot:
         RetryMonitor(plan, max_tries=5, recovery=recover).perform()
 
         ###### Hand the object according to Scenario 5 ######
-        from_robot_publish("placing", True, True, False, "Place_location_placeholder")
+        from_robot_publish("placing", True, True, False, "table", "")
         PlaceAction(obj_desig, ["left"], ["front"], [get_place_pose(obj_type)]).resolve().perform()
         ParkArmsAction([Arms.BOTH]).resolve().perform()
 
@@ -322,18 +322,17 @@ with simulated_robot:
         ParkArmsAction.Action(Arms.BOTH).perform()
 
         ###### Pickup Object ######
-        from_robot_publish("picking_up", True, True, False, "")
+        from_robot_publish("picking_up", True, True, False, "countertop", "")
         PickUpAction.Action(obj_desig, "left", "front").perform()
 
         ###### Park robot ######
         ParkArmsAction.Action(Arms.BOTH).perform()
 
-        ###### Construct subplan ######
-        from_robot_publish("transporting", True, False, True, "Place_location_placeholder")
-        plan = NavigateAction([get_nav_pose(obj_type)]) + announce >> Monitor(monitor_func)
-
         ###### Announce Navigation action and wait ######
         announce = Code(lambda: announce_bring(obj_name, obj_type, obj_color, obj_location, obj_size))
+
+        ###### Construct subplan ######
+        plan = NavigateAction([get_nav_pose(obj_type)]) + announce >> Monitor(monitor_func)
 
         ###### Construct recovery behaviour (Navigate to island => place object => detect new object => pick up new object ######
         recover = Code(lambda: announce_recovery()) + NavigateAction([Pose([1.7, 2, 0])]) + Code(
@@ -343,6 +342,6 @@ with simulated_robot:
         RetryMonitor(plan, max_tries=5, recovery=recover).perform()
 
         ###### Hand the object according to Scenario 5 ######
-        from_robot_publish("placing", True, True, False, "Place_location_placeholder")
+        from_robot_publish("placing", True, True, False, "table", "")
         PlaceAction(obj_desig, ["left"], ["front"], [get_place_pose(obj_type)]).resolve().perform()
         ParkArmsAction([Arms.BOTH]).resolve().perform()
