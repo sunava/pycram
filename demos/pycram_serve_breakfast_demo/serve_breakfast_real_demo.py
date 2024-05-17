@@ -14,7 +14,7 @@ from demos.pycram_hsrb_real_test_demos.utils.misc import try_pick_up
 CUTLERY = ["Spoon", "Fork", "Knife", "Plasticknife"]
 
 # Wished objects for the Demo
-wished_sorted_obj_list = ["Metalbowl", "Mueslibox", "Milkpackja", "Spoon"]
+wished_sorted_obj_list = ["Metalbowl", "mueslibox", "Milkpackja"]
 
 # length of wished list for failure handling
 LEN_WISHED_SORTED_OBJ_LIST = len(wished_sorted_obj_list)
@@ -69,7 +69,7 @@ class PlacingZPose(Enum):
     FORK = 0.8
     PLASTICKNIFE = 0.8
     KNIFE = 0.8
-    Metalbowl = 0.84
+    METALBOWL = 0.84
     MILKPACK = 0.88
     METALMUG = 0.8
     CEREALBOX = 0.9
@@ -123,7 +123,7 @@ def pickup_and_place_objects(sorted_obj: list):
         if sorted_obj[value].type in CUTLERY:
             sorted_obj[value].type = "Cutlery"
 
-        if sorted_obj[value].type in ["Mueslibox", "Cerealbox", "Crackerbox"]:
+        if sorted_obj[value].type in ["mueslibox", "Cerealbox", "Crackerbox"]:
             sorted_obj[value].type = "Cerealbox"
 
         if sorted_obj[value].type in ["Milkpackja"]:
@@ -132,7 +132,7 @@ def pickup_and_place_objects(sorted_obj: list):
         if sorted_obj[value].type in ["Metalbowl", "Cutlery"]:
             grasp = "top"
             if sorted_obj[value].pose.position.z >= 0.65:
-                sorted_obj[value].pose.position.z = 0.715
+                sorted_obj[value].pose.position.z = 0.72
             elif sorted_obj[value].pose.position.z >= 0.4:
                 sorted_obj[value].pose.position.z = 0.46
             else:
@@ -172,7 +172,7 @@ def place_objects(first_placing, objects_list, index, grasp):
     ###############################################################################
     if object_type is not "Cutlery":
         place_poses_list = try_detect(Pose([5.1, 2.1, 0.21], [0, 0, 0, 1]), True)
-        sorted_places = get_free_spaces(place_poses_list)
+        sorted_places = get_free_spaces(place_poses_list[1])
 
     if object_type is not "Metalbowl":
         object_desig = try_detect(Pose([5.1, 2.1, 0.21], [0, 0, 0, 1]), False)
@@ -186,27 +186,27 @@ def place_objects(first_placing, objects_list, index, grasp):
 
     # zweite Variante
     ################################################################################
-    # TODO: die bessere Variante vom detecten auswählen
-    if not place_pose_exists or not bowl_exists:
-        if not place_pose_exists:
-            # detect free space to place
-            place_poses_list = try_detect(Pose([5.1, 2.1, 0.21], [0, 0, 0, 1]), True)
-            sorted_places = get_free_spaces(place_poses_list)
-            place_pose_exists = True
-        else:
-            if object_type in ["Cerealbox", "Milkpack", "Cutlery"]:
-                if not bowl_exists:
-                    object_desig = try_detect(Pose([5.1, 2.1, 0.21], [0, 0, 0, 1]), False)
-                    bowl = get_bowl(object_desig)
-                    if bowl is not None:
-                        bowl_exists = True
-
-    # choose place pose
-    if object_type is "Metalbowl" and len(sorted_places) == 3:
-        place_pose = sorted_places[1]
-    else:
-        place_pose = sorted_places[0]
-    place_pose = sorted_places[i]
+    # # TODO: die bessere Variante vom detecten auswählen
+    # if not place_pose_exists or not bowl_exists:
+    #     if not place_pose_exists:
+    #         # detect free space to place
+    #         place_poses_list = try_detect(Pose([5.1, 2.1, 0.21], [0, 0, 0, 1]), True)
+    #         sorted_places = get_free_spaces(place_poses_list[1])
+    #         place_pose_exists = True
+    #     else:
+    #         if object_type in ["Cerealbox", "Milkpack", "Cutlery"]:
+    #             if not bowl_exists:
+    #                 object_desig = try_detect(Pose([5.1, 2.1, 0.21], [0, 0, 0, 1]), False)
+    #                 bowl = get_bowl(object_desig)
+    #                 if bowl is not None:
+    #                     bowl_exists = True
+    #
+    # # choose place pose
+    # if object_type is "Metalbowl" and len(sorted_places) == 3:
+    #     place_pose = sorted_places[1]
+    # else:
+    #     place_pose = sorted_places[0]
+    # place_pose = sorted_places[i]
     ##################################################################################
 
     if object_type in ["Cerealbox", "Milkpack", "Cutlery"]:
@@ -257,7 +257,7 @@ def place_objects(first_placing, objects_list, index, grasp):
         i += 1
 
     # navigates back if a next object exists
-    if value + 1 < len(objects_list):
+    if index + 1 < len(objects_list):
         TalkingMotion("Navigating").resolve().perform()
         # TODO: Werte anpassen
         if first_placing:
@@ -293,9 +293,9 @@ def remove_objects(value):
             wished_sorted_obj_list.remove("Plasticknife")
 
     if value.type == "Cearealbox":
-        if "Mueslibox" in wished_sorted_obj_list:
-            print("deleted Mueslibox")
-            wished_sorted_obj_list.remove("Mueslibox")
+        if "mueslibox" in wished_sorted_obj_list:
+            print("deleted mueslibox")
+            wished_sorted_obj_list.remove("mueslibox")
         elif "Cerealbox" in wished_sorted_obj_list:
             print("deleted Cerealbox")
             wished_sorted_obj_list.remove("Cerealbox")
@@ -315,7 +315,7 @@ with ((real_robot)):
     TalkingMotion("Starting demo").resolve().perform()
     # TODO: vielleicht entfernen in der finalen Demo
     # MoveGripperMotion(motion="open", gripper="left").resolve().perform()
-    ParkArmsAction([Arms.LEFT]).resolve().perform()
+    # ParkArmsAction([Arms.LEFT]).resolve().perform()
     TalkingMotion("Navigating").resolve().perform()
     # navigate to door
     # TODO: koordinaten bestimmen

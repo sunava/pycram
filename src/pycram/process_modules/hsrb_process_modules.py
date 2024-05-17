@@ -370,6 +370,14 @@ class HSRBDetectingReal(ProcessModule):
             seat_human_pose = seat_queryHuman(seat)
             #print(seat_human_pose[0].attribute[0].split(','))
             #print(seat_human_pose[0].attribute[1])
+            if seat == "long_table":
+                loc_list = []
+                for loc in seat_human_pose[0].attribute:
+                    print(f"location: {loc}, type: {type(loc)}")
+                    loc_list.append(loc)
+                print(loc_list)
+                return loc_list
+                #return seat_human_pose[0].attribute
             # if only one seat is checked
             if seat != "sofa":
                 return seat_human_pose[0].attribute[0][9:].split(',')

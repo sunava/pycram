@@ -77,7 +77,8 @@ def get_free_spaces(obj_dict):
         return sorted_places
 
     for location in obj_dict:
-        seperated_location = location.split(",")
+        print(f"location: {location}, type: {type(location)}")
+        seperated_location = location.split(',')
         occupied = eval(seperated_location[1])
         if not occupied:
             location_pose = PoseStamped()
