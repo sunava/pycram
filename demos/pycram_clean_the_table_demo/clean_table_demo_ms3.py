@@ -11,7 +11,7 @@ from pycram.ros.viz_marker_publisher import VizMarkerPublisher
 CUTLERY = ["Spoon", "Fork", "Knife", "Plasticknife"]
 
 # Wished objects for the Demo
-wished_sorted_obj_list = ["Metalplate"]
+wished_sorted_obj_list = ["Metalplate", "Spoon", "Fork", "Metalmug", "Metalbowl"]
 
 # length of wished list for failure handling
 LEN_WISHED_SORTED_OBJ_LIST = len(wished_sorted_obj_list)
@@ -181,7 +181,7 @@ def navigate_to(table_name: str, y: Optional[float] = None):
     elif table_name == "dishwasher_right":
         NavigateAction(target_locations=[Pose([2.1, -1.53, 0], [0, 0, 0, 1])]).resolve().perform()
     elif table_name == "dishwasher":
-        NavigateAction(target_locations=[Pose([2.55, -0.8, 0], [0, 0, -1, 1])]).resolve().perform()
+        NavigateAction(target_locations=[Pose([2.55, -0.9, 0], [0, 0, -1, 1])]).resolve().perform()
     else:
         rospy.logerr("Failure. Y-Value must be set for the navigateAction to the popcorn table")
 
@@ -201,7 +201,7 @@ def navigate_and_detect():
     LookAtAction(targets=[Pose([0.8, 1.8, 0.21], object_orientation)]).resolve().perform()  # 0.18 vanessa
     TalkingMotion("Perceiving").resolve().perform()
     try:
-        object_desig = DetectAction(technique='region').resolve().perform()
+        object_desig = DetectAction(technique='all').resolve().perform()
         giskardpy.sync_worlds()
     except PerceptionObjectNotFound:
         object_desig = {}
@@ -327,22 +327,22 @@ with ((real_robot)):
     MoveJointsMotion(["wrist_roll_joint"], [-1.5]).resolve().perform()
     open_dishwasher(handle_name, door_name)
 
-    TalkingMotion("Please pull out the lower rack").resolve().perform()
-    ParkArmsAction([Arms.LEFT]).resolve().perform()
-    MoveGripperMotion("open", "left").resolve().perform()
-
-    # detect objects
-    object_desig = navigate_and_detect()
-
-    # sort objects based on distance and which we like to keep
-    sorted_obj = sort_objects(robot, object_desig, wished_sorted_obj_list)
-
-    #picking up and placing objects
-    pickup_and_place_objects(sorted_obj)
-
-    new_obj_desig= failure_handling1(sorted_obj)
-    failure_handling2(sorted_obj, new_obj_desig)
-
+    # TalkingMotion("Please pull out the lower rack").resolve().perform()
+    # ParkArmsAction([Arms.LEFT]).resolve().perform()
+    # MoveGripperMotion("open", "left").resolve().perform()
+    #
+    # # detect objects
+    # object_desig = navigate_and_detect()
+    #
+    # # sort objects based on distance and which we like to keep
+    # sorted_obj = sort_objects(robot, object_desig, wished_sorted_obj_list)
+    #
+    # #picking up and placing objects
+    # pickup_and_place_objects(sorted_obj)
+    #
+    # new_obj_desig= failure_handling1(sorted_obj)
+    # failure_handling2(sorted_obj, new_obj_desig)
+    #
 
     rospy.loginfo("Done!")
     TalkingMotion("Done").resolve().perform()

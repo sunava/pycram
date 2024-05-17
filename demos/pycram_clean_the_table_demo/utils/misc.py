@@ -6,8 +6,7 @@ from pycram.designators.motion_designator import *
 import pycram.external_interfaces.giskard as giskardpy
 from pycram.designators.object_designator import *
 from std_msgs.msg import String
-from demos.pycram_receptionist_demo.deprecated import talk_actions
-from deprecated import deprecated
+
 
 from pycram.plan_failures import EnvironmentUnreachable, GripperClosedCompletely
 
@@ -61,7 +60,7 @@ def sort_objects(robot: BulletWorldObject, obj_dict: dict, wished_sorted_obj_lis
     # when all objects are sorted in the list add the plate at last
     if containsPlate:
         # or making Metalplate to the first object in list: sorted_objects.insert(0, metalplate)
-        sorted_objects.append(sorted_object_list[metalplate])
+        sorted_objects.append(metalplate)
 
     # print which objects are in the final list
     test_list = []

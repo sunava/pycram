@@ -21,8 +21,7 @@ class Language(NodeMixin):
     Parent class for language expressions. Implements the operators as well as methods to reduce the resulting language
     tree.
     """
-    parallel_blocklist = ["PickUpAction", "PlaceAction", "OpenAction", "CloseAction", "TransportAction",
-                          "GraspingAction"]
+    parallel_blocklist = []
     do_not_use_giskard = ["SetGripperAction", "MoveGripperMotion", "DetectAction", "DetectingMotion"]
     block_list: List[int] = []
     """List of thread ids which should be blocked from execution."""

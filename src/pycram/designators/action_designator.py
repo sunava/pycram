@@ -347,7 +347,7 @@ class PickUpAction(ActionDesignatorDescription):
             BulletWorld.current_bullet_world.add_vis_axis(oTmG)
             # Execute Bool, because sometimes u only want to visualize the poses to test things
             if execute:
-                MoveTCPMotion(oTmG, self.arm).resolve().perform()
+                MoveTCPMotion(oTmG, self.arm, allow_gripper_collision=False).resolve().perform()
             # Calculate and apply any special knowledge offsets based on the robot and object type
             # Note: This currently includes robot-specific logic that should be generalized
             tool_frame = robot_description.get_tool_frame(self.arm)
@@ -381,12 +381,12 @@ class PickUpAction(ActionDesignatorDescription):
             # m.create_marker("pose_pickup", special_knowledge_offsetTm)
             BulletWorld.current_bullet_world.add_vis_axis(special_knowledge_offsetTm)
             if execute:
-                MoveTCPMotion(special_knowledge_offsetTm, self.arm).resolve().perform()
+                MoveTCPMotion(special_knowledge_offsetTm, self.arm, allow_gripper_collision=False).resolve().perform()
 
             rospy.logwarn("Pushing now")
             BulletWorld.current_bullet_world.add_vis_axis(push_baseTm)
             if execute:
-                MoveTCPMotion(push_baseTm, self.arm).resolve().perform()
+                MoveTCPMotion(push_baseTm, self.arm, allow_gripper_collision=False).resolve().perform()
 
             # Finalize the pick-up by closing the gripper and lifting the object
             rospy.logwarn("Close Gripper")
@@ -397,7 +397,7 @@ class PickUpAction(ActionDesignatorDescription):
             liftingTm.pose.position.z += 0.03
             BulletWorld.current_bullet_world.add_vis_axis(liftingTm)
             if execute:
-                MoveTCPMotion(liftingTm, self.arm).resolve().perform()
+                MoveTCPMotion(liftingTm, self.arm, allow_gripper_collision=False).resolve().perform()
             tool_frame = robot_description.get_tool_frame(self.arm)
             robot.attach(object=self.object_designator.bullet_world_object, link=tool_frame)
 
@@ -1046,6 +1046,14 @@ class OpenAction(ActionDesignatorDescription):
         def perform(self) -> Any:
             #GraspingAction.Action(self.arm, self.object_designator).perform()
             OpeningMotion(self.object_designator, self.arm).resolve().perform()
+            # MoveGripperMotion("open", "left").resolve().perform()
+            # mvb = Pose([0,-0.2, 0],[0,0,0,1], "base_link")
+            # NavigateAction([mvb]).resolve().perform()
+            # ParkArmsAction([Arms.LEFT]).resolve().perform()
+            # MoveGripperMotion("close", "left").resolve().perform()
+            # giskard.finish_open_dishwasher_goal()
+            # ParkArmsAction([Arms.LEFT]).resolve().perform()
+            # MoveGripperMotion("open", self.arm, allow_gripper_collision=True).resolve().perform()
 
             # MoveGripperMotion("open", self.arm, allow_gripper_collision=True).resolve().perform()
 
@@ -1163,16 +1171,18 @@ class GraspingAction(ActionDesignatorDescription):
         """
 
         def perform(self) -> Any:
-            if isinstance(self.object_desig, ObjectPart.Object):
-                object_pose = self.object_desig.part_pose
-            else:
-                object_pose = self.object_desig.bullet_world_object.get_pose()
+            # if isinstance(self.object_desig, ObjectPart.Object):
+            object_pose = self.object_desig
+            # else:
+            #     object_pose = self.object_desig.bullet_world_object.get_pose()
 
             # Initialize the local transformer and robot reference
             lt = LocalTransformer()
             robot = BulletWorld.robot  # Retrieve object and robot from designators
             # Calculate the object's pose in the map frame
             oTm = object_pose
+            #Todo only for suturo lab and hsr
+            oTm.pose.position.x -= 0.2
             execute = True
             grasp = "front"
             # Determine the grasp orientation and transform the pose to the base link frame

@@ -225,7 +225,7 @@ class MoveTCPMotion(MotionDesignatorDescription):
             return motion
 
     def __init__(self, target: Pose, arm: Optional[str] = None,
-                 resolver: Optional[Callable] = None, allow_gripper_collision: Optional[bool] = None):
+                 resolver: Optional[Callable] = None, allow_gripper_collision: Optional[bool] = False):
         """
         Moves the TCP of the given arm to the given target pose.
 
@@ -483,6 +483,8 @@ class MoveArmJointsMotion(MotionDesignatorDescription):
             left_poses = robot_description.get_static_joint_chain("placing_pos", self.left_arm_config)
         elif self.left_arm_config == "pick_up_paper":
             left_poses = robot_description.get_static_joint_chain("pick_up_paper_conf", self.left_arm_config)
+        elif self.left_arm_config == "open_dishwasher":
+            left_poses = robot_description.get_static_joint_chain("open_dishwasher", self.left_arm_config)
         if self.right_arm_poses:
             right_poses = self.right_arm_poses
         elif self.right_arm_config:
