@@ -1023,6 +1023,84 @@ class DetectAction(ActionDesignatorDescription):
 
         return self.Action(technique=self.technique, object_designator=self.object_designator, state=self.state)
 
+class OpenDishwasherAction(ActionDesignatorDescription):
+    """
+    Opens a container like object
+
+    Can currently not be used
+    """
+
+    @dataclasses.dataclass
+    class Action(ActionDesignatorDescription.Action):
+        handle_name: str
+        """
+        Name of the handle to grasp for opening
+        """
+
+        door_name: str
+        """
+        Name of the door belonging to the handle
+        """
+
+        goal_state_half_open: float
+        """
+        goal state for opening the door half way
+        """
+
+        goal_state_full_open: float
+        """
+        goal state for opening the door fully
+        """
+
+        arm: str
+        """
+        Arm that should be used for opening the container
+        """
+
+        @with_tree
+        def perform(self) -> Any:
+            MoveGripperMotion("open", self.arm).resolve().perform()
+            GraspingDishwasherHandleMotion(self.handle_name, self.arm).resolve().perform()
+
+            MoveGripperMotion("close", self.arm).resolve().perform()
+            HalfOpeningDishwasherMotion(self.handle_name, self.goal_state_half_open, self.arm).resolve().perform()
+
+            MoveGripperMotion("open", self.arm).resolve().perform()
+            MoveArmAroundMotion(self.handle_name, self.arm).resolve().perform()
+
+            MoveGripperMotion("close", self.arm).resolve().perform()
+            FullOpeningDishwasherMotion(self.handle_name, self.door_name, self.goal_state_full_open, self.arm).resolve().perform()
+
+            talk = TalkingMotion("Please pull out the lower rack")
+            park = ParkArmsAction([self.arm])
+            gripper_open = MoveGripperMotion("open", self.arm)
+            plan = talk | park | gripper_open
+            plan.perform()
+
+    def __init__(self, handle_name: str, door_name: str, goal_state_half_open: float, goal_state_full_open: float, arms: List[str], resolver=None):
+        """
+        Moves the arm of the robot to open a container.
+
+        :param object_designator_description: Object designator describing the handle that should be used to open
+        :param arms: A list of possible arms that should be used
+        :param resolver: A alternative resolver that returns a performable designator for the lists of possible parameter.
+        """
+        super().__init__(resolver)
+        self.handle_name = handle_name
+        self.door_name = door_name
+        self.goal_state_half_open = goal_state_half_open
+        self.goal_state_full_open = goal_state_full_open
+        self.arms: List[str] = arms
+
+    def ground(self) -> Action:
+        """
+        Default resolver that returns a performable designator with the resolved object description and the first entries
+        from the lists of possible parameter.
+
+        :return: A performable designator
+        """
+        return self.Action(self.handle_name, self.door_name, self.goal_state_half_open, self.goal_state_full_open, self.arms[0])
+
 
 class OpenAction(ActionDesignatorDescription):
     """

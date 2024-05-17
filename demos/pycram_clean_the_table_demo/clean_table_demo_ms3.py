@@ -1,5 +1,7 @@
 from enum import Enum
 
+import rospy.core
+
 from demos.pycram_clean_the_table_demo.utils.misc import *
 from pycram.process_module import real_robot
 from pycram.ros.robot_state_updater import RobotStateUpdater
@@ -209,27 +211,7 @@ def navigate_and_detect():
 
 
 def open_dishwasher(handle_name, door_name):
-    MoveGripperMotion("open", "left").resolve().perform()
-    giskardpy.grasp_handle(handle_name)
-
-    MoveGripperMotion("close", "left").resolve().perform()
-
-    giskardpy.achieve_open_container_goal(robot_description.get_tool_frame("left"), handle_name, goal_state=0.8)
-    MoveGripperMotion("open", "left").resolve().perform()
-
-    giskardpy.giskard_wrapper.set_hsrb_dishwasher_door_around(handle_name)
-    giskardpy.giskard_wrapper.execute()
-
-    MoveGripperMotion("close", "left").resolve().perform()
-
-    giskardpy.giskard_wrapper.set_hsrb_align_to_push_door_goal(handle_name, door_name)
-    giskardpy.giskard_wrapper.execute()
-
-    giskardpy.giskard_wrapper.set_hsrb_pre_push_door_goal(handle_name=handle_name, hinge_frame_id=door_name)
-    giskardpy.giskard_wrapper.allow_all_collisions()
-    giskardpy.giskard_wrapper.execute()
-
-    giskardpy.achieve_open_container_goal(robot_description.get_tool_frame("left"), handle_name, goal_state=1.3)
+    OpenDishwasherAction(handle_name, door_name,0.8,1.3,["left"]).resolve().perform()
 
 
 # Main interaction sequence with real robot
