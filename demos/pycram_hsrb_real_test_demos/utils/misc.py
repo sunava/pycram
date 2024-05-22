@@ -6,7 +6,6 @@ from pycram.designators.motion_designator import *
 import pycram.external_interfaces.giskard as giskardpy
 from pycram.designators.object_designator import *
 from std_msgs.msg import String
-from demos.pycram_receptionist_demo.deprecated import talk_actions
 from deprecated import deprecated
 
 from pycram.plan_failures import EnvironmentUnreachable, GripperClosedCompletely

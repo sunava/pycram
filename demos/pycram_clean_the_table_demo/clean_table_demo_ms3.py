@@ -203,7 +203,7 @@ def navigate_and_detect():
     LookAtAction(targets=[Pose([0.8, 1.8, 0.21], object_orientation)]).resolve().perform()  # 0.18 vanessa
     TalkingMotion("Perceiving").resolve().perform()
     try:
-        object_desig = DetectAction(technique='all').resolve().perform()
+        object_desig = DetectAction(technique='region', state="popcorn_table").resolve().perform()
         giskardpy.sync_worlds()
     except PerceptionObjectNotFound:
         object_desig = {}
@@ -211,7 +211,7 @@ def navigate_and_detect():
 
 
 def open_dishwasher(handle_name, door_name):
-    OpenDishwasherAction(handle_name, door_name,0.8,1.3,["left"]).resolve().perform()
+    OpenDishwasherAction(handle_name, door_name,0.7,1.3,["left"]).resolve().perform()
 
 
 # Main interaction sequence with real robot
@@ -304,23 +304,24 @@ def failure_handling2(sorted_obj, new_sorted_obj):
 with ((real_robot)):
     rospy.loginfo("Starting demo")
     TalkingMotion("Starting demo").resolve().perform()
+
     navigate_to("dishwasher")
 
     MoveJointsMotion(["wrist_roll_joint"], [-1.5]).resolve().perform()
     open_dishwasher(handle_name, door_name)
-
+    TalkingMotion("Please pull out the lower rack").resolve().perform()
     # TalkingMotion("Please pull out the lower rack").resolve().perform()
-    # ParkArmsAction([Arms.LEFT]).resolve().perform()
-    # MoveGripperMotion("open", "left").resolve().perform()
-    #
-    # # detect objects
-    # object_desig = navigate_and_detect()
-    #
-    # # sort objects based on distance and which we like to keep
-    # sorted_obj = sort_objects(robot, object_desig, wished_sorted_obj_list)
+    #ParkArmsAction([Arms.LEFT]).resolve().perform()
+    #MoveGripperMotion("open", "left").resolve().perform()
+
+    # detect objects
+    object_desig = navigate_and_detect()
+
+    # sort objects based on distance and which we like to keep
+    sorted_obj = sort_objects(robot, object_desig, wished_sorted_obj_list)
     #
     # #picking up and placing objects
-    # pickup_and_place_objects(sorted_obj)
+    pickup_and_place_objects(sorted_obj)
     #
     # new_obj_desig= failure_handling1(sorted_obj)
     # failure_handling2(sorted_obj, new_obj_desig)

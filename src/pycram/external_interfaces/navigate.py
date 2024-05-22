@@ -36,7 +36,7 @@ def queryPoseNav(navpose):
     goal_msg.target_pose = navpose
     rospy.loginfo("navigating")
     client = actionlib.SimpleActionClient('move_base/move', MoveBaseAction)
-    rospy.loginfo("Waiting for action server")
+    rospy.loginfo("Waiting for action server nav")
     client.wait_for_server()
     client.send_goal(goal_msg, active_cb=active_callback, done_cb=done_callback, feedback_cb=feedback_callback)
     client.wait_for_result()

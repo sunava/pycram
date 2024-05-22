@@ -56,7 +56,7 @@ class Pose(PoseStamped):
         self.frame = frame
 
     @staticmethod
-    def efrom_pose_stamped(pose_stamped: PoseStamped) -> Pose:
+    def from_pose_stamped(pose_stamped: PoseStamped) -> Pose:
         """
         Converts a geometry_msgs/PoseStamped message to a Pose object. Should be used for compatability with ROS.
 
