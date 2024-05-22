@@ -96,30 +96,30 @@ def pickup_and_place_objects(sorted_obj: list):
         # placing the object
         ParkArmsAction([Arms.LEFT]).resolve().perform()
         TalkingMotion("Navigating").resolve().perform()
-        MoveGripperMotion("open","left").resolve().perform()
-        # navigate_to(1.8, 1.8, "long table")
-        # navigate_to(4.1, y_pos, "long table")
-        # TalkingMotion("Placing").resolve().perform()
-        #
-        # z = get_z(sorted_obj[value].type)
-        # if sorted_obj[value].type == "Metalplate":
-        #     # with special defined placing movement for the plate
-        #     PlaceGivenObjAction([sorted_obj[value].type], ["left"],
-        #                         [Pose([4.86, y_pos, z])],["front"]).resolve().perform()
-        # else:
-        #     PlaceAction(sorted_obj[value], ["left"], [grasp],
-        #                 [Pose([4.87, y_pos, z])]).resolve().perform()
-        #
-        # ParkArmsAction([Arms.LEFT]).resolve().perform()
-        # TalkingMotion("Navigating").resolve().perform()
-        # navigate_to(3.9, 2, "popcorn table")
-        #
-        # # adjust y_pos for the next placing round
-        # if sorted_obj[value].type == "Metalplate":
-        #     y_pos += 0.3
-        # else:
-        #     y_pos += 0.16
-        #
+        #MoveGripperMotion("open","left").resolve().perform()
+        navigate_to(1.8, 1.8, "long table")
+        navigate_to(4.1, y_pos, "long table")
+        TalkingMotion("Placing").resolve().perform()
+
+        z = get_z(sorted_obj[value].type)
+        if sorted_obj[value].type == "Metalplate":
+            # with special defined placing movement for the plate
+            PlaceGivenObjAction([sorted_obj[value].type], ["left"],
+                                [Pose([4.86, y_pos, z])],["front"]).resolve().perform()
+        else:
+            PlaceAction(sorted_obj[value], ["left"], [grasp],
+                        [Pose([4.87, y_pos, z])]).resolve().perform()
+
+        ParkArmsAction([Arms.LEFT]).resolve().perform()
+        TalkingMotion("Navigating").resolve().perform()
+        navigate_to(3.9, 2, "popcorn table")
+
+        # adjust y_pos for the next placing round
+        if sorted_obj[value].type == "Metalplate":
+            y_pos += 0.3
+        else:
+            y_pos += 0.16
+
         # # navigates back if a next object exists
         if value + 1 < len(sorted_obj):
              navigate_to(1.6, sorted_obj[value + 1].pose.position.y, "popcorn table")
