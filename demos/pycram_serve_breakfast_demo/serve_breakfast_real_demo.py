@@ -34,6 +34,9 @@ bowl_exists = False
 # free places for placing
 place_pose = None
 
+# y pose for placing the object
+y_pos = 1.7
+
 # list of sorted placing poses
 sorted_places = []
 
@@ -132,8 +135,9 @@ def pickup_and_place_objects(sorted_obj: list):
             grasp = "top"
 
         if sorted_obj[value].type == "Metalbowl":
+            # sorted_obj[value].pose.position.y = 3.0
             if sorted_obj[value].pose.position.z >= 0.65:
-                sorted_obj[value].pose.position.z = 0.72
+                sorted_obj[value].pose.position.z = 0.71
             elif sorted_obj[value].pose.position.z >= 0.4:
                 sorted_obj[value].pose.position.z = 0.5
             else:
@@ -161,7 +165,7 @@ def pickup_and_place_objects(sorted_obj: list):
 
 
 def place_objects(first_placing, objects_list, index, grasp):
-    global bowl, place_pose_exists, bowl_exists, place_pose, sorted_places
+    global bowl, place_pose_exists, bowl_exists, place_pose, sorted_places, y_pos
     i = 0
 
     if first_placing:
@@ -177,20 +181,20 @@ def place_objects(first_placing, objects_list, index, grasp):
     navigate_to(3.65, 2.2, "long table")
 
     # erste Variante
-    ###############################################################################
-    if object_type is not "Cutlery":
-        place_poses_list = try_detect(Pose([5.1, 2.1, 0.21], [0, 0, 0, 1]), True)
-        sorted_places = get_free_spaces(place_poses_list[1])
-
-    if object_type is not "Metalbowl":
-        object_desig = try_detect(Pose([5.1, 2.1, 0.21], [0, 0, 0, 1]), False)
-        bowl = get_bowl(object_desig)
-
-    # choose place pose
-    if object_type is "Metalbowl" and len(sorted_places) == 3:
-        place_pose = sorted_places[1]
-    else:
-        place_pose = sorted_places[0]
+    # ###############################################################################
+    # if object_type is not "Cutlery":
+    #     place_poses_list = try_detect(Pose([5.1, 2.1, 0.21], [0, 0, 0, 1]), True)
+    #     sorted_places = get_free_spaces(place_poses_list[1])
+    #
+    # if object_type is not "Metalbowl":
+    #     object_desig = try_detect(Pose([5.1, 2.1, 0.21], [0, 0, 0, 1]), False)
+    #     bowl = get_bowl(object_desig)
+    #
+    # # choose place pose
+    # if object_type is "Metalbowl" and len(sorted_places) == 3:
+    #     place_pose = sorted_places[1]
+    # else:
+    #     place_pose = sorted_places[0]
 
     # zweite Variante
     ################################################################################
@@ -217,6 +221,17 @@ def place_objects(first_placing, objects_list, index, grasp):
     # place_pose = sorted_places[i]
     ##################################################################################
 
+    # dritte Variante ohne free places
+    ###############################################################################
+    if object_type is not "Metalbowl":
+        object_desig = try_detect(Pose([5.1, 2.1, 0.21], [0, 0, 0, 1]), False)
+        bowl = get_bowl(object_desig)
+
+    # choose place pose
+    if object_type is "Metalbowl":
+        y_pos = 2.25
+    ##############################################################################
+
     if object_type in ["Cerealbox", "Milkpack", "Cutlery"]:
         # TODO: vielleicht dieses "if" entfernen
         if bowl is None:
@@ -241,9 +256,10 @@ def place_objects(first_placing, objects_list, index, grasp):
                 else:
                     PouringAction([bowl.pose], ["left"], ["right"], [1.6]).resolve().perform()
             else:
-                place_pose.pose.position.x = bowl.pose.position.x
-                place_pose.pose.position.y = bowl.pose.position.y - 0.2
-                place_pose.pose.position.x = bowl.pose.position.z
+                y_pos = bowl.pose.position.y - 0.25
+                # place_pose.pose.position.x = bowl.pose.position.x
+                # place_pose.pose.position.y = bowl.pose.position.y - 0.2
+                # place_pose.pose.position.x = bowl.pose.position.z
 
     # TODO: Werte anpassen
     navigate_to(3.8, place_pose.pose.position.y, "long table")
@@ -251,18 +267,23 @@ def place_objects(first_placing, objects_list, index, grasp):
     z = get_z(object_type)
     if first_placing:
         PlaceAction(objects_list[index], ["left"], [grasp],
-                    [Pose([place_pose.pose.position.x, place_pose.pose.position.y, z])]).resolve().perform()
+                    [Pose([4.86, y_pos, z])]).resolve().perform()
     else:
         PlaceGivenObjAction([objects_list[index]], ["left"],
-                            [Pose([place_pose.pose.position.x, place_pose.pose.position.y, z])],
+                            [Pose([4.86, y_pos, z])],
                             [grasp]).resolve().perform()
 
     ParkArmsAction([Arms.LEFT]).resolve().perform()
 
     # TODO: im Falle des Entfernen der zweiten Variante dieses "if entfernen mit i oben auch"
     # index of next place pose
-    if object_type in ["Cerealbox", "Milkpack", "Metalbowl"]:
-        i += 1
+    # if object_type in ["Cerealbox", "Milkpack", "Metalbowl"]:
+    #     i += 1
+
+    if object_type == "Metalbowl":
+        y_pos = 1.7
+    else:
+        y_pos += 0.8
 
     # navigates back if a next object exists
     if index + 1 < len(objects_list):
