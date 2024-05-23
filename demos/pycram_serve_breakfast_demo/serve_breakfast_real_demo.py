@@ -3,7 +3,6 @@ from pycram.process_module import real_robot, semi_real_robot
 from pycram.ros.robot_state_updater import RobotStateUpdater
 from pycram.ros.viz_marker_publisher import VizMarkerPublisher
 from demos.pycram_serve_breakfast_demo.utils.misc import *
-from demos.pycram_hsrb_real_test_demos.utils.misc import try_pick_up
 
 # from pycram.external_interfaces.knowrob import get_table_pose
 # TODO: im Allgemeinen müssen die Werte beim Navigieren und detecten angepasst werden
@@ -131,16 +130,25 @@ def pickup_and_place_objects(sorted_obj: list):
 
         if sorted_obj[value].type in ["Metalbowl", "Cutlery"]:
             grasp = "top"
+
+        if sorted_obj[value].type == "Metalbowl":
             if sorted_obj[value].pose.position.z >= 0.65:
                 sorted_obj[value].pose.position.z = 0.72
+            elif sorted_obj[value].pose.position.z >= 0.4:
+                sorted_obj[value].pose.position.z = 0.5
+            else:
+                sorted_obj[value].pose.position.z = 0.075
+
+        # TODO: muss noch getestet und angepasst werden
+        if sorted_obj[value].type == "Cutlery":
+            sorted_obj[value].pose.position.y = 3.25
+
+            if sorted_obj[value].pose.position.z >= 0.65:
+                sorted_obj[value].pose.position.z = 0.715
             elif sorted_obj[value].pose.position.z >= 0.4:
                 sorted_obj[value].pose.position.z = 0.46
             else:
                 sorted_obj[value].pose.position.z = 0.07
-
-            # TODO: muss noch getestet und angepasst werden
-            if sorted_obj[value].type in CUTLERY:
-                sorted_obj[value].pose.position.y = 3.25
 
         TalkingMotion("Picking up with: " + grasp).resolve().perform()
         try_pick_up(robot, sorted_obj[value], grasp)
