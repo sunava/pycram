@@ -11,12 +11,12 @@ from deprecated import deprecated
 
 def sort_objects(obj_dict: dict, wished_sorted_obj_list: list):
     """
-    Transforms the given object dictionary to a distance sorted list.
-    The Metalplate, if seen, is arranged as the first object in the list.
+    keeps only wished objects of the seen objects and sorts the returned list of objects
+    according to the order of the given wished_sorted_obj_list.
 
     :param obj_dict: tupel of State and dictionary of founded objects in the FOV
-    :param wished_sorted_obj_list: list of object types we like to keep
-    :return: distance sorted list of seen and wished to keep objects
+    :param wished_sorted_obj_list: list of object types we like to keep with the wished order
+    :return: sorted list of seen and wished to keep objects in the same order of the given list
     """
     tuples_list = []
     sorted_objects = []
@@ -26,7 +26,6 @@ def sort_objects(obj_dict: dict, wished_sorted_obj_list: list):
 
     # cut of the given State and keep the dictionary
     first, *remaining = obj_dict
-    # calculate euclidian distance for all found object in a list of tupels
     for dictionary in remaining:
         for value in dictionary.values():
             if value.type in wished_sorted_obj_list:
@@ -69,14 +68,14 @@ def get_bowl(obj_dict: dict):
     return None
 
 
-def get_free_spaces(obj_dict):
+def get_free_spaces(location_list: list):
     free_places_tuples = []
     sorted_places = []
 
-    if len(obj_dict) == 0:
+    if len(location_list) == 0:
         return sorted_places
 
-    for location in obj_dict:
+    for location in location_list:
         print(f"location: {location}, type: {type(location)}")
         seperated_location = location.split(',')
         occupied = eval(seperated_location[1])
@@ -98,3 +97,45 @@ def get_free_spaces(obj_dict):
     print(test_list)
 
     return sorted_places
+
+
+def try_pick_up(robot: BulletWorld.robot, obj: ObjectDesignatorDescription.Object, grasps: str):
+    """
+    Picking up any object with failure handling.
+
+    :param robot: the robot
+    :param obj: the object that should be picked up
+    :param grasps: how to pick up the object
+    """
+    try:
+        PickUpAction(obj, ["left"], [grasps]).resolve().perform()
+    except (EnvironmentUnreachable, GripperClosedCompletely):
+        TalkingMotion("Try pick up again").resolve().perform()
+        # after failed attempt to pick up the object, the robot moves 30cm back on x pose
+        # TODO: x-pose und orentation sollten allgemein sein
+        NavigateAction(
+            [Pose([robot.get_pose().pose.position.x, robot.get_pose().pose.position.y - 0.25, 0],
+                  [0, 0, 0.7, 0.7])]).resolve().perform()
+        MoveGripperMotion(motion="open", gripper="left").resolve().perform()
+        ParkArmsAction([Arms.LEFT]).resolve().perform()
+        # try to detect the object again
+        LookAtAction(targets=[Pose([obj.pose.position.x, obj.pose.position.y, 0.21], [0, 0, 0, 1])]).resolve().perform()
+        object_desig = DetectAction(technique='all').resolve().perform()
+        new_object = sort_objects(object_desig, [obj.type])[0]
+
+        # second try to pick up the object
+        try:
+            TalkingMotion("try again").resolve().perform()
+            PickUpAction(new_object, ["left"], [grasps]).resolve().perform()
+        # ask for human interaction if it fails a second time
+        except (EnvironmentUnreachable, GripperClosedCompletely):
+            NavigateAction(
+                [Pose([robot.get_pose().pose.position.x, robot.get_pose().pose.position.y - 0.25, 0],
+                      [0, 0, 0.7, 0.7])]).resolve().perform()
+            MoveGripperMotion(motion="open", gripper="left").resolve().perform()
+            ParkArmsAction([Arms.LEFT]).resolve().perform()
+            TalkingMotion(f"Can you pleas give me the {obj.type} on the table?").resolve().perform()
+            MoveGripperMotion("open", "left").resolve().perform()
+            time.sleep(4)
+            MoveGripperMotion("close", "left").resolve().perform()
+
