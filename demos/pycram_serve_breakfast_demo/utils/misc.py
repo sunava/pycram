@@ -111,13 +111,12 @@ def try_pick_up(robot: BulletWorld.robot, obj: ObjectDesignatorDescription.Objec
         PickUpAction(obj, ["left"], [grasps]).resolve().perform()
     except (EnvironmentUnreachable, GripperClosedCompletely):
         TalkingMotion("Try pick up again").resolve().perform()
-        # after failed attempt to pick up the object, the robot moves 30cm back on x pose
-        # TODO: x-pose und orentation sollten allgemein sein
+        # after failed attempt to pick up the object, the robot moves 30cm back on y pose
         NavigateAction(
-            [Pose([robot.get_pose().pose.position.x, robot.get_pose().pose.position.y - 0.25, 0],
-                  [0, 0, 0.7, 0.7])]).resolve().perform()
-        MoveGripperMotion(motion="open", gripper="left").resolve().perform()
+            [Pose([robot.get_pose().pose.position.x - 0.3, robot.get_pose().pose.position.y, 0],
+                  [0, 0, 0, 1])]).resolve().perform()
         ParkArmsAction([Arms.LEFT]).resolve().perform()
+        MoveGripperMotion(motion="open", gripper="left").resolve().perform()
         # try to detect the object again
         LookAtAction(targets=[Pose([obj.pose.position.x, obj.pose.position.y, 0.21], [0, 0, 0, 1])]).resolve().perform()
         object_desig = DetectAction(technique='all').resolve().perform()
@@ -130,11 +129,11 @@ def try_pick_up(robot: BulletWorld.robot, obj: ObjectDesignatorDescription.Objec
         # ask for human interaction if it fails a second time
         except (EnvironmentUnreachable, GripperClosedCompletely):
             NavigateAction(
-                [Pose([robot.get_pose().pose.position.x, robot.get_pose().pose.position.y - 0.25, 0],
-                      [0, 0, 0.7, 0.7])]).resolve().perform()
-            MoveGripperMotion(motion="open", gripper="left").resolve().perform()
+                [Pose([robot.get_pose().pose.position.x - 0.3, robot.get_pose().pose.position.y, 0],
+                      [0, 0, 0, 1])]).resolve().perform()
             ParkArmsAction([Arms.LEFT]).resolve().perform()
-            TalkingMotion(f"Can you pleas give me the {obj.type} on the table?").resolve().perform()
+            MoveGripperMotion(motion="open", gripper="left").resolve().perform()
+            TalkingMotion(f"Can you please give me the {obj.type} in the shelf?").resolve().perform()
             MoveGripperMotion("open", "left").resolve().perform()
             time.sleep(4)
             MoveGripperMotion("close", "left").resolve().perform()
