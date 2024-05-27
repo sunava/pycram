@@ -16,19 +16,20 @@ from pycram.designators.object_designator import *
 from pycram.bullet_world import BulletWorld, Object
 from std_msgs.msg import String, Bool
 
-world = BulletWorld()
+world = BulletWorld("DIRECT")
 v = VizMarkerPublisher()
 
 robot = Object("hsrb", "robot", "../../resources/" + robot_description.name + ".urdf")
 robot_desig = ObjectDesignatorDescription(names=["hsrb"]).resolve()
 robot.set_color([0.5, 0.5, 0.9, 1])
 
-kitchen = Object("kitchen", ObjectType.ENVIRONMENT, "suturo_lab_version_8.urdf")
+kitchen = Object("kitchen", ObjectType.ENVIRONMENT, "suturo_lab_version_10.urdf")
+print("giskard")
 giskardpy.init_giskard_interface()
 giskardpy.sync_worlds()
 RobotStateUpdater("/tf", "/giskard_joint_states")
 kitchen_desig = BelieveObject(names=["kitchen"])
-
+print("starting nlp")
 # variables for communcation with nlp
 pub_nlp = rospy.Publisher('/startListener', String, queue_size=10)
 response = ""
@@ -59,17 +60,17 @@ def demo_tst():
         global response
         test_all = False
 
-        # HeadFollowAction(state='start').resolve().perform()
+        HeadFollowAction(state='start').resolve().perform()
 
         rospy.Subscriber("nlp_out", String, data_cb)
         # desig = DetectAction(technique='attributes').resolve().perform()
         # guest1.set_attributes(desig)
 
-        # DetectAction(technique='human', state='start').resolve().perform()
+        DetectAction(technique='human', state='start').resolve().perform()
         # rospy.loginfo("human detected")
 
         TalkingMotion("Hello, i am Toya and my favorite drink is oil. What about you, talk to me?").resolve().perform()
-        rospy.sleep(3)
+        rospy.sleep(2)
         # signal to start listening
         pub_nlp.publish("start listening")
 
@@ -141,8 +142,9 @@ def demo_tst():
             rospy.sleep(2)
 
         introduce(host, guest1)
-        rospy.sleep(1.5)
-        describe(guest1)
+        #rospy.sleep(1.5)
+        #describe(guest1)
+        TalkingMotion("end").resolve().perform()
 
 
 def demo_tst2():
@@ -162,7 +164,7 @@ def demo_tst2():
         print(d)
         # look and point to free seat
 
-        # pub_pose.publish(toPoseStamped(pose_red_seat[0], pose_red_seat[1], pose_red_seat[2]))
+        pub_pose.publish(toPoseStamped(pose_red_seat[0], pose_red_seat[1], pose_red_seat[2]))
         # rospy.sleep(2)
         # PointingMotion(pose_blue_seat[0], pose_blue_seat[1], pose_blue_seat[2]).resolve().perform()
         TalkingMotion("please take a seat next to your host").resolve().perform()
@@ -210,8 +212,8 @@ def open_tst():
         # pose1 = robot.get_pose()
         # pose2 = robot.get_complete_joint_state()
 
-        # Pre-Pose
-        pose1 = Pose([1.6, 0.2, 0], [0, 0, 1, 0])
+        # Pre-Pose for door opening
+        pose1 = Pose([1.65, 0.52, 0], [0, 0, 1, 0])
         NavigateAction([pose1]).resolve().perform()
         MoveJointsMotion(["wrist_roll_joint"], [-1.57]).resolve().perform()
         MoveTorsoAction([0.35]).resolve().perform()
@@ -224,9 +226,13 @@ def open_tst():
         giskardpy.open_doorhandle("kitchen_2/iai_kitchen:arena:door_handle_inside")
         MoveGripperMotion(motion="open", gripper="left").resolve().perform()
 
-        pose2 = Pose([2.2, 0.55, 0], [0, 0, 1, 0])
+        # move away from door
+        pose2 = Pose([2.2, 1.0, 0], [0, 0, 1, 0])
         NavigateAction([pose2]).resolve().perform()
+
         ParkArmsAction([Arms.LEFT]).resolve().perform()
+        TalkingMotion("Welcome, please step in").resolve().perform()
+        MoveTorsoAction([0.1]).resolve().perform()
 
         TalkingMotion("end").resolve().perform()
 
@@ -251,10 +257,61 @@ def partesr():
         #
         # plan.perform()
 
+def dishwasher():
+    handle_name = "sink_area_dish_washer_door_handle"
+    door_name = "sink_area_dish_washer_door"
+    goal_state_half_open = 0.8
+    goal_state_full_open = 1.3
+    arms = [Arms.LEFT]
+    with real_robot:
+        OpenDishwasherAction(handle_name=handle_name,
+                             door_name=door_name,
+                            goal_state_half_open=goal_state_half_open,
+                          goal_state_full_open=goal_state_full_open,
+                         arms=arms).resolve().perform()
+
+def looking():
+    object_orientation = axis_angle_to_quaternion([0, 0, 1], 180)
+    with real_robot:
+
+        rospy.sleep(1.5)
+        TalkingMotion("Start").resolve().perform()
+        LookAtAction(targets=[Pose([1.2, -1.2, 1.0], object_orientation)]).resolve().perform()
+        TalkingMotion("Hello you").resolve().perform()
+        LookAtAction(targets=[Pose([1.3, 2.0, 1.0], object_orientation)]).resolve().perform()
+
+        # TalkingMotion("Head follow").resolve().perform()
+        HeadFollowAction('start').resolve().perform()
+        pose1 = PoseStamped()
+        pose1.header.frame_id = "map"
+        pose1.pose.position.x = 1.2
+        pose1.pose.position.y = 0.2
+        pose1.pose.position.z = 0.2
+
+        pose12 = PoseStamped()
+        pose12.header.frame_id = "map"
+        pose12.pose.position.x = 1.3
+        pose12.pose.position.y = 2.1
+        pose12.pose.position.z = 0.8
+        rospy.sleep(1.5)
+        TalkingMotion("Start").resolve().perform()
+        pub_pose.publish(toPoseStamped(1.2, -1.2, 1))
+        rospy.sleep(2)
+        TalkingMotion("Hello you").resolve().perform()
+        pub_pose.publish(toPoseStamped(1.2, 2.2, 1.0))
+
+
 
 # demo_tst()
 # open_tst()
-partesr()
+# partesr()
+#demo_tst()
+open_tst()
+#print("preparing dishwasher")
+#dishwasher()
+
+#with real_robot:
+#    ParkArmsAction(['left']).resolve().perform()
 
 # TODO: Faliure handling
 # Menschen nicht sehen

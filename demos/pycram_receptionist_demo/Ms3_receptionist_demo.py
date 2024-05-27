@@ -1,3 +1,5 @@
+import rospy
+
 from pycram.designators.action_designator import *
 from demos.pycram_receptionist_demo.utils.new_misc import *
 from pycram.enums import ObjectType
@@ -11,18 +13,19 @@ from pycram.bullet_world import BulletWorld, Object
 from std_msgs.msg import String, Bool
 
 world = BulletWorld("DIRECT")
-v = VizMarkerPublisher()
+#v = VizMarkerPublisher()
 
 robot = Object("hsrb", "robot", "../../resources/" + robot_description.name + ".urdf")
 robot_desig = ObjectDesignatorDescription(names=["hsrb"]).resolve()
 robot.set_color([0.5, 0.5, 0.9, 1])
 
-kitchen = Object("kitchen", ObjectType.ENVIRONMENT, "suturo_lab_version_8.urdf")
+kitchen = Object("kitchen", ObjectType.ENVIRONMENT, "suturo_lab_version_12.urdf")
 giskardpy.init_giskard_interface()
-RobotStateUpdater("/tf", "/giskard_joint_states")
+#RobotStateUpdater("/tf", "/giskard_joint_states")
 kitchen_desig = ObjectDesignatorDescription(names=["kitchen"])
 
 
+# giskardpy.sync_worlds()
 
 # variables for communcation with nlp
 pub_nlp = rospy.Publisher('/startListener', String, queue_size=10)
@@ -31,7 +34,7 @@ callback = False
 doorbell = True
 
 # Declare variables for humans
-host = HumanDescription("Leonie", fav_drink="water")
+host = HumanDescription("James", fav_drink="water")
 guest1 = HumanDescription("guest1")
 guest2 = HumanDescription("guest2")
 seat_number = 2
@@ -47,7 +50,6 @@ def data_cb(data):
 
 
 with real_robot:
-    DetectAction(technique='human', state='stop').resolve().perform()
 
     TalkingMotion("start").resolve().perform()
 
@@ -58,33 +60,34 @@ with real_robot:
         # TODO: spin or sleep better?
         rospy.spin()
 
-    # Pre-Pose for door opening
-    pose1 = Pose([1.5, 0.52, 0], [0, 0, 1, 0])
-    NavigateAction([pose1]).resolve().perform()
-    MoveJointsMotion(["wrist_roll_joint"], [-1.57]).resolve().perform()
-    MoveTorsoAction([0.35]).resolve().perform()
+    # # Pre-Pose for door opening
+    # pose1 = Pose([1.5, 4.52, 0], [0, 0, 1, 0])
+    # NavigateAction([pose1]).resolve().perform()
+    # MoveJointsMotion(["wrist_roll_joint"], [-1.57]).resolve().perform()
+    # TalkingMotion("moving body").resolve().perform()
+    # MoveTorsoAction([0.35]).resolve().perform()
 
-    # grasp door
-    giskardpy.grasp_doorhandle("iai_kitchen/iai_kitchen:arena:door_handle_inside")
-    MoveGripperMotion(motion="close", gripper="left").resolve().perform()
+    # # grasp door
+    # giskardpy.grasp_doorhandle("iai_kitchen/living_room:arena:door_handle_inside")
+    # MoveGripperMotion(motion="close", gripper="left").resolve().perform()
+    # TalkingMotion("I am opening the door, please wait").resolve().perform()
+    #
+    # # open door
+    # giskardpy.open_doorhandle("kitchen_3/living_room:arena:door_handle_inside")
+    # MoveGripperMotion(motion="open", gripper="left").resolve().perform()
+    #
+    # # move away from door
+    #pose2 = Pose([1.85, 4.5, 0], [0, 0, 1, 0])
+    #NavigateAction([pose2]).resolve().perform()
+    #
+    #ParkArmsAction([Arms.LEFT]).resolve().perform()
+    TalkingMotion("Welcome, please step infront of me").resolve().perform()
+    rospy.sleep(1)
+    #MoveTorsoAction([0.1]).resolve().perform()
 
-    # open door
-    giskardpy.open_doorhandle("kitchen_2/iai_kitchen:arena:door_handle_inside")
-    MoveGripperMotion(motion="open", gripper="left").resolve().perform()
-
-    # move away from door
-    pose2 = Pose([2.2, 1.0, 0], [0, 0, 1, 0])
-    NavigateAction([pose2]).resolve().perform()
-
-    park = ParkArmsAction([Arms.LEFT]).resolve()
-    talk = TalkingMotion("Welcome, please step in").resolve()
-    torso = MoveTorsoAction([0.1]).resolve()
-
-    plan = park | talk | torso
-    plan.perform()
     # look for human
     attr_list = DetectAction(technique='attributes', state='start').resolve().perform()
-    rospy.loginfo("human detected")
+    rospy.loginfo("attributes detected")
 
     guest1.set_attributes(attr_list)
     print(attr_list)
@@ -150,8 +153,7 @@ with real_robot:
     DetectAction(technique='human', state='stop').resolve().perform()
 
     # lead human to living room
-    NavigateAction([pose_kitchen_to_couch]).resolve().perform()
-    NavigateAction([pose_couch]).resolve().perform()
+    NavigateAction([door_to_couch]).resolve().perform()
 
     TalkingMotion("Welcome to the living room").resolve().perform()
     host_pose = DetectAction(technique='human').resolve().perform()

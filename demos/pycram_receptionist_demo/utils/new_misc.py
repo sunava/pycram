@@ -27,8 +27,8 @@ wall_seat_right = [2.6, 6.1, 1]
 
 
 # Pose in the passage between kitchen and living room
-robot_orientation = axis_angle_to_quaternion([0, 0, 1], 90)
-pose_kitchen_to_couch = Pose([4.35, 3, 0], robot_orientation)
+robot_orientation = axis_angle_to_quaternion([0, 0, 1], 180)
+door_to_couch = Pose([3.5, 2.75, 0], robot_orientation)
 
 
 def data_cb(data):
