@@ -1,5 +1,5 @@
 import rospy
-
+from demos.pycram_receptionist_demo.utils.new_misc import *
 from pycram.designators.action_designator import *
 from pycram.designators.motion_designator import *
 from pycram.process_module import semi_real_robot, real_robot
@@ -9,6 +9,9 @@ from pycram.designators.location_designator import *
 from pycram.designators.object_designator import *
 from pycram.bullet_world import BulletWorld, Object
 from demos.pycram_receptionist_demo.utils.new_misc import *
+
+
+host = HumanDescription("James", fav_drink="water")
 
 world = BulletWorld("DIRECT")
 # /pycram/viz_marker topic bei Marker Array
@@ -102,7 +105,43 @@ def p():
                 #PointingMotion(float(seat[1][1][1]), float(seat[1][1][2]), float(seat[1][1][3])).resolve().perform()
 
 
+def ms3_perception():
+    with real_robot:
+        TalkingMotion("start").resolve().perform()
+        rospy.sleep(2)
+
+        # lead human to living room
+        # NavigateAction([door_to_couch]).resolve().perform()
+
+        TalkingMotion("Welcome to the living room").resolve().perform()
+        host_pose = DetectAction(technique='human').resolve().perform()
+        host.set_pose(host_pose[1])
+        host_pose = DetectAction(technique='human', state='stop').resolve().perform()
+        seat = DetectAction(technique='location', state="sofa").resolve().perform()
+        for place in seat[1]:
+            if place[0] == 'False':
+                PointingMotion(float(place[1]), float(place[2]), float(place[3])).resolve().perform()
+                pose_guest1 = PoseStamped()
+                pose_guest1.header.frame_id = "/map"
+                pose_guest1.pose.position.x = float(place[1])
+                pose_guest1.pose.position.y = float(place[2])
+                pose_guest1.pose.position.z = float(place[3])
+                guest1.set_pose(pose_guest1)
+                break
+
+        HeadFollowAction('start').resolve().perform()
+        pub_pose.publish(guest1.pose)
+        TalkingMotion("please take a seat next to your host").resolve().perform()
+
+        # introduce humans and look at them
+
+        introduce(host, guest1)
+        describe(guest1)
+        HeadFollowAction('stop').resolve().perform()
+
+        TalkingMotion("end").resolve().perform()
+
 
 
 if __name__ == '__main__':
-     p()
+     ms3_perception()
