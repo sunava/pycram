@@ -1,3 +1,5 @@
+import rospy
+
 from pycram.designators.action_designator import *
 from demos.pycram_receptionist_demo.utils.new_misc import *
 from pycram.enums import ObjectType
@@ -8,7 +10,7 @@ from pycram.ros.viz_marker_publisher import VizMarkerPublisher
 from pycram.designators.location_designator import *
 from pycram.designators.object_designator import *
 from pycram.bullet_world import BulletWorld, Object
-from std_msgs.msg import String, Bool
+from std_msgs.msg import String, Bool, UInt16
 
 world = BulletWorld("DIRECT")
 v = VizMarkerPublisher()
@@ -26,12 +28,13 @@ kitchen_desig = ObjectDesignatorDescription(names=["kitchen"])
 
 # variables for communcation with nlp
 pub_nlp = rospy.Publisher('/startListener', String, queue_size=10)
+#pub_color = rospy.Publisher('/hsrb/command_status_led', UInt16, queue_size=5, latch=True)
 response = ""
 callback = False
 doorbell = True
 
 # Declare variables for humans
-host = HumanDescription("Leonie", fav_drink="water")
+host = HumanDescription("Alina", fav_drink="water")
 guest1 = HumanDescription("guest1")
 guest2 = HumanDescription("guest2")
 seat_number = 2
@@ -53,15 +56,25 @@ def misc_fct():
 
     with real_robot:
 
-        #DetectAction(technique='human').resolve().perform()
+        DetectAction(technique='human').resolve().perform()
 
         # look at guest and introduce
-        #HeadFollowAction('start').resolve().perform()
-        TalkingMotion("Hello, i am Toya and my favorite drink is oil. What about you, talk to me?").resolve().perform()
+        HeadFollowAction('start').resolve().perform()
+        TalkingMotion("Hello, my name is Toya").resolve().perform()
+        rospy.sleep(2)
+        TalkingMotion("please answer me after the green light").resolve().perform()
+        rospy.sleep(1)
+        TalkingMotion("what is your name and favorite drink?").resolve().perform()
+        rospy.sleep(2)
+        pub_nlp.publish("start listening")
+        rospy.sleep(2)
+        pub_color.publish(2)
         rospy.sleep(1)
 
+
+
         # signal to start listening
-        pub_nlp.publish("start listening")
+
 
         while not callback:
             rospy.sleep(1)
@@ -84,7 +97,6 @@ def misc_fct():
 
             # confirm favorite drink
             guest1.set_drink(drink_confirm(guest1.fav_drink))
-            print(guest1.fav_drink)
 
         else:
             # two chances to get name and drink
@@ -103,6 +115,9 @@ def misc_fct():
                     break
                 else:
                     i += 1
+
+        introduce(host, guest1)
+        DetectAction(technique='human', state='stop').resolve().perform()
 
 
 misc_fct()

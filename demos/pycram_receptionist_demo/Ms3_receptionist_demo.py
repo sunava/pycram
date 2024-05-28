@@ -1,5 +1,3 @@
-import rospy
-
 from pycram.designators.action_designator import *
 from demos.pycram_receptionist_demo.utils.new_misc import *
 from pycram.enums import ObjectType
@@ -19,7 +17,7 @@ robot = Object("hsrb", "robot", "../../resources/" + robot_description.name + ".
 robot_desig = ObjectDesignatorDescription(names=["hsrb"]).resolve()
 robot.set_color([0.5, 0.5, 0.9, 1])
 
-kitchen = Object("kitchen", ObjectType.ENVIRONMENT, "suturo_lab_version_12.urdf")
+kitchen = Object("kitchen", ObjectType.ENVIRONMENT, "suturo_lab_version_15.urdf")
 giskardpy.init_giskard_interface()
 #RobotStateUpdater("/tf", "/giskard_joint_states")
 kitchen_desig = ObjectDesignatorDescription(names=["kitchen"])
@@ -34,8 +32,8 @@ callback = False
 doorbell = True
 
 # Declare variables for humans
-host = HumanDescription("James", fav_drink="water")
-guest1 = HumanDescription("guest1")
+host = HumanDescription("Alina", fav_drink="water")
+guest1 = HumanDescription("guest", fav_drink="tea")
 guest2 = HumanDescription("guest2")
 seat_number = 2
 
@@ -51,57 +49,48 @@ def data_cb(data):
 
 with real_robot:
 
+    # signal start
     TalkingMotion("start").resolve().perform()
 
     # receive data from nlp via topic
     rospy.Subscriber("nlp_out", String, data_cb)
 
-    while not doorbell:
-        # TODO: spin or sleep better?
-        rospy.spin()
+    # Pre-Pose for door opening
+    pose1 = Pose([1.45, 4.5, 0], [0, 0, 1, 0])
+    ParkArmsAction([Arms.LEFT]).resolve().perform()
+    NavigateAction([pose1]).resolve().perform()
+    MoveJointsMotion(["wrist_roll_joint"], [-1.57]).resolve().perform()
+    MoveTorsoAction([0.35]).resolve().perform()
+    MoveGripperMotion(motion="open", gripper="left").resolve().perform()
 
-    # # Pre-Pose for door opening
-    # pose1 = Pose([1.5, 4.52, 0], [0, 0, 1, 0])
-    # NavigateAction([pose1]).resolve().perform()
-    # MoveJointsMotion(["wrist_roll_joint"], [-1.57]).resolve().perform()
-    # TalkingMotion("moving body").resolve().perform()
-    # MoveTorsoAction([0.35]).resolve().perform()
+    # grasp door
+    giskardpy.grasp_doorhandle("iai_kitchen/living_room:arena:door_handle_inside")
+    MoveGripperMotion(motion="close", gripper="left").resolve().perform()
 
-    # # grasp door
-    # giskardpy.grasp_doorhandle("iai_kitchen/living_room:arena:door_handle_inside")
-    # MoveGripperMotion(motion="close", gripper="left").resolve().perform()
-    # TalkingMotion("I am opening the door, please wait").resolve().perform()
-    #
-    # # open door
-    # giskardpy.open_doorhandle("kitchen_3/living_room:arena:door_handle_inside")
-    # MoveGripperMotion(motion="open", gripper="left").resolve().perform()
-    #
+    # open door
+    giskardpy.open_doorhandle("kitchen_2/living_room:arena:door_handle_inside")
+    MoveGripperMotion(motion="open", gripper="left").resolve().perform()
+
     # # move away from door
-    #pose2 = Pose([1.85, 4.5, 0], [0, 0, 1, 0])
-    #NavigateAction([pose2]).resolve().perform()
-    #
-    #ParkArmsAction([Arms.LEFT]).resolve().perform()
+    pose2 = Pose([1.85, 4.5, 0], [0, 0, 1, 0])
+    NavigateAction([pose2]).resolve().perform()
+
     TalkingMotion("Welcome, please step infront of me").resolve().perform()
     rospy.sleep(1)
-    #MoveTorsoAction([0.1]).resolve().perform()
+    MoveTorsoAction([0.1]).resolve().perform()
 
     # look for human
-    attr_list = DetectAction(technique='attributes', state='start').resolve().perform()
-    rospy.loginfo("attributes detected")
-
-    guest1.set_attributes(attr_list)
-    print(attr_list)
-
     DetectAction(technique='human').resolve().perform()
 
     # look at guest and introduce
     HeadFollowAction('start').resolve().perform()
     TalkingMotion("Hello, i am Toya and my favorite drink is oil. What about you, talk to me?").resolve().perform()
-    rospy.sleep(1)
+    rospy.sleep(2.2)
 
     # signal to start listening
     pub_nlp.publish("start listening")
 
+    # wait for nlp answer
     while not callback:
         rospy.sleep(1)
     callback = False
@@ -116,7 +105,8 @@ with real_robot:
 
         else:
             # save heard drink
-            guest1.set_drink(response[2])
+            if response[2]:
+                guest1.set_drink(response[2])
 
             # ask for name again once
             guest1.set_name(name_repeat())
@@ -142,23 +132,32 @@ with real_robot:
             else:
                 i += 1
 
-    # stop looking
     TalkingMotion("i will show you the living room now").resolve().perform()
-    rospy.sleep(1)
+
+    # get attributes
+    attr_list = DetectAction(technique='attributes', state='start').resolve().perform()
+    guest1.set_attributes(attr_list)
+    rospy.loginfo(attr_list)
+
     TalkingMotion("please step out of the way and follow me").resolve().perform()
 
     # stop looking at human
-    rospy.loginfo("stop looking now")
     HeadFollowAction('stop').resolve().perform()
     DetectAction(technique='human', state='stop').resolve().perform()
 
     # lead human to living room
     NavigateAction([door_to_couch]).resolve().perform()
+    MoveGripperMotion(motion="close", gripper="left").resolve().perform()
 
+    # place new guest in livingroom
     TalkingMotion("Welcome to the living room").resolve().perform()
+
+    # detect host
     host_pose = DetectAction(technique='human').resolve().perform()
     host.set_pose(host_pose[1])
     host_pose = DetectAction(technique='human', state='stop').resolve().perform()
+
+    # detect free seat
     seat = DetectAction(technique='location', state="sofa").resolve().perform()
     for place in seat[1]:
         if place[0] == 'False':
@@ -172,11 +171,18 @@ with real_robot:
             break
 
     HeadFollowAction('start').resolve().perform()
+    rospy.sleep(1.2)
     pub_pose.publish(guest1.pose)
     TalkingMotion("please take a seat next to your host").resolve().perform()
+    rospy.sleep(3)
 
     # introduce humans and look at them
     introduce(host, guest1)
+    rospy.sleep(2)
+
+    # describe guest
     describe(guest1)
     HeadFollowAction('stop').resolve().perform()
+
+    TalkingMotion("end").resolve().perform()
 

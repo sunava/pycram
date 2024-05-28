@@ -1,15 +1,14 @@
 import rospy
-
-from pycram.designators.action_designator import LookAtAction
 from pycram.designators.object_designator import Pose, PoseStamped, HumanDescription
 from pycram.designators.motion_designator import TalkingMotion
 from pycram.helper import axis_angle_to_quaternion
-from std_msgs.msg import String
-
+from std_msgs.msg import String, UInt16
 
 # Publisher for NLP
 pub_nlp = rospy.Publisher('/startListener', String, queue_size=10)
 pub_pose = rospy.Publisher('/human_pose', PoseStamped, queue_size=10)
+# /hsrb/serial_node
+pub_color = rospy.Publisher('/hsrb/command_status_led', UInt16, queue_size=5, latch=True)
 response = ""
 callback = False
 
@@ -25,10 +24,9 @@ pose_blue_seat = [1.1, 5.9, 1]
 wall_seat_left = [1.8, 6.1, 1]
 wall_seat_right = [2.6, 6.1, 1]
 
-
 # Pose in the passage between kitchen and living room
-robot_orientation = axis_angle_to_quaternion([0, 0, 1], 180)
-door_to_couch = Pose([3.5, 2.75, 0], robot_orientation)
+robot_orientation = axis_angle_to_quaternion([0, 0, 1], 270)
+door_to_couch = Pose([3.65, 3.0, 0], robot_orientation)
 
 
 def data_cb(data):
@@ -55,6 +53,7 @@ def name_confirm(name):
     TalkingMotion("is your name " + str(name) + "?").resolve().perform()
     rospy.sleep(0.8)
     pub_nlp.publish("start now")
+    rospy.sleep(2)
 
     while not callback:
         rospy.sleep(1)
@@ -101,10 +100,7 @@ def name_repeat():
         callback = False
 
         if response[0] == "<GUEST>" and response[1].strip() != "None":
-            got_name = True
             return response[1]
-
-
 
 
 def drink_confirm(drink):
@@ -177,11 +173,12 @@ def introduce(human1: HumanDescription, human2: HumanDescription):
 
 
 def describe(human: HumanDescription):
-        """
-        HRI-function for describing a human more detailed.
-        the following will be stated: gender, headgear, clothing, brightness of clothes
-        :param human: human to be described
-        """
+    """
+    HRI-function for describing a human more detailed.
+    the following will be stated: gender, headgear, clothing, brightness of clothes
+    :param human: human to be described
+    """
+    if human.attributes:
         if human.pose:
             pub_pose.publish(human.pose)
 

@@ -273,32 +273,9 @@ def dishwasher():
 def looking():
     object_orientation = axis_angle_to_quaternion([0, 0, 1], 180)
     with real_robot:
-
-        rospy.sleep(1.5)
-        TalkingMotion("Start").resolve().perform()
-        LookAtAction(targets=[Pose([1.2, -1.2, 1.0], object_orientation)]).resolve().perform()
-        TalkingMotion("Hello you").resolve().perform()
-        LookAtAction(targets=[Pose([1.3, 2.0, 1.0], object_orientation)]).resolve().perform()
-
-        # TalkingMotion("Head follow").resolve().perform()
-        HeadFollowAction('start').resolve().perform()
-        pose1 = PoseStamped()
-        pose1.header.frame_id = "map"
-        pose1.pose.position.x = 1.2
-        pose1.pose.position.y = 0.2
-        pose1.pose.position.z = 0.2
-
-        pose12 = PoseStamped()
-        pose12.header.frame_id = "map"
-        pose12.pose.position.x = 1.3
-        pose12.pose.position.y = 2.1
-        pose12.pose.position.z = 0.8
-        rospy.sleep(1.5)
-        TalkingMotion("Start").resolve().perform()
-        pub_pose.publish(toPoseStamped(1.2, -1.2, 1))
-        rospy.sleep(2)
-        TalkingMotion("Hello you").resolve().perform()
-        pub_pose.publish(toPoseStamped(1.2, 2.2, 1.0))
+        TalkingMotion("start").resolve().perform()
+        pose2 = Pose([2, 4.4, 0], [0, 0, 1, 0])
+        NavigateAction([pose2]).resolve().perform()
 
 
 
@@ -306,7 +283,7 @@ def looking():
 # open_tst()
 # partesr()
 #demo_tst()
-open_tst()
+looking()
 #print("preparing dishwasher")
 #dishwasher()
 
