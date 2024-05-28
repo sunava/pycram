@@ -5,7 +5,7 @@ from typing import Any
 import numpy as np
 import rospy
 from geometry_msgs.msg import PointStamped
-from robokudo_msgs.msg import QueryGoal, QueryResult
+#from robokudo_msgs.msg import QueryGoal, QueryResult
 from tmc_control_msgs.msg import GripperApplyEffortActionGoal
 from tmc_msgs.msg import Voice
 
