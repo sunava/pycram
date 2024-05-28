@@ -540,16 +540,16 @@ class PlaceAction(ActionDesignatorDescription):
                      rospy.logwarn("Open Gripper")
                      MoveGripperMotion(motion="open", gripper=self.arm).resolve().perform()
 
-            # # Finalize the placing by opening the gripper and lifting the arm
-            # rospy.logwarn("Open Gripper")
-            # MoveGripperMotion(motion="open", gripper=self.arm).resolve().perform()
-            #
-            # rospy.logwarn("Lifting now")
-            # liftingTm = push_baseTm
-            # liftingTm.pose.position.z += 0.08
-            # BulletWorld.current_bullet_world.add_vis_axis(liftingTm)
-            # if execute:
-            #     MoveTCPMotion(liftingTm, self.arm).resolve().perform()
+            # Finalize the placing by opening the gripper and lifting the arm
+            rospy.logwarn("Open Gripper")
+            MoveGripperMotion(motion="open", gripper=self.arm).resolve().perform()
+
+            rospy.logwarn("Lifting now")
+            liftingTm = push_baseTm
+            liftingTm.pose.position.z += 0.08
+            BulletWorld.current_bullet_world.add_vis_axis(liftingTm)
+            if execute:
+                MoveTCPMotion(liftingTm, self.arm).resolve().perform()
 
 
 
@@ -1592,11 +1592,6 @@ class PouringAction(ActionDesignatorDescription):
                     PouringMotion("left", 0).resolve().perform()
                 else:
                     PouringMotion("right", 0).resolve().perform()
-
-                # Move away from the table
-                NavigateAction(
-                    [Pose([robot.get_pose().pose.position.x - 0.15, robot.get_pose().pose.position.y,
-                           0])]).resolve().perform()
 
     def __init__(self, target_locations: List[Pose], arms: List[str], directions: List[str], angles: List[float],
                  resolver=None):
