@@ -347,7 +347,7 @@ class PickUpAction(ActionDesignatorDescription):
             BulletWorld.current_bullet_world.add_vis_axis(oTmG)
             # Execute Bool, because sometimes u only want to visualize the poses to test things
             if execute:
-                 MoveTCPMotion(oTmG, self.arm, allow_gripper_collision=False).resolve().perform()
+                MoveTCPMotion(oTmG, self.arm, allow_gripper_collision=False).resolve().perform()
 
             # Calculate and apply any special knowledge offsets based on the robot and object type
             # Note: This currently includes robot-specific logic that should be generalized
@@ -448,8 +448,11 @@ class PickUpAction(ActionDesignatorDescription):
 
         return self.Action(obj_desig, self.arms[0], self.grasps[0])
 
+
 fts = ForceTorqueSensor(robot_name='hsrb')
 pr = True
+
+
 def monitor_func():
     der: WrenchStamped() = fts.get_last_value()
     print(abs(der.wrench.force.y))
@@ -529,17 +532,19 @@ class PlaceAction(ActionDesignatorDescription):
             if execute:
                 MoveTCPMotion(push_baseTm, self.arm).resolve().perform()
             if self.object_designator.type == "Metalplate":
-               # rTb = Pose([0,-0.1,0], [0,0,0,1],"base_link")
+                # rTb = Pose([0,-0.1,0], [0,0,0,1],"base_link")
                 rospy.logwarn("sidepush monitoring")
                 TalkingMotion("sidepush.").resolve().perform()
-                side_push = Pose([push_baseTm.pose.position.x, push_baseTm.pose.position.y + 0.1, push_baseTm.pose.position.z],
-                                 [push_baseTm.orientation.x, push_baseTm.orientation.y,push_baseTm.orientation.z,push_baseTm.orientation.w])
+                side_push = Pose(
+                    [push_baseTm.pose.position.x, push_baseTm.pose.position.y + 0.08, push_baseTm.pose.position.z],
+                    [push_baseTm.orientation.x, push_baseTm.orientation.y, push_baseTm.orientation.z,
+                     push_baseTm.orientation.w])
                 try:
-                     plan = MoveTCPMotion(side_push, self.arm) >> Monitor(monitor_func)
-                     plan.perform()
+                    plan = MoveTCPMotion(side_push, self.arm) >> Monitor(monitor_func)
+                    plan.perform()
                 except (SensorMonitoringCondition):
-                     rospy.logwarn("Open Gripper")
-                     MoveGripperMotion(motion="open", gripper=self.arm).resolve().perform()
+                    rospy.logwarn("Open Gripper")
+                    MoveGripperMotion(motion="open", gripper=self.arm).resolve().perform()
 
             # Finalize the placing by opening the gripper and lifting the arm
             rospy.logwarn("Open Gripper")
@@ -551,8 +556,6 @@ class PlaceAction(ActionDesignatorDescription):
             BulletWorld.current_bullet_world.add_vis_axis(liftingTm)
             if execute:
                 MoveTCPMotion(liftingTm, self.arm).resolve().perform()
-
-
 
         def to_sql(self) -> ORMPlaceAction:
             return ORMPlaceAction(self.arm)
@@ -653,6 +656,7 @@ class PlaceGivenObjAction(ActionDesignatorDescription):
         When placing a plate needed to differentiate between placing in a dishwasher and placing on the table. 
         Default is placing on a table.
         """
+
         @with_tree
         def perform(self) -> None:
             lt = LocalTransformer()
@@ -684,7 +688,8 @@ class PlaceGivenObjAction(ActionDesignatorDescription):
 
                     # correct a possible sloped orientation
                     NavigateAction(
-                        [Pose([robot.get_pose().pose.position.x, robot.get_pose().pose.position.y, 0])]).resolve().perform()
+                        [Pose([robot.get_pose().pose.position.x, robot.get_pose().pose.position.y,
+                               0])]).resolve().perform()
 
                 MoveGripperMotion(motion="open", gripper="left").resolve().perform()
 
@@ -732,7 +737,7 @@ class PlaceGivenObjAction(ActionDesignatorDescription):
 
     def __init__(self,
                  object_types: List[str], arms: List[str], target_locations: List[Pose], grasps: List[str],
-                 on_table: Optional[bool]=True, resolver=None):
+                 on_table: Optional[bool] = True, resolver=None):
         """
         Lets the robot place a human given object. The description needs an object type describing the object that
         should be placed, an arm that should be used as well as the target location where the object should be placed
@@ -1071,14 +1076,16 @@ class OpenDishwasherAction(ActionDesignatorDescription):
             MoveArmAroundMotion(self.handle_name, self.arm).resolve().perform()
 
             MoveGripperMotion("close", self.arm).resolve().perform()
-            FullOpeningDishwasherMotion(self.handle_name, self.door_name, self.goal_state_full_open, self.arm).resolve().perform()
+            FullOpeningDishwasherMotion(self.handle_name, self.door_name, self.goal_state_full_open,
+                                        self.arm).resolve().perform()
 
-            #ParkArmsAction([self.arm]).resolve().perform()
-            #MoveGripperMotion("open", self.arm).resolve().perform()
-            #plan = talk | park | gripper_open
-            #plan.perform()
+            # ParkArmsAction([self.arm]).resolve().perform()
+            # MoveGripperMotion("open", self.arm).resolve().perform()
+            # plan = talk | park | gripper_open
+            # plan.perform()
 
-    def __init__(self, handle_name: str, door_name: str, goal_state_half_open: float, goal_state_full_open: float, arms: List[str], resolver=None):
+    def __init__(self, handle_name: str, door_name: str, goal_state_half_open: float, goal_state_full_open: float,
+                 arms: List[str], resolver=None):
         """
         Moves the arm of the robot to open a container.
 
@@ -1100,7 +1107,8 @@ class OpenDishwasherAction(ActionDesignatorDescription):
 
         :return: A performable designator
         """
-        return self.Action(self.handle_name, self.door_name, self.goal_state_half_open, self.goal_state_full_open, self.arms[0])
+        return self.Action(self.handle_name, self.door_name, self.goal_state_half_open, self.goal_state_full_open,
+                           self.arms[0])
 
 
 class OpenAction(ActionDesignatorDescription):
@@ -1123,7 +1131,7 @@ class OpenAction(ActionDesignatorDescription):
 
         @with_tree
         def perform(self) -> Any:
-            #GraspingAction.Action(self.arm, self.object_designator).perform()
+            # GraspingAction.Action(self.arm, self.object_designator).perform()
             OpeningMotion(self.object_designator, self.arm).resolve().perform()
             # MoveGripperMotion("open", "left").resolve().perform()
             # mvb = Pose([0,-0.2, 0],[0,0,0,1], "base_link")
@@ -1260,7 +1268,7 @@ class GraspingAction(ActionDesignatorDescription):
             robot = BulletWorld.robot  # Retrieve object and robot from designators
             # Calculate the object's pose in the map frame
             oTm = object_pose
-            #Todo only for suturo lab and hsr
+            # Todo only for suturo lab and hsr
             oTm.pose.position.x -= 0.2
             execute = True
             grasp = "front"
@@ -1545,40 +1553,108 @@ class PouringAction(ActionDesignatorDescription):
 
         @with_tree
         def perform(self) -> None:
+
+            # Initialize the local transformer and robot reference
             lt = LocalTransformer()
             robot = BulletWorld.robot
+            # Retrieve object and robot from designators
 
-            # TODO add for other robots
-            if robot.name == "hsrb":
-                current_arm_roll_joint = robot.get_joint_state('arm_roll_joint')
-                current_wrist_roll_joint = robot.get_joint_state('wrist_roll_joint')
+            # Calculate the object's pose in the map frame
+            oTm = self.target_location
+            execute = True
+            # BulletWorld.current_bullet_world.add_vis_axis(oTm)
 
-                # oTm = Object Pose in Frame map
-                if self.direction == "right":
-                    oTm = Pose(
-                        [self.target_location.pose.position.x - 0.008, self.target_location.pose.position.y + 0.095,
-                         self.target_location.pose.position.z + 0.13], self.target_location.pose.orientation)
-                else:
-                    oTm = Pose(
-                        [self.target_location.pose.position.x - 0.008, self.target_location.pose.position.y - 0.15,
-                         self.target_location.pose.position.z + 0.13], self.target_location.pose.orientation)
+            # Determine the grasp orientation and transform the pose to the base link frame
+            grasp_rotation = robot_description.grasps.get_orientation_for_grasp("front")
+            oTbs = lt.transform_pose(oTm, robot.get_link_tf_frame("base_link"))
+            oTbs.pose.position.x += 0.009 #was 0,009
+            oTbs.pose.position.z += 0.17 #was 0.13
 
-                grasp_rotation = robot_description.grasps.get_orientation_for_grasp("front")
-                oTb = lt.transform_pose(oTm, robot.get_link_tf_frame("base_link"))
-                oTb.orientation = grasp_rotation
-                oTmG = lt.transform_pose(oTb, "map")
+            if self.direction == "right":
+                oTbs.pose.position.y -= 0.125
+            else:
+                oTbs.pose.position.y += 0.1
 
-                rospy.logwarn("Pouring now")
-                MoveTorsoAction([0.37]).resolve().perform()
-                MoveTCPMotion(oTmG, self.arm, allow_gripper_collision=False).resolve().perform()
+            oTms = lt.transform_pose(oTbs, "map")
+            BulletWorld.current_bullet_world.add_vis_axis(oTms)
 
-                PouringMotion(self.direction, self.angle - current_arm_roll_joint).resolve().perform()
-                rospy.sleep(3)
+            #
+            oTog = lt.transform_pose(oTms, robot.get_link_tf_frame("base_link"))
+            oTog.orientation = grasp_rotation
+            oTgm = lt.transform_pose(oTog, "map")
+            BulletWorld.current_bullet_world.add_vis_axis(oTgm)
 
-                if self.direction == "right":
-                    PouringMotion("left", current_wrist_roll_joint).resolve().perform()
-                else:
-                    PouringMotion("right", current_wrist_roll_joint).resolve().perform()
+            if self.direction == "right":
+                new_q = axis_angle_to_quaternion([0, 0, 1], -self.angle)
+            else:
+                new_q = axis_angle_to_quaternion([0, 0, 1], self.angle)
+            new_ori = multiply_quaternions(
+                [oTgm.orientation.x, oTgm.orientation.y, oTgm.orientation.z,
+                 oTgm.orientation.w], new_q)
+            oTmsp = oTgm.copy()
+            oTmsp.pose.orientation.x = new_ori[0]
+            oTmsp.pose.orientation.y = new_ori[1]
+            oTmsp.pose.orientation.z = new_ori[2]
+            oTmsp.pose.orientation.w = new_ori[3]
+            BulletWorld.current_bullet_world.add_vis_axis(oTmsp)
+
+            if execute:
+                 MoveTCPMotion(oTgm, self.arm, allow_gripper_collision=False).resolve().perform()
+                 MoveTCPMotion(oTmsp, self.arm, allow_gripper_collision=False).resolve().perform()
+                 MoveTCPMotion(oTgm, self.arm, allow_gripper_collision=False).resolve().perform()
+            # # Move to the pre-grasp position and visualize the action
+            # rospy.logwarn("Pre Pour")
+            # BulletWorld.current_bullet_world.add_vis_axis(oTmso)
+            #
+            # #Execute Bool, because sometimes u only want to visualize the poses to test things
+            # if execute:
+            #     MoveTCPMotion(oTmso, self.arm, allow_gripper_collision=False).resolve().perform()
+            #
+            #
+            # if self.direction == "right":
+            #     new_q = axis_angle_to_quaternion([0,0,1], -100)
+            # else: new_q = axis_angle_to_quaternion([0,0,1], 100)
+            # new_ori = multiply_quaternions(
+            #     [oTmso.orientation.x, oTmso.orientation.y, oTmso.orientation.z,
+            #      oTmso.orientation.w], new_q)
+            # oTmsp = oTmso.copy()
+            # oTmsp.pose.orientation.x = new_ori[0]
+            # oTmsp.pose.orientation.y = new_ori[1]
+            # oTmsp.pose.orientation.z = new_ori[2]
+            # oTmsp.pose.orientation.w = new_ori[3]
+            # BulletWorld.current_bullet_world.add_vis_axis(oTmsp)
+            # if execute:
+            #     MoveTCPMotion(oTmsp, self.arm, allow_gripper_collision=False).resolve().perform()
+            #     MoveTCPMotion(oTmso, self.arm, allow_gripper_collision=False).resolve().perform()
+
+            #     current_wrist_roll_joint = robot.get_joint_state('wrist_roll_joint')
+            #
+            #     # oTm = Object Pose in Frame map
+            #     if self.direction == "right":
+            #         oTm = Pose(
+            #             [self.target_location.pose.position.x - 0.008, self.target_location.pose.position.y + 0.095,
+            #              self.target_location.pose.position.z + 0.13], self.target_location.pose.orientation)
+            #     else:
+            #         oTm = Pose(
+            #             [self.target_location.pose.position.x - 0.008, self.target_location.pose.position.y - 0.15,
+            #              self.target_location.pose.position.z + 0.13], self.target_location.pose.orientation)
+            #
+            #     grasp_rotation = robot_description.grasps.get_orientation_for_grasp("front")
+            #     oTb = lt.transform_pose(oTm, robot.get_link_tf_frame("base_link"))
+            #     oTb.orientation = grasp_rotation
+            #     oTmG = lt.transform_pose(oTb, "map")
+            #
+            #     rospy.logwarn("Pouring now")
+            #     MoveTorsoAction([0.37]).resolve().perform()
+            #     MoveTCPMotion(oTmG, self.arm, allow_gripper_collision=False).resolve().perform()
+            #
+            #     PouringMotion(self.direction, self.angle - current_arm_roll_joint).resolve().perform()
+            #     rospy.sleep(3)
+            #
+            #     if self.direction == "right":
+            #         PouringMotion("left", current_wrist_roll_joint).resolve().perform()
+            #     else:
+            #         PouringMotion("right", current_wrist_roll_joint).resolve().perform()
 
     def __init__(self, target_locations: List[Pose], arms: List[str], directions: List[str], angles: List[float],
                  resolver=None):
@@ -1760,7 +1836,6 @@ class HeadFollowAction(ActionDesignatorDescription):
 
     @dataclasses.dataclass
     class Action(ActionDesignatorDescription.Action):
-
         state: str
         """
         defines if the robot should start/stop looking at human
@@ -1770,7 +1845,7 @@ class HeadFollowAction(ActionDesignatorDescription):
         def perform(self) -> None:
             HeadFollowMotion(self.state).resolve().perform()
 
-        #def insert(self, session: sqlalchemy.orm.session.Session, **kwargs) -> ORMAction:
+        # def insert(self, session: sqlalchemy.orm.session.Session, **kwargs) -> ORMAction:
         #    print("in insert parkArms")
         #    action = super().insert(session)
         #    session.add(action)
@@ -1794,4 +1869,3 @@ class HeadFollowAction(ActionDesignatorDescription):
         :return: A performable designator
         """
         return self.Action(self.state)
-
