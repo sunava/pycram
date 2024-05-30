@@ -1549,19 +1549,19 @@ class PouringAction(ActionDesignatorDescription):
 
             # TODO add for other robots
             if robot.name == "hsrb":
+                current_arm_roll_joint = robot.get_joint_state('arm_roll_joint')
+                current_wrist_roll_joint = robot.get_joint_state('wrist_roll_joint')
+
                 # oTm = Object Pose in Frame map
                 if self.direction == "right":
                     oTm = Pose(
                         [self.target_location.pose.position.x - 0.008, self.target_location.pose.position.y + 0.095,
-                         self.target_location.pose.position.z + 0.13], self.target_location.pose.orientation) # y + 0.095
-                    # oTm = Pose([self.target_location.pose.position.x - 0.3, self.target_location.pose.position.y + 0.1,
-                    # self.target_location.pose.position.z + 0.1], self.target_location.pose.orientation)
+                         self.target_location.pose.position.z + 0.13], self.target_location.pose.orientation)
                 else:
                     oTm = Pose(
                         [self.target_location.pose.position.x - 0.008, self.target_location.pose.position.y - 0.15,
                          self.target_location.pose.position.z + 0.13], self.target_location.pose.orientation)
-                    # oTm = Pose([self.target_location.pose.position.x - 0.3, self.target_location.pose.position.y - 0.1,
-                    # self.target_location.pose.position.z + 0.1], self.target_location.pose.orientation)
+
                 grasp_rotation = robot_description.grasps.get_orientation_for_grasp("front")
                 oTb = lt.transform_pose(oTm, robot.get_link_tf_frame("base_link"))
                 oTb.orientation = grasp_rotation
@@ -1571,27 +1571,13 @@ class PouringAction(ActionDesignatorDescription):
                 MoveTorsoAction([0.37]).resolve().perform()
                 MoveTCPMotion(oTmG, self.arm, allow_gripper_collision=False).resolve().perform()
 
-                # MoveTorsoAction([0.35]).resolve().perform()
-
-                # NavigateAction(
-                # [Pose([robot.get_pose().pose.position.x + 0.2, robot.get_pose().pose.position.y,
-                # 0], robot.get_pose().pose.orientation)]).resolve().perform()
-
-                # kwargs = dict()
-                #
-                # # taking in the predefined arm position for pouring
-                # if self.arm in ["left", "both"]:
-                #     kwargs["left_arm_config"] = "pour"
-                #     MoveArmJointsMotion(**kwargs).resolve().perform()
-
-                PouringMotion(self.direction, self.angle).resolve().perform()
-
+                PouringMotion(self.direction, self.angle - current_arm_roll_joint).resolve().perform()
                 rospy.sleep(3)
 
                 if self.direction == "right":
-                    PouringMotion("left", 0).resolve().perform()
+                    PouringMotion("left", current_wrist_roll_joint).resolve().perform()
                 else:
-                    PouringMotion("right", 0).resolve().perform()
+                    PouringMotion("right", current_wrist_roll_joint).resolve().perform()
 
     def __init__(self, target_locations: List[Pose], arms: List[str], directions: List[str], angles: List[float],
                  resolver=None):
