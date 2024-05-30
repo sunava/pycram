@@ -6,30 +6,23 @@ from demos.pycram_serve_breakfast_demo.utils.misc import *
 
 # from pycram.external_interfaces.knowrob import get_table_pose
 # TODO: im Allgemeinen müssen die Werte beim Navigieren und detecten angepasst werden
-# TODO: sortobjects, getbowl, get_free_spaces testen
-# TODO: viellericht bowl_exists, place_pose_exists, table_pose entfernen
 
 # list of cutlery objects
 CUTLERY = ["Spoon", "Fork", "Knife", "Plasticknife"]
 
+CEREALBOX = ["Mueslibox", "Cornybox", "Cerealbox", "Crackerbox"]
+
 # Wished objects for the Demo
-wished_sorted_obj_list = ["Metalbowl", "Mueslibox", "Milkpackja", "Spoon"]
+wished_sorted_obj_list = ["Metalbowl", "Cerealbox", "Milkpackja", "Spoon"]
 
 # length of wished list for failure handling
 LEN_WISHED_SORTED_OBJ_LIST = len(wished_sorted_obj_list)
 
 # x pose of the end of the popcorn table
-# TODO: Wert anpassen
 table_pose = 5.11
 
 # the bowl to pour in
 bowl = None
-
-# if we already have places to place or not
-place_pose_exists = False
-
-# if bowl perceived or not
-bowl_exists = False
 
 # free places for placing
 place_pose = None
@@ -72,10 +65,11 @@ class PlacingZPose(Enum):
     PLASTICKNIFE = 0.775
     KNIFE = 0.775
     METALBOWL = 0.815
-    MILKPACK = 0.855
+    MILKPACKJA = 0.855
     METALMUG = 0.775
     CEREALBOX = 0.875
-    METALPLATE = 0.875  # table height plus radius of plate
+    METALPLATE = 0.875
+    CRONYBOX = 0.8
 
 
 def try_detect(pose: Pose, location: bool):
@@ -88,7 +82,7 @@ def try_detect(pose: Pose, location: bool):
     TalkingMotion("Perceiving").resolve().perform()
     try:
         if location:
-            object_desig = DetectAction(technique='location', state='long_table').resolve().perform()
+            object_desig = DetectAction(technique='location', state='popcorn_table').resolve().perform()
         else:
             object_desig = DetectAction(technique='all').resolve().perform()
         giskardpy.sync_worlds()
@@ -119,7 +113,7 @@ def pickup_and_place_objects(sorted_obj: list):
 
     :param sorted_obj: the distance sorted list of seen object designators.
     """
-    global table_pose, CUTLERY, bowl, place_pose_exists, bowl_exists, place_pose
+    global table_pose, CUTLERY, bowl, place_pose
 
     for value in range(len(sorted_obj)):
         # define grasping pose
@@ -130,20 +124,8 @@ def pickup_and_place_objects(sorted_obj: list):
         if sorted_obj[value].type in ["Mueslibox", "Cerealbox", "Crackerbox"]:
             sorted_obj[value].type = "Cerealbox"
 
-        if sorted_obj[value].type in ["Milkpackja"]:
-            sorted_obj[value].type = "Milkpack"
-
         if sorted_obj[value].type in ["Metalbowl", "Cutlery"]:
             grasp = "top"
-
-        # TODO: komplett entfernen, falls es funktionieren sollte
-        # if sorted_obj[value].type == "Metalbowl":
-        #     if sorted_obj[value].pose.position.z >= 0.65:
-        #         sorted_obj[value].pose.position.z = 0.71
-        #     elif sorted_obj[value].pose.position.z >= 0.4:
-        #         sorted_obj[value].pose.position.z = 0.5
-        #     else:
-        #         sorted_obj[value].pose.position.z = 0.075
 
         # TODO: muss noch getestet und angepasst werden
         if sorted_obj[value].type == "Cutlery":
@@ -162,7 +144,6 @@ def pickup_and_place_objects(sorted_obj: list):
         TalkingMotion("Picking up with: " + grasp).resolve().perform()
         try_pick_up(robot, sorted_obj[value], grasp)
 
-        # TODO: Werte anpassen
         # move back a little bit
         navigate_to(robot.get_pose().pose.position.x - 0.3, robot.get_pose().pose.position.y, "shelf")
 
@@ -170,7 +151,7 @@ def pickup_and_place_objects(sorted_obj: list):
 
 
 def place_objects(first_placing, objects_list, index, grasp):
-    global bowl, place_pose_exists, bowl_exists, place_pose, sorted_places, x_pos
+    global bowl, place_pose, sorted_places, x_pos
 
     if first_placing:
         object_type = objects_list[index].type
@@ -181,131 +162,107 @@ def place_objects(first_placing, objects_list, index, grasp):
     ParkArmsAction([Arms.LEFT]).resolve().perform()
     TalkingMotion("Navigating").resolve().perform()
     # MoveGripperMotion("open", "left").resolve().perform()
-    # TODO: Werte anppasen
     navigate_to(3.6, 4.9, "long table")
-    navigate_to(2, 4.8, "popcorn table")
+    # navigate_to(2, 4.8, "popcorn table")
 
     # erste Variante
-    # ###############################################################################
-    # if object_type != "Cutlery":
-    #     # TODO: Werte anpassen
-    #     place_poses_list = try_detect(Pose([2.1, 5.9, 0.21], [0, 0, 0.7, 0.7]), True)
-    #     sorted_places = get_free_spaces(place_poses_list[1])
-    #
-    # if object_type != "Metalbowl":
-    #     # TODO: Werte anpassen
-    #     object_desig = try_detect(Pose([1.6, 5.9, 0.21], [0, 0, 0.7, 0.7]), False)
-    #     bowl = get_bowl(object_desig)
-    #
-    # # TODO: vielleicht auswählen von place-pose bearbeiten
-    # # choose place pose
-    # if object_type is "Metalbowl" and len(sorted_places) == 3:
-    #     place_pose = sorted_places[1]
-    # else:
-    #     place_pose = sorted_places[0]
+    ###############################################################################
+    if object_type != "Cutlery":
+        navigate_to(2.1, 4.8, "popcorn table")
+        place_poses_list = try_detect(Pose([2.1, 5.9, 0.21], [0, 0, 0.7, 0.7]), True)
+        sorted_places = get_free_spaces(place_poses_list[1])
+
+    if object_type != "Metalbowl":
+        navigate_to(1.6, 4.8, "popcorn table")
+        object_desig = try_detect(Pose([1.6, 5.9, 0.21], [0, 0, 0.7, 0.7]), False)
+        bowl = get_bowl(object_desig)
+
+    place_pose = sorted_places[0]
 
     # zweite Variante ohne free places
     ###############################################################################
-    if object_type != "Metalbowl":
-        # TODO: Werte anpassen
-        object_desig = try_detect(Pose([1.6, 5.9, 0.21], [0, 0, 0.7, 0.7]), False)
-        bowl = get_bowl(object_desig)
+    # if object_type != "Metalbowl":
+    #     navigate_to(1.6, 4.8, "popcorn table")
+    #     object_desig = try_detect(Pose([1.6, 5.9, 0.21], [0, 0, 0.7, 0.7]), False)
+    #     bowl = get_bowl(object_desig)
+    # navigate_to(2, 4.8, "popcorn table")
     ##############################################################################
 
-    if object_type in ["Cerealbox", "Milkpack", "Cutlery"]:
-        if bowl == None:
+    if object_type in ["Cerealbox", "Cronybox", "Milkpackja", "Cutlery"]:
+        if bowl is None:
             # move 30cm back
             navigate_to(robot.get_pose().pose.position.x, robot.get_pose().pose.position.y - 0.3, "popcorn table")
-            # TODO: Werte anpassen
             new_object_deign = try_detect(Pose([1.6, 5.9, 0.21], [0, 0, 0.7, 0.7]), False)
             bowl = get_bowl(new_object_deign)
 
-            if bowl == None:
+            if bowl is None:
                 TalkingMotion(f"Can you please put the Metalbowl on the table?").resolve().perform()
                 rospy.sleep(5)
-                # TODO: Werte anpassen
                 final_object_deign = try_detect(Pose([1.6, 5.9, 0.21], [0, 0, 0.7, 0.7]), False)
                 bowl = get_bowl(final_object_deign)
 
-                if bowl == None:
+                if bowl is None:
                     TalkingMotion(f"I can not find the Metalbowl."
                                   "I will skip pouring and place the objects on the table").resolve().perform()
-                    # if object_type is "Cutlery":
+                    if object_type is "Cutlery":
+                        # TODO: nach Variante anpassen
                         # x_pos += 0.3
-                        # place_pose.pose.position.x += 0.3
+                        place_pose.pose.position.x += 0.3
 
-        if bowl != None:
-            if object_type in ["Cerealbox", "Milkpack"]:
-                # erste Variante
-                ##################################################
+        if bowl is not None:
+            if object_type in ["Cerealbox", "Cronybox", "Milkpackja"]:
                 # TODO: Werte anpassen
-                # navigate_to(bowl.pose.position.x, 5, "popcorn table")
+                navigate_to(bowl.pose.position.x - 0.1, 5, "popcorn table")
                 # print(f"arm_roll: {robot.get_joint_state('arm_roll_joint')}")
-                # angle = 1.6 - robot.get_joint_state('arm_roll_joint')
-                # if robot.get_pose().pose.position.x >= bowl.pose.position.x:
-                #     PouringAction([bowl.pose], ["left"], ["left"], [angle]).resolve().perform()
-                # else:
-                #     PouringAction([bowl.pose], ["left"], ["right"], [-angle]).resolve().perform()
-                #     # Move away from the table
-                #     navigate_to(robot.get_pose().pose.position.x - 0.2, robot.get_pose().pose.position.y,
-                #                 "popcorn table")
-                # ParkArmsAction([Arms.LEFT]).resolve().perform()
-                ###################################################
-                # zweite Variante
-                ###################################################
-                navigate_to(bowl.pose.position.x - 0.2, 5, "popcorn table")
                 angle = 1.6
                 if robot.get_pose().pose.position.x > bowl.pose.position.x:
+                    # angle -= robot.get_joint_state('arm_roll_joint')
                     PouringAction([bowl.pose], ["left"], ["left"], [angle]).resolve().perform()
                 else:
+                    # angle += robot.get_joint_state('arm_roll_joint')
                     PouringAction([bowl.pose], ["left"], ["right"], [-angle]).resolve().perform()
                     # Move away from the table
-                    navigate_to(robot.get_pose().pose.position.x - 0.2, robot.get_pose().pose.position.y,
+                    navigate_to(robot.get_pose().pose.position.x, robot.get_pose().pose.position.y - 0.3,
                                 "popcorn table")
                 ParkArmsAction([Arms.LEFT]).resolve().perform()
             else:
                 # TODO: je nach Variante x-pos oder place-pose anpassen
-                x_pos = bowl.pose.position.x + 0.3
-                # place_pose.pose.position.x = bowl.pose.position.x + 0.3
-                # place_pose.pose.position.y = bowl.pose.position.y
-                # place_pose.pose.position.z = bowl.pose.position.z
-                # TODO: vielleicht place-pose bei Spoon draußen schreiben auch für die failure handling von bowl
+                # x_pos = bowl.pose.position.x + 0.3
+                place_pose.pose.position.x = bowl.pose.position.x + 0.3
+                place_pose.pose.position.y = bowl.pose.position.y
+                place_pose.pose.position.z = bowl.pose.position.z
 
-    # TODO: Werte anpassen
-    # navigate_to(place_pose.pose.position.x, 5, "popcorn table")
-    navigate_to(x_pos, 5, "popcorn table")
+    # TODO: nach Variante anpassen
+    navigate_to(place_pose.pose.position.x, 5, "popcorn table")
+    # navigate_to(x_pos, 5, "popcorn table")
     TalkingMotion("Placing").resolve().perform()
     z = get_z(object_type)
     if first_placing:
         # TODO: place-pose.pose.position.x oder x-pos auswählen
-        # TODO: Werte anpassen für y
         PlaceAction(objects_list[index], ["left"], [grasp],
-                    [Pose([x_pos, 5.8, z])]).resolve().perform()
+                    [Pose([place_pose.pose.position.x, 5.8, z])]).resolve().perform()
+        # PlaceAction(objects_list[index], ["left"], [grasp], [Pose([x_pos, 5.8, z])]).resolve().perform()
     else:
         # TODO: place-pose.pose.position.x oder x-pos auswählen
-        # TODO: Werte anpassen für y
         PlaceGivenObjAction([objects_list[index]], ["left"],
-                            [Pose([x_pos, 5.8, z])],
-                            [grasp]).resolve().perform()
+                            [Pose([place_pose.pose.position.x, 5.8, z])], [grasp]).resolve().perform()
+
+        # PlaceGivenObjAction([objects_list[index]], ["left"], [Pose([x_pos, 5.8, z])],
+        #                     [grasp]).resolve().perform()
 
     ParkArmsAction([Arms.LEFT]).resolve().perform()
 
     if object_type == "Metalbowl":
-        # TODO: Werte anpassen
         x_pos += 0.8
     else:
-        # TODO: Werte anpassen
         x_pos += 0.3
 
     # navigates back if a next object exists
     if index + 1 < len(objects_list):
         TalkingMotion("Navigating").resolve().perform()
-        # TODO: vielleicht dieses if entfernen und nur ein navigate to lassen
         if first_placing:
-            # TODO: Werte anpassen
             navigate_to(4.3, sorted_obj[index + 1].pose.position.y, "shelf")
         else:
-            # TODO: Werte anpassen
             navigate_to(4.3, 4.9, "shelf")
 
 
@@ -336,7 +293,7 @@ def remove_objects(value):
             print("deleted knife")
             wished_sorted_obj_list.remove("Plasticknife")
 
-    if value.type == "Cearealbox":
+    if value.type == "Cerealbox":
         if "Mueslibox" in wished_sorted_obj_list:
             print("deleted Mueslibox")
             wished_sorted_obj_list.remove("Mueslibox")
@@ -346,11 +303,9 @@ def remove_objects(value):
         elif "Crackerbox" in wished_sorted_obj_list:
             print("deleted Crackerbox")
             wished_sorted_obj_list.remove("Crackerbox")
-
-    if value.type == "Milkpack":
-        if "Milkpackja" in wished_sorted_obj_list:
-            print("deleted Milkpackja")
-            wished_sorted_obj_list.remove("Milkpackja")
+        elif "Cronybox" in wished_sorted_obj_list:
+            print("deleted Cronybox")
+            wished_sorted_obj_list.remove("Cronybox")
 
 
 with ((real_robot)):
@@ -366,23 +321,19 @@ with ((real_robot)):
     navigate_to(2, 4.8, "popcorn table")
 
     # navigate to shelf
-    # TODO: Werte anpassen
     navigate_to(4.3, 4.9, "shelf")
-    # TODO: Werte anpassen
     obj_desig = try_detect(Pose([5.25, 4.9, 0.21], [0, 0, 0, 1]), False)
     sorted_obj = sort_objects(obj_desig, wished_sorted_obj_list)
     print(sorted_obj[0].type)
-    # if sorted_obj[0].type != "Metalbowl":
-    #     # TODO: Werte anpassen
-    #     bowl_obj_desig = try_detect(Pose([5.25, 4.9, 0.21], [0, 0, 0, 1]), False)
-    #     sorted_obj = sort_objects(bowl_obj_desig, wished_sorted_obj_list)
-    #     if sorted_obj[0].type != "Metalbowl":
-    #         TalkingMotion(f"Can you please give me the Metalbowl in the shelf?").resolve().perform()
-    #         time.sleep(4)
-    #         MoveGripperMotion("close", "left").resolve().perform()
-    #         place_objects(False, ["Metalbowl"], 0, "top")
-    #         # TODO: Werte anpassen
-    #         navigate_to(4.3, 4.9, "shelf")
+    if sorted_obj[0].type != "Metalbowl":
+        bowl_obj_desig = try_detect(Pose([5.25, 4.9, 0.21], [0, 0, 0, 1]), False)
+        sorted_obj = sort_objects(bowl_obj_desig, wished_sorted_obj_list)
+        if sorted_obj[0].type != "Metalbowl":
+            TalkingMotion(f"Can you please give me the Metalbowl in the shelf?").resolve().perform()
+            time.sleep(4)
+            MoveGripperMotion("close", "left").resolve().perform()
+            place_objects(False, ["Metalbowl"], 0, "top")
+            navigate_to(4.3, 4.9, "shelf")
     pickup_and_place_objects(sorted_obj)
 
     # failure handling part 1
@@ -398,9 +349,7 @@ with ((real_robot)):
             remove_objects(value)
 
         TalkingMotion("Navigating").resolve().perform()
-        # TODO: Werte anpassen
         navigate_to(4.3, 4.9, "shelf")
-        # TODO: Werte anpassen
         new_object_desig = try_detect(Pose([5.25, 4.9, 0.21], [0, 0, 0, 1]), False)
         new_sorted_obj = sort_objects(new_object_desig, wished_sorted_obj_list)
         pickup_and_place_objects(new_sorted_obj)
@@ -408,7 +357,6 @@ with ((real_robot)):
         # failure handling part 2
         final_sorted_obj = sorted_obj + new_sorted_obj
         if len(final_sorted_obj) < LEN_WISHED_SORTED_OBJ_LIST:
-            # TODO: Werte anpassen
             navigate_to(4.3, 4.9, "shelf")
             print("second Check")
 
