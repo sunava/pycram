@@ -246,7 +246,7 @@ class ParkArmsAction(ActionDesignatorDescription):
                 kwargs["left_arm_config"] = "park"
                 MoveArmJointsMotion(**kwargs).resolve().perform()
                 # MoveTorsoAction([0.005]).resolve().perform()
-                MoveTorsoAction([0.30]).resolve().perform()
+                MoveTorsoAction([0.20]).resolve().perform()
             # add park right arm if wanted
             if self.arm in [Arms.RIGHT, Arms.BOTH]:
                 kwargs["right_arm_config"] = "park"
@@ -324,10 +324,10 @@ class PickUpAction(ActionDesignatorDescription):
                 print("Metalbowl from top")
                 # Handle special cases for certain object types (e.g., Cutlery, Metalbowl)
                 # Note: This includes hardcoded adjustments and should ideally be generalized
-                if self.object_designator.type == "Cutlery":
-                    # todo: this z is the popcorn-table height, we need to define location to get that z otherwise it
-                    #  is hardcoded
-                    oTm.pose.position.z = 0.71
+                # if self.object_designator.type == "Cutlery":
+                # todo: this z is the popcorn-table height, we need to define location to get that z otherwise it
+                #  is hardcoded
+                # oTm.pose.position.z = 0.71
                 oTm.pose.position.z += 0.035
 
             # Determine the grasp orientation and transform the pose to the base link frame
@@ -347,7 +347,8 @@ class PickUpAction(ActionDesignatorDescription):
             BulletWorld.current_bullet_world.add_vis_axis(oTmG)
             # Execute Bool, because sometimes u only want to visualize the poses to test things
             if execute:
-                MoveTCPMotion(oTmG, self.arm, allow_gripper_collision=False).resolve().perform()
+                 MoveTCPMotion(oTmG, self.arm, allow_gripper_collision=False).resolve().perform()
+
             # Calculate and apply any special knowledge offsets based on the robot and object type
             # Note: This currently includes robot-specific logic that should be generalized
             tool_frame = robot_description.get_tool_frame(self.arm)
@@ -531,7 +532,7 @@ class PlaceAction(ActionDesignatorDescription):
                # rTb = Pose([0,-0.1,0], [0,0,0,1],"base_link")
                 rospy.logwarn("sidepush monitoring")
                 TalkingMotion("sidepush.").resolve().perform()
-                side_push = Pose([push_baseTm.pose.position.x, push_baseTm.pose.position.y + 0.05, push_baseTm.pose.position.z],
+                side_push = Pose([push_baseTm.pose.position.x, push_baseTm.pose.position.y + 0.1, push_baseTm.pose.position.z],
                                  [push_baseTm.orientation.x, push_baseTm.orientation.y,push_baseTm.orientation.z,push_baseTm.orientation.w])
                 try:
                      plan = MoveTCPMotion(side_push, self.arm) >> Monitor(monitor_func)
@@ -1072,8 +1073,8 @@ class OpenDishwasherAction(ActionDesignatorDescription):
             MoveGripperMotion("close", self.arm).resolve().perform()
             FullOpeningDishwasherMotion(self.handle_name, self.door_name, self.goal_state_full_open, self.arm).resolve().perform()
 
-            ParkArmsAction([self.arm]).resolve().perform()
-            MoveGripperMotion("open", self.arm).resolve().perform()
+            #ParkArmsAction([self.arm]).resolve().perform()
+            #MoveGripperMotion("open", self.arm).resolve().perform()
             #plan = talk | park | gripper_open
             #plan.perform()
 

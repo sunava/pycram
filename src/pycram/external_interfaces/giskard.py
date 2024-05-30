@@ -1,13 +1,13 @@
-import rospy
-from giskard_msgs.msg import CollisionEntry, WorldBody
-from ..utilities import tf_wrapper as tf
+from typing import List, Dict, Optional
 
+import rospy
+from geometry_msgs.msg import PoseStamped, PointStamped, QuaternionStamped, Vector3Stamped
+from giskard_msgs.msg import CollisionEntry, WorldBody
+
+from ..bullet_world import BulletWorld, Object
 from ..pose import Pose
 from ..robot_descriptions import robot_description
-from ..bullet_world import BulletWorld, Object
-
-from typing import List, Tuple, Dict, Optional
-from geometry_msgs.msg import PoseStamped, PointStamped, QuaternionStamped, Vector3Stamped
+from ..utilities import tf_wrapper as tf
 
 giskard_wrapper = None
 giskard_update_service = None
@@ -111,6 +111,7 @@ def spawn_object(object: Object) -> None:
         geom = object.customGeom["size"]
         spawn_box(object.name + "_" + str(object.id), geom, object.get_pose())
 
+
 def remove_object(object: Object) -> 'UpdateWorldResponse':
     """
     Removes an object from the giskard belief state.
@@ -158,6 +159,7 @@ def spawn_box(name: str, size: tuple, pose: Pose) -> 'UpdateWorldResponse':
     """
     return giskard_wrapper.add_box(name, size, pose)
 
+
 # Sending Goals to Giskard
 
 
@@ -184,7 +186,7 @@ def achieve_cartesian_goal(goal_pose: Pose, tip_link: str, root_link: str) -> 'M
     :param root_link: The starting link of the chain which should be used to achieve this goal
     :return: MoveResult message for this goal
     """
-    sync_worlds()
+    #sync_worlds()
     giskard_wrapper.avoid_all_collisions()
     giskard_wrapper.set_cart_goal(_pose_to_pose_stamped(goal_pose), tip_link, root_link)
     return giskard_wrapper.execute()
@@ -269,7 +271,8 @@ def achieve_align_planes_goal(goal_normal: List[float], tip_link: str, tip_norma
     return giskard_wrapper.execute()
 
 
-def achieve_open_container_goal(tip_link: str, environment_link: str, goal_state: Optional[float] = None) -> 'MoveResult':
+def achieve_open_container_goal(tip_link: str, environment_link: str, goal_state: Optional[float] = None,
+                                special_door: Optional[bool] = False) -> 'MoveResult':
     """
     Tries to open a container in an environment, this only works if the container was added as a URDF. This goal assumes
     that the handle was already grasped. Can only handle container with 1 DOF
@@ -284,7 +287,8 @@ def achieve_open_container_goal(tip_link: str, environment_link: str, goal_state
     if goal_state is None:
         giskard_wrapper.set_open_container_goal(tip_link, environment_link)
     else:
-        giskard_wrapper.set_open_container_goal(tip_link, environment_link, goal_joint_state=goal_state)
+        giskard_wrapper.set_open_container_goal(tip_link, environment_link, goal_joint_state=goal_state,
+                                                special_door=special_door)
 
     giskard_wrapper.allow_all_collisions()
     return giskard_wrapper.execute()
@@ -341,9 +345,10 @@ def achieve_tilting_goal(direction: str, angle: float):
     :return: MoveResult message for this goal
     """
     rospy.loginfo("pouring")
-    #sync_worlds()
+    # sync_worlds()
     giskard_wrapper.tilting(direction, angle)
     return giskard_wrapper.execute()
+
 
 # Managing collisions
 def achieve_gripper_motion_goal(motion: str):
@@ -508,7 +513,6 @@ def move_head_to_human():
     giskard_wrapper.execute(wait=False, add_default=False)
 
 
-
 def stop_looking():
     """
     stops the move_head_to_human function so that hsr looks forward
@@ -521,6 +525,9 @@ def stop_looking():
     giskard_wrapper.execute(wait=False)
     rospy.loginfo("hsr looks forward instead of looking at human")
 
+def cancel_all_called_goals():
+    giskard_wrapper.cancel_all_goals()
+    rospy.loginfo("Canceling all goals towards Giskard")
 
 def move_head_to_pose(pose: PointStamped):
     """
@@ -557,12 +564,12 @@ def move_arm_to_pose(pose: PointStamped):
 
 
 def grasp_doorhandle(handle_name: str):
-
     print("open door with handle")
 
     giskard_wrapper.set_hsrb_door_handle_grasp(handle_name=handle_name)
     giskard_wrapper.allow_all_collisions()
     giskard_wrapper.execute()
+
 
 def grasp_handle(handle_name: str):
     """
@@ -573,9 +580,10 @@ def grasp_handle(handle_name: str):
     giskard_wrapper.set_hsrb_dishwasher_door_handle_grasp(handle_name, grasp_bar_offset=0.035)
     giskard_wrapper.execute()
 
+
 def open_doorhandle(handle_name: str):
-    giskard_wrapper.set_hsrb_open_door_goal(door_handle_link=handle_name)
     giskard_wrapper.allow_all_collisions()
+    giskard_wrapper.set_hsrb_open_door_goal(door_handle_link=handle_name)
     giskard_wrapper.execute(add_default=False)
 
 
@@ -609,19 +617,19 @@ def place_objects(object, target, grasp):
 
     rospy.loginfo("placed object")
 
+
 def park_arms():
     giskard_wrapper.take_pose("park")
     giskard_wrapper.execute()
 
-
-  # def reaching(self,
-  #                #context,
-  #                grasp: str -> front top right left below
-  #                align -> frame (dh wrist frame aligned damit) -> aka tip_link, wenn aliugn leer dnan ignore
-  #                object_name: str, #(die spawned planning)
-  #                object_shape: str, #(cylinder oder something lese)
-  #                goal_pose: Optional[PoseStamped] = None,
-  #                object_size: Optional[Vector3] = None,
-  #                root_link: str = 'map',
-  #                tip_link: str = 'hand_palm_link',
-  #                velocity: float = 0.2): -> auch von planning
+# def reaching(self,
+#                #context,
+#                grasp: str -> front top right left below
+#                align -> frame (dh wrist frame aligned damit) -> aka tip_link, wenn aliugn leer dnan ignore
+#                object_name: str, #(die spawned planning)
+#                object_shape: str, #(cylinder oder something lese)
+#                goal_pose: Optional[PoseStamped] = None,
+#                object_size: Optional[Vector3] = None,
+#                root_link: str = 'map',
+#                tip_link: str = 'hand_palm_link',
+#                velocity: float = 0.2): -> auch von planning

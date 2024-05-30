@@ -417,11 +417,11 @@ class HSRBDetectingReal(ProcessModule):
             region = desig.state
             query_result = queryRegion(region)
             perceived_objects = []
-            list = query_result[1].pose
-            print(list[0].pose.position)
-            print(type(list[0].pose.position))
-            print(type(query_result))
-            print(len(query_result))
+            # list = query_result[1].pose
+            # print(list[0].pose.position)
+            # print(type(list[0].pose.position))
+            # print(type(query_result))
+            # print(len(query_result))
             for i in query_result:
                 # this has to be pose from pose stamped since we spawn the object with given header
                 list = i.pose
@@ -717,7 +717,7 @@ class HSRBGraspDishwasherHandleReal(ProcessModule):
 class HSRBHalfOpenDishwasherReal(ProcessModule):
     """Half opens the dishwasher door"""
     def _execute(self, designator: HalfOpeningDishwasherMotion.Motion) -> Any:
-         giskard.achieve_open_container_goal(robot_description.get_tool_frame("left"), designator.handle_name, goal_state=0.8)
+         giskard.achieve_open_container_goal(robot_description.get_tool_frame("left"), designator.handle_name, goal_state=0.6, special_door=True)
 
 
 class HSRBMoveArmAroundDishwasherReal(ProcessModule):
@@ -730,7 +730,7 @@ class HSRBFullOpenDishwasherReal(ProcessModule):
     """Opens the dishwasher fully"""
     def _execute(self, designator: FullOpeningDishwasherMotion.Motion) -> Any:
         giskard.fully_open_dishwasher_door(designator.handle_name, designator.door_name)
-        giskard.achieve_open_container_goal(robot_description.get_tool_frame("left"), designator.handle_name, goal_state=1.3)
+        giskard.achieve_open_container_goal(robot_description.get_tool_frame("left"), designator.handle_name, goal_state=1.4, special_door=True)
 
 class HSRBManager(ProcessModuleManager):
 
