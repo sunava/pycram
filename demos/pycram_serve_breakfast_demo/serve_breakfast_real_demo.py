@@ -65,7 +65,7 @@ class PlacingZPose(Enum):
     PLASTICKNIFE = 0.775
     KNIFE = 0.775
     METALBOWL = 0.815
-    MILKPACKJA = 0.855
+    MILKPACKJA = 0.85
     METALMUG = 0.775
     CEREALBOX = 0.875
     METALPLATE = 0.875
@@ -168,12 +168,12 @@ def place_objects(first_placing, objects_list, index, grasp):
     # erste Variante
     ###############################################################################
     if object_type != "Cutlery":
-        navigate_to(2.1, 4.8, "popcorn table")
+        navigate_to(2.1, 4.5, "popcorn table")
         place_poses_list = try_detect(Pose([2.1, 5.9, 0.21], [0, 0, 0.7, 0.7]), True)
         sorted_places = get_free_spaces(place_poses_list[1])
 
     if object_type != "Metalbowl":
-        navigate_to(1.6, 4.8, "popcorn table")
+        navigate_to(1.6, 5, "popcorn table")
         object_desig = try_detect(Pose([1.6, 5.9, 0.21], [0, 0, 0.7, 0.7]), False)
         bowl = get_bowl(object_desig)
 
@@ -214,21 +214,19 @@ def place_objects(first_placing, objects_list, index, grasp):
                 # TODO: Werte anpassen
                 navigate_to(bowl.pose.position.x - 0.1, 5, "popcorn table")
                 # print(f"arm_roll: {robot.get_joint_state('arm_roll_joint')}")
-                angle = 1.6
+                angle = 115
                 if robot.get_pose().pose.position.x > bowl.pose.position.x:
-                    # angle -= robot.get_joint_state('arm_roll_joint')
-                    PouringAction([bowl.pose], ["left"], ["left"], [angle]).resolve().perform()
+                    PouringAction([bowl.pose], ["left"], ["right"], [angle]).resolve().perform()
                 else:
-                    # angle += robot.get_joint_state('arm_roll_joint')
-                    PouringAction([bowl.pose], ["left"], ["right"], [-angle]).resolve().perform()
+                    PouringAction([bowl.pose], ["left"], ["left"], [angle]).resolve().perform()
                     # Move away from the table
                     navigate_to(robot.get_pose().pose.position.x, robot.get_pose().pose.position.y - 0.3,
                                 "popcorn table")
                 ParkArmsAction([Arms.LEFT]).resolve().perform()
             else:
                 # TODO: je nach Variante x-pos oder place-pose anpassen
-                # x_pos = bowl.pose.position.x + 0.3
-                place_pose.pose.position.x = bowl.pose.position.x + 0.3
+                # x_pos = bowl.pose.position.x + 0.15
+                place_pose.pose.position.x = bowl.pose.position.x + 0.15
                 place_pose.pose.position.y = bowl.pose.position.y
                 place_pose.pose.position.z = bowl.pose.position.z
 
