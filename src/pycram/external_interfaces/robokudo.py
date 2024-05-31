@@ -140,7 +140,7 @@ def queryEmpty(object_desc: ObjectDesignatorDescription) -> ObjectDesignatorDesc
     wait = client.wait_for_result()
     # pose_candidates = {}
     # #todo check if query is even filled
-
+    
     return query_result
 
 
