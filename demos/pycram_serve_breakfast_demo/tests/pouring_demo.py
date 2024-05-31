@@ -22,7 +22,7 @@ import rospkg
 
 from geometry_msgs.msg import Point
 # Initialize the Bullet world for simulation
-world = BulletWorld("DIRECT")
+world = BulletWorld()
 
 # Visualization Marker Publisher for ROS
 v = VizMarkerPublisher()
@@ -34,7 +34,6 @@ v = VizMarkerPublisher()
 #giskardpy.spawn_kitchen()
 # Create and configure the robot object
 robot = Object("hsrb", ObjectType.ROBOT, "../../resources/hsrb.urdf", pose=Pose([0, 0, 0]))
-giskardpy.init_giskard_interface()
 # Update robot state
 RobotStateUpdater("/tf", "/giskard_joint_states")
 
@@ -44,27 +43,40 @@ robot.set_color([0.5, 0.5, 0.9, 1])
 
 
 # Create environmental objects
-apartment = Object("kitchen", ObjectType.ENVIRONMENT, "couch-kitchen.urdf")
+apartment = Object("kitchen", ObjectType.ENVIRONMENT, "suturo_lab_version_12.urdf")
 
 # Define orientation for objects
 object_orientation = axis_angle_to_quaternion([0, 0, 1], 180)
+
+giskardpy.init_giskard_interface()
+
+giskardpy.sync_worlds()
 
 #client = actionlib.SimpleActionClient('move_base/move', MoveBaseAction)
 
 # Main interaction sequence with real robot
 with ((real_robot)):
     rospy.loginfo("Starting demo")
-    ParkArmsAction([Arms.LEFT]).resolve().perform()
-    NavigateAction(target_locations=[Pose([4.1, 2, 0], [0, 0, 0, 1])]).resolve().perform()
+    #ParkArmsAction([Arms.LEFT]).resolve().perform()
+    #NavigateAction(target_locations=[Pose([2, 5, 0], [0, 0, 0.7, 0.7])]).resolve().perform()
     #MoveTorsoAction([0.2]).resolve().perform()
-    LookAtAction(targets=[Pose([5.05, 2.1, 0.21], [0, 0, 0, 1])]).resolve().perform()
+    # LookAtAction(targets=[Pose([1.6, 5.9, 0.21], [0, 0, 0.7, 0.7])]).resolve().perform()
     object_desig = DetectAction(technique='all').resolve().perform()
     sort_objects = sort_objects(robot, object_desig, wished_sorted_obj_list=["Metalbowl"])
     for value in range(len(sort_objects)):
-        NavigateAction(target_locations=[Pose([robot.get_pose().pose.position.x,
-                                              sort_objects[value].pose.position.y + 0.1, 0])]).resolve().perform()
-        #PouringAction([sort_objects[value]], ["left"], ["left"], [1.6]).resolve().perform()
-        PouringAction([sort_objects[value]], ["left"], ["right"], [-1.6]).resolve().perform()
+        NavigateAction(target_locations=[Pose([sort_objects[value].pose.position.x + 0.2,
+                                               robot.get_pose().pose.position.y, 0], [0, 0, 0.7, 0.7])]).resolve().perform()
+        # angle = 1.6 - robot.get_joint_state('arm_roll_joint')
+        # print(f"arm_roll: {robot.get_joint_state('arm_roll_joint')}")
+        # print(f"angle: {angle}")
+        #lt = LocalTransformer()
+        #print(lt.get_all_frames())
+        #print(sort_objects[value])
+
+
+        #print(frame_final)
+        PouringAction([sort_objects[value].pose], ["left"], ["right"], [1.6]).resolve().perform()
+        #PouringAction([sort_objects[value]], ["left"], ["right"], [-angle]).resolve().perform()
 
     #PouringAction([Pose([4, 2, 0.75], [0, 0, 0, 1])],["left"],["right"], [-1.6]).resolve().perform()
     #PouringMotion("right", 0).resolve().perform()
