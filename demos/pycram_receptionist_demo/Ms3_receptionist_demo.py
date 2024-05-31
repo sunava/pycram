@@ -1,3 +1,5 @@
+import rospy
+
 from pycram.designators.action_designator import *
 from demos.pycram_receptionist_demo.utils.new_misc import *
 from pycram.enums import ObjectType
@@ -29,10 +31,10 @@ kitchen_desig = ObjectDesignatorDescription(names=["kitchen"])
 pub_nlp = rospy.Publisher('/startListener', String, queue_size=10)
 response = ""
 callback = False
-doorbell = True
+doorbell = False
 
 # Declare variables for humans
-host = HumanDescription("Alina", fav_drink="water")
+host = HumanDescription("Lucas", fav_drink="water")
 guest1 = HumanDescription("guest", fav_drink="tea")
 guest2 = HumanDescription("guest2")
 seat_number = 2
@@ -41,23 +43,34 @@ seat_number = 2
 def data_cb(data):
     global response
     global callback
+    global doorbell
 
     response = data.data.split(",")
     response.append("None")
     callback = True
 
 
+def doorbell_cb(data):
+    global doorbell
+    doorbell = True
+
+
+
 with real_robot:
 
     # signal start
-    TalkingMotion("start").resolve().perform()
+    TalkingMotion("waiting for guests").resolve().perform()
 
     # receive data from nlp via topic
     rospy.Subscriber("nlp_out", String, data_cb)
+    rospy.Subscriber("nlp_out2", String, doorbell_cb)
+
+    while not doorbell:
+        print("no bell")
 
     # Pre-Pose for door opening
-    pose1 = Pose([1.45, 4.5, 0], [0, 0, 1, 0])
     ParkArmsAction([Arms.LEFT]).resolve().perform()
+    pose1 = Pose([1.45, 4.5, 0], [0, 0, 1, 0])
     NavigateAction([pose1]).resolve().perform()
     MoveJointsMotion(["wrist_roll_joint"], [-1.57]).resolve().perform()
     MoveTorsoAction([0.35]).resolve().perform()
@@ -75,9 +88,8 @@ with real_robot:
     pose2 = Pose([1.85, 4.5, 0], [0, 0, 1, 0])
     NavigateAction([pose2]).resolve().perform()
 
-    TalkingMotion("Welcome, please step infront of me").resolve().perform()
-    rospy.sleep(1)
-    MoveTorsoAction([0.1]).resolve().perform()
+    TalkingMotion("Welcome, please step in front of me").resolve().perform()
+    ParkArmsAction([Arms.LEFT]).resolve().perform()
 
     # look for human
     DetectAction(technique='human').resolve().perform()
@@ -85,7 +97,7 @@ with real_robot:
     # look at guest and introduce
     HeadFollowAction('start').resolve().perform()
     TalkingMotion("Hello, i am Toya and my favorite drink is oil. What about you, talk to me?").resolve().perform()
-    rospy.sleep(2.2)
+    rospy.sleep(3)
 
     # signal to start listening
     pub_nlp.publish("start listening")
