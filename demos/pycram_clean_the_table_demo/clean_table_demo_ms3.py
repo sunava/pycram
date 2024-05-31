@@ -49,6 +49,7 @@ handle_name = "sink_area_dish_washer_door_handle"
 
 door_name = "sink_area_dish_washer_door"
 
+
 move_to_the_middle_pose = [2.2, 1.98, 0]
 move_to_the_middle_left_side_dishwasher = [2.2, -0.1, 0]
 giskardpy.sync_worlds()
@@ -109,7 +110,9 @@ def pickup_and_place_objects(sorted_obj: list):
             TalkingMotion("Can you please give me the plate on the table.").resolve().perform()
             MoveGripperMotion("open", "left").resolve().perform()
             time.sleep(3)
+
             TalkingMotion("Grasping.").resolve().perform()
+
             MoveGripperMotion("close", "left").resolve().perform()
             z = 0.492
         else:
@@ -200,7 +203,9 @@ def navigate_and_detect():
     """
     TalkingMotion("Navigating").resolve().perform()
     # navigate_to(False, 1.8, "popcorn table")
+
     navigate_to("couch table", 2.4)  # 1.6
+
 
     MoveTorsoAction([0.1]).resolve().perform()
 
@@ -326,19 +331,19 @@ with ((real_robot)):
     rospy.loginfo("Starting demo")
     TalkingMotion("Starting demo").resolve().perform()
 
-    # navigate_to("dishwasher")
-    #
-    # MoveJointsMotion(["wrist_roll_joint"], [-1.5]).resolve().perform()
-    #
-    # OpenDishwasherAction(handle_name, door_name, 0.6, 1.3, ["left"]).resolve().perform()
-    #
-    # TalkingMotion("Please pull out the lower rack").resolve().perform()
+    navigate_to("dishwasher")
+
+    MoveJointsMotion(["wrist_roll_joint"], [-1.5]).resolve().perform()
+
+    OpenDishwasherAction(handle_name, door_name, 0.6, 1.3, ["left"]).resolve().perform()
+
+    TalkingMotion("Please pull out the lower rack").resolve().perform()
 
     ParkArmsAction([Arms.LEFT]).resolve().perform()
     MoveGripperMotion("open", "left").resolve().perform()
 
     # detect objects
-    #NavigateAction(target_locations=[Pose(move_to_the_middle_pose, [0, 0, 1, 1])]).resolve().perform()
+    NavigateAction(target_locations=[Pose(move_to_the_middle_pose, [0, 0, 1, 1])]).resolve().perform()
     object_desig = navigate_and_detect()
 
     # sort objects based on distance and which we like to keep
@@ -352,7 +357,6 @@ with ((real_robot)):
 
     rospy.loginfo("Done!")
     TalkingMotion("Done").resolve().perform()
-
 
 
 # def navigate_to(turn_around, y, table_name):
