@@ -5,12 +5,9 @@ from pycram.ros.viz_marker_publisher import VizMarkerPublisher
 from demos.pycram_serve_breakfast_demo.utils.misc import *
 
 # from pycram.external_interfaces.knowrob import get_table_pose
-# TODO: im Allgemeinen müssen die Werte beim Navigieren und detecten angepasst werden
 
 # list of cutlery objects
 CUTLERY = ["Spoon", "Fork", "Knife", "Plasticknife"]
-
-CEREALBOX = ["Mueslibox", "Cornybox", "Cerealbox", "Crackerbox"]
 
 # Wished objects for the Demo
 wished_sorted_obj_list = ["Metalbowl", "Cerealbox", "Milkpackja", "Spoon"]
@@ -18,8 +15,8 @@ wished_sorted_obj_list = ["Metalbowl", "Cerealbox", "Milkpackja", "Spoon"]
 # length of wished list for failure handling
 LEN_WISHED_SORTED_OBJ_LIST = len(wished_sorted_obj_list)
 
-# x pose of the end of the popcorn table
-table_pose = 5.11
+# x pose of the end of the shelf
+shelf_pose = 5.11
 
 # the bowl to pour in
 bowl = None
@@ -27,14 +24,14 @@ bowl = None
 # free places for placing
 place_pose = None
 
-# y pose for placing the object
+# x pose for placing the object
 x_pos = 1.45
 
 # list of sorted placing poses
 sorted_places = []
 
 # Initialize the Bullet world for simulation
-world = BulletWorld()
+world = BulletWorld("DIRECT")
 
 # Visualization Marker Publisher for ROS
 v = VizMarkerPublisher()
@@ -65,7 +62,7 @@ class PlacingZPose(Enum):
     PLASTICKNIFE = 0.775
     KNIFE = 0.775
     METALBOWL = 0.815
-    MILKPACKJA = 0.85
+    MILKPACKJA = 0.845
     METALMUG = 0.775
     CEREALBOX = 0.875
     METALPLATE = 0.875
@@ -74,8 +71,10 @@ class PlacingZPose(Enum):
 
 def try_detect(pose: Pose, location: bool):
     """
-    Navigates to the popcorn table and perceives.
+    lets the robot looks on a pose and perceive objects or free spaces
 
+    :param pose: the pose that the robot looks to
+    :param location: if location should be detected or not
     :return: tupel of State and dictionary of found objects in the FOV
     """
     LookAtAction(targets=[pose]).resolve().perform()
@@ -93,7 +92,7 @@ def try_detect(pose: Pose, location: bool):
 
 def navigate_to(x: float, y: float, table_name: str):
     """
-    Navigates to the popcorn table or to the table on the other side.
+    Navigates to popcorn table, long table or shelf.
 
     :param x: x pose to navigate to
     :param y: y pose to navigate to
@@ -111,9 +110,9 @@ def pickup_and_place_objects(sorted_obj: list):
     """
     For picking up and placing the objects in the given object designator list.
 
-    :param sorted_obj: the distance sorted list of seen object designators.
+    :param sorted_obj: the sorted list of seen object designators.
     """
-    global table_pose, CUTLERY, bowl, place_pose
+    global shelf_pose, CUTLERY, bowl, place_pose
 
     for value in range(len(sorted_obj)):
         # define grasping pose
@@ -130,7 +129,7 @@ def pickup_and_place_objects(sorted_obj: list):
         # TODO: muss noch getestet und angepasst werden
         if sorted_obj[value].type == "Cutlery":
             # change object x pose if the grasping pose is too far in the table
-            if sorted_obj[value].pose.position.x > table_pose + 0.125:
+            if sorted_obj[value].pose.position.x > shelf_pose + 0.125:
                 sorted_obj[value].pose.position.x -= 0.1
             # sorted_obj[value].pose.position.x = 3.25
 
@@ -151,6 +150,14 @@ def pickup_and_place_objects(sorted_obj: list):
 
 
 def place_objects(first_placing, objects_list, index, grasp):
+    """
+    places objects on the popcorn table
+
+    :param first_placing: if the object has been picked up
+    :param objects_list: list of given objects
+    :param index: index to iterate in objects list
+    :param grasp: define the way of grasping
+    """
     global bowl, place_pose, sorted_places, x_pos
 
     if first_placing:
@@ -173,7 +180,7 @@ def place_objects(first_placing, objects_list, index, grasp):
         sorted_places = get_free_spaces(place_poses_list[1])
 
     if object_type != "Metalbowl":
-        navigate_to(1.6, 5, "popcorn table")
+        navigate_to(1.6, 4.8, "popcorn table")
         object_desig = try_detect(Pose([1.6, 5.9, 0.21], [0, 0, 0.7, 0.7]), False)
         bowl = get_bowl(object_desig)
 
@@ -225,8 +232,8 @@ def place_objects(first_placing, objects_list, index, grasp):
                 ParkArmsAction([Arms.LEFT]).resolve().perform()
             else:
                 # TODO: je nach Variante x-pos oder place-pose anpassen
-                # x_pos = bowl.pose.position.x + 0.15
-                place_pose.pose.position.x = bowl.pose.position.x + 0.15
+                # x_pos = bowl.pose.position.x + 0.2
+                place_pose.pose.position.x = bowl.pose.position.x + 0.2
                 place_pose.pose.position.y = bowl.pose.position.y
                 place_pose.pose.position.z = bowl.pose.position.z
 
@@ -275,6 +282,11 @@ def get_z(obj_type: str):
 
 
 def remove_objects(value):
+    """
+    removes already transported objects from the list
+
+    :param value: the object that should be removed from the list
+    """
     # remove all objects that were seen and transported so far
     if value.type in wished_sorted_obj_list:
         wished_sorted_obj_list.remove(value.type)

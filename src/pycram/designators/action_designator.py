@@ -1538,7 +1538,7 @@ class PouringAction(ActionDesignatorDescription):
 
         arm: str
         """
-        The arm that should be used for cutting.
+        The arm that should be used for pouring.
         """
 
         direction: str
@@ -1573,7 +1573,7 @@ class PouringAction(ActionDesignatorDescription):
             if self.direction == "right":
                 oTbs.pose.position.y -= 0.125
             else:
-                oTbs.pose.position.y += 0.1
+                oTbs.pose.position.y += 0.125
 
             oTms = lt.transform_pose(oTbs, "map")
             BulletWorld.current_bullet_world.add_vis_axis(oTms)
