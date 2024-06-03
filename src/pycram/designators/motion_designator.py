@@ -387,6 +387,7 @@ class DetectingMotion(MotionDesignatorDescription):
         state: Optional[str] = None
         """
         The state instructs our perception system to either start or stop the search for an object or human.
+        Can also be used to describe the region or location where objects are perceived.
         """
 
         def perform(self):

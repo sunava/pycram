@@ -35,6 +35,10 @@ logger.setLevel(logging.DEBUG)
 
 
 def init_knowrob_interface():
+    """
+    Initializes the knowrob interface.
+    Can not be used at the moment.
+    """
     global interf
     global is_init
     if is_init:
@@ -184,17 +188,27 @@ def get_table_pose(table_name):
         rospy.logerr("Service call failed")
         pass
 
-def get_table_test_pose(table_name):
+
+def get_location_pose(location_name):
+    """
+    Can not be used yet.
+    Gives the pose for a given location back for instance for perceiving, placing, opening etc.
+    """
     try:
-        table_pos = interf.get_pose(table_name)
-        return table_pos
+        location_pos = interf.get_pose(location_name)
+        return location_pos
     except:
         rospy.logerr("Failed to contact knowrob")
         pass
 
+
 def get_handle_pos(handle):
+    """
+      Can not be used yet.
+      Gives the pose for a given handle back for instance for opening a container.
+    """
     try:
-        handle_pos = interf.get_pose(handle)
+        handle_pos = interf.get_pose_of_handle(handle)
         return handle_pos
     except:
         rospy.logerr("Failed to contact knowrob")

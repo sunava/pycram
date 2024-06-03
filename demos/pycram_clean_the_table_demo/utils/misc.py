@@ -1,13 +1,10 @@
 import rospy
 from docutils.nodes import math
-
 from pycram.designators.action_designator import *
 from pycram.designators.motion_designator import *
 import pycram.external_interfaces.giskard as giskardpy
 from pycram.designators.object_designator import *
 from std_msgs.msg import String
-
-
 from pycram.plan_failures import EnvironmentUnreachable, GripperClosedCompletely
 
 
@@ -85,7 +82,7 @@ def try_pick_up(robot: BulletWorld.robot, obj: ObjectDesignatorDescription, gras
         print("try pick up again")
         TalkingMotion("Try pick up again").resolve().perform()
         # after failed attempt to pick up the object, the robot moves 30cm back on x pose
-        # TODO: x-pose und orentation sollten allgemein sein
+        # TODO: x-pose and orientation should be generalized
         NavigateAction(
             [Pose([robot.get_pose().position.x + 0.3, robot.get_pose().position.y,
                    robot.get_pose().position.z], [0, 0, 1, 0])]).resolve().perform()

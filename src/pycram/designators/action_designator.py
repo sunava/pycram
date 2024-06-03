@@ -967,7 +967,7 @@ class DetectAction(ActionDesignatorDescription):
     class Action(ActionDesignatorDescription.Action):
         technique: str
         """
-        Technique means how the object should be detected, e.g. 'color', 'shape', etc. 
+        Technique means how the object should be detected, e.g. 'color', 'shape', 'region', etc. 
         Or 'all' if all objects should be detected
         """
 
@@ -979,6 +979,7 @@ class DetectAction(ActionDesignatorDescription):
         state: Optional[str] = None
         """
         The state instructs our perception system to either start or stop the search for an object or human.
+        Can also be used to describe the region or location where objects are perceived.
         """
 
         @with_tree
@@ -1032,9 +1033,7 @@ class DetectAction(ActionDesignatorDescription):
 
 class OpenDishwasherAction(ActionDesignatorDescription):
     """
-    Opens a container like object
-
-    Can currently not be used
+    Opens the dishwasher door
     """
 
     @dataclasses.dataclass
@@ -1051,7 +1050,7 @@ class OpenDishwasherAction(ActionDesignatorDescription):
 
         goal_state_half_open: float
         """
-        goal state for opening the door half way
+        goal state for opening the door partially
         """
 
         goal_state_full_open: float
@@ -1066,21 +1065,25 @@ class OpenDishwasherAction(ActionDesignatorDescription):
 
         @with_tree
         def perform(self) -> Any:
+            # Grasping the dishwasher handle
             MoveGripperMotion("open", self.arm).resolve().perform()
             GraspingDishwasherHandleMotion(self.handle_name, self.arm).resolve().perform()
 
+            # partially opening the dishwasher door
             MoveGripperMotion("close", self.arm).resolve().perform()
             HalfOpeningDishwasherMotion(self.handle_name, self.goal_state_half_open, self.arm).resolve().perform()
 
+            # moves arm around the door to further push it open
             MoveGripperMotion("open", self.arm).resolve().perform()
             MoveArmAroundMotion(self.handle_name, self.arm).resolve().perform()
 
+            # pushes the rest of the door open
             MoveGripperMotion("close", self.arm).resolve().perform()
             FullOpeningDishwasherMotion(self.handle_name, self.door_name, self.goal_state_full_open,
                                         self.arm).resolve().perform()
 
-            # ParkArmsAction([self.arm]).resolve().perform()
-            # MoveGripperMotion("open", self.arm).resolve().perform()
+            ParkArmsAction([self.arm]).resolve().perform()
+            MoveGripperMotion("open", self.arm).resolve().perform()
             # plan = talk | park | gripper_open
             # plan.perform()
 
@@ -1089,7 +1092,10 @@ class OpenDishwasherAction(ActionDesignatorDescription):
         """
         Moves the arm of the robot to open a container.
 
-        :param object_designator_description: Object designator describing the handle that should be used to open
+        :param handle_name: name of the dishwasher handle
+        :param door_name: name of the belonging dishwasher door
+        :param goal_state_half_open: state to open the dishwasher door partially
+        :param goal_state_full_open: state to open the dishwasher door fully
         :param arms: A list of possible arms that should be used
         :param resolver: A alternative resolver that returns a performable designator for the lists of possible parameter.
         """
