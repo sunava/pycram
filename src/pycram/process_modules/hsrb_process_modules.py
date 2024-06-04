@@ -352,8 +352,9 @@ class HSRBDetectingReal(ProcessModule):
         specifies the query send to robokudo
         :param desig.technique: if this is set to human the hsr searches for human and publishes the pose
         to /human_pose. returns PoseStamped of Human.
-        this value can also be set to 'attributes' or 'location' to get the attributes and pose of a human or a bool
-        if a seat specified in the sematic map is taken
+        this value can also be set to 'attributes', 'location' or 'region' to get the attributes and pose of a human, a bool
+        if a seat specified in the sematic map is taken or to describe where objects should be perceived.
+
         """
 
         # todo at the moment perception ignores searching for a specific object type so we do as well on real
@@ -370,7 +371,7 @@ class HSRBDetectingReal(ProcessModule):
             seat_human_pose = seat_queryHuman(seat)
             #print(seat_human_pose[0].attribute[0].split(','))
             #print(seat_human_pose[0].attribute[1])
-            if seat == "long_table":
+            if seat == "long_table" or seat == "popcorn_table":
                 loc_list = []
                 for loc in seat_human_pose[0].attribute:
                     print(f"location: {loc}, type: {type(loc)}")
@@ -413,28 +414,22 @@ class HSRBDetectingReal(ProcessModule):
             attr_list = [gender, hat, clothes, brightness_clothes]
             return attr_list
 
+        # used when region-filter of robokudo should be used
         elif desig.technique == 'region':
-            region = desig.state
+            region = desig.state # name of the region where should be perceived
             query_result = queryRegion(region)
             perceived_objects = []
-            # list = query_result[1].pose
-            # print(list[0].pose.position)
-            # print(type(list[0].pose.position))
-            # print(type(query_result))
-            # print(len(query_result))
-            for i in query_result:
+
+            for obj in query_result:
                 # this has to be pose from pose stamped since we spawn the object with given header
-                list = i.pose
-                print("Das ist i: ")
-                print(i)
-                print(type(i.pose))
+                list = obj.pose
                 if len(list) == 0:
                     continue
                 obj_pose = Pose.from_pose_stamped(list[0])
                 # obj_pose.orientation = [0, 0, 0, 1]
                 # obj_pose_tmp = query_result.res[i].pose[0]
-                obj_type = i.type
-                obj_size = i.size
+                obj_type = obj.type
+                obj_size = obj.size
                 # obj_color = query_result.res[i].color[0]
                 color_switch = {
                     "red": [1, 0, 0, 1],
@@ -445,7 +440,7 @@ class HSRBDetectingReal(ProcessModule):
                     # add more colors if needed
                 }
 
-                # olor = color_switch.get(obj_color)
+                # color = color_switch.get(obj_color)
                 # if color is None:
                 # color = [0, 0, 0, 1]
 
@@ -459,12 +454,13 @@ class HSRBDetectingReal(ProcessModule):
                     y_value = None
                     z_value = None
 
+                    # todo: for now it is a string again, might be changed back. In this case we need the lower commented out code
                     xvalue = input_string[(input_string.find("x") + 2): input_string.find("y")]
                     y_value = input_string[(input_string.find("y") + 2): input_string.find("z")]
                     z_value = input_string[(input_string.find("z") + 2):]
 
-                    #
-                    # # Iterate through the key-value pairs to extract the values
+
+                    # Iterate through the key-value pairs to extract the values
                     # for pair in key_value_pairs:
                     #     key, value = pair.split(': ')
                     #     if key == 'x':
@@ -546,7 +542,7 @@ class HSRBDetectingReal(ProcessModule):
 
                     return x_value, y_value, z_value
 
-                x, y, ze = extract_xyz_values(obj_size)
+                x, y, z = extract_xyz_values(obj_size)
                 #size = (x, z / 2, y)
                 #size_box = (x / 2, z / 2, y / 2)
                 hard_size = (0.02, 0.02, 0.03)
@@ -715,13 +711,13 @@ class HSRBGraspDishwasherHandleReal(ProcessModule):
 
 
 class HSRBHalfOpenDishwasherReal(ProcessModule):
-    """Half opens the dishwasher door"""
+    """Partially opens the dishwasher door."""
     def _execute(self, designator: HalfOpeningDishwasherMotion.Motion) -> Any:
-         giskard.achieve_open_container_goal(robot_description.get_tool_frame("left"), designator.handle_name, goal_state=0.6, special_door=True)
+         giskard.achieve_open_container_goal(robot_description.get_tool_frame("left"), designator.handle_name, goal_state=designator.goal_state_half_open, special_door=True)
 
 
 class HSRBMoveArmAroundDishwasherReal(ProcessModule):
-    """Moves the HSR arm around the dishwasher door after half opening"""
+    """Moves the HSR arm around the dishwasher door after partially opening"""
     def _execute(self, designator: MoveArmAroundMotion.Motion) -> Any:
         giskard.set_hsrb_dishwasher_door_around(designator.handle_name)
 
@@ -730,7 +726,7 @@ class HSRBFullOpenDishwasherReal(ProcessModule):
     """Opens the dishwasher fully"""
     def _execute(self, designator: FullOpeningDishwasherMotion.Motion) -> Any:
         giskard.fully_open_dishwasher_door(designator.handle_name, designator.door_name)
-        giskard.achieve_open_container_goal(robot_description.get_tool_frame("left"), designator.handle_name, goal_state=1.4, special_door=True)
+        giskard.achieve_open_container_goal(robot_description.get_tool_frame("left"), designator.handle_name, goal_state=designator.goal_state_full_open, special_door=True)
 
 class HSRBManager(ProcessModuleManager):
 

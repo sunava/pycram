@@ -28,8 +28,15 @@ def sort_objects(obj_dict: dict, wished_sorted_obj_list: list):
     first, *remaining = obj_dict
     for dictionary in remaining:
         for value in dictionary.values():
-            if value.type in wished_sorted_obj_list:
-                tuples_list.append((value, wished_sorted_obj_list.index(value.type)))
+            object_type = value.type
+            if value.type in ["Mueslibox", "Cornybox", "Cerealbox", "Crackerbox"]:
+                object_type = "Cerealbox"
+
+            if value.type in ["Spoon", "Fork", "Knife", "Plasticknife"]:
+                object_type = "Spoon"
+
+            if object_type in wished_sorted_obj_list:
+                tuples_list.append((value, wished_sorted_obj_list.index(object_type)))
 
     sorted_objects = [x[0] for x in sorted(tuples_list, key=lambda index: index[1])]
 
@@ -43,6 +50,11 @@ def sort_objects(obj_dict: dict, wished_sorted_obj_list: list):
 
 
 def get_bowl_list(obj_dict: dict):
+    """
+    searches in a dictionary of objects for all bowls and returns them
+    :param obj_dict: tupel of State and dictionary of founded objects in the FOV
+    :return: list of found bowls
+    """
     objects_list = []
 
     if len(obj_dict) == 0:
@@ -57,6 +69,11 @@ def get_bowl_list(obj_dict: dict):
 
 
 def get_bowl(obj_dict: dict):
+    """
+    searches in a dictionary of objects for a bowl and returns it
+    :param obj_dict: tupel of State and dictionary of founded objects in the FOV
+    :return: the found bowl or None
+    """
     if len(obj_dict) == 0:
         return None
 
@@ -69,6 +86,12 @@ def get_bowl(obj_dict: dict):
 
 
 def get_free_spaces(location_list: list):
+    """
+    looks in a list of regions for regions that are free and returns them
+
+    :param location_list: a list of regions
+    :return: sorted list of found free regions
+    """
     free_places_tuples = []
     sorted_places = []
 
@@ -137,4 +160,3 @@ def try_pick_up(robot: BulletWorld.robot, obj: ObjectDesignatorDescription.Objec
             MoveGripperMotion("open", "left").resolve().perform()
             time.sleep(4)
             MoveGripperMotion("close", "left").resolve().perform()
-
