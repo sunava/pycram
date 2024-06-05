@@ -588,7 +588,7 @@ def open_doorhandle(handle_name: str):
 
 
 def spawn_kitchen():
-    env_urdf = rospy.get_param('kitchen_description')
+    env_urdf = rospy.get_param('/kitchen_description')
     kitchen_pose = tf.lookup_pose('map', 'iai_kitchen/urdf_main')
     print (kitchen_pose)
     giskard_wrapper.add_urdf(name='arena',

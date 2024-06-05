@@ -44,8 +44,9 @@ class RobotStateUpdater:
 
         :param msg: TransformStamped message published to the topic
         """
+        #robot_description.name + "/"
         trans, rot = self.tf_listener.lookupTransform("/map",
-                                                      robot_description.name + "/" + robot_description.base_frame,
+                                                      robot_description.base_frame,
                                                         rospy.Time(0))
         BulletWorld.robot.set_pose(Pose(trans, rot))
 

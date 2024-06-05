@@ -503,7 +503,8 @@ class WorldSync(threading.Thread):
                 self.remove_obj_queue.task_done()
 
             for bulletworld_obj, shadow_obj in self.object_mapping.items():
-                b_pose = bulletworld_obj.get_pose()
+                if bulletworld_obj.current_pose:
+                    b_pose = bulletworld_obj.get_pose()
                 s_pose = shadow_obj.get_pose()
                 if b_pose.dist(s_pose) != 0.0:
                     shadow_obj.set_pose(bulletworld_obj.get_pose())
@@ -1476,6 +1477,10 @@ class Object:
         for joint_name in self.joints.keys():
             self._current_joint_states[joint_name] = \
                 p.getJointState(self.id, self.joints[joint_name], physicsClientId=self.world.client_id)[0]
+
+    @property
+    def current_pose(self):
+        return self._current_pose
 
 
 def filter_contact_points(contact_points, exclude_ids) -> List:
