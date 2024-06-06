@@ -21,13 +21,24 @@ class InterruptClient:
         self.age = 0
 
         # Initialize subscribers
-        self.nlp_major_sub = rospy.Subscriber("/robot_major_interruption", message_to_robot, self.nlp_major_sub_cb)
-        self.nlp_minor_sub = rospy.Subscriber("/robot_minor_interruption", message_to_robot, self.nlp_minor_sub_cb)
+        self.nlp_major_sub = None
+        self.nlp_minor_sub = None
         self.from_robot_pub = rospy.Publisher("/from_robot", message_from_robot, queue_size=10)
         self.objects_in_use_pub = rospy.Publisher("/objects_in_use", message_objects_in_use, queue_size=10)
 
+    def activate_subs(self):
+        self.nlp_major_sub = rospy.Subscriber("/robot_major_interruption", message_to_robot, self.nlp_major_sub_cb)
+        self.nlp_minor_sub = rospy.Subscriber("/robot_minor_interruption", message_to_robot, self.nlp_minor_sub_cb)
+
+    def deactivate_subs(self):
+        self.nlp_minor_sub.unregister()
+        self.nlp_minor_sub = None
+
+        self.nlp_major_sub.unregister()
+        self.nlp_major_sub = None
+
     def nlp_major_sub_cb(self, major_interruption_msg):
-        self.handle_interruption_msg(major_interruption_msg, "major")
+            self.handle_interruption_msg(major_interruption_msg, "major")
 
     def nlp_minor_sub_cb(self, minor_interruption_msg):
         self.handle_interruption_msg(minor_interruption_msg, "minor")
@@ -42,8 +53,8 @@ class InterruptClient:
                     "command": interruption_msg.command,
                     "age": interruption_msg.age,
                     "confidence": interruption_msg.confidence,
-                    #"add_object": interruption_msg.add_object,
-                    #"del_object": interruption_msg.del_object
+                    "add_object": interruption_msg.add_object,
+                    "del_object": interruption_msg.del_object
                 }
             }
             self.age = interruption_msg.age
@@ -55,11 +66,10 @@ class InterruptClient:
             else:
                 print("major interrupt")
                 self.major_interrupt.set_value(True)
-            print(self.command_queue.get_value())
             self.nlp_timestamp = current_time
 
     def next_command(self):
-        if self.command_queue:
+        if self.command_queue.get_value():
             return self.command_queue.get_value().pop(0)
         else:
             return None
@@ -100,7 +110,8 @@ class InterruptClient:
                 del self.objects_in_use[obj.type]
 
         for obj in add_object_info:
-            self.objects_in_use[obj.type] = obj
+            if obj.type:
+                self.objects_in_use[obj.type] = obj
 
         # [self.objects_in_use.append(obj) for obj in add_object_info if obj not in self.objects_in_use]
         # [self.objects_in_use.remove(obj) for obj in remove_object_info if obj in self.objects_in_use]
