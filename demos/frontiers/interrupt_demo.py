@@ -124,7 +124,7 @@ def update_current_command():
     if current_cmd:
         minor_cmd = current_cmd.get("minor", {}).get("command")
 
-        if minor_cmd == "setting-breakfast":
+        if minor_cmd == "setting_breakfast":
             objects_to_add = [
                 dict_object(type="bowl", color="", name="", location="", size=""),
                 dict_object(type="milk", color="", name="", location="", size=""),
