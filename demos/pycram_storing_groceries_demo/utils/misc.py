@@ -12,6 +12,7 @@ pose_test_area = Pose([2.25, 2.4, 0], [0, 0, 0, 1])
 pose_cabinet = Pose([2.25, 2.4, 0], [0, 0, 0, 1])
 pose_table = Pose([1.5, 2.0, 0], [0, 0, 1, 0])
 
+# dict to categories objects
 categories = {
     "Sports Equipment": ["Minisoccerball", "Baseball", "Softball", "Tennisball"],
     "Cutlery": ["Fork", "Spoon", "Knife", "Metalplate", "Metalbowl"],
@@ -28,6 +29,7 @@ categories = {
     "Fruits": ["Orange", "Strawberry", "Apple", "Pear", "Lemon", "Banana", "Peach", "Plum", "Grapes"]
 }
 
+# make object name to key for faster access to category
 item_to_category = {item: category for category, items in categories.items() for item in items}
 
 
@@ -56,6 +58,14 @@ def navigate_and_detect(location: str):
 
 
 def sort_new(perceived: dict, robot: BulletWorldObject):
+    """
+    function that sorts the perceived objects from perception.
+    returns a list with two lists.
+    the first entry is a sorted list of the objects. It is sorted by distance to robot
+    the second entry is a dict. object name is the key and the value is the pose of the object
+    :param perceived: data from perception
+    :param robot: robot model in pycram to get current pose
+    """
     obj_list = {}
     sorted_obj_list = []
 
@@ -85,6 +95,11 @@ def sort_new(perceived: dict, robot: BulletWorldObject):
 
 
 def sort_and_remove_duplicates(unsorted_list):
+    """
+    function that sorts a list of strings by frequency and removes duplicates
+    not case-sensitive
+    :param unsorted_list: list with strings to sort
+    """
     #letters to lowercase
     unsorted_list = [s.lower() for s in unsorted_list]
 
@@ -101,6 +116,12 @@ def sort_and_remove_duplicates(unsorted_list):
 
 
 def order_categorys(objects:List):
+    """
+    function that makes a frequency ordered list of category's given a list of objects
+    the first entry of the returned list is the category that fits the most objects of the given list
+    e.g. ["apple","banana","fork"] -> ["fruit", "cutlery"]
+    :param objects: list of objects that get a category assigned
+    """
     categorys = []
     for obj in objects:
         try:
@@ -111,7 +132,13 @@ def order_categorys(objects:List):
     ordered_categorys = sort_and_remove_duplicates(categorys)
     return ordered_categorys
 
+
 def get_category(obj: str):
+    """
+    function that returns fitting category for object
+    or unknown when object is not in dictionary
+    :param obj: name of object to classify
+    """
     try:
         return item_to_category[obj]
     except KeyError:
