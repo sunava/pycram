@@ -17,7 +17,8 @@ categories = {
     "Sports Equipment": ["Minisoccerball", "Baseball", "Softball", "Tennisball"],
     "Cutlery": ["Fork", "Spoon", "Knife", "Metalplate", "Metalbowl"],
     "Drinkware": ["Pitcher", "Wineglass", "Metalmug", "Cupblue", "Cupgreen", "Cup_small"],
-    "Cleaning Supplies": ["Bleachcleanserbottle", "Glasscleanerspraybottle", "Abrasivesponge", "Scrubcleaner", "Dishwashertab"],
+    "Cleaning Supplies": ["Bleachcleanserbottle", "Glasscleanerspraybottle", "Abrasivesponge", "Scrubcleaner",
+                          "Dishwashertab"],
     "Tools": ["Scissors", "Screwdriver", "Clamp", "Hammer", "Wooden_block"],
     "Toys/Games": ["Rubikscube"],
     "Other": ["Largemarker"],
@@ -44,7 +45,7 @@ def navigate_and_detect(location: str):
         NavigateAction([pose_cabinet]).resolve().perform()
     elif location == "table":
         TalkingMotion("done").resolve().perform()
-        #NavigateAction([pose_table]).resolve().perform()
+        # NavigateAction([pose_table]).resolve().perform()
 
     TalkingMotion("Perceiving").resolve().perform()
 
@@ -84,9 +85,12 @@ def sort_new(perceived: dict, robot: BulletWorldObject):
         obj_pose.orientation = [obj_dict[value].pose.orientation.x, obj_dict[value].pose.orientation.y,
                                 obj_dict[value].pose.orientation.z, obj_dict[value].pose.orientation.w]
 
-
         # put everything in a dict
-        obj_list[value] = obj_pose
+        key = obj_dict[value].type + "0"
+        i = 1
+        while key in obj_list:
+            key = obj_dict[value].type + str(i)
+        obj_list[key] = obj_pose
         sorted_obj_list.append((obj_dict[value].type, distance))
 
     sorted_obj_list = sorted(sorted_obj_list, key=lambda distance: distance[1])
@@ -100,22 +104,22 @@ def sort_and_remove_duplicates(unsorted_list):
     not case-sensitive
     :param unsorted_list: list with strings to sort
     """
-    #letters to lowercase
+    # letters to lowercase
     unsorted_list = [s.lower() for s in unsorted_list]
 
-    #count frequency of each string
+    # count frequency of each string
     frequency = Counter(unsorted_list)
 
-    #remove duplicates (transform to set and back to list)
+    # remove duplicates (transform to set and back to list)
     unique_strings = list(set(unsorted_list))
 
-    #sort list according to frequency
+    # sort list according to frequency
     sorted_unique_strings = sorted(unique_strings, key=lambda x: (-frequency[x], x))
 
     return sorted_unique_strings
 
 
-def order_categorys(objects:List):
+def order_categorys(objects: List):
     """
     function that makes a frequency ordered list of category's given a list of objects
     the first entry of the returned list is the category that fits the most objects of the given list
@@ -125,7 +129,7 @@ def order_categorys(objects:List):
     categorys = []
     for obj in objects:
         try:
-            categorys.append(item_to_category[obj])
+            categorys.append(item_to_category[obj][:-1])
         except KeyError:
             categorys.append("unknown")
 
@@ -140,9 +144,63 @@ def get_category(obj: str):
     :param obj: name of object to classify
     """
     try:
-        return item_to_category[obj]
+        return item_to_category[obj][:-1]
     except KeyError:
         return "unknown"
 
+
+def find_nearest(obj_info: List[float], shelves: List[ShelfCompartmentDescription]) -> ShelfCompartmentDescription:
+    """
+    function to assign a shelf compartment from List to an object. works by choosing nearest compartment to object
+    using z-coordinate distances
+    :param obj_info: [z-coord/obj_height, x/y-coord of object] -> information from
+    object that is needed to assign compartment and update shelf areas
+    :param shelves: list of shelves that the object can be assigned to and that get updated
+    """
+    distance = 1000
+    fitting_shelf = shelves[0]
+    for shelf in shelves:
+        new_distance = abs(obj_info[0] - shelf.height)
+        if new_distance < distance:
+            distance = new_distance
+            fitting_shelf = shelf
+
+    index = 0
+    for area in fitting_shelf.placing_areas:
+        if area[0] <= obj_info[1] <= area[1]:
+            fitting_shelf.set_area_occupied(index, True)
+            break
+        index += 1
+    return fitting_shelf
+
+
+def order_items_to_shelves(obj_list: List, shelves: List[ShelfCompartmentDescription]):
+    """
+    function to update shelf compartments with perceived information
+    every shelf compartment gets category list depending on which objects were perceived on compartment
+    and the occupied areas are updated
+    IMPORTANT: changing variable depends on how the shelf is oriented (either x or y is different for objects)
+    -> needs to be changed according to map/arena
+
+    :param obj_list: list of perceived objects that need to be assigned to a shelf
+    :param shelves: list of shelves that the objects get assigned to
+    """
+    for object in obj_list:
+
+        obj_pose = obj_list[object].pose
+        # height of object to determine shelf fitting compartment
+        height = obj_pose.position.z
+
+        # y or x pose to determine in which area (right, middle, left) the object is standing
+        changing_var_pose = obj_pose.position.y
+
+        # object gets assigned a compartment and the compartment areas are updated
+        fitting_shelf = find_nearest([height, changing_var_pose], shelves)
+        # store category's in shelf object
+        fitting_shelf.category.append(get_category(object))
+
+    for shelf in shelves:
+        # sort all stored category's by frequency and remove duplicates
+        shelf.category = sort_and_remove_duplicates(shelf.category)
 
 

@@ -35,13 +35,16 @@ giskardpy.init_giskard_interface()
 
 # Shelf Variables
 shelf_pose = Pose([4.417880842356951,4.913135736923778, 0] ,[0, 0, 0, 1])
-lower_compartment = ShelfCompartmentDescription(height=0.45, placing_areas=[[5.1, 5.4], [4.8, 5.1], [4.8, 4.45]])
+lower_compartment = ShelfCompartmentDescription(height=0.09, placing_areas=[[5.1, 5.5], [4.8, 5.1], [4.35, 4.8]])
+middle_compartment = ShelfCompartmentDescription(height=0.37, placing_areas=[[5.1, 5.5], [4.8, 5.1], [4.35, 4.8]])
+upper_compartment = ShelfCompartmentDescription(height=0.71, placing_areas=[[5.1, 5.5], [4.8, 5.1], [4.35, 4.8]])
+shelves = [lower_compartment, middle_compartment, upper_compartment]
 
 
 def demo(step):
     with real_robot:
         # Wait for the start signal
-        if step == 0:
+        if step <= 0:
             start_signal_waiter.wait_for_startsignal()
 
             # continue with the rest of the script
@@ -53,19 +56,36 @@ def demo(step):
 
         # perceive shelf
         if step <= 2:
-            TalkingMotion("start").resolve().perform()
+            # TalkingMotion("start").resolve().perform()
             shelf_obj = DetectAction(technique='all').resolve().perform()
 
             res = sort_new(shelf_obj, robot)
             # object sorted by distance to robot
             sorted_objects = res[0]
+            print("sorted obj: " + str(sorted_objects))
 
             # dict with object poses
             object_list_poses = res[1]
+            print("pose list: " + str(object_list_poses))
 
-            # category of shelf
-            lower_compartment.category = order_categorys([obj[0] for obj in sorted_objects])
-            print(lower_compartment.category)
+            # update perceived info to shelves
+            order_items_to_shelves(object_list_poses, shelves)
+
+            # TODO: next steps
+
+            # navigate to table and perceive
+
+            # while objects on table:
+
+                 # pick up nearest object
+
+                 # navigate to shelf
+
+                 # place object depending on shelf areas
+
+            # end?
+
+
 
 
 
