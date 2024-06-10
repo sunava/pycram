@@ -94,13 +94,15 @@ class TextToSpeechPublisher:
         self.talking_sentence = ''
         rospy.Subscriber('/talking_sentence', String, self.talking_sentence_callback)
 
-    def talking_sentence_callback(self, msg):
+    def talking_sentence_callback(self, msg, talk: bool = True):
         """
         Callback function to update the talking_sentence attribute.
 
         :param msg: The ROS message received from the /talking_sentence topic.
         """
-        self.talking_sentence = msg.data
+        if talk:
+            self.talking_sentence = msg.data
+
 
     def publish_text(self, text, language=1):
         """
@@ -130,7 +132,7 @@ class ImageSwitchPublisher:
     A class to publish image switch requests in a ROS environment.
     """
 
-    def __init__(self, topic='/image_switch_topic', queue_size=10, latch=True):
+    def __init__(self, topic='/media_switch_topic', queue_size=10, latch=True):
         """
         Initializes the ImageSwitchPublisher with a ROS publisher.
 
@@ -167,6 +169,9 @@ class ImageSwitchPublisher:
 # "placing.png" -> 8
 # "repeat.png" -> 9
 # "search.png" -> 10
+# "waving.mp4" -> 11
+# "following" -> 12
+
 
 # Example usage:
 # image_switch_publisher = ImageSwitchPublisher()
