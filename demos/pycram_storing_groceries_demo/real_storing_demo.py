@@ -58,18 +58,21 @@ def demo(step):
         if step <= 2:
             # TalkingMotion("start").resolve().perform()
             shelf_obj = DetectAction(technique='all').resolve().perform()
-
-            res = sort_new(shelf_obj, robot)
-            # object sorted by distance to robot
-            sorted_objects = res[0]
-            print("sorted obj: " + str(sorted_objects))
-
-            # dict with object poses
-            object_list_poses = res[1]
-            print("pose list: " + str(object_list_poses))
-
-            # update perceived info to shelves
-            order_items_to_shelves(object_list_poses, shelves)
+            print(shelf_obj)
+            # res = sort_new(shelf_obj, robot)
+            #
+            #
+            #
+            # # object sorted by distance to robot
+            # sorted_objects = res[0]
+            # print("sorted obj: " + str(sorted_objects))
+            #
+            # # dict with object poses
+            # object_list_poses = res[1]
+            # print("pose list: " + str(object_list_poses))
+            #
+            # # update perceived info to shelves
+            # order_items_to_shelves(object_list_poses, shelves)
 
             # TODO: next steps
 
