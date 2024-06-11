@@ -29,7 +29,7 @@ from pycram.utilities.robocup_utils import TextToSpeechPublisher, ImageSwitchPub
 
 
 def startup():
-    world = BulletWorld("DIRECT")
+    world = BulletWorld()
     v = VizMarkerPublisher()
 
     #world = BulletWorld()

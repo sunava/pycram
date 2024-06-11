@@ -14,7 +14,7 @@ from utils.startup import startup
 import pycram.external_interfaces.giskard_new as giskardpy
 
 # Initialize the necessary components
-world, v, text_to_speech_publisher, image_switch_publisher, move = startup()
+world, v, text_to_speech_publisher, image_switch_publisher, move, robot = startup()
 giskardpy.init_giskard_interface()
 client = actionlib.SimpleActionClient('robokudo/query', QueryAction)
 rospy.loginfo("Waiting for action server")
@@ -65,16 +65,16 @@ def all():
         talk = True
         # ParkArmsAction([Arms.LEFT]).resolve().perform()
         try:
-            text_to_speech_publisher.publish_text("Starting Carry my Luggage demo.", talk)
-            image_switch_publisher.publish_image_switch(ImageEnum.HI.value)  # hi im toya
-            text_to_speech_publisher.publish_text("Push down my Hand, when you are Ready.", talk)
-            image_switch_publisher.publish_image_switch(ImageEnum.PUSHBUTTONS.value)
+            text_to_speech_publisher.pub_now("Starting Carry my Luggage demo.", talk)
+            image_switch_publisher.pub_now(ImageEnum.HI.value)  # hi im toya
+            text_to_speech_publisher.pub_now("Push down my Hand, when you are Ready.", talk)
+            image_switch_publisher.pub_now(ImageEnum.PUSHBUTTONS.value)
             plan = Code(lambda: rospy.sleep(1)) * 999999 >> Monitor(monitor_func)
             plan.perform()
         except SensorMonitoringCondition:
-            image_switch_publisher.publish_image_switch(ImageEnum.HI.value)  # hi im toya
-            text_to_speech_publisher.publish_text("Looking for a human", talk)
-            image_switch_publisher.publish_image_switch(ImageEnum.SEARCH.value)  # search
+            image_switch_publisher.pub_now(ImageEnum.HI.value)  # hi im toya
+            text_to_speech_publisher.pub_now("Looking for a human", talk)
+            image_switch_publisher.pub_now(ImageEnum.SEARCH.value)  # search
             goal_msg = QueryGoal()
             client.send_goal(goal_msg)
 
@@ -82,48 +82,48 @@ def all():
 
             rospy.loginfo("Waiting for human to be detected")
             human.human_pose.wait_for()
-            text_to_speech_publisher.publish_text("Found a Human", talk)
-            image_switch_publisher.publish_image_switch(ImageEnum.HI.value)
+            text_to_speech_publisher.pub_now("Found a Human", talk)
+            image_switch_publisher.pub_now(ImageEnum.HI.value)
 
             MoveGripperMotion(motion="open", gripper="left").resolve().perform()
-            text_to_speech_publisher.publish_text("I am not able to pick up the bag. Please hand it in", talk)
-            text_to_speech_publisher.publish_text("Push down my Hand, when you are Ready.", talk)
-            image_switch_publisher.publish_image_switch(ImageEnum.PUSHBUTTONS.value)
+            text_to_speech_publisher.pub_now("I am not able to pick up the bag. Please hand it in", talk)
+            text_to_speech_publisher.pub_now("Push down my Hand, when you are Ready.", talk)
+            image_switch_publisher.pub_now(ImageEnum.PUSHBUTTONS.value)
             try:
                 plan = Code(lambda: rospy.sleep(1)) * 99999999 >> Monitor(monitor_func)
                 plan.perform()
             except SensorMonitoringCondition:
-                text_to_speech_publisher.publish_text("Closing my Gripper.", talk)
-                image_switch_publisher.publish_image_switch(ImageEnum.HI.value)
+                text_to_speech_publisher.pub_now("Closing my Gripper.", talk)
+                image_switch_publisher.pub_now(ImageEnum.HI.value)
                 MoveGripperMotion(motion="close", gripper="left").resolve().perform()
-                text_to_speech_publisher.publish_text("Following you.", talk)
-                image_switch_publisher.publish_image_switch(ImageEnum.FOLLOWSTOP.value)
-                text_to_speech_publisher.publish_text("Push down my Hand, when we arrived.", talk)
+                text_to_speech_publisher.pub_now("Following you.", talk)
+                image_switch_publisher.pub_now(ImageEnum.FOLLOWSTOP.value)
+                text_to_speech_publisher.pub_now("Push down my Hand, when we arrived.", talk)
                 try:
                     plan = Code(lambda: giskardpy.cml(False)) >> Monitor(monitor_func)
                     plan.perform()
                 except SensorMonitoringCondition:
 
-                    text_to_speech_publisher.publish_text("I will open my Gripper, to give you the bag.", talk)
-                    text_to_speech_publisher.publish_text("Push down my Hand, when you are Ready.", talk)
-                    image_switch_publisher.publish_image_switch(ImageEnum.PUSHBUTTONS.value)
+                    text_to_speech_publisher.pub_now("I will open my Gripper, to give you the bag.", talk)
+                    text_to_speech_publisher.pub_now("Push down my Hand, when you are Ready.", talk)
+                    image_switch_publisher.pub_now(ImageEnum.PUSHBUTTONS.value)
                     try:
                         plan = Code(lambda: rospy.sleep(1)) * 99999999 >> Monitor(monitor_func)
                         plan.perform()
                     except SensorMonitoringCondition:
                         MoveGripperMotion(motion="open", gripper="left").resolve().perform()
 
-                        text_to_speech_publisher.publish_text("Driving Back.", talk)
-                        image_switch_publisher.publish_image_switch(ImageEnum.DRIVINGBACK.value)
+                        text_to_speech_publisher.pub_now("Driving Back.", talk)
+                        image_switch_publisher.pub_now(ImageEnum.DRIVINGBACK.value)
                         giskardpy.cml(True)
-                        text_to_speech_publisher.publish_text("done.", talk)
+                        text_to_speech_publisher.pub_now("done.", talk)
 
 
 
 # goal_msg = QueryGoal()
 # print(goal_msg)
 # gis()
-# all()
+#all()
 # "hi.png" -> 0
 # "talk.png" -> 1
 # "dish.png" -> 2

@@ -494,7 +494,10 @@ class HSRBDetectingReal(ProcessModule):
             query_result = queryEmpty(ObjectDesignatorDescription(types=[desig.object_type]))
             perceived_objects = []
             for i in range(0, len(query_result.res)):
-                obj_pose = Pose.from_pose_stamped(query_result.res[i].pose[0])
+                try:
+                    obj_pose = Pose.from_pose_stamped(query_result.res[i].pose[0])
+                except IndexError:
+                    continue
                 obj_type = query_result.res[i].type
                 obj_size = query_result.res[i].shape_size[0].dimensions
                 obj_color = query_result.res[i].color[0]
