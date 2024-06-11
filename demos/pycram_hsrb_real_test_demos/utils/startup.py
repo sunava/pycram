@@ -29,7 +29,7 @@ from pycram.utilities.robocup_utils import TextToSpeechPublisher, ImageSwitchPub
 
 
 def startup():
-    world = BulletWorld()
+    world = BulletWorld("DIRECT")
     v = VizMarkerPublisher()
 
     #world = BulletWorld()
@@ -45,4 +45,4 @@ def startup():
     KitchenStateUpdater("/tf", "/iai_kitchen/joint_states")
     move = PoseNavigator()
 
-    return world, v, text_to_speech_publisher, image_switch_publisher, move
+    return world, v, text_to_speech_publisher, image_switch_publisher, move, robot

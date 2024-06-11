@@ -1,3 +1,4 @@
+import rospy
 from sensor_msgs.msg import LaserScan
 from sound_play.msg import SoundRequestActionGoal, SoundRequest
 from std_msgs.msg import Int32
@@ -78,6 +79,7 @@ class StartSignalWaiter:
 
         rospy.loginfo("Start signal received.")
 
+
 class TextToSpeechPublisher:
     """
     A class to publish text-to-speech requests in a ROS environment.
@@ -103,14 +105,14 @@ class TextToSpeechPublisher:
         if talk:
             self.talking_sentence = msg.data
 
-
-    def publish_text(self, text, language=1):
+    def pub_now(self, text, language=1):
         """
         Publishes a text-to-speech request with the given text and language.
 
         :param text: The text to be spoken.
         :param language: The language of the text. 1 for English, 0 for Japanese. Default is 1 (English).
         """
+        rospy.loginfo(text)
         rospy.loginfo("Waiting for /talking_sentence to be empty...")
         while self.talking_sentence != '':
             rospy.sleep(0.1)  # Sleep for 100ms and check again
@@ -143,7 +145,7 @@ class ImageSwitchPublisher:
         self.pub = rospy.Publisher(topic, Int32, queue_size=queue_size, latch=latch)
         self.msg = Int32()
 
-    def publish_image_switch(self, image_id):
+    def pub_now(self, image_id):
         """
         Publish the image switch request message.
 

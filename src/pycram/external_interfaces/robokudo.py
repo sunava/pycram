@@ -8,7 +8,7 @@ from ..local_transformer import LocalTransformer
 from ..bullet_world import BulletWorld
 from ..enums import ObjectType
 from typing import Any
-from geometry_msgs.msg import PoseStamped
+from geometry_msgs.msg import PoseStamped, PointStamped
 
 is_init = False
 
@@ -203,7 +203,7 @@ def queryHuman() -> Any:
         query_result = result
 
     def feedback_callback(msg):
-        rospy.loginfo("Got feedback")
+        #rospy.loginfo("Got feedback")
         global feedback_result
         feedback_result = msg
 
@@ -225,7 +225,7 @@ def queryHuman() -> Any:
     # if no human is detected
     human_bool = False
     waiting_human = False
-    rospy.Subscriber("/human_pose", PoseStamped, callback)
+    rospy.Subscriber("/cml_human_pose", PointStamped, callback)
 
     while not human_bool:
         rospy.sleep(0.5)
