@@ -971,7 +971,7 @@ class DetectAction(ActionDesignatorDescription):
         Or 'all' if all objects should be detected
         """
 
-        object_designator: Optional[ObjectDesignatorDescription.Object] = None
+        object_designator: Optional[ObjectDesignatorDescription] = None
         """
         Object designator loosely describing the object, e.g. only type. 
         """
@@ -985,7 +985,7 @@ class DetectAction(ActionDesignatorDescription):
         @with_tree
         def perform(self) -> Any:
             if self.object_designator:
-                object_type = self.object_designator.type
+                object_type = self.object_designator.types[0]
             else:
                 object_type = None
             return DetectingMotion(technique=self.technique, object_type=object_type,

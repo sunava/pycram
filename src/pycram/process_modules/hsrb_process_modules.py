@@ -5,7 +5,7 @@ from typing import Any
 import numpy as np
 import rospy
 from geometry_msgs.msg import PointStamped
-#from robokudo_msgs.msg import QueryGoal, QueryResult
+# from robokudo_msgs.msg import QueryGoal, QueryResult
 from tmc_control_msgs.msg import GripperApplyEffortActionGoal
 from tmc_msgs.msg import Voice
 
@@ -238,7 +238,7 @@ class HSRBOpen(ProcessModule):
         goal_pose = btr.link_pose_for_joint_config(part_of_object, {
             container_joint: part_of_object.get_joint_limits(container_joint)[1] - 0.05}, desig.object_part.name)
 
-        #_move_arm_tcp(goal_pose, BulletWorld.robot, desig.arm)
+        # _move_arm_tcp(goal_pose, BulletWorld.robot, desig.arm)
 
         desig.object_part.bullet_world_object.set_joint_state(container_joint,
                                                               part_of_object.get_joint_limits(container_joint)[1])
@@ -369,8 +369,8 @@ class HSRBDetectingReal(ProcessModule):
         elif desig.technique == 'location':
             seat = desig.state
             seat_human_pose = seat_queryHuman(seat)
-            #print(seat_human_pose[0].attribute[0].split(','))
-            #print(seat_human_pose[0].attribute[1])
+            # print(seat_human_pose[0].attribute[0].split(','))
+            # print(seat_human_pose[0].attribute[1])
             if seat == "long_table" or seat == "popcorn_table":
                 loc_list = []
                 for loc in seat_human_pose[0].attribute:
@@ -378,7 +378,7 @@ class HSRBDetectingReal(ProcessModule):
                     loc_list.append(loc)
                 print(loc_list)
                 return loc_list
-                #return seat_human_pose[0].attribute
+                # return seat_human_pose[0].attribute
             # if only one seat is checked
             if seat != "sofa":
                 return seat_human_pose[0].attribute[0][9:].split(',')
@@ -403,7 +403,6 @@ class HSRBDetectingReal(ProcessModule):
             if counter >= 3:
                 return "False"
 
-
             # extract information from query
             gender = human_pose_attr.res[0].attribute[3][13:19]
             if gender[0] != 'f':
@@ -416,7 +415,7 @@ class HSRBDetectingReal(ProcessModule):
 
         # used when region-filter of robokudo should be used
         elif desig.technique == 'region':
-            region = desig.state # name of the region where should be perceived
+            region = desig.state  # name of the region where should be perceived
             query_result = queryRegion(region)
             perceived_objects = []
 
@@ -459,7 +458,6 @@ class HSRBDetectingReal(ProcessModule):
                     y_value = input_string[(input_string.find("y") + 2): input_string.find("z")]
                     z_value = input_string[(input_string.find("z") + 2):]
 
-
                     # Iterate through the key-value pairs to extract the values
                     # for pair in key_value_pairs:
                     #     key, value = pair.split(': ')
@@ -477,7 +475,8 @@ class HSRBDetectingReal(ProcessModule):
                 # size_box = (x / 2, z / 2, y / 2)
                 hard_size = (0.02, 0.02, 0.03)
                 id = BulletWorld.current_bullet_world.add_rigid_box(obj_pose, hard_size, [0, 0, 0, 1])
-                box_object = Object(obj_type + "" + str(rospy.get_time()), obj_type, pose=obj_pose, color=[0, 0, 0, 1], id=id,
+                box_object = Object(obj_type + "" + str(rospy.get_time()), obj_type, pose=obj_pose, color=[0, 0, 0, 1],
+                                    id=id,
                                     customGeom={"size": [hard_size[0], hard_size[1], hard_size[2]]})
                 box_object.set_pose(obj_pose)
                 box_desig = ObjectDesignatorDescription.Object(box_object.name, box_object.type, box_object)
@@ -495,60 +494,34 @@ class HSRBDetectingReal(ProcessModule):
             query_result = queryEmpty(ObjectDesignatorDescription(types=[desig.object_type]))
             perceived_objects = []
             for i in range(0, len(query_result.res)):
-                # this has to be pose from pose stamped since we spawn the object with given header
                 obj_pose = Pose.from_pose_stamped(query_result.res[i].pose[0])
-                # obj_pose.orientation = [0, 0, 0, 1]
-                # obj_pose_tmp = query_result.res[i].pose[0]
                 obj_type = query_result.res[i].type
-                obj_size = query_result.res[i].shape_size
-                #obj_color = query_result.res[i].color[0]
+                obj_size = query_result.res[i].shape_size[0].dimensions
+                obj_color = query_result.res[i].color[0]
+                if desig.object_type:
+                    if not desig.object_type.lower() in obj_type.lower():
+                        continue
                 color_switch = {
                     "red": [1, 0, 0, 1],
+                    "yellow": [1, 1, 0, 1],
                     "green": [0, 1, 0, 1],
+                    "cyan": [0, 1, 1, 1],
                     "blue": [0, 0, 1, 1],
-                    "black": [0, 0, 0, 1],
+                    "magenta": [1, 0, 1, 1],
                     "white": [1, 1, 1, 1],
+                    "black": [0, 0, 0, 1],
+                    "grey": [0.5, 0.5, 0.5, 1],
                     # add more colors if needed
                 }
-                #olor = color_switch.get(obj_color)
-                #if color is None:
-                    #color = [0, 0, 0, 1]
 
-                # atm this is the string size that describes the object but it is not the shape size thats why string
-                def extract_xyz_values(input_string):
-                    # Split the input string by commas and colon to separate key-value pairs
-                    # key_value_pairs = input_string.split(', ')
+                color = color_switch.get(obj_color)
+                if color is None:
+                    color = [0, 0, 0, 1]
 
-                    # Initialize variables to store the X, Y, and Z values
-                    x_value = None
-                    y_value = None
-                    z_value = None
-
-                    for key in input_string:
-                        x_value = key.dimensions.x
-                        y_value = key.dimensions.y
-                        z_value = key.dimensions.z
-
-                    #
-                    # # Iterate through the key-value pairs to extract the values
-                    # for pair in key_value_pairs:
-                    #     key, value = pair.split(': ')
-                    #     if key == 'x':
-                    #         x_value = float(value)
-                    #     elif key == 'y':
-                    #         y_value = float(value)
-                    #     elif key == 'z':
-                    #         z_value = float(value)
-
-                    return x_value, y_value, z_value
-
-                x, y, z = extract_xyz_values(obj_size)
-                #size = (x, z / 2, y)
-                #size_box = (x / 2, z / 2, y / 2)
-                hard_size = (0.02, 0.02, 0.03)
-                id = BulletWorld.current_bullet_world.add_rigid_box(obj_pose, hard_size, [0, 0, 0, 1])
-                box_object = Object(obj_type + "_" + str(rospy.get_time()), obj_type, pose=obj_pose, color=[0, 0, 0, 1], id=id,
-                                    customGeom={"size": [hard_size[0], hard_size[1], hard_size[2]]})
+                osize = [obj_size.x / 2, obj_size.y / 2, obj_size.z / 2]
+                id = BulletWorld.current_bullet_world.add_rigid_box(obj_pose, osize, color)
+                box_object = Object(obj_type + "_" + str(rospy.get_time()), obj_type, pose=obj_pose, color=color, id=id,
+                                    customGeom={"size": osize})
                 box_object.set_pose(obj_pose)
                 box_desig = ObjectDesignatorDescription.Object(box_object.name, box_object.type, box_object)
 
@@ -556,7 +529,6 @@ class HSRBDetectingReal(ProcessModule):
 
             object_dict = {}
 
-            # Iterate over the list of objects and store each one in the dictionary
             for i, obj in enumerate(perceived_objects):
                 object_dict[obj.name] = obj
             return object_dict
@@ -601,6 +573,7 @@ class HSRBMoveJointsReal(ProcessModule):
         giskard.avoid_all_collisions()
         giskard.achieve_joint_goal(name_to_position)
         return State.SUCCEEDED, "Nice"
+
 
 class HSRBMoveGripperReal(ProcessModule):
     """
@@ -706,27 +679,34 @@ class HSRBPointingReal(ProcessModule):
 
 class HSRBGraspDishwasherHandleReal(ProcessModule):
     """Grasps the dishwasher handle"""
+
     def _execute(self, designator: GraspingDishwasherHandleMotion.Motion) -> Any:
-         giskard.grasp_handle(designator.handle_name)
+        giskard.grasp_handle(designator.handle_name)
 
 
 class HSRBHalfOpenDishwasherReal(ProcessModule):
     """Partially opens the dishwasher door."""
+
     def _execute(self, designator: HalfOpeningDishwasherMotion.Motion) -> Any:
-         giskard.achieve_open_container_goal(robot_description.get_tool_frame("left"), designator.handle_name, goal_state=designator.goal_state_half_open, special_door=True)
+        giskard.achieve_open_container_goal(robot_description.get_tool_frame("left"), designator.handle_name,
+                                            goal_state=designator.goal_state_half_open, special_door=True)
 
 
 class HSRBMoveArmAroundDishwasherReal(ProcessModule):
     """Moves the HSR arm around the dishwasher door after partially opening"""
+
     def _execute(self, designator: MoveArmAroundMotion.Motion) -> Any:
         giskard.set_hsrb_dishwasher_door_around(designator.handle_name)
 
 
 class HSRBFullOpenDishwasherReal(ProcessModule):
     """Opens the dishwasher fully"""
+
     def _execute(self, designator: FullOpeningDishwasherMotion.Motion) -> Any:
         giskard.fully_open_dishwasher_door(designator.handle_name, designator.door_name)
-        giskard.achieve_open_container_goal(robot_description.get_tool_frame("left"), designator.handle_name, goal_state=designator.goal_state_full_open, special_door=True)
+        giskard.achieve_open_container_goal(robot_description.get_tool_frame("left"), designator.handle_name,
+                                            goal_state=designator.goal_state_full_open, special_door=True)
+
 
 class HSRBManager(ProcessModuleManager):
 

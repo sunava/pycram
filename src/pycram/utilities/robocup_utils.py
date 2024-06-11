@@ -1,3 +1,4 @@
+import rospy
 from sensor_msgs.msg import LaserScan
 from sound_play.msg import SoundRequestActionGoal, SoundRequest
 from std_msgs.msg import Int32
@@ -78,6 +79,7 @@ class StartSignalWaiter:
 
         rospy.loginfo("Start signal received.")
 
+
 class TextToSpeechPublisher:
     """
     A class to publish text-to-speech requests in a ROS environment.
@@ -94,21 +96,23 @@ class TextToSpeechPublisher:
         self.talking_sentence = ''
         rospy.Subscriber('/talking_sentence', String, self.talking_sentence_callback)
 
-    def talking_sentence_callback(self, msg):
+    def talking_sentence_callback(self, msg, talk: bool = True):
         """
         Callback function to update the talking_sentence attribute.
 
         :param msg: The ROS message received from the /talking_sentence topic.
         """
-        self.talking_sentence = msg.data
+        if talk:
+            self.talking_sentence = msg.data
 
-    def publish_text(self, text, language=1):
+    def pub_now(self, text, language=1):
         """
         Publishes a text-to-speech request with the given text and language.
 
         :param text: The text to be spoken.
         :param language: The language of the text. 1 for English, 0 for Japanese. Default is 1 (English).
         """
+        rospy.loginfo(text)
         rospy.loginfo("Waiting for /talking_sentence to be empty...")
         while self.talking_sentence != '':
             rospy.sleep(0.1)  # Sleep for 100ms and check again
@@ -130,7 +134,7 @@ class ImageSwitchPublisher:
     A class to publish image switch requests in a ROS environment.
     """
 
-    def __init__(self, topic='/image_switch_topic', queue_size=10, latch=True):
+    def __init__(self, topic='/media_switch_topic', queue_size=10, latch=True):
         """
         Initializes the ImageSwitchPublisher with a ROS publisher.
 
@@ -141,7 +145,7 @@ class ImageSwitchPublisher:
         self.pub = rospy.Publisher(topic, Int32, queue_size=queue_size, latch=latch)
         self.msg = Int32()
 
-    def publish_image_switch(self, image_id):
+    def pub_now(self, image_id):
         """
         Publish the image switch request message.
 
@@ -167,6 +171,9 @@ class ImageSwitchPublisher:
 # "placing.png" -> 8
 # "repeat.png" -> 9
 # "search.png" -> 10
+# "waving.mp4" -> 11
+# "following" -> 12
+
 
 # Example usage:
 # image_switch_publisher = ImageSwitchPublisher()

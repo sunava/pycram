@@ -1,4 +1,4 @@
-from typing import List, Dict, Optional
+from typing import List, Dict, Optional, TYPE_CHECKING
 
 import rospy
 from geometry_msgs.msg import PoseStamped, PointStamped, QuaternionStamped, Vector3Stamped
@@ -8,8 +8,13 @@ from ..bullet_world import BulletWorld, Object
 from ..pose import Pose
 from ..robot_descriptions import robot_description
 from ..utilities import tf_wrapper as tf
+#
+# if TYPE_CHECKING:
+#     from giskardpy.python_interface.python_interface import GiskardWrapper
+#     from giskard_msgs.msg import MoveResult, UpdateWorldResponse
 
 giskard_wrapper = None
+#giskard_wrapper: GiskardWrapper = None
 giskard_update_service = None
 is_init = False
 
@@ -22,12 +27,12 @@ def init_giskard_interface():
         return
     topics = list(map(lambda x: x[0], rospy.get_published_topics()))
     try:
-        from giskardpy.python_interface.old_python_interface import OldGiskardWrapper
+        from giskardpy.python_interface.python_interface import GiskardWrapper
         from giskard_msgs.msg import WorldBody, MoveResult, CollisionEntry
         # from giskard_msgs.srv import UpdateWorldRequest, UpdateWorld, UpdateWorldResponse, RegisterGroupResponse
 
         if "/giskard/command/goal" in topics:
-            giskard_wrapper = OldGiskardWrapper()
+            giskard_wrapper = GiskardWrapper()
             # giskard_update_service = rospy.ServiceProxy("/giskard/update_world", UpdateWorld)
             is_init = True
             rospy.loginfo("Successfully initialized Giskard interface")
@@ -513,17 +518,17 @@ def move_head_to_human():
     giskard_wrapper.execute(wait=False, add_default=False)
 
 
-def stop_looking():
-    """
-    stops the move_head_to_human function so that hsr looks forward
-    """
-
-    # cancels all goals in giskard
-    # giskard_wrapper.cancel_all_goals()
-    # moves hsr in standard position
-    giskard_wrapper.take_pose("park")
-    giskard_wrapper.execute(wait=False)
-    rospy.loginfo("hsr looks forward instead of looking at human")
+# def stop_looking():
+#     """
+#     stops the move_head_to_human function so that hsr looks forward
+#     """
+#
+#     # cancels all goals in giskard
+#     # giskard_wrapper.cancel_all_goals()
+#     # moves hsr in standard position
+#     giskard_wrapper.take_pose("park")
+#     giskard_wrapper.execute(wait=False)
+#     rospy.loginfo("hsr looks forward instead of looking at human")
 
 
 def cancel_all_called_goals():
@@ -540,7 +545,7 @@ def move_head_to_pose(pose: PointStamped):
     # TODO: needs to be tested!
     p_axis = Vector3Stamped()
     p_axis.vector = (0, 0, 1)
-    giskard_wrapper.set_pointing_goal(goal_point=pose,
+    giskard_wrapper.motion_goals.set_pointing_goal(goal_point=pose,
                                       tip_link="head_center_camera_frame",
                                       pointing_axis=p_axis,
                                       root_link="base_footprint")
@@ -625,6 +630,10 @@ def park_arms():
     giskard_wrapper.execute()
 
 
+def cml(drive_back):
+    print("in cml")
+    giskard_wrapper.motion_goals.add_carry_my_luggage(name='cmb', drive_back=drive_back)
+    giskard_wrapper.execute()
 
 # def reaching(self,
 #                #context,

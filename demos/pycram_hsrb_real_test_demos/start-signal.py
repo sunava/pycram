@@ -3,7 +3,7 @@ from pycram.utilities.robocup_utils import StartSignalWaiter
 
 # Create an instance of the StartSignalWaiter
 start_signal_waiter = StartSignalWaiter()
-
+#load everfyhing world giskard robokudo....
 # Wait for the start signal
 start_signal_waiter.wait_for_startsignal()
 

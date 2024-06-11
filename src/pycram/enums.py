@@ -73,4 +73,21 @@ class FilterConfig(Enum):
     Currently supported: Butterworth
     """
     butterworth = 1
-    
+
+class ImageEnum(Enum):
+    HI = 0
+    TALK = 1
+    DISH = 2
+    DONE = 3
+    DROP = 4
+    HANDOVER = 5
+    ORDER = 6
+    PICKING = 7
+    PLACING = 8
+    REPEAT = 9
+    SEARCH = 10
+    WAVING = 11
+    FOLLOWING = 12
+    DRIVINGBACK = 13
+    PUSHBUTTONS = 14
+    FOLLOWSTOP = 15
