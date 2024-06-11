@@ -44,6 +44,5 @@ def startup():
     RobotStateUpdater("/tf", "/hsrb/robot_state/joint_states")
     KitchenStateUpdater("/tf", "/iai_kitchen/joint_states")
     move = PoseNavigator()
-    giskardpy.init_giskard_interface()
 
     return world, v, text_to_speech_publisher, image_switch_publisher, move

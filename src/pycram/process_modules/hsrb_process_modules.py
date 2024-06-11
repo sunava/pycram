@@ -510,45 +510,14 @@ class HSRBDetectingReal(ProcessModule):
                     "white": [1, 1, 1, 1],
                     # add more colors if needed
                 }
-                #olor = color_switch.get(obj_color)
-                #if color is None:
-                    #color = [0, 0, 0, 1]
 
-                # atm this is the string size that describes the object but it is not the shape size thats why string
-                def extract_xyz_values(input_string):
-                    # Split the input string by commas and colon to separate key-value pairs
-                    # key_value_pairs = input_string.split(', ')
 
-                    # Initialize variables to store the X, Y, and Z values
-                    x_value = None
-                    y_value = None
-                    z_value = None
 
-                    for key in input_string:
-                        x_value = key.dimensions.x
-                        y_value = key.dimensions.y
-                        z_value = key.dimensions.z
 
-                    #
-                    # # Iterate through the key-value pairs to extract the values
-                    # for pair in key_value_pairs:
-                    #     key, value = pair.split(': ')
-                    #     if key == 'x':
-                    #         x_value = float(value)
-                    #     elif key == 'y':
-                    #         y_value = float(value)
-                    #     elif key == 'z':
-                    #         z_value = float(value)
-
-                    return x_value, y_value, z_value
-
-                x, y, z = extract_xyz_values(obj_size)
-                #size = (x, z / 2, y)
-                #size_box = (x / 2, z / 2, y / 2)
-                hard_size = (0.02, 0.02, 0.03)
-                id = BulletWorld.current_bullet_world.add_rigid_box(obj_pose, hard_size, [0, 0, 0, 1])
+                #hard_size = (0.02, 0.02, 0.03)
+                id = BulletWorld.current_bullet_world.add_rigid_box(obj_pose, obj_size, [0, 0, 0, 1])
                 box_object = Object(obj_type + "_" + str(rospy.get_time()), obj_type, pose=obj_pose, color=[0, 0, 0, 1], id=id,
-                                    customGeom={"size": [hard_size[0], hard_size[1], hard_size[2]]})
+                                    customGeom={"size": [obj_size[0], obj_size[1], obj_size[2]]})
                 box_object.set_pose(obj_pose)
                 box_desig = ObjectDesignatorDescription.Object(box_object.name, box_object.type, box_object)
 
