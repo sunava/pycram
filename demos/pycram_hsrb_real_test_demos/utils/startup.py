@@ -29,10 +29,10 @@ from pycram.utilities.robocup_utils import TextToSpeechPublisher, ImageSwitchPub
 
 
 def startup():
-    world = BulletWorld("DIRECT")
+    world = BulletWorld()
     v = VizMarkerPublisher()
 
-    world = BulletWorld()
+    #world = BulletWorld()
     v = VizMarkerPublisher()
     kitchen = Object("kitchen", ObjectType.ENVIRONMENT, "suturo_lab_version_15.urdf")
     text_to_speech_publisher = TextToSpeechPublisher()

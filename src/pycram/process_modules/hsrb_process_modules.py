@@ -495,29 +495,32 @@ class HSRBDetectingReal(ProcessModule):
             query_result = queryEmpty(ObjectDesignatorDescription(types=[desig.object_type]))
             perceived_objects = []
             for i in range(0, len(query_result.res)):
-                # this has to be pose from pose stamped since we spawn the object with given header
                 obj_pose = Pose.from_pose_stamped(query_result.res[i].pose[0])
-                # obj_pose.orientation = [0, 0, 0, 1]
-                # obj_pose_tmp = query_result.res[i].pose[0]
                 obj_type = query_result.res[i].type
-                obj_size = query_result.res[i].shape_size
-                #obj_color = query_result.res[i].color[0]
+                obj_size = query_result.res[i].shape_size[0].dimensions
+                obj_color = query_result.res[i].color[0]
+
                 color_switch = {
                     "red": [1, 0, 0, 1],
+                    "yellow": [1, 1, 0, 1],
                     "green": [0, 1, 0, 1],
+                    "cyan": [0, 1, 1, 1],
                     "blue": [0, 0, 1, 1],
-                    "black": [0, 0, 0, 1],
+                    "magenta": [1, 0, 1, 1],
                     "white": [1, 1, 1, 1],
+                    "black": [0, 0, 0, 1],
+                    "grey": [0.5, 0.5, 0.5, 1],
                     # add more colors if needed
                 }
 
+                color = color_switch.get(obj_color)
+                if color is None:
+                    color = [0, 0, 0, 1]
 
-
-
-                #hard_size = (0.02, 0.02, 0.03)
-                id = BulletWorld.current_bullet_world.add_rigid_box(obj_pose, obj_size, [0, 0, 0, 1])
-                box_object = Object(obj_type + "_" + str(rospy.get_time()), obj_type, pose=obj_pose, color=[0, 0, 0, 1], id=id,
-                                    customGeom={"size": [obj_size[0], obj_size[1], obj_size[2]]})
+                osize =[obj_size.x/2, obj_size.y/2, obj_size.z/2]
+                id = BulletWorld.current_bullet_world.add_rigid_box(obj_pose, osize, color)
+                box_object = Object(obj_type + "_" + str(rospy.get_time()), obj_type, pose=obj_pose, color=color, id=id,
+                                    customGeom={"size": osize})
                 box_object.set_pose(obj_pose)
                 box_desig = ObjectDesignatorDescription.Object(box_object.name, box_object.type, box_object)
 
@@ -525,7 +528,6 @@ class HSRBDetectingReal(ProcessModule):
 
             object_dict = {}
 
-            # Iterate over the list of objects and store each one in the dictionary
             for i, obj in enumerate(perceived_objects):
                 object_dict[obj.name] = obj
             return object_dict
