@@ -2,7 +2,7 @@ from pycram.designators.action_designator import *
 from pycram.process_module import real_robot
 from pycram.ros.robot_state_updater import RobotStateUpdater
 from pycram.ros.viz_marker_publisher import VizMarkerPublisher
-from .utils.misc import *
+from demos.pycram_storing_groceries_demo.utils.misc import sort_obj
 
 world = BulletWorld("DIRECT")
 v = VizMarkerPublisher()
@@ -18,6 +18,8 @@ kitchen_desig = ObjectDesignatorDescription(names=["kitchen"])
 
 
 with real_robot:
+    shelf_obj = DetectAction(technique='all').resolve().perform()
+    sorted_obj_list = sort_obj(shelf_obj, robot)
 
     # navigate to test area
     NavigateAction([pose_test_area]).resolve().perform()

@@ -245,3 +245,59 @@ class HumanDescription:
         :param attribute_list: list with attributes: gender, headgear, kind of clothes, bright/dark clothes
         """
         self.attributes = attribute_list[1]
+
+
+class ShelfCompartmentDescription:
+    """
+    Class that represents a Compartment in a shelf but in cool and convenient
+    """
+    def __init__(self, height: float, placing_areas: List[List[float]], category=None):
+        """
+        :param height: height of compartment
+        :param placing_areas: x/y-coordinate of possible placing range [x min, x max]
+        :param category: category of object already standing in the compartment
+        """
+
+        if category is None:
+            category = []
+        else:
+            self.category = category
+
+        self.height = height
+        self.placing_areas = placing_areas
+        self.category = category
+        # list that tracks if area x is occupied
+        # we assume that the compartment is empty, therefore everything is set to False
+        self.area_free = []
+        for i in range(len(placing_areas)):
+            self.area_free.append(False)
+
+    def set_area_occupied(self, area: int, occ: bool):
+        self.area_free[area] = occ
+
+    def get_area_occupied(self, area: int):
+        return self.area_free[area]
+
+    def get_free_area(self):
+        for area in range(len(self.placing_areas)):
+            if not self.area_free[area]:
+                # return arithmetic mean of area
+                return (self.placing_areas[area][0] + self.placing_areas[area][1])/2
+        return -1
+
+    def get_placing_pose(self, obj_category: str):
+        for cat in self.category:
+            if cat == obj_category:
+                placing_pose = self.get_free_area()
+                if placing_pose != -1:
+                    return placing_pose
+                else:
+                    return -1
+        return -1
+
+
+
+
+
+
+
