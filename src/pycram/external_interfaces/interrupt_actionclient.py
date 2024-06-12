@@ -58,7 +58,7 @@ class InterruptClient:
                 }
             }
             self.age = interruption_msg.age
-            self.modify_objects_in_use(interruption_msg.add_object, interruption_msg.del_object)
+            # self.modify_objects_in_use(interruption_msg.add_object, interruption_msg.del_object)
             self.add_command(command_data)
             if category == "minor":
                 print("minor interrupt")
