@@ -49,7 +49,12 @@ place_pose = None
 nav_pose = None
 original_pose = None
 obj_desig = None
+handle_desig = None
 current_cmd = None
+current_location = None
+drawer_open_loc = None
+used_arm = "left"
+grasp = "front"
 
 
 def color_map(color):
@@ -77,52 +82,73 @@ def age_map(age):
         place_pose = Pose([3, 3.8, 1.02], [0, 0, 1, 0])
 
 
-def get_place_pose(object_type):
-    global age
+def get_place_pose(object_type, location):
     poses = {
-        ('bowl', 'old'): Pose([4.8, 3.8, 0.8]),
-        ('bowl', 'young'): Pose([3, 3.8, 1.02], [0, 0, 1, 0]),
-        ('cereal', 'old'): Pose([4.8, 3.6, 0.8]),
-        ('cereal', 'young'): Pose([3, 3.6, 1.02], [0, 0, 1, 0]),
-        ('milk', 'old'): Pose([4.8, 4, 0.8]),
-        ('milk', 'young'): Pose([3, 4, 1.02], [0, 0, 1, 0])
+        ('bowl', 'table'): Pose([4.8, 3.8, 0.8]),
+        ('bowl', 'countertop'): Pose([3, 3.8, 1.02], [0, 0, 1, 0]),
+        ('cereal', 'table'): Pose([4.8, 3.6, 0.8]),
+        ('cereal', 'countertop'): Pose([3, 3.6, 1.02], [0, 0, 1, 0]),
+        ('milk', 'table'): Pose([4.8, 4, 0.8]),
+        ('milk', 'countertop'): Pose([3, 4, 1.02], [0, 0, 1, 0]),
+        ('spoon', 'table'): Pose([4.8, 3.7, 0.8], [0, 0, 1, 0]),
+        ('spoon', 'countertop'): Pose([3, 3.7, 1.02])
     }
-    age_case = 'old' if age == 1 else 'young'
-    pose = poses.get((object_type, age_case))
+    pose = poses.get((object_type, location))
     return pose
 
 
-def get_recovery_pose(object_type):
+def access_obj():
+    global drawer_open_loc, handle_desig, obj_desig
+    if obj_desig.bullet_world_object.type.lower()  == "spoon":
+        handle_desig = ObjectPart(names=["handle_cab10_t"], part_of=apartment_desig.resolve())
+        drawer_open_loc = AccessingLocation(handle_desig=handle_desig.resolve(),
+                                            robot_desig=robot_desig.resolve()).resolve()
+        NavigateAction([drawer_open_loc.pose]).resolve().perform()
+        OpenAction(object_designator_description=handle_desig, arms=[drawer_open_loc.arms[0]]).resolve().perform()
+        # spoon.detach(apartment)
+
+
+def get_recovery_pose() -> Pose:
+    global obj_desig, obj_type
+    pose = None
+    if obj_desig.bullet_world_object.type.lower() == "spoon":
+        access_obj()
+        pose = drawer_open_loc.pose
     poses = {
         'bowl': Pose([1.7, 1.9, 0]),
         'cereal': Pose([1.7, 2, 0]),
         'milk': Pose([1.7, 1.9, 0]),
+        'spoon': pose
     }
-    pose = poses.get(object_type)
+    pose = poses.get(obj_type)
     return pose
 
 
-def get_nav_pose(object_type):
-    global age
+def get_nav_pose(object_type, location):
+    global current_location
     poses = {
-        ('bowl', 'old'): Pose([4, 3.8, 0]),
-        ('bowl', 'young'): Pose([3.9, 3.8, 0], [0, 0, 1, 0]),
-        ('cereal', 'old'): Pose([4, 3.6, 0]),
-        ('cereal', 'young'): Pose([3.9, 3.6, 0], [0, 0, 1, 0]),
-        ('milk', 'old'): Pose([4, 4, 0]),
-        ('milk', 'young'): Pose([3.9, 4, 0], [0, 0, 1, 0])
+        ('bowl', 'table'): Pose([4, 3.8, 0]),
+        ('bowl', 'countertop'): Pose([3.9, 3.8, 0], [0, 0, 1, 0]),
+        ('cereal', 'table'): Pose([4, 3.6, 0]),
+        ('cereal', 'countertop'): Pose([3.9, 3.6, 0], [0, 0, 1, 0]),
+        ('milk', 'table'): Pose([4, 4, 0]),
+        ('milk', 'countertop'): Pose([3.9, 4, 0], [0, 0, 1, 0]),
+        ('spoon', 'table'): Pose([4.2, 3.7, 0]),
+        ('spoon', 'countertop'): Pose([3.7, 3.7, 0], [0, 0, 1, 0])
     }
-    age_case = 'old' if age == 1 else 'young'
-    pose = poses.get((object_type, age_case))
+
+    pose = poses.get((object_type, location))
+    current_location = location
     return pose
 
 
 def update_current_command():
-    global current_cmd, obj_type, obj_color, obj_name, obj_location, obj_size
+    global current_cmd, obj_type, obj_color, obj_name, obj_location, obj_size, unhandled_objects
     current_cmd = fluent.next_command()
 
     if current_cmd:
         minor_cmd = current_cmd.get("minor", {}).get("command")
+        major_cmd = current_cmd.get("major", {}).get("command")
 
         if minor_cmd == "setting_breakfast":
             objects_to_add = [
@@ -133,10 +159,12 @@ def update_current_command():
             fluent.modify_objects_in_use(objects_to_add, [])
 
         # elif minor_cmd == "object":
-        else:
+        elif minor_cmd == "replace_object":
             old_attributes = (obj_type.lower(), obj_color, obj_name.lower(), obj_location, obj_size.lower())
 
             del_cmd = current_cmd.get("minor", {}).get("del_object")
+            add_obj = None
+            del_obj = None
             if del_cmd:
                 del_obj = del_cmd[0]
                 del_attributes = (
@@ -153,7 +181,19 @@ def update_current_command():
                 new_attributes = None
 
             if old_attributes == del_attributes and new_attributes:
+                fluent.modify_objects_in_use([add_obj], [del_obj])
+                unhandled_objects.remove(obj_type)
                 obj_type, obj_color, obj_name, obj_location, obj_size = new_attributes
+                unhandled_objects.append(obj_type)
+        elif minor_cmd == "bring_me":
+            add_cmd = current_cmd.get("minor", {}).get("add_object")
+            if add_cmd:
+                add_obj = add_cmd[0]
+                fluent.modify_objects_in_use([add_obj], [])
+                unhandled_objects.append(add_obj.type.lower())
+                print(f"Added {add_obj.type.lower()}")
+        elif major_cmd == "stop":
+            return
 
 
 def monitor_func():
@@ -163,8 +203,9 @@ def monitor_func():
         update_current_command()
 
         new_attributes = (obj_type.lower(), obj_color, obj_name.lower(), obj_location, obj_size.lower())
+        fluent.minor_interrupt.set_value(False)
+
         if new_attributes != old_attributes:
-            fluent.minor_interrupt.set_value(False)
             return True
         return False
     elif fluent.major_interrupt.get_value():
@@ -174,10 +215,11 @@ def monitor_func():
 
 @with_simulated_robot
 def move_and_detect(obj_type, obj_size, obj_color):
-    global original_pose
+    global original_pose, current_location
     obj_color = color_map(obj_color)
 
     if obj_type == "spoon":
+        global drawer_open_loc, handle_desig
         handle_desig = ObjectPart(names=["handle_cab10_t"], part_of=apartment_desig.resolve())
         drawer_open_loc = AccessingLocation(handle_desig=handle_desig.resolve(),
                                             robot_desig=robot_desig.resolve()).resolve()
@@ -190,6 +232,7 @@ def move_and_detect(obj_type, obj_size, obj_color):
 
     else:
         NavigateAction(target_locations=[Pose([1.7, 1.9, 0])]).resolve().perform()
+        current_location = "countertop"
 
         LookAtAction(targets=[pick_pose]).resolve().perform()
         # object_desig = DetectAction(BelieveObject(types=[obj_type] if obj_type else None,
@@ -218,9 +261,9 @@ def announce_pick(name: str, type: str, color: str, location: str, size: str):
     print(f"I am not interruptable any more")
 
 
-def announce_bring(name: str, type: str, color: str, location: str, size: str):
-    print(f"I will now bring the {size.lower()} {color.lower()} {type.lower()} to you")
-    from_robot_publish("transporting", True, False, True, "countertop", "table")
+def announce_bring(name: str, type: str, color: str, location: str, size: str, destination: str):
+    print(f"I will now bring the {size.lower(), color.lower(), type.lower()} to you")
+    from_robot_publish("transporting", True, False, True, "countertop", destination)
     print(f"I am now interruptable for 10 seconds")
     fluent.activate_subs()
     time.sleep(10)
@@ -235,15 +278,41 @@ def announce_recovery():
 
 
 def announce_pick_place(case: str, type: str, color: str, size: str):
-    print(f"I will now {case.lower()} the {size.lower()} {color.lower()} {type.lower()}")
-    print("This action cannot be interrupted")
+    print(f"I will now {case.lower()} the {size.lower(), color.lower(), type.lower()}")
+    print("I am not interruptable here at the moment")
 
 
 def place_and_pick_new_obj(old_desig, location, obj_type, obj_size, obj_color):
-    global obj_desig
-    PlaceAction(old_desig, ["left"], ["front"], [location]).resolve().perform()
+    global obj_desig, used_arm, grasp
+
+    # Code(lambda: NavigateAction([get_recovery_pose()]).resolve().perform())
+    if old_desig.bullet_world_object.type.lower() == "spoon":
+        access_obj()
+    else:
+        poses = {
+            'bowl': Pose([1.7, 1.9, 0]),
+            'cereal': Pose([1.7, 2, 0]),
+            'milk': Pose([1.7, 1.9, 0]),
+        }
+        pose = poses.get(old_desig.bullet_world_object.type.lower())
+        NavigateAction([pose]).resolve().perform()
+
+    used_arm = "left" if drawer_open_loc.arms[0] == "right" else "right"
+
+    PlaceAction(old_desig, [used_arm], [grasp], [location]).resolve().perform()
+    if old_desig.bullet_world_object.type.lower() == "spoon":
+        apartment.attach(spoon, 'cabinet10_drawer_top')
+        ParkArmsAction([Arms.BOTH]).resolve().perform()
+
+        close_loc = drawer_open_loc.pose
+        NavigateAction([close_loc]).resolve().perform()
+
+        CloseAction(object_designator_description=handle_desig,
+                    arms=[drawer_open_loc.arms[0]]).resolve().perform()
+
     ParkArmsAction([Arms.BOTH]).resolve().perform()
     obj_desig = move_and_detect(obj_type, obj_size, obj_color)
+    used_arm = "left"
     PickUpAction.Action(obj_desig, "left", "front").perform()
     ParkArmsAction([Arms.BOTH]).resolve().perform()
 
@@ -259,11 +328,14 @@ with simulated_robot:
     ParkArmsAction.Action(Arms.BOTH).perform()
 
     MoveTorsoAction([0.25]).resolve().perform()
-    from_robot_publish("initial", True, False, False, "countertop", "")
-    handled_objects = []
-    unhandled_objects = []
+    current_location = "countertop"
+    from_robot_publish("initial", True, False, False, current_location, "")
+    handled_objects = list()
+    unhandled_objects = list()
 
     while True:
+        unhandled_objects = list(fluent.objects_in_use.keys())
+        unhandled_objects = [obj for obj in unhandled_objects if obj not in handled_objects]
         if not unhandled_objects:
             print("Waiting for next human command")
             fluent.activate_subs()
@@ -272,17 +344,16 @@ with simulated_robot:
             update_current_command()
             print(f"Received command: {current_cmd.get('minor', {}).get('command')}")
 
-        unhandled_objects = list(fluent.objects_in_use.keys())
-
         for obj in unhandled_objects:
             if obj in handled_objects:
                 print(f"Object {obj} was already handled, continuing")
+                from_robot_publish("already_done", False, False, False, current_location, "")
 
         # Filter out already handled objects
         unhandled_objects = [obj for obj in unhandled_objects if obj not in handled_objects]
 
         unhandled_object = unhandled_objects[0] if unhandled_objects else None
-
+        print(f"Unhandled objects: {unhandled_objects}")
         if unhandled_object:
             obj = fluent.objects_in_use.get(unhandled_object, None)
         else:
@@ -294,6 +365,7 @@ with simulated_robot:
             obj_name = obj.name
             obj_location = obj.location
             obj_size = obj.size
+            grasp = "top" if obj_type == "spoon" else "front"
 
             fluent.minor_interrupt.set_value(False)
             age = fluent.age
@@ -312,32 +384,52 @@ with simulated_robot:
 
             ###### Park robot ######
             ParkArmsAction.Action(Arms.BOTH).perform()
+            grasp = "top" if obj_type == "spoon" else "front"
+            if obj_type == "spoon":
+                used_arm = "left" if drawer_open_loc.arms[0] == "right" else "right"
+                PickUpAction(obj_desig, [used_arm], [grasp]).resolve().perform()
 
-            ###### Pickup Object ######
-            from_robot_publish("picking_up", True, True, False, "countertop", "")
-            PickUpAction.Action(obj_desig, "left", "front").perform()
+                ParkArmsAction([Arms.BOTH]).resolve().perform()
 
-            ###### Park robot ######
-            ParkArmsAction.Action(Arms.BOTH).perform()
+                close_loc = drawer_open_loc.pose
+                NavigateAction([close_loc]).resolve().perform()
+
+                CloseAction(object_designator_description=handle_desig,
+                            arms=[drawer_open_loc.arms[0]]).resolve().perform()
+
+                ParkArmsAction([Arms.BOTH]).resolve().perform()
+            else:
+                used_arm = "left"
+                ###### Pickup Object ######
+                from_robot_publish("picking_up", True, True, False, "countertop", "")
+                PickUpAction.Action(obj_desig, used_arm, grasp).perform()
+
+                ###### Park robot ######
+                ParkArmsAction.Action(Arms.BOTH).perform()
+
+            destination_location = 'table' if age == 1 else 'countertop'
 
             ###### Announce Navigation action and wait ######
-            announce = Code(lambda: announce_bring(obj_name, obj_type, obj_color, obj_location, obj_size))
+            announce = Code(
+                lambda: announce_bring(obj_name, obj_type, obj_color, obj_location, obj_size, destination_location))
 
             ###### Construct subplan ######
-            plan = Code(lambda: NavigateAction([get_nav_pose(obj_type)]).resolve().perform()) + announce >> Monitor(
+            plan = Code(lambda: NavigateAction([get_nav_pose(obj_type, destination_location)]).resolve().perform()) + announce >> Monitor(
                 monitor_func)
 
             ###### Construct recovery behaviour (Navigate to island => place object => detect new object => pick up new object ######
-            recover = Code(lambda: announce_recovery()) + NavigateAction([get_recovery_pose(obj_type)]) + Code(
-                lambda: place_and_pick_new_obj(obj_desig, original_pose, obj_type, obj_size, obj_color))
+            recover = Code(lambda: announce_recovery()) + Code(lambda: place_and_pick_new_obj(obj_desig, original_pose, obj_type, obj_size, obj_color))
 
             ###### Execute plan ######
             RetryMonitor(plan, max_tries=5, recovery=recover).perform()
 
             ###### Hand the object according to Scenario 5 ######
-            from_robot_publish("placing", True, True, False, "table", "")
-            PlaceAction(obj_desig, ["left"], ["front"], [get_place_pose(obj_type)]).resolve().perform()
+            from_robot_publish("placing", True, True, False, current_location, "")
+            grasp = "top" if obj_type == "spoon" else "front"
+            PlaceAction(obj_desig, [used_arm], [grasp],
+                        [get_place_pose(obj_type, destination_location)]).resolve().perform()
             ParkArmsAction([Arms.BOTH]).resolve().perform()
+            from_robot_publish("task_done", False, False, False, current_location, "")
 
             if obj_type in unhandled_objects:
                 unhandled_objects.remove(obj_type)
