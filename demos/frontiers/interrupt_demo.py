@@ -30,6 +30,7 @@ milk2 = Object("milk2", "milk", "milk.stl", pose=Pose([2.5, 1.7, 1.02]), color=[
 bowl = Object("bowl", "bowl", "bowl.stl", pose=Pose([2.5, 2.2, 1.02]), color=[1, 1, 1, 1])
 spoon = Object("spoon", "spoon", "spoon.stl", pose=Pose([2.4, 2.2, 0.85]), color=[0, 0, 1, 1])
 cereal = Object("cereal", "cereal", "breakfast_cereal.stl", pose=Pose([2.5, 2.4, 1.05]), color=[0, 1, 0, 1])
+cup = Object("cup", "cup", "jeroen_cup.stl", pose=Pose([2.5, 1.85, 0.95]))
 
 apartment.attach(spoon, 'cabinet10_drawer_top')
 
@@ -91,7 +92,9 @@ def get_place_pose(object_type, location):
         ('milk', 'table'): Pose([4.8, 4, 0.8]),
         ('milk', 'countertop'): Pose([3, 4, 1.02], [0, 0, 1, 0]),
         ('spoon', 'table'): Pose([4.8, 3.7, 0.8], [0, 0, 1, 0]),
-        ('spoon', 'countertop'): Pose([3, 3.7, 1.02])
+        ('spoon', 'countertop'): Pose([3, 3.7, 1.02]),
+        ('cup', 'table'): Pose([4.9, 3.9, 0.72]),
+        ('cup', 'countertop'): Pose([2.9, 3.9, 0.95], [0, 0, 1, 0]),
     }
     pose = poses.get((object_type, location))
     return pose
@@ -118,6 +121,7 @@ def get_recovery_pose() -> Pose:
         'bowl': Pose([1.7, 1.9, 0]),
         'cereal': Pose([1.7, 2, 0]),
         'milk': Pose([1.7, 1.9, 0]),
+        'cup': Pose([1.7, 1.9, 0]),
         'spoon': pose
     }
     pose = poses.get(obj_type)
@@ -134,7 +138,9 @@ def get_nav_pose(object_type, location):
         ('milk', 'table'): Pose([4, 4, 0]),
         ('milk', 'countertop'): Pose([3.9, 4, 0], [0, 0, 1, 0]),
         ('spoon', 'table'): Pose([4.2, 3.7, 0]),
-        ('spoon', 'countertop'): Pose([3.7, 3.7, 0], [0, 0, 1, 0])
+        ('spoon', 'countertop'): Pose([3.7, 3.7, 0], [0, 0, 1, 0]),
+        ('cup', 'table'): Pose([4.3, 3.9, 0]),
+        ('cup', 'countertop'): Pose([3.8, 3.9, 0], [0, 0, 1, 0]),
     }
 
     pose = poses.get((object_type, location))
@@ -154,7 +160,9 @@ def update_current_command():
             objects_to_add = [
                 dict_object(type="bowl", color="", name="", location="", size=""),
                 dict_object(type="milk", color="", name="", location="", size=""),
-                dict_object(type="cereal", color="", name="", location="", size="")
+                dict_object(type="cereal", color="", name="", location="", size=""),
+                dict_object(type="cup", color="", name="", location="", size=""),
+                dict_object(type="spoon", color="", name="", location="", size="")
             ]
             fluent.modify_objects_in_use(objects_to_add, [])
 
@@ -328,6 +336,15 @@ with simulated_robot:
     ParkArmsAction.Action(Arms.BOTH).perform()
 
     MoveTorsoAction([0.25]).resolve().perform()
+    # handle_desig = ObjectPart(names=['handle_cab1_top_door'], part_of=apartment_desig.resolve())
+    # handle_desig = ObjectPart(names=['cabinet1_door_top_left'], part_of=apartment_desig.resolve())
+
+    # open_loc = AccessingLocation(handle_desig=handle_desig.resolve(),
+    #                                     robot_desig=robot_desig.resolve()).resolve()
+    # NavigateAction([open_loc.pose]).resolve().perform()
+    # OpenAction(object_designator_description=handle_desig, arms=[open_loc.arms[0]]).resolve().perform()
+
+    # drawer_open_loc[0]
     current_location = "countertop"
     from_robot_publish("initial", True, False, False, current_location, "")
     handled_objects = list()
