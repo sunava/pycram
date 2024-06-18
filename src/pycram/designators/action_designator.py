@@ -323,6 +323,9 @@ class PickUpAction(ActionDesignatorDescription):
                 #     #  is hardcoded
                 #     oTm.pose.position.z = 0.718
                 oTm.pose.position.z += 0.02
+            elif self.grasp == "front":
+                if self.object_designator.type == "cup":
+                    oTm.pose.position.z += 0.1
 
             # Determine the grasp orientation and transform the pose to the base link frame
             grasp_rotation = robot_description.grasps.get_orientation_for_grasp(self.grasp)
@@ -499,6 +502,9 @@ class PlaceAction(ActionDesignatorDescription):
             # object = self.object_designator.bullet_world_object
             # oTm = Object Pose in Frame map
             oTm = self.target_location
+            if self.grasp == "front":
+                if self.object_designator.type == "cup":
+                    oTm.pose.position.z += 0.1
 
             # if self.grasp == "top":
             # oTm.pose.position.z += 0.05
