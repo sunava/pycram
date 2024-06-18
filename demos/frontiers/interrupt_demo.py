@@ -30,7 +30,7 @@ milk2 = Object("milk2", "milk", "milk.stl", pose=Pose([2.5, 1.7, 1.02]), color=[
 bowl = Object("bowl", "bowl", "bowl.stl", pose=Pose([2.5, 2.2, 1.02]), color=[1, 1, 1, 1])
 spoon = Object("spoon", "spoon", "spoon.stl", pose=Pose([2.4, 2.2, 0.85]), color=[0, 0, 1, 1])
 cereal = Object("cereal", "cereal", "breakfast_cereal.stl", pose=Pose([2.5, 2.4, 1.05]), color=[0, 1, 0, 1])
-cup = Object("cup", "cup", "jeroen_cup.stl", pose=Pose([2.5, 1.85, 0.95]))
+cup = Object("cup", "cup", "jeroen_cup.stl", pose=Pose([0.5, 1.6, 1.38], [0, 0, 1, 0]))
 
 apartment.attach(spoon, 'cabinet10_drawer_top')
 
@@ -102,19 +102,25 @@ def get_place_pose(object_type, location):
 
 def access_obj():
     global drawer_open_loc, handle_desig, obj_desig
-    if obj_desig.bullet_world_object.type.lower()  == "spoon":
+    if obj_desig.bullet_world_object.type.lower() == "spoon":
         handle_desig = ObjectPart(names=["handle_cab10_t"], part_of=apartment_desig.resolve())
-        drawer_open_loc = AccessingLocation(handle_desig=handle_desig.resolve(),
-                                            robot_desig=robot_desig.resolve()).resolve()
+        pose = Pose([1.75, 1.79, 0], [0, 0, 0.533512180079847, 0.8457923821520558])
+        drawer_open_loc = AccessingLocation.Location(pose, ["left"])
         NavigateAction([drawer_open_loc.pose]).resolve().perform()
         OpenAction(object_designator_description=handle_desig, arms=[drawer_open_loc.arms[0]]).resolve().perform()
         # spoon.detach(apartment)
+    elif obj_desig.bullet_world_object.type.lower() == "cup":
+        handle_desig = ObjectPart(names=['handle_cab1_top_door'], part_of=apartment_desig.resolve())
+        pose = Pose([1.2, 1.5, 0], [0, 0, 1, 0])
+        drawer_open_loc = AccessingLocation.Location(pose, ["left"])
+        NavigateAction([drawer_open_loc.pose]).resolve().perform()
+        OpenAction(object_designator_description=handle_desig, arms=[drawer_open_loc.arms[0]]).resolve().perform()
 
 
 def get_recovery_pose() -> Pose:
     global obj_desig, obj_type
     pose = None
-    if obj_desig.bullet_world_object.type.lower() == "spoon":
+    if obj_desig.bullet_world_object.type.lower() in ["spoon", "cup"]:
         access_obj()
         pose = drawer_open_loc.pose
     poses = {
@@ -223,20 +229,27 @@ def monitor_func():
 
 @with_simulated_robot
 def move_and_detect(obj_type, obj_size, obj_color):
-    global original_pose, current_location
+    global original_pose, current_location, drawer_open_loc, handle_desig
     obj_color = color_map(obj_color)
-
     if obj_type == "spoon":
-        global drawer_open_loc, handle_desig
         handle_desig = ObjectPart(names=["handle_cab10_t"], part_of=apartment_desig.resolve())
-        drawer_open_loc = AccessingLocation(handle_desig=handle_desig.resolve(),
-                                            robot_desig=robot_desig.resolve()).resolve()
+        pose = Pose([1.75, 1.79, 0], [0, 0, 0.533512180079847, 0.8457923821520558])
+        drawer_open_loc = AccessingLocation.Location(pose, ["left"])
         NavigateAction([drawer_open_loc.pose]).resolve().perform()
+        print(drawer_open_loc.pose)
         OpenAction(object_designator_description=handle_desig, arms=[drawer_open_loc.arms[0]]).resolve().perform()
         spoon.detach(apartment)
 
         # Detect and pickup the spoon
         LookAtAction([apartment.get_link_pose("handle_cab10_t")]).resolve().perform()
+
+    elif obj_type == "cup":
+        handle_desig = ObjectPart(names=['handle_cab1_top_door'], part_of=apartment_desig.resolve())
+        pose = Pose([1.2, 1.5, 0], [0, 0, 1, 0])
+        drawer_open_loc = AccessingLocation.Location(pose, ["left"])
+        NavigateAction([drawer_open_loc.pose]).resolve().perform()
+        OpenAction(object_designator_description=handle_desig, arms=[drawer_open_loc.arms[0]]).resolve().perform()
+        LookAtAction([Pose([0.5, 1.6, 1.48])]).resolve().perform()
 
     else:
         NavigateAction(target_locations=[Pose([1.7, 1.9, 0])]).resolve().perform()
@@ -294,7 +307,7 @@ def place_and_pick_new_obj(old_desig, location, obj_type, obj_size, obj_color):
     global obj_desig, used_arm, grasp
 
     # Code(lambda: NavigateAction([get_recovery_pose()]).resolve().perform())
-    if old_desig.bullet_world_object.type.lower() == "spoon":
+    if old_desig.bullet_world_object.type.lower() in ["spoon", "cup"]:
         access_obj()
     else:
         poses = {
@@ -308,8 +321,9 @@ def place_and_pick_new_obj(old_desig, location, obj_type, obj_size, obj_color):
     used_arm = "left" if drawer_open_loc.arms[0] == "right" else "right"
 
     PlaceAction(old_desig, [used_arm], [grasp], [location]).resolve().perform()
-    if old_desig.bullet_world_object.type.lower() == "spoon":
-        apartment.attach(spoon, 'cabinet10_drawer_top')
+    if old_desig.bullet_world_object.type.lower() in ["spoon", "cup"]:
+        if old_desig.bullet_world_object.type.lower() == "spoon":
+            apartment.attach(spoon, 'cabinet10_drawer_top')
         ParkArmsAction([Arms.BOTH]).resolve().perform()
 
         close_loc = drawer_open_loc.pose
@@ -320,8 +334,12 @@ def place_and_pick_new_obj(old_desig, location, obj_type, obj_size, obj_color):
 
     ParkArmsAction([Arms.BOTH]).resolve().perform()
     obj_desig = move_and_detect(obj_type, obj_size, obj_color)
-    used_arm = "left"
-    PickUpAction.Action(obj_desig, "left", "front").perform()
+    used_arm = "left" if drawer_open_loc.arms[0] == "right" else "right"
+    grasp = "top" if obj_type == "spoon" else "front"
+    PickUpAction.Action(obj_desig, used_arm, grasp).perform()
+    ParkArmsAction([Arms.BOTH]).resolve().perform()
+    if old_desig.bullet_world_object.type.lower() in ["spoon", "cup"]:
+        CloseAction(object_designator_description=handle_desig, arms=[drawer_open_loc.arms[0]]).resolve().perform()
     ParkArmsAction([Arms.BOTH]).resolve().perform()
 
 
@@ -336,15 +354,7 @@ with simulated_robot:
     ParkArmsAction.Action(Arms.BOTH).perform()
 
     MoveTorsoAction([0.25]).resolve().perform()
-    # handle_desig = ObjectPart(names=['handle_cab1_top_door'], part_of=apartment_desig.resolve())
-    # handle_desig = ObjectPart(names=['cabinet1_door_top_left'], part_of=apartment_desig.resolve())
 
-    # open_loc = AccessingLocation(handle_desig=handle_desig.resolve(),
-    #                                     robot_desig=robot_desig.resolve()).resolve()
-    # NavigateAction([open_loc.pose]).resolve().perform()
-    # OpenAction(object_designator_description=handle_desig, arms=[open_loc.arms[0]]).resolve().perform()
-
-    # drawer_open_loc[0]
     current_location = "countertop"
     from_robot_publish("initial", True, False, False, current_location, "")
     handled_objects = list()
@@ -402,7 +412,7 @@ with simulated_robot:
             ###### Park robot ######
             ParkArmsAction.Action(Arms.BOTH).perform()
             grasp = "top" if obj_type == "spoon" else "front"
-            if obj_type == "spoon":
+            if obj_type in ["spoon", "cup"]:
                 used_arm = "left" if drawer_open_loc.arms[0] == "right" else "right"
                 PickUpAction(obj_desig, [used_arm], [grasp]).resolve().perform()
 
@@ -431,11 +441,13 @@ with simulated_robot:
                 lambda: announce_bring(obj_name, obj_type, obj_color, obj_location, obj_size, destination_location))
 
             ###### Construct subplan ######
-            plan = Code(lambda: NavigateAction([get_nav_pose(obj_type, destination_location)]).resolve().perform()) + announce >> Monitor(
+            plan = Code(lambda: NavigateAction(
+                [get_nav_pose(obj_type, destination_location)]).resolve().perform()) + announce >> Monitor(
                 monitor_func)
 
             ###### Construct recovery behaviour (Navigate to island => place object => detect new object => pick up new object ######
-            recover = Code(lambda: announce_recovery()) + Code(lambda: place_and_pick_new_obj(obj_desig, original_pose, obj_type, obj_size, obj_color))
+            recover = Code(lambda: announce_recovery()) + Code(
+                lambda: place_and_pick_new_obj(obj_desig, original_pose, obj_type, obj_size, obj_color))
 
             ###### Execute plan ######
             RetryMonitor(plan, max_tries=5, recovery=recover).perform()

@@ -242,6 +242,9 @@ class Pr2Open(ProcessModule):
 
         container_joint = part_of_object.find_joint_above(desig.object_part.name, JointType.PRISMATIC)
 
+        if not container_joint:
+            container_joint = part_of_object.find_joint_above(desig.object_part.name, JointType.REVOLUTE)
+
         goal_pose = btr.link_pose_for_joint_config(part_of_object, {
             container_joint: part_of_object.get_joint_limits(container_joint)[1] - 0.05}, desig.object_part.name)
 
@@ -261,6 +264,9 @@ class Pr2Close(ProcessModule):
         part_of_object = desig.object_part.bullet_world_object
 
         container_joint = part_of_object.find_joint_above(desig.object_part.name, JointType.PRISMATIC)
+
+        if not container_joint:
+            container_joint = part_of_object.find_joint_above(desig.object_part.name, JointType.REVOLUTE)
 
         goal_pose = btr.link_pose_for_joint_config(part_of_object, {
             container_joint: part_of_object.get_joint_limits(container_joint)[0]}, desig.object_part.name)

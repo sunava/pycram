@@ -266,6 +266,9 @@ class AccessingLocation(LocationDesignatorDescription):
         # Find a Joint of type prismatic which is above the handle in the URDF tree
         container_joint = self.handle.bullet_world_object.find_joint_above(self.handle.name, JointType.PRISMATIC)
 
+        if not container_joint:
+            container_joint = self.handle.bullet_world_object.find_joint_above(self.handle.name, JointType.REVOLUTE)
+
         init_pose = link_pose_for_joint_config(self.handle.bullet_world_object, {
             container_joint: self.handle.bullet_world_object.get_joint_limits(container_joint)[0]},
                                                self.handle.name)
@@ -280,10 +283,12 @@ class AccessingLocation(LocationDesignatorDescription):
             container_joint: self.handle.bullet_world_object.get_joint_limits(container_joint)[1] / 1.5},
                                                self.handle.name)
 
+        # handle_cab1_top_door currently cant be used to open cab1. it could be that currently it tries to grasp and
+        # fully open the door without moving the base, because when using cabinet1_door_top_left, it causes the robot
+        # to grasp the wrong side of the door, but then successfully opens it __without__ moving the base
         with Use_shadow_world():
             for maybe_pose in pose_generator(final_map, number_of_samples=600,
                                              orientation_generator=lambda p, o: generate_orientation(p, half_pose)):
-
                 hand_links = []
                 for name, chain in robot_description.chains.items():
                     if isinstance(chain, ManipulatorDescription):
