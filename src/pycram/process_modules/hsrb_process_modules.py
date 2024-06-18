@@ -12,7 +12,7 @@ from tmc_msgs.msg import Voice
 import pycram.bullet_world_reasoning as btr
 from ..designators.motion_designator import *
 from ..enums import JointType, ObjectType, State
-from ..external_interfaces import giskard
+from ..external_interfaces import giskard_new as giskard
 from ..external_interfaces.ik import request_ik
 from ..external_interfaces.robokudo import *
 from ..helper import _apply_ik
@@ -521,8 +521,9 @@ class HSRBDetectingReal(ProcessModule):
                 if color is None:
                     color = [0, 0, 0, 1]
 
-                osize = [obj_size.x / 2, obj_size.y / 2, obj_size.z / 2]
-                id = BulletWorld.current_bullet_world.add_rigid_box(obj_pose, osize, color)
+                hsize = [obj_size.x / 2, obj_size.y / 2, obj_size.z / 2]
+                osize = [obj_size.x, obj_size.y, obj_size.z]
+                id = BulletWorld.current_bullet_world.add_rigid_box(obj_pose, hsize, color)
                 box_object = Object(obj_type + "_" + str(rospy.get_time()), obj_type, pose=obj_pose, color=color, id=id,
                                     customGeom={"size": osize})
                 box_object.set_pose(obj_pose)

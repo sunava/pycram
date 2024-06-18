@@ -685,7 +685,8 @@ class SemanticCostmap(Costmap):
     table surface.
     """
 
-    def __init__(self, object, urdf_link_name, size=100, resolution=0.02, world=None, margin_cm=0.2):
+    def __init__(self, object, urdf_link_name, size=100, resolution=0.02, world=None, margin_cm=0.2,
+                 inner_margin_cm=0.1):
         """
         Creates a semantic costmap for the given parameter. The semantic costmap will be on top of the link of the given
         Object.
@@ -704,8 +705,11 @@ class SemanticCostmap(Costmap):
         self.width: int = 0
         self.map: np.ndarray = []
         self.margin_cm = margin_cm
+        self.inner_margin_cm = inner_margin_cm
         self.generate_map()
         Costmap.__init__(self, resolution, self.height, self.width, self.origin, self.map)
+
+    import numpy as np
 
     def generate_map(self) -> None:
         """
@@ -723,26 +727,32 @@ class SemanticCostmap(Costmap):
         # Initialize the map with ones
         self.map = np.ones((self.height, self.width))
 
-        # Apply the margin to the outer edges of the map by setting the values to a specific number (e.g., 0)
-        # Top margin
-        if margin < self.height // 2:
-            self.map[:margin, :] = 0
-            # Bottom margin
-            self.map[-margin:, :] = 0
+        # Apply margin from one side (e.g., only the top)
+        if margin < self.height:
+            self.map[:margin, :] = 0  # Top margin
 
-        # Left margin
-        if margin < self.width // 2:
-            self.map[:, :margin] = 0
-            # Right margin
-            self.map[:, -margin:] = 0
+        # Apply margin from one side (e.g., only the left)
+        if margin < self.width:
+            self.map[:, :margin] = 1
+            # # Right margin
+            self.map[:, -margin:] = 1
 
         # Invert the map values: 0s become 1s, and everything else becomes 0
         self.map = 1 - self.map
 
+        # Trim the left and right sides, only keep points before the 0s
+        non_zero_cols = np.where(self.map.any(axis=0))[0]
+        if len(non_zero_cols) > 0:
+            self.map = self.map[:, :non_zero_cols[-1] + 1]
+
+        non_zero_rows = np.where(self.map.any(axis=1))[0]
+        if len(non_zero_rows) > 0:
+            self.map = self.map[:non_zero_rows[-1] + 1, :]
+
     def get_aabb_for_link(self) -> Tuple[List[float], List[float]]:
         """
-        Returns the axis aligned bounding box (AABB) of the link provided when creating this costmap. To try and let the
-        AABB as close to the actual object as possible, the Object will be rotated such that the link will be in the
+        Returns the axis-aligned bounding box (AABB) of the link provided when creating this costmap. To try and let the
+        AABB as close to the actual object as possible, the object will be rotated such that the link will be in the
         identity orientation.
 
         :return: Two points in world coordinate space, which span a rectangle
