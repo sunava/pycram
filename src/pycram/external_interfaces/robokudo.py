@@ -219,13 +219,13 @@ def queryHuman() -> Any:
     client.wait_for_server()
     object_goal = goal_msg = QueryGoal()
     #object_goal.type = 'detect'
-    #object_goal.obj.type = 'human'
+    object_goal.obj.type = 'human'
     client.send_goal(object_goal, active_cb=active_callback, done_cb=done_callback, feedback_cb=feedback_callback)
 
     # if no human is detected
     human_bool = False
     waiting_human = False
-    rospy.Subscriber("/cml_human_pose", PointStamped, callback)
+    rospy.Subscriber("/human_pose", PoseStamped, callback)
 
     while not human_bool:
         rospy.sleep(0.5)
