@@ -325,7 +325,7 @@ class PickUpAction(ActionDesignatorDescription):
                 oTm.pose.position.z += 0.02
             elif self.grasp == "front":
                 if self.object_designator.type == "cup":
-                    oTm.pose.position.z += 0.1
+                    oTm.pose.position.z += 0.05
 
             # Determine the grasp orientation and transform the pose to the base link frame
             grasp_rotation = robot_description.grasps.get_orientation_for_grasp(self.grasp)
@@ -542,7 +542,8 @@ class PlaceAction(ActionDesignatorDescription):
 
             # rospy.logwarn("Lifting now")
             liftingTm = push_baseTm
-            liftingTm.pose.position.z += 0.03
+            if self.grasp == "top":
+                liftingTm.pose.position.z += 0.03
             BulletWorld.current_bullet_world.add_vis_axis(liftingTm)
 
             MoveTCPMotion(liftingTm, self.arm).resolve().perform()
