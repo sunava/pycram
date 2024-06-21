@@ -187,7 +187,8 @@ class HumanDescription:
     """
     Class that represents humans. this class does not spawn a human in a simulation.
     """
-    def __init__(self, name: String, fav_drink:  Optional = None,
+
+    def __init__(self, name: String, fav_drink: Optional = None,
                  pose: Optional = None, attributes: Optional = None):
         """
         :param name: name of human
@@ -202,20 +203,28 @@ class HumanDescription:
         self.fav_drink = fav_drink
         self.pose = pose
         self.attributes = attributes
-
+        self.id = -1
 
         # self.human_pose_sub = rospy.Subscriber("/human_pose", PoseStamped, self.human_pose_cb)
 
     # def human_pose_cb(self, HumanPoseMsg):
-        # """
-        # callback function for human_pose Subscriber.
-        # sets the attribute human_pose when someone (e.g. Perception/Robokudo) publishes on the topic
-        # :param HumanPoseMsg: received message
-        # """
+    # """
+    # callback function for human_pose Subscriber.
+    # sets the attribute human_pose when someone (e.g. Perception/Robokudo) publishes on the topic
+    # :param HumanPoseMsg: received message
+    # """
 
-        # self.human_pose.set_value(True)
-        # rospy.loginfo("done cb")
-        # rospy.sleep(10)
+    # self.human_pose.set_value(True)
+    # rospy.loginfo("done cb")
+    # rospy.sleep(10)
+
+    def set_id(self, new_id: int):
+        """
+        function for changing id of human
+        is given by perception with face recognition
+        :param new_id: new id of human
+        """
+        self.id = new_id
 
     def set_name(self, new_name):
         """
@@ -251,6 +260,7 @@ class ShelfCompartmentDescription:
     """
     Class that represents a Compartment in a shelf but in cool and convenient
     """
+
     def __init__(self, height: float, placing_areas: List[List[float]], category=None):
         """
         :param height: height of compartment
@@ -282,7 +292,7 @@ class ShelfCompartmentDescription:
         for area in range(len(self.placing_areas)):
             if not self.area_free[area]:
                 # return arithmetic mean of area
-                return (self.placing_areas[area][0] + self.placing_areas[area][1])/2
+                return (self.placing_areas[area][0] + self.placing_areas[area][1]) / 2
         return -1
 
     def get_placing_pose(self, obj_category: str):
@@ -294,10 +304,3 @@ class ShelfCompartmentDescription:
                 else:
                     return -1
         return -1
-
-
-
-
-
-
-

@@ -38,10 +38,11 @@ doorbell = True
 host = HumanDescription("Vanessa", fav_drink="coffee")
 guest1 = HumanDescription("bob", fav_drink="tea")
 # for testing, if the first part of the demo is skipped
-guest1.set_attributes(['female', 'without a hat', 'wearing a t-shirt', ' a dark top'])
+guest1.set_attributes(['male', 'without a hat', 'wearing a t-shirt', ' a dark top'])
 
-guest2 = HumanDescription("guest2")
-seat_number = 2
+guest2 = HumanDescription("Sarah", fav_drink="Juice")
+# for testing, if the first part of the demo is skipped
+guest2.set_attributes(['female', 'with a hat', 'wearing a t-shirt', ' a bright top'])
 
 text_to_speech_publisher = TextToSpeechPublisher()
 image_switch_publisher = ImageSwitchPublisher()
@@ -65,7 +66,6 @@ def doorbell_cb(data):
 
 
 def door_opening():
-    TalkingMotion("waiting for guests").resolve().perform()
 
     # Pre-Pose for door opening
     ParkArmsAction([Arms.LEFT]).resolve().perform()
@@ -88,7 +88,7 @@ def door_opening():
     NavigateAction([pose2]).resolve().perform()
 
 
-def welcome_guest(num, guest: HumanDescription):
+def welcome_guest(num, guest):
     global callback
 
     TalkingMotion("Welcome, please step in front of me").resolve().perform()
@@ -176,13 +176,38 @@ def welcome_guest(num, guest: HumanDescription):
     return guest
 
 
+def detect_point_to_seat():
+    """
+    function to look for a place to sit and poit to it
+    returns bool if free place found or not
+    """
+
+    # detect free seat
+    seat = DetectAction(technique='location', state="sofa").resolve().perform()
+    free_seat = False
+    # loop through all seating options detected by perception
+    for place in seat[1]:
+        if place[0] == 'False':
+            PointingMotion(float(place[1]), float(place[2]), float(place[3])).resolve().perform()
+            free_seat = True
+            pose_guest1 = PoseStamped()
+            pose_guest1.header.frame_id = "/map"
+            pose_guest1.pose.position.x = float(place[1])
+            pose_guest1.pose.position.y = float(place[2])
+            pose_guest1.pose.position.z = float(place[3])
+            guest1.set_pose(pose_guest1)
+            break
+    return free_seat
+
+
 def demo(step):
     with real_robot:
         global callback
         global guest1
+        global guest2
 
         # signal start
-
+        TalkingMotion("waiting for guests").resolve().perform()
         image_switch_publisher.pub_now(ImageEnum.HI.value)
 
         # receive data from nlp via topic
@@ -216,28 +241,22 @@ def demo(step):
 
             # place new guest in living room
             TalkingMotion("Welcome to the living room").resolve().perform()
-        if step <= 3:
-            rospy.sleep(4)
+
             # detect host
             host_pose = DetectAction(technique='human').resolve().perform()
             host.set_pose(host_pose[1])
             host_pose = DetectAction(technique='human', state='stop').resolve().perform()
 
-            # detect free seat
-            seat = DetectAction(technique='location', state="sofa").resolve().perform()
-            free_seat = False
-            for place in seat[1]:
-                if place[0] == 'False':
-                    PointingMotion(float(place[1]), float(place[2]), float(place[3])).resolve().perform()
-                    pose_guest1 = PoseStamped()
-                    pose_guest1.header.frame_id = "/map"
-                    pose_guest1.pose.position.x = float(place[1])
-                    pose_guest1.pose.position.y = float(place[2])
-                    pose_guest1.pose.position.z = float(place[3])
-                    guest1.set_pose(pose_guest1)
-                    break
+            if not detect_point_to_seat():
+                # TODO: move Head a little bit
+                # write separate function?
+                HeadFollowAction('start').resolve().perform()
+                lookAt = PoseStamped()
+                lookAt.pose = robot.get_pose()
+                lookAt.pose.position.position.x += 0.3
+                pub_pose.publish(lookAt)
 
-        if step <= 4:
+        if step <= 3:
             # introduce guest1 and host
             HeadFollowAction('start').resolve().perform()
             rospy.sleep(1.2)
@@ -248,12 +267,42 @@ def demo(step):
 
             # introduce humans and look at them
             introduce(host, guest1)
-            rospy.sleep(2)
+            rospy.sleep(3)
+
+        if step <= 4:
+            # signal start
+            TalkingMotion("waiting for new guests").resolve().perform()
+            image_switch_publisher.pub_now(ImageEnum.HI.value)
+
+            while not doorbell:
+                print("no bell")
+
+            #door_opening()
+
+            pose2 = Pose([1.85, 4.5, 0], [0, 0, 1, 0])
+            NavigateAction([pose2]).resolve().perform()
 
         if step <= 5:
-            # describe guest1
-            describe(guest1)
+            guest2 = welcome_guest(2, guest2)
+
+        if step <= 6:
+            # leading to livingroom and pointing to free seat
+
+            TalkingMotion("please step out of the way and follow me").resolve().perform()
+
+            # stop looking at human
             HeadFollowAction('stop').resolve().perform()
+            DetectAction(technique='human', state='stop').resolve().perform()
+
+            # lead human to living room
+            NavigateAction([door_to_couch]).resolve().perform()
+            MoveGripperMotion(motion="close", gripper="left").resolve().perform()
+
+            # place new guest in living room
+            TalkingMotion("Welcome to the living room").resolve().perform()
 
 
-demo(1)
+
+
+
+demo(0)
