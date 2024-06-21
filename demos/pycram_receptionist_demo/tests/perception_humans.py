@@ -2,6 +2,7 @@ import rospy
 from demos.pycram_receptionist_demo.utils.new_misc import *
 from pycram.designators.action_designator import *
 from pycram.designators.motion_designator import *
+from pycram.external_interfaces.robokudo import faces_queryHuman
 from pycram.process_module import semi_real_robot, real_robot
 import pycram.external_interfaces.giskard as giskardpy
 from pycram.ros.viz_marker_publisher import VizMarkerPublisher
@@ -44,15 +45,15 @@ def p():
 
             # TalkingMotion("Welcome, please step in").resolve().perform()
             #MoveTorsoAction([0.1]).resolve().perform()
-            attr_list = DetectAction(technique='human', state='start').resolve().perform()
-            HeadFollowAction('start').resolve().perform()
             TalkingMotion("detecting human now").resolve().perform()
-            rospy.sleep(2)
+            attr_list = faces_queryHuman()
+            # HeadFollowAction('start').resolve().perform()
+
             attr_list = DetectAction(technique='attributes', state='start').resolve().perform()
             print("done attr query")
-            guest1.set_attributes(attr_list)
-            describe(guest1)
-            rospy.sleep(2)
+            #guest1.set_attributes(attr_list)
+            #describe(guest1)
+            #rospy.sleep(2)
             TalkingMotion("end").resolve().perform()
             rospy.sleep(2)
 

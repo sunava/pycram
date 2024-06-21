@@ -219,7 +219,7 @@ def describe(human: HumanDescription):
     :param human: human to be described
     """
     if human.attributes:
-        
+
         if human.pose:
             pub_pose.publish(human.pose)
 
