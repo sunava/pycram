@@ -286,18 +286,18 @@ def failure_handling2(sorted_obj: list, new_sorted_obj: list):
 
             ParkArmsAction([Arms.LEFT]).resolve().perform()
 
-            x_y_pos = get_pos(wished_sorted_obj_list[val])
-            x_pos = x_y_pos[0]
-            y_pos = x_y_pos[1]
+            placing_pose = get_placing_pos(sorted_obj[value].type)
+
 
             NavigateAction(target_locations=[Pose(move_to_the_middle_table_pose, [0, 0, 0, 1])]).resolve().perform()
 
             if wished_sorted_obj_list[val] == "Metalplate" or wished_sorted_obj_list[val] == "Metalbowl":
                 MoveJointsMotion(["arm_roll_joint"], [-1.5]).resolve().perform()
-            if x_pos >= 2.75:
-                navigate_to(placing_location_name_left)
-            else:
-                navigate_to(placing_location_name_right)
+                # todo: silverware tray must be on the right side of the dishwasher
+                if placing_pose.position.x >= get_placing_pos("check").position.x:
+                    navigate_to(placing_location_name_left)
+                else:
+                    navigate_to(placing_location_name_right)
 
             text_to_speech_publisher.publish_text("Placing")
             image_switch_publisher.publish_image_switch(8)
@@ -313,7 +313,7 @@ def failure_handling2(sorted_obj: list, new_sorted_obj: list):
             else:
 
                 PlaceGivenObjAction([wished_sorted_obj_list[val]], ["left"],
-                        [Pose([x_pos, y_pos, 0.3])],[grasp]).resolve().perform()
+                        [placing_pose],[grasp]).resolve().perform()
             ParkArmsAction([Arms.LEFT]).resolve().perform()
             image_switch_publisher.publish_image_switch(0)
             # navigates back if a next object exists

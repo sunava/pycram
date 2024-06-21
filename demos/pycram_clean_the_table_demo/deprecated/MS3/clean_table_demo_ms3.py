@@ -43,7 +43,7 @@ world = BulletWorld("DIRECT")
 v = VizMarkerPublisher()
 
 # Create and configure the robot object
-robot = Object("hsrb", ObjectType.ROBOT, "../../resources/hsrb.urdf", pose=Pose([0, 0, 0]))
+robot = Object("hsrb", ObjectType.ROBOT, "../../../../resources/hsrb.urdf", pose=Pose([0, 0, 0]))
 
 # Update robot state
 RobotStateUpdater("/tf", "/giskard_joint_states")
