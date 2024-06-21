@@ -219,13 +219,13 @@ def queryHuman() -> Any:
     client.wait_for_server()
     object_goal = goal_msg = QueryGoal()
     #object_goal.type = 'detect'
-    #object_goal.obj.type = 'human'
+    object_goal.obj.type = 'human'
     client.send_goal(object_goal, active_cb=active_callback, done_cb=done_callback, feedback_cb=feedback_callback)
 
     # if no human is detected
     human_bool = False
     waiting_human = False
-    rospy.Subscriber("/cml_human_pose", PointStamped, callback)
+    rospy.Subscriber("/human_pose", PoseStamped, callback)
 
     while not human_bool:
         rospy.sleep(0.5)
@@ -275,6 +275,34 @@ def seat_queryHuman(seat: str) -> Any:
     client.wait_for_server()
     client.send_goal(object_goal, active_cb=active_callback, done_cb=done_callback)
     # TODO: necessary?
+    client.wait_for_result()
+
+    return query_result
+
+
+def faces_queryHuman() -> Any:
+    """
+    Sends a query to RoboKudo to look for a human. returns four attributes of the perceived human.
+    """
+    init_robokudo_interface()
+    from robokudo_msgs.msg import QueryAction, QueryGoal, QueryResult
+
+    global query_result
+
+    def active_callback():
+        rospy.loginfo("Send query to Robokudo for face recognition")
+
+    def done_callback(state, result: QueryResult):
+        rospy.loginfo("Finished perceiving")
+        global query_result
+        query_result = result
+
+    object_goal = QueryGoal()
+
+    client = actionlib.SimpleActionClient('robokudo/query', QueryAction)
+    rospy.loginfo("Waiting for action server")
+    client.wait_for_server()
+    client.send_goal(object_goal, active_cb=active_callback, done_cb=done_callback)
     client.wait_for_result()
 
     return query_result

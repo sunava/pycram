@@ -2,6 +2,7 @@ import rospy
 from demos.pycram_receptionist_demo.utils.new_misc import *
 from pycram.designators.action_designator import *
 from pycram.designators.motion_designator import *
+from pycram.external_interfaces.robokudo import faces_queryHuman
 from pycram.process_module import semi_real_robot, real_robot
 import pycram.external_interfaces.giskard as giskardpy
 from pycram.ros.viz_marker_publisher import VizMarkerPublisher
@@ -33,56 +34,31 @@ guest1 = HumanDescription("guest1")
 
 def p():
     with real_robot:
-        seat = True
-        attributes = False
+        seat = False
+        attributes = True
 
         if attributes:
+            print("hey")
             # to signal the start of demo
-            # TalkingMotion("Hello, i am ready for the test").resolve().perform()
-            ParkArmsAction([Arms.LEFT]).resolve().perform()
+            #TalkingMotion("Hello, i am ready for the test").resolve().perform()
+            #ParkArmsAction([Arms.LEFT]).resolve().perform()
 
-            TalkingMotion("Welcome, please step in").resolve().perform()
-            MoveTorsoAction([0.1]).resolve().perform()
-
+            # TalkingMotion("Welcome, please step in").resolve().perform()
+            #MoveTorsoAction([0.1]).resolve().perform()
             TalkingMotion("detecting human now").resolve().perform()
+            attr_list = faces_queryHuman()
+            # HeadFollowAction('start').resolve().perform()
+
+            attr_list = DetectAction(technique='attributes', state='start').resolve().perform()
+            print("done attr query")
+            #guest1.set_attributes(attr_list)
+            #describe(guest1)
+            #rospy.sleep(2)
+            TalkingMotion("end").resolve().perform()
             rospy.sleep(2)
-            desig = DetectAction(technique='human', state='start').resolve().perform()
-            HeadFollowAction('start').resolve().perform()
-            pub_nlp.publish("start listening")
-            # desig = DetectAction(technique='attributes').resolve().perform()
 
 
-            desig2 = DetectAction(technique='attributes').resolve().perform()
-            print("msgs from PPP: " + str(desig2))
 
-            desig = DetectAction(technique='human', state='start').resolve().perform()
-
-            HeadFollowAction('start').resolve().perform()
-            rospy.sleep(4)
-            desig = DetectAction(technique='human', state='stop').resolve().perform()
-
-            rospy.sleep(4)
-            TalkingMotion("detecting human now").resolve().perform()
-            desig = DetectAction(technique='human', state='start').resolve().perform()
-            #print(desig[1].pose)
-            #guest1.set_pose(desig[1])
-
-            # PointingMotion(guest1.pose.position.x, guest1.pose.position.y, guest1.pose.position.z).resolve().perform()
-            #print("msgs from PPP: " + str(desig))
-            #if desig != "False":
-            # guest1.set_attributes(desig)
-
-            # describe(guest1)
-               # rospy.sleep(2)
-            rospy.sleep(3)
-            TalkingMotion("attributes over").resolve().perform()
-            desig = DetectAction(technique='human', state='stop').resolve().perform()
-
-
-            #DetectAction(technique='human', state='stop').resolve().perform()
-
-            #pub_pose.publish(guest1.pose)
-            # desig = DetectAction(technique='human', state='stop').resolve().perform()
 
         if seat:
             # new Query for free seat
@@ -144,4 +120,4 @@ def ms3_perception():
 
 
 if __name__ == '__main__':
-     ms3_perception()
+     p()
