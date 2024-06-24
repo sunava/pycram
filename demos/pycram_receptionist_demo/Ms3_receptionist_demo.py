@@ -32,10 +32,10 @@ kitchen_desig = ObjectDesignatorDescription(names=["kitchen"])
 pub_nlp = rospy.Publisher('/startListener', String, queue_size=10)
 response = ""
 callback = False
-doorbell = True
+doorbell = False
 
 # Declare variables for humans
-host = HumanDescription("Vanessa", fav_drink="coffee")
+host = HumanDescription("Celina", fav_drink="coffee")
 guest1 = HumanDescription("bob", fav_drink="tea")
 # for testing, if the first part of the demo is skipped
 guest1.set_attributes(['female', 'without a hat', 'wearing a t-shirt', ' a dark top'])
@@ -69,10 +69,10 @@ def door_opening():
 
     # Pre-Pose for door opening
     ParkArmsAction([Arms.LEFT]).resolve().perform()
-    pose1 = Pose([1.45, 4.47, 0], [0, 0, 1, 0])
+    pose1 = Pose([1.3, 4.35, 0], [0, 0, 1, 0])
     NavigateAction([pose1]).resolve().perform()
     MoveJointsMotion(["wrist_roll_joint"], [-1.57]).resolve().perform()
-    MoveTorsoAction([0.35]).resolve().perform()
+    MoveTorsoAction([0.4]).resolve().perform()
     MoveGripperMotion(motion="open", gripper="left").resolve().perform()
 
     # grasp door
@@ -84,7 +84,7 @@ def door_opening():
     MoveGripperMotion(motion="open", gripper="left").resolve().perform()
 
     # move away from door
-    pose2 = Pose([1.85, 4.5, 0], [0, 0, 1, 0])
+    pose2 = Pose([1.9, 4.5, 0], [0, 0, 1, 0])
     NavigateAction([pose2]).resolve().perform()
 
 
@@ -170,7 +170,12 @@ def welcome_guest(num, guest: HumanDescription):
         except PerceptionObjectNotFound:
             TalkingMotion("please step in front of me").resolve().perform()
             rospy.sleep(3)
+            # get attributes again
             attr_list = DetectAction(technique='attributes', state='start').resolve().perform()
+            guest.set_attributes(attr_list)
+            rospy.loginfo(attr_list)
+
+            # set ID again
             new_id = DetectAction(technique='human', state='face').resolve().perform()[1][0]
             guest.set_id(new_id)
     return guest
@@ -256,4 +261,4 @@ def demo(step):
             HeadFollowAction('stop').resolve().perform()
 
 
-demo(1)
+demo(0)

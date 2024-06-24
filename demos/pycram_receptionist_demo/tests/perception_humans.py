@@ -12,7 +12,6 @@ from pycram.designators.object_designator import *
 from pycram.bullet_world import BulletWorld, Object
 from demos.pycram_receptionist_demo.utils.new_misc import *
 from pycram.helper import axis_angle_to_quaternion
-move = PoseNavigator()
 
 host = HumanDescription("James", fav_drink="water")
 
@@ -25,12 +24,12 @@ robot_desig = ObjectDesignatorDescription(names=["hsrb"]).resolve()
 robot.set_color([0.5, 0.5, 0.9, 1])
 
 # careful that u spawn the correct kitchen
-kitchen = Object("kitchen", "environment", "suturo_lab_version_15.urdf")
+kitchen = Object("kitchen", ObjectType.ENVIRONMENT, "suturo_lab_version_15.urdf")
 giskardpy.init_giskard_interface()
 guest1 = HumanDescription("guest1")
 
-for obj in world.current_bullet_world.objects:
-    print(obj)
+#for obj in world.current_bullet_world.objects:
+#    print(obj)
 
 
 # kitchen.set_joint_state("iai_kitchen:arena:door_origin_revolute_joint", 1)
@@ -39,21 +38,20 @@ def p():
     with real_robot:
         seat = False
         attributes = True
-        # pose = PoseStamped
-        pose = toPoseStamped(2.4,2.1,0)
-        move.query_pose_nav(pose)
 
         if attributes:
             # get attributes
 
             try:
-                attr_list = DetectAction(technique='attributes', state='start').resolve().perform()
-                guest1.set_attributes(attr_list)
-                print(attr_list)
-                id = DetectAction(technique='human', state='face').resolve().perform()[1][0]
-                print(id)
+                #TalkingMotion("Test").resolve().perform()
+                rospy.sleep(1)
+                #attr_list = DetectAction(technique='attributes', state='start').resolve().perform()
+                #guest1.set_attributes(attr_list)
+                #print(attr_list)
 
-                rospy.loginfo(attr_list)
+                MoveJointsMotion(["head_pan_joint"], [-0.5]).resolve().perform()
+
+                #rospy.loginfo(attr_list)
             except PerceptionObjectNotFound:
                 TalkingMotion("please step in front of me").resolve().perform()
                 rospy.sleep(3)

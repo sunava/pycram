@@ -31,7 +31,7 @@ pub_nlp = rospy.Publisher('/startListener', String, queue_size=10)
 #pub_color = rospy.Publisher('/hsrb/command_status_led', UInt16, queue_size=5, latch=True)
 response = ""
 callback = False
-doorbell = True
+doorbell = False
 
 # Declare variables for humans
 host = HumanDescription("Alina", fav_drink="water")
@@ -48,6 +48,11 @@ def data_cb(data):
     callback = True
 
 
+def doorbell_cb(data):
+    global doorbell
+    doorbell = True
+
+
 def misc_fct():
     global response
     global callback
@@ -55,69 +60,17 @@ def misc_fct():
     rospy.Subscriber("/nlp_out", String, data_cb)
 
     with real_robot:
+        # receive data from nlp via topic
+        rospy.Subscriber("nlp_out", String, data_cb)
+        rospy.Subscriber("nlp_out2", String, doorbell_cb)
 
-        DetectAction(technique='human').resolve().perform()
+        TalkingMotion("waiting for bell").resolve().perform()
 
-        # look at guest and introduce
-        HeadFollowAction('start').resolve().perform()
-        TalkingMotion("Hello, my name is Toya").resolve().perform()
-        rospy.sleep(2)
-        TalkingMotion("please answer me after the green light").resolve().perform()
-        rospy.sleep(1)
-        TalkingMotion("what is your name and favorite drink?").resolve().perform()
-        rospy.sleep(2)
-        pub_nlp.publish("start listening")
-        rospy.sleep(2)
-        pub_color.publish(2)
-        rospy.sleep(1)
+        while not doorbell:
+            print("no bell")
 
+        TalkingMotion("Bell detected").resolve().perform()
 
-
-        # signal to start listening
-
-
-        while not callback:
-            rospy.sleep(1)
-        callback = False
-
-        if response[0] == "<GUEST>":
-            # success a name and intent was understood
-            if response[1] != "<None>":
-                TalkingMotion("please confirm if i got your name right").resolve().perform()
-                guest1.set_drink(response[2])
-                rospy.sleep(1)
-                guest1.set_name(name_confirm(response[1]))
-
-            else:
-                # save heard drink
-                guest1.set_drink(response[2])
-
-                # ask for name again once
-                guest1.set_name(name_repeat())
-
-            # confirm favorite drink
-            guest1.set_drink(drink_confirm(guest1.fav_drink))
-
-        else:
-            # two chances to get name and drink
-            i = 0
-            while i < 2:
-                TalkingMotion("please repeat your name and drink loud and clear").resolve().perform()
-                pub_nlp.publish("start")
-
-                while not callback:
-                    rospy.sleep(1)
-                callback = False
-
-                if response[0] == "<GUEST>":
-                    guest1.set_name(response[1])
-                    guest1.set_drink(response[2])
-                    break
-                else:
-                    i += 1
-
-        introduce(host, guest1)
-        DetectAction(technique='human', state='stop').resolve().perform()
 
 
 misc_fct()

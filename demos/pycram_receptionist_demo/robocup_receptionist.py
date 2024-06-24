@@ -69,7 +69,7 @@ def door_opening():
 
     # Pre-Pose for door opening
     ParkArmsAction([Arms.LEFT]).resolve().perform()
-    pose1 = Pose([1.45, 4.47, 0], [0, 0, 1, 0])
+    pose1 = Pose([1.3, 4.35, 0], [0, 0, 1, 0])
     NavigateAction([pose1]).resolve().perform()
     MoveJointsMotion(["wrist_roll_joint"], [-1.57]).resolve().perform()
     MoveTorsoAction([0.35]).resolve().perform()
@@ -190,13 +190,12 @@ def detect_point_to_seat():
         if place[0] == 'False':
             PointingMotion(float(place[1]), float(place[2]), float(place[3])).resolve().perform()
             free_seat = True
-            pose_guest1 = PoseStamped()
-            pose_guest1.header.frame_id = "/map"
-            pose_guest1.pose.position.x = float(place[1])
-            pose_guest1.pose.position.y = float(place[2])
-            pose_guest1.pose.position.z = float(place[3])
-            guest1.set_pose(pose_guest1)
-            break
+            pose_guest = PoseStamped()
+            pose_guest.header.frame_id = "/map"
+            pose_guest.pose.position.x = float(place[1])
+            pose_guest.pose.position.y = float(place[2])
+            pose_guest.pose.position.z = float(place[3])
+            return pose_guest
     return free_seat
 
 
@@ -247,14 +246,14 @@ def demo(step):
             host.set_pose(host_pose[1])
             host_pose = DetectAction(technique='human', state='stop').resolve().perform()
 
-            if not detect_point_to_seat():
-                # TODO: move Head a little bit
-                # write separate function?
-                HeadFollowAction('start').resolve().perform()
-                lookAt = PoseStamped()
-                lookAt.pose = robot.get_pose()
-                lookAt.pose.position.position.x += 0.3
-                pub_pose.publish(lookAt)
+            guest_pose = detect_point_to_seat()
+            if not guest_pose:
+                # move head a little
+                MoveJointsMotion(["head_pan_joint"], [-0.3]).resolve().perform()
+                guest_pose = detect_point_to_seat()
+                guest1.set_pose(guest_pose)
+            else:
+                guest1.set_pose(guest_pose)
 
         if step <= 3:
             # introduce guest1 and host
@@ -277,7 +276,8 @@ def demo(step):
             while not doorbell:
                 print("no bell")
 
-            #door_opening()
+            # TODO: Giskard has to fix world state
+            # door_opening()
 
             pose2 = Pose([1.85, 4.5, 0], [0, 0, 1, 0])
             NavigateAction([pose2]).resolve().perform()
@@ -286,7 +286,7 @@ def demo(step):
             guest2 = welcome_guest(2, guest2)
 
         if step <= 6:
-            # leading to livingroom and pointing to free seat
+            # leading to living room and pointing to free seat
 
             TalkingMotion("please step out of the way and follow me").resolve().perform()
 
@@ -300,6 +300,48 @@ def demo(step):
 
             # place new guest in living room
             TalkingMotion("Welcome to the living room").resolve().perform()
+
+        if step >= 7:
+            # update poses from guest1 and host
+
+            id_humans = DetectAction(technique='human', state='face').resolve().perform()[1]
+            try:
+                host_pose = id_humans[host.id]
+                host.set_pose(host_pose)
+            except KeyError:
+                print("host pose not updated")
+
+            try:
+                guest1_pose = id_humans[guest1.id]
+                guest1.set_pose(guest1_pose)
+            except KeyError:
+                print("guest1 pose not updated")
+
+        if step >= 8:
+            # find a place for guest2 to sit and point
+            guest_pose = detect_point_to_seat()
+
+            if not guest_pose:
+                # move head a little
+                MoveJointsMotion(["head_pan_joint"], [-0.3]).resolve().perform()
+                guest_pose = detect_point_to_seat()
+                guest1.set_pose(guest_pose)
+            else:
+                guest1.set_pose(guest_pose)
+
+            if step >= 9:
+                # introduce everyone
+                introduce(host, guest2)
+                rospy.sleep(3)
+                introduce(guest1, guest2)
+                rospy.sleep(3)
+
+
+
+
+
+
+
 
 
 

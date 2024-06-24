@@ -12,7 +12,7 @@ from tmc_msgs.msg import Voice
 import pycram.bullet_world_reasoning as btr
 from ..designators.motion_designator import *
 from ..enums import JointType, ObjectType, State
-from ..external_interfaces import giskard
+from ..external_interfaces import giskard # change to giskard_new as giskard
 from ..external_interfaces.ik import request_ik
 from ..external_interfaces.robokudo import *
 from ..helper import _apply_ik
@@ -361,7 +361,18 @@ class HSRBDetectingReal(ProcessModule):
         if desig.technique == 'human' and (desig.state == 'start' or desig.state == None):
             human_pose = queryHuman()
             return human_pose
-
+        elif desig.state == "face":
+            res = faces_queryHuman()
+            id_dict = {}
+            if res.res:
+                #print(res.res)
+                for ele in res.res:
+                    id_dict[ele.type] = ele.pose
+                print(id_dict)
+                return id_dict
+            else:
+                return []
+            return res
         elif desig.state == "stop":
             stop_queryHuman()
             return "stopped"
@@ -393,6 +404,7 @@ class HSRBDetectingReal(ProcessModule):
             human_pose_attr = attributes_queryHuman()
             counter = 0
             # wait for human to come
+            # TODO: try catch block
             while not human_pose_attr.res and counter < 6:
                 human_pose_attr = attributes_queryHuman()
                 counter += 1
@@ -494,16 +506,28 @@ class HSRBDetectingReal(ProcessModule):
             query_result = queryEmpty(ObjectDesignatorDescription(types=[desig.object_type]))
             perceived_objects = []
             for i in range(0, len(query_result.res)):
+                print("#######################################################")
+                print(query_result.res[i])
                 try:
                     obj_pose = Pose.from_pose_stamped(query_result.res[i].pose[0])
                 except IndexError:
-                    continue
+                    obj_pose = Pose.from_pose_stamped(query_result.res[i].pose)
+                    pass
                 obj_type = query_result.res[i].type
-                obj_size = query_result.res[i].shape_size[0].dimensions
-                obj_color = query_result.res[i].color[0]
+                obj_size = None
+                try:
+                     obj_size = query_result.res[i].shape_size[0].dimensions
+                except IndexError:
+                    pass
+                obj_color = None
+                try:
+                    obj_color = query_result.res[i].color[0]
+                except IndexError:
+                    pass
+
                 if desig.object_type:
                     if not desig.object_type.lower() in obj_type.lower():
-                        continue
+                        pass
                 color_switch = {
                     "red": [1, 0, 0, 1],
                     "yellow": [1, 1, 0, 1],
@@ -520,9 +544,14 @@ class HSRBDetectingReal(ProcessModule):
                 color = color_switch.get(obj_color)
                 if color is None:
                     color = [0, 0, 0, 1]
+                if obj_size is None:
+                    obj_size = [0.02, 0.02, 0.02]
+                    osize = [obj_size[0] / 2, obj_size[1] / 2, obj_size[2] / 2]
+                else:
+                    osize = [obj_size.x / 2, obj_size.y / 2, obj_size.z / 2]
+                print(obj_pose, obj_size, obj_type)
 
-                osize = [obj_size.x / 2, obj_size.y / 2, obj_size.z / 2]
-                id = BulletWorld.current_bullet_world.add_rigid_box(obj_pose, osize, color)
+                id = BulletWorld.current_bullet_world.add_rigid_box(obj_pose, obj_size, color)
                 box_object = Object(obj_type + "_" + str(rospy.get_time()), obj_type, pose=obj_pose, color=color, id=id,
                                     customGeom={"size": osize})
                 box_object.set_pose(obj_pose)

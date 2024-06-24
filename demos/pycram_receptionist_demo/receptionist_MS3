@@ -9,9 +9,6 @@ roslaunch pycram recpetionist.launch
 robokudo_venv
 rosrun robokudo main.py _ae=receptionist _ros_pkg=milestone1
 
-(4. giskard:
-roslaunch giskardpy giskardpy_hsr_real_vel.launch)
-
 6. Audio Topic auf HSR starten
 ssh administrator@hsrb.local
 roslaunch audio_capture capture_wave.launch
@@ -25,6 +22,9 @@ python3 nlp_receptionist.py -hsr
 # NLP Ersatz Script
 cd /home/suturo/suturo23_24/pycram_ws/src/pycram/demos/pycram_receptionist_demo/tests
 python3 ms3_demo_nlp.py
+
+(4. giskard:
+roslaunch giskardpy giskardpy_hsr_real_vel.launch)
 
 
 
