@@ -1,6 +1,8 @@
 #!/usr/bin/env python3
 import time
 
+import rospy
+
 from pycram.designators.action_designator import *
 from pycram.designators.location_designator import *
 from pycram.designators.object_designator import *
@@ -31,6 +33,42 @@ bowl = Object("bowl", "bowl", "bowl.stl", pose=Pose([2.5, 2.2, 1.02]), color=[1,
 spoon = Object("spoon", "spoon", "spoon.stl", pose=Pose([2.4, 2.2, 0.85]), color=[0, 0, 1, 1])
 cereal = Object("cereal", "cereal", "breakfast_cereal.stl", pose=Pose([2.5, 2.4, 1.05]), color=[0, 1, 0, 1])
 cup = Object("cup", "cup", "jeroen_cup.stl", pose=Pose([0.5, 1.6, 1.38], [0, 0, 1, 0]))
+
+object_states = {
+    "milk1": "old_location",
+    "milk2": "old_location",
+    "bowl": "old_location",
+    "spoon": "old_location",
+    "cereal": "old_location",
+    "cup": "old_location"
+}
+# Initialize counters
+minor_interrupt_count = 0
+major_interrupt_count = 0
+ignored_commands = 0  # Initialize this counter
+
+
+def update_object_state(obj_name, state, current_location):
+    global object_states
+    if obj_name in object_states:
+        if state == "new_location" and obj_name in original_locations:
+            if original_locations[obj_name] != current_location:
+                object_states[obj_name] = state
+        elif state == "old_location" and obj_name in original_locations:
+            if original_locations[obj_name] == current_location:
+                object_states[obj_name] = state
+
+# Assuming original_locations and current_locations dictionaries are defined and updated accordingly
+original_locations = {
+    "milk1": [2.5, 2, 1.02],
+    "milk2": [2.5, 1.7, 1.02],
+    "bowl": [2.5, 2.2, 1.02],
+    "spoon": [2.4, 2.2, 0.85],
+    "cereal": [2.5, 2.4, 1.05],
+    "cup": [0.5, 1.6, 1.38]
+}
+
+
 
 apartment.attach(spoon, 'cabinet10_drawer_top')
 
@@ -156,6 +194,10 @@ def get_nav_pose(object_type, location):
 
 def update_current_command():
     global current_cmd, obj_type, obj_color, obj_name, obj_location, obj_size, unhandled_objects
+    global minor_interrupt_count, major_interrupt_count, ignored_commands
+
+
+
     current_cmd = fluent.next_command()
 
     if current_cmd:
@@ -163,6 +205,7 @@ def update_current_command():
         major_cmd = current_cmd.get("major", {}).get("command")
 
         if minor_cmd == "setting_breakfast":
+            minor_interrupt_count += 1
             objects_to_add = [
                 dict_object(type="bowl", color="", name="", location="", size=""),
                 dict_object(type="milk", color="", name="", location="", size=""),
@@ -172,8 +215,8 @@ def update_current_command():
             ]
             fluent.modify_objects_in_use(objects_to_add, [])
 
-        # elif minor_cmd == "object":
         elif minor_cmd == "replace_object":
+            minor_interrupt_count += 1
             old_attributes = (obj_type.lower(), obj_color, obj_name.lower(), obj_location, obj_size.lower())
 
             del_cmd = current_cmd.get("minor", {}).get("del_object")
@@ -199,15 +242,21 @@ def update_current_command():
                 unhandled_objects.remove(obj_type)
                 obj_type, obj_color, obj_name, obj_location, obj_size = new_attributes
                 unhandled_objects.append(obj_type)
+
         elif minor_cmd == "bring_me":
+            minor_interrupt_count += 1
             add_cmd = current_cmd.get("minor", {}).get("add_object")
             if add_cmd:
                 add_obj = add_cmd[0]
                 fluent.modify_objects_in_use([add_obj], [])
                 unhandled_objects.append(add_obj.type.lower())
                 print(f"Added {add_obj.type.lower()}")
+
         elif major_cmd == "stop":
+            major_interrupt_count += 1
             return
+
+
 
 
 def monitor_func():
@@ -225,6 +274,24 @@ def monitor_func():
     elif fluent.major_interrupt.get_value():
         return MajorInterrupt
     return False
+
+
+def calculate_failure_success_rate(minor_interrupt_count, major_interrupt_count, object_states, ignored_commands):
+    total_commands = minor_interrupt_count + major_interrupt_count
+    objects_replaced = sum(1 for state in object_states.values() if state == "new_location")
+    objects_not_correct = sum(1 for state in object_states.values() if state not in ["new_location", "old_location"])
+
+    failure_success_rate = (objects_not_correct / total_commands) * 100 if total_commands > 0 else 0
+    ignored_commands_rate = (ignored_commands / total_commands) * 100 if total_commands > 0 else 0
+
+    return {
+        "total_commands": total_commands,
+        "objects_replaced": objects_replaced,
+        "objects_not_correct": objects_not_correct,
+        "ignored_commands": ignored_commands,
+        "failure_success_rate": failure_success_rate,
+        "ignored_commands_rate": ignored_commands_rate
+    }
 
 
 @with_simulated_robot
@@ -275,32 +342,33 @@ def move_and_detect(obj_type, obj_size, obj_color):
 
 def announce_pick(name: str, type: str, color: str, location: str, size: str):
     print(f"I will now pick up the {size.lower()} {color.lower()} {type.lower()} at location {location.lower()} ")
-    print(f"I am now interruptable for 5 seconds")
+    #print(f"I am now interruptable for 5 seconds")
     fluent.activate_subs()
     time.sleep(5)
     fluent.deactivate_subs()
-    print(f"I am not interruptable any more")
+    #print(f"I am not interruptable any more")
 
 
 def announce_bring(name: str, type: str, color: str, location: str, size: str, destination: str):
     print(f"I will now bring the {size.lower(), color.lower(), type.lower()} to you")
     from_robot_publish("transporting", True, False, True, "countertop", destination)
-    print(f"I am now interruptable for 10 seconds")
+    #print(f"I am now interruptable for 10 seconds")
     fluent.activate_subs()
     time.sleep(10)
     fluent.deactivate_subs()
-    print(f"I am not interruptable any more")
+    #print(f"I am not interruptable any more")
 
 
-def announce_recovery():
+def announce_recovery(old_desig):
+    update_object_state(old_desig.name, "recovering", old_desig.pose.position)
     from_robot_publish("Recovery", False, True, True, "table", "countertop")
     print("Recovering from Interrupt")
-    print("I am not interruptable here at the moment")
+    #print("I am not interruptable here at the moment")
 
 
 def announce_pick_place(case: str, type: str, color: str, size: str):
     print(f"I will now {case.lower()} the {size.lower(), color.lower(), type.lower()}")
-    print("I am not interruptable here at the moment")
+    #print("I am not interruptable here at the moment")
 
 
 def place_and_pick_new_obj(old_desig, location, obj_type, obj_size, obj_color):
@@ -343,6 +411,7 @@ def place_and_pick_new_obj(old_desig, location, obj_type, obj_size, obj_color):
     ParkArmsAction([Arms.BOTH]).resolve().perform()
 
 
+
 def from_robot_publish(step, interrupt, move_arm, move_base, robot_location, destination_location):
     global obj_type, obj_color, obj_name, obj_location, obj_size
     fluent.publish_from_robot(step, interrupt, obj_type, obj_color, obj_name, obj_location, obj_size, move_arm,
@@ -350,6 +419,7 @@ def from_robot_publish(step, interrupt, move_arm, move_base, robot_location, des
 
 
 with simulated_robot:
+
     ###### Prepare robot ######
     ParkArmsAction.Action(Arms.BOTH).perform()
 
@@ -363,17 +433,18 @@ with simulated_robot:
     while True:
         unhandled_objects = list(fluent.objects_in_use.keys())
         unhandled_objects = [obj for obj in unhandled_objects if obj not in handled_objects]
+        previous_states = object_states.copy()  # Keep track of the states before the command
         if not unhandled_objects:
-            print("Waiting for next human command")
+            rospy.loginfo("Waiting for next human command")
             fluent.activate_subs()
             fluent.minor_interrupt.pulsed().wait_for()
             fluent.deactivate_subs()
             update_current_command()
-            print(f"Received command: {current_cmd.get('minor', {}).get('command')}")
+            rospy.logwarn(f"Received command: {current_cmd.get('minor', {}).get('command')}")
 
         for obj in unhandled_objects:
             if obj in handled_objects:
-                print(f"Object {obj} was already handled, continuing")
+                rospy.logerr(f"Object {obj} was already handled, continuing")
                 from_robot_publish("already_done", False, False, False, current_location, "")
 
         # Filter out already handled objects
@@ -430,6 +501,7 @@ with simulated_robot:
                 ###### Pickup Object ######
                 from_robot_publish("picking_up", True, True, False, "countertop", "")
                 PickUpAction.Action(obj_desig, used_arm, grasp).perform()
+                update_object_state(obj_desig.name, "being_moved", obj_desig.pose.position)
 
                 ###### Park robot ######
                 ParkArmsAction.Action(Arms.BOTH).perform()
@@ -446,7 +518,7 @@ with simulated_robot:
                 monitor_func)
 
             ###### Construct recovery behaviour (Navigate to island => place object => detect new object => pick up new object ######
-            recover = Code(lambda: announce_recovery()) + Code(
+            recover = Code(lambda: announce_recovery(old_desig=obj_desig)) + Code(
                 lambda: place_and_pick_new_obj(obj_desig, original_pose, obj_type, obj_size, obj_color))
 
             ###### Execute plan ######
@@ -457,8 +529,24 @@ with simulated_robot:
             grasp = "top" if obj_type == "spoon" else "front"
             PlaceAction(obj_desig, [used_arm], [grasp],
                         [get_place_pose(obj_type, destination_location)]).resolve().perform()
+            update_object_state(obj_desig.name, "new_location",  obj_desig.pose.position)
+
             ParkArmsAction([Arms.BOTH]).resolve().perform()
             from_robot_publish("task_done", False, False, False, current_location, "")
+
+            # Check if any state has changed
+            if previous_states == object_states:
+                ignored_commands += 1
+            results = calculate_failure_success_rate(minor_interrupt_count, major_interrupt_count, object_states,
+                                                     ignored_commands)
+            print(f"Total Commands: {results['total_commands']}")
+            print(f"Objects Replaced: {results['objects_replaced']}")
+            print(f"Objects Not in Correct Place: {results['objects_not_correct']}")
+            print(f"Ignored Commands: {results['ignored_commands']}")
+            print(f"Failure Success Rate: {results['failure_success_rate']}%")
+            print(f"Ignored Commands Rate: {results['ignored_commands_rate']}%")
+            for obj, state in object_states.items():
+                rospy.logwarn(f"{obj}: {state}")
 
             if obj_type in unhandled_objects:
                 unhandled_objects.remove(obj_type)
