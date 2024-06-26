@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+import json
 import time
 
 import rospy
@@ -16,6 +17,8 @@ from pycram.pose import Pose
 from pycram.bullet_world import BulletWorld, Object
 from pycram.process_module import simulated_robot, with_simulated_robot
 from pycram.ros.viz_marker_publisher import VizMarkerPublisher
+import logging
+
 sleep = True
 igno_commands = 0
 minor_interrupt_count = 0
@@ -45,9 +48,11 @@ object_states = {
     "cereal": "old_location",
     "cup": "old_location"
 }
+
+
 # Initialize counters
 
-  # Initialize this counter
+# Initialize this counter
 
 
 def update_object_state(obj_name, state, current_location):
@@ -60,6 +65,7 @@ def update_object_state(obj_name, state, current_location):
             if original_locations[obj_name] == current_location:
                 object_states[obj_name] = state
 
+
 # Assuming original_locations and current_locations dictionaries are defined and updated accordingly
 original_locations = {
     "milk1": [2.5, 2, 1.02],
@@ -69,8 +75,6 @@ original_locations = {
     "cereal": [2.5, 2.4, 1.05],
     "cup": [0.5, 1.6, 1.38]
 }
-
-
 
 apartment.attach(spoon, 'cabinet10_drawer_top')
 
@@ -198,8 +202,6 @@ def update_current_command():
     global current_cmd, obj_type, obj_color, obj_name, obj_location, obj_size, unhandled_objects
     global minor_interrupt_count, major_interrupt_count, igno_commands
 
-
-
     current_cmd = fluent.next_command()
 
     if current_cmd:
@@ -242,7 +244,7 @@ def update_current_command():
 
             if old_attributes == del_attributes and new_attributes:
                 fluent.modify_objects_in_use([add_obj], [del_obj])
-                try :
+                try:
                     unhandled_objects.remove(obj_type)
                     obj_type, obj_color, obj_name, obj_location, obj_size = new_attributes
                     unhandled_objects.append(obj_type)
@@ -266,8 +268,6 @@ def update_current_command():
             return
 
 
-
-
 def monitor_func():
     global obj_type, obj_color, obj_name, obj_location, obj_size, age, current_cmd
     if fluent.minor_interrupt.get_value():
@@ -284,8 +284,13 @@ def monitor_func():
         return MajorInterrupt
     return False
 
+def save_statistics_to_file(statistics):
+    filename = rospy.get_param('/interrupt_demo_node/workdir') + '/logs/robot_log.json'
+    with open(filename, 'w') as file:
+        json.dump(statistics, file, indent=4)
+    rospy.loginfo(f"Statistics saved to {filename}")
 
-def calculate_failure_success_rate(minor_interrupt_count, major_interrupt_count, object_states, ignored_commands):
+def calculate_statistics(ignored_commands):
     total_commands = minor_interrupt_count + major_interrupt_count
     objects_replaced = sum(1 for state in object_states.values() if state == "new_location")
     objects_not_correct = sum(1 for state in object_states.values() if state not in ["new_location", "old_location"])
@@ -293,7 +298,7 @@ def calculate_failure_success_rate(minor_interrupt_count, major_interrupt_count,
     failure_success_rate = (objects_not_correct / total_commands) * 100 if total_commands > 0 else 0
     ignored_commands_rate = (ignored_commands / total_commands) * 100 if total_commands > 0 else 0
 
-    return {
+    statistics = {
         "total_commands": total_commands,
         "objects_replaced": objects_replaced,
         "objects_not_correct": objects_not_correct,
@@ -301,6 +306,10 @@ def calculate_failure_success_rate(minor_interrupt_count, major_interrupt_count,
         "failure_success_rate": failure_success_rate,
         "ignored_commands_rate": ignored_commands_rate
     }
+    rospy.loginfo(f"Statistics: {statistics}")
+    save_statistics_to_file(statistics)
+
+    return statistics
 
 
 @with_simulated_robot
@@ -312,7 +321,6 @@ def move_and_detect(obj_type, obj_size, obj_color):
         pose = Pose([1.75, 1.79, 0], [0, 0, 0.533512180079847, 0.8457923821520558])
         drawer_open_loc = AccessingLocation.Location(pose, ["left"])
         NavigateAction([drawer_open_loc.pose]).resolve().perform()
-        print(drawer_open_loc.pose)
         OpenAction(object_designator_description=handle_desig, arms=[drawer_open_loc.arms[0]]).resolve().perform()
         spoon.detach(apartment)
 
@@ -427,14 +435,23 @@ def place_and_pick_new_obj(old_desig, location, obj_type, obj_size, obj_color):
     ParkArmsAction([Arms.BOTH]).resolve().perform()
 
 
-
 def from_robot_publish(step, interrupt, move_arm, move_base, robot_location, destination_location):
     global obj_type, obj_color, obj_name, obj_location, obj_size
     fluent.publish_from_robot(step, interrupt, obj_type, obj_color, obj_name, obj_location, obj_size, move_arm,
                               move_base, robot_location, destination_location)
 
 
+class CustomFileHandler(logging.FileHandler):
+    def emit(self, record):
+        super().emit(record)
+        self.flush()
+
+
+
+
+
 with simulated_robot:
+    logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 
     ###### Prepare robot ######
     ParkArmsAction.Action(Arms.BOTH).perform()
@@ -446,14 +463,12 @@ with simulated_robot:
     handled_objects = list()
     unhandled_objects = list()
 
-
     while True:
         unhandled_objects = list(fluent.objects_in_use.keys())
         unhandled_objects = [obj for obj in unhandled_objects if obj not in handled_objects]
         previous_states = object_states.copy()  # Keep track of the states before the command
         if not unhandled_objects:
-            results = calculate_failure_success_rate(minor_interrupt_count, major_interrupt_count, object_states,
-                                                     igno_commands)
+            results = calculate_statistics(igno_commands)
             print(f"######### Statistic #########")
             print(f"Total Commands: {results['total_commands']}")
             print(f"Objects Replaced: {results['objects_replaced']}")
@@ -476,7 +491,6 @@ with simulated_robot:
             if obj in handled_objects:
                 igno_commands += 1
                 rospy.logerr(f"Object {obj} was already handled, continuing")
-
 
                 from_robot_publish("already_done", False, False, False, current_location, "")
 
@@ -562,7 +576,7 @@ with simulated_robot:
             grasp = "top" if obj_type == "spoon" else "front"
             PlaceAction(obj_desig, [used_arm], [grasp],
                         [get_place_pose(obj_type, destination_location)]).resolve().perform()
-            update_object_state(obj_desig.name, "new_location",  obj_desig.pose.position)
+            update_object_state(obj_desig.name, "new_location", obj_desig.pose.position)
 
             ParkArmsAction([Arms.BOTH]).resolve().perform()
             from_robot_publish("task_done", False, False, False, current_location, "")
