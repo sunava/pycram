@@ -1,6 +1,8 @@
 #!/usr/bin/env python3
 import json
+import os
 import time
+from datetime import datetime
 
 import rospy
 
@@ -285,7 +287,12 @@ def monitor_func():
     return False
 
 def save_statistics_to_file(statistics):
-    filename = rospy.get_param('/interrupt_demo_node/workdir') + '/logs/robot_log.json'
+    now = datetime.now()
+    short_str = now.strftime("%Y-%m-%d_%H:%M:%S")
+    directory = rospy.get_param('/interrupt_demo_node/workdir') + '/robot_logs'
+    filename = directory + '/statistics_' + short_str + '.json'
+    if not os.path.exists(directory):
+        os.makedirs(directory)
     with open(filename, 'w') as file:
         json.dump(statistics, file, indent=4)
     rospy.loginfo(f"Statistics saved to {filename}")
