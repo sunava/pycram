@@ -8,6 +8,7 @@ from pycram.ros.viz_marker_publisher import VizMarkerPublisher
 # from pycram.external_interfaces.knowrob import get_table_pose
 from pycram.utilities.robocup_utils import StartSignalWaiter
 from pycram.utilities.robocup_utils import TextToSpeechPublisher, ImageSwitchPublisher, SoundRequestPublisher
+from pycram.language import Monitor, Code
 
 # Create an instance of the StartSignalWaiter
 start_signal_waiter = StartSignalWaiter()
@@ -25,6 +26,7 @@ LEN_WISHED_SORTED_OBJ_LIST = len(wished_sorted_obj_list)
 
 # x pose of the end of the couch table
 table_pose = 4.84
+picking_up_cutlery_height = 0.43
 pickup_location_name = "couch table"
 placing_location_name = "dishwasher"
 placing_location_name_left = "dishwasher_left"
@@ -38,6 +40,10 @@ door_name = "sink_area_dish_washer_door"
 # Intermediate positions for a safer navigation
 move_to_the_middle_table_pose = [2.2, 1.98, 0]
 move_to_the_middle_dishwasher_pose = [2.2, -0.1, 0]
+
+# ForceTorqueSensor for recognizing push on the hand
+fts = ForceTorqueSensor(robot_name='hsrb')
+
 
 # Initialize the Bullet world for simulation
 world = BulletWorld("DIRECT")
@@ -86,7 +92,8 @@ def pickup_and_place_objects(sorted_obj: list):
         grasp = "front"
         if sorted_obj[value].type in CUTLERY:
             sorted_obj[value].type = "Cutlery"
-            sorted_obj[value].pose.position.z = 0.43
+            # todo height of the table for picking up
+            sorted_obj[value].pose.position.z = picking_up_cutlery_height
 
         if sorted_obj[value].type == "Metalbowl":
             sorted_obj[value].pose.position.z -= 0.02
@@ -95,24 +102,27 @@ def pickup_and_place_objects(sorted_obj: list):
             grasp = "top"
 
         if sorted_obj[value].type == "Metalplate":
-            text_to_speech_publisher.publish_text("Can you please give me the plate on the table.")
-            image_switch_publisher.publish_image_switch(5)
+            text_to_speech_publisher.pub_now("Can you please give me the plate on the table.")
+            image_switch_publisher.pub_now(5)
             MoveGripperMotion("open", "left").resolve().perform()
-            time.sleep(3)
-
-            text_to_speech_publisher.publish_text("Grasping.")
-
-            MoveGripperMotion("close", "left").resolve().perform()
+            text_to_speech_publisher.pub_now("Push down my hand, when I should grasp")
+            try:
+                plan = Code(lambda: rospy.sleep(1)) * 99999999 >> Monitor(monitor_func)
+                plan.perform()
+            except SensorMonitoringCondition:
+                rospy.logwarn("Close Gripper")
+                text_to_speech_publisher.pub_now("Grasping.") #Todo could be deleted if demo to long
+                MoveGripperMotion(motion="close", gripper="left").resolve().perform()
 
         else:
             # change object x pose if the grasping pose is too far in the table
             if sorted_obj[value].type == "Cutlery" and sorted_obj[value].pose.position.x > table_pose + 0.125:
                 sorted_obj[value].pose.position.x -= 0.08
 
-            text_to_speech_publisher.publish_text("Picking up with: " + grasp)
-            image_switch_publisher.publish_image_switch(7)
+            text_to_speech_publisher.pub_now("Picking up with: " + grasp)
+            image_switch_publisher.pub_now(7)
             try_pick_up(robot, sorted_obj[value], grasp)
-            image_switch_publisher.publish_image_switch(0)
+            image_switch_publisher.pub_now(0)
 
         # placing the object
         ParkArmsAction([Arms.LEFT]).resolve().perform()
@@ -128,13 +138,13 @@ def pickup_and_place_objects(sorted_obj: list):
         else:
             navigate_to(placing_location_name_right)
 
-        text_to_speech_publisher.publish_text("Placing")
-        image_switch_publisher.publish_image_switch(8)
+        text_to_speech_publisher.pub_now("Placing")
+        image_switch_publisher.pub_now(8)
         grasp = "front"
 
         PlaceAction(sorted_obj[value], ["left"], [grasp],
                     [placing_pose]).resolve().perform()
-        image_switch_publisher.publish_image_switch(0)
+        image_switch_publisher.pub_now(0)
         #For the safety in cases where the HSR is not placing, better drop the object to not colide with the kitchen drawer when moving to parkArms arm config
         MoveGripperMotion("open","left").resolve().perform()
         ParkArmsAction([Arms.LEFT]).resolve().perform()
@@ -143,6 +153,15 @@ def pickup_and_place_objects(sorted_obj: list):
         if value + 1 < len(sorted_obj):
             navigate_to(pickup_location_name, sorted_obj[value + 1].pose.position.y)
 
+
+def monitor_func():
+    der: WrenchStamped() = fts.get_last_value()
+    print(abs(der.wrench.force.x))
+    if abs(der.wrench.force.x) > 10.30:
+        print(abs(der.wrench.force.x))
+        print(abs(der.wrench.torque.x))
+        return SensorMonitoringCondition
+    return False
 
 def get_placing_pos(obj):
     lt = LocalTransformer()
@@ -162,7 +181,7 @@ def get_placing_pos(obj):
                            [0, 0, -0.7073882378922517, 0.7068252124052276])
     elif obj == "Metalplate":
         # z = 0.52
-        dishwasher = Pose([0.5447137327423908, -0.16921940480574493, 0.06600000381469734],
+        dishwasher = Pose([0.5447137327423908, -0.16921940480574493, 0.09600000381469737],
                            [0, 0, -0.7073882378922517, 0.7068252124052276])
     elif obj == "Dishwashertab":
         #todo: Werte ändern
@@ -207,15 +226,15 @@ def navigate_and_detect():
 
     :return: tupel of State and dictionary of found objects in the FOV
     """
-    text_to_speech_publisher.publish_text("Navigating")
+    text_to_speech_publisher.pub_now("Navigating")
 
-    navigate_to(pickup_location_name, 2.4)  # 1.6
+    navigate_to(pickup_location_name, 2.45)  # 1.6
     MoveTorsoAction([0.1]).resolve().perform()
 
     # couch table
     LookAtAction(targets=[Pose([5.0, 2.45, 0.15])]).resolve().perform()  # 0.18
-    text_to_speech_publisher.publish_text("Perceiving")
-    image_switch_publisher.publish_image_switch(10)
+    text_to_speech_publisher.pub_now("Perceiving")
+    image_switch_publisher.pub_now(10)
     try: # todo changed couch_table to pickup_location_name
         object_desig = DetectAction(technique='region', state=pickup_location_name).resolve().perform()
         giskardpy.sync_worlds()
@@ -276,13 +295,18 @@ def failure_handling2(sorted_obj: list, new_sorted_obj: list):
             grasp = "front"
 
             print(f"next object is: {wished_sorted_obj_list[val]}")
-            text_to_speech_publisher.publish_text(f"Can you please give me the {wished_sorted_obj_list[val]} "
-                          f"on the table?")
-            image_switch_publisher.publish_image_switch(5)
-            time.sleep(4)
-            text_to_speech_publisher.publish_text("Grasping.")
-            MoveGripperMotion("close", "left").resolve().perform()
-            image_switch_publisher.publish_image_switch(0)
+            text_to_speech_publisher.pub_now(f"Can you please give me the {wished_sorted_obj_list[val]} on the table?")
+            image_switch_publisher.pub_now(5)
+            text_to_speech_publisher.pub_now("Push down my hand, when I should grasp")
+            try:
+                plan = Code(lambda: rospy.sleep(1)) * 99999999 >> Monitor(monitor_func)
+                plan.perform()
+            except SensorMonitoringCondition:
+                rospy.logwarn("Close Gripper")
+                text_to_speech_publisher.pub_now("Grasping.")  # Todo could be deleted if demo to long
+                MoveGripperMotion(motion="close", gripper="left").resolve().perform()
+
+            image_switch_publisher.pub_now(0)
 
             ParkArmsAction([Arms.LEFT]).resolve().perform()
 
@@ -299,23 +323,17 @@ def failure_handling2(sorted_obj: list, new_sorted_obj: list):
                 else:
                     navigate_to(placing_location_name_right)
 
-            text_to_speech_publisher.publish_text("Placing")
-            image_switch_publisher.publish_image_switch(8)
-            # todo add placing of plate in PlaceGivenObjAction
+            text_to_speech_publisher.pub_now("Placing")
+            image_switch_publisher.pub_now(8)
             if wished_sorted_obj_list[val] == "Metalplate":
-                #PlaceGivenObjAction([wished_sorted_obj_list[val]], ["left"],
-                                    #[Pose([x_pos, y_pos, 0.3])], [grasp], False).resolve().perform()
-                text_to_speech_publisher.publish_text("Please take the plate and place it in the dishwasher")
-
-                time.sleep(2)
-                text_to_speech_publisher.publish_text("Droping object now")
-                MoveGripperMotion("open", "left").resolve().perform()
+                PlaceGivenObjAction([wished_sorted_obj_list[val]], ["left"],
+                                    [placing_pose], [grasp], False).resolve().perform()
             else:
 
                 PlaceGivenObjAction([wished_sorted_obj_list[val]], ["left"],
                         [placing_pose],[grasp]).resolve().perform()
             ParkArmsAction([Arms.LEFT]).resolve().perform()
-            image_switch_publisher.publish_image_switch(0)
+            image_switch_publisher.pub_now(0)
             # navigates back if a next object exists
             if val + 1 < len(wished_sorted_obj_list):
                 navigate_to(pickup_location_name, 2.45)
@@ -324,22 +342,22 @@ def failure_handling2(sorted_obj: list, new_sorted_obj: list):
 # Main interaction sequence with real robot
 with ((real_robot)):
     rospy.loginfo("Starting demo")
-    text_to_speech_publisher.publish_text("Starting demo")
+    text_to_speech_publisher.pub_now("Starting demo")
 
     navigate_to(placing_location_name)
 
     MoveJointsMotion(["wrist_roll_joint"], [-1.5]).resolve().perform()
-    image_switch_publisher.publish_image_switch(2)
+    image_switch_publisher.pub_now(2)
     OpenDishwasherAction(handle_name, door_name, 0.6, 1.4, ["left"]).resolve().perform()
 
-    text_to_speech_publisher.publish_text("Please pull out the lower rack")
+    text_to_speech_publisher.pub_now("Please pull out the lower rack")
 
     ParkArmsAction([Arms.LEFT]).resolve().perform()
     MoveGripperMotion("open", "left").resolve().perform()
 
     # detect objects
     object_desig = navigate_and_detect()
-    image_switch_publisher.publish_image_switch(0)
+    image_switch_publisher.pub_now(0)
 
     # sort objects based on distance and which we like to keep
     sorted_obj = sort_objects(robot, object_desig, wished_sorted_obj_list)
@@ -351,5 +369,5 @@ with ((real_robot)):
     failure_handling2(sorted_obj, new_obj_desig)
 
     rospy.loginfo("Done!")
-    text_to_speech_publisher.publish_text("Done")
-    image_switch_publisher.publish_image_switch(3)
+    text_to_speech_publisher.pub_now("Done")
+    image_switch_publisher.pub_now(3)

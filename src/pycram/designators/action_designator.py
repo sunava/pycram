@@ -532,6 +532,11 @@ class PlaceAction(ActionDesignatorDescription):
             if execute:
                 MoveTCPMotion(push_baseTm, self.arm).resolve().perform()
             if self.object_designator.type == "Metalplate":
+                loweringTm = push_baseTm
+                loweringTm.pose.position.z -= 0.08
+                BulletWorld.current_bullet_world.add_vis_axis(loweringTm)
+                if execute:
+                    MoveTCPMotion(loweringTm, self.arm).resolve().perform()
                 # rTb = Pose([0,-0.1,0], [0,0,0,1],"base_link")
                 rospy.logwarn("sidepush monitoring")
                 TalkingMotion("sidepush.").resolve().perform()
@@ -702,6 +707,7 @@ class PlaceGivenObjAction(ActionDesignatorDescription):
 
             # placing everything else or the Metalplate in the dishwasher
             else:
+                print("In else of placing")
                 if self.grasp == "top":
                     oTm.pose.position.z += 0.05
 
@@ -733,11 +739,16 @@ class PlaceGivenObjAction(ActionDesignatorDescription):
                 if execute:
                     MoveTCPMotion(push_baseTm, self.arm).resolve().perform()
                 if self.object_type == "Metalplate":
+                    loweringTm = push_baseTm
+                    loweringTm.pose.position.z -= 0.08
+                    BulletWorld.current_bullet_world.add_vis_axis(loweringTm)
+                    if execute:
+                        MoveTCPMotion(loweringTm, self.arm).resolve().perform()
                     # rTb = Pose([0,-0.1,0], [0,0,0,1],"base_link")
                     rospy.logwarn("sidepush monitoring")
                     TalkingMotion("sidepush.").resolve().perform()
                     side_push = Pose(
-                        [push_baseTm.pose.position.x, push_baseTm.pose.position.y + 0.08, push_baseTm.pose.position.z],
+                        [push_baseTm.pose.position.x, push_baseTm.pose.position.y + 0.125, loweringTm.pose.position.z],
                         [push_baseTm.orientation.x, push_baseTm.orientation.y, push_baseTm.orientation.z,
                          push_baseTm.orientation.w])
                     try:
