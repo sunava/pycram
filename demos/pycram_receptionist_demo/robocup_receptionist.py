@@ -33,6 +33,8 @@ pub_nlp = rospy.Publisher('/startListener', String, queue_size=10)
 response = ""
 callback = False
 doorbell = True
+timeout = 15  # 15 seconds timeout
+
 
 # Declare variables for humans
 host = HumanDescription("Vanessa", fav_drink="coffee")
@@ -73,6 +75,8 @@ def door_opening():
     NavigateAction([pose1]).resolve().perform()
     MoveJointsMotion(["wrist_roll_joint"], [-1.57]).resolve().perform()
     MoveTorsoAction([0.4]).resolve().perform()
+
+    # grasp handle and open door
     DoorOpenAction("kitchen_2/living_room:arena:door_handle_inside").resolve().perform()
 
     # move away from door
@@ -218,6 +222,7 @@ def detect_point_to_seat():
 def demo(step):
     with real_robot:
         global callback
+        global doorbell
         global guest1
         global guest2
 
@@ -232,8 +237,18 @@ def demo(step):
         if step <= 0:
             # door opening sequence
 
+            # wait 15 seconds for sound
+            start_time = time.time()
             while not doorbell:
-                print("no bell")
+                # continue challenge to not waste time
+                if time.time() - start_time > timeout:
+                    print("Timeout reached, no bell")
+                    break
+
+                time.sleep(0.5)
+
+            # set it back to false for second guest
+            doorbell = False
 
             door_opening()
 
@@ -257,13 +272,14 @@ def demo(step):
             TalkingMotion("Welcome to the living room").resolve().perform()
 
             # detect host
-            host_pose = DetectAction(technique='human').resolve().perform()[1][0]
+            host_pose = DetectAction(technique='human').resolve().perform()
             host.set_pose(host_pose[1])
-            host_pose = DetectAction(technique='human', state='stop').resolve().perform()
+            DetectAction(technique='human', state='stop').resolve().perform()
 
+            # find free seat
             guest_pose = detect_point_to_seat()
             if not guest_pose:
-                # move head a little
+                # move head a little to perceive chairs
                 MoveJointsMotion(["head_pan_joint"], [-0.3]).resolve().perform()
                 guest_pose = detect_point_to_seat()
                 guest1.set_pose(guest_pose)
@@ -273,23 +289,31 @@ def demo(step):
         if step <= 3:
             # introduce guest1 and host
             HeadFollowAction('start').resolve().perform()
-            rospy.sleep(1.2)
+            rospy.sleep(1)
             if guest1.pose:
                 pub_pose.publish(guest1.pose)
             TalkingMotion("please take a seat next to your host").resolve().perform()
-            rospy.sleep(3)
+            image_switch_publisher.pub_now(ImageEnum.SOFA.value)
+            rospy.sleep(2.5)
 
             # introduce humans and look at them
             introduce(host, guest1)
-            rospy.sleep(3)
+            rospy.sleep(2)
 
         if step <= 4:
             # signal start
             TalkingMotion("waiting for new guests").resolve().perform()
             image_switch_publisher.pub_now(ImageEnum.HI.value)
 
+            # wait 15 seconds for sound
+            start_time = time.time()
             while not doorbell:
-                print("no bell")
+                # continue challenge to not waste time
+                if time.time() - start_time > timeout:
+                    print("Timeout reached, no bell")
+                    break
+
+                time.sleep(0.5)
 
             # TODO: Giskard has to fix world state
             # door_opening()
@@ -302,7 +326,6 @@ def demo(step):
 
         if step <= 6:
             # leading to living room and pointing to free seat
-
             TalkingMotion("please step out of the way and follow me").resolve().perform()
 
             # stop looking at human
@@ -335,6 +358,8 @@ def demo(step):
         if step >= 8:
             # find a place for guest2 to sit and point
             guest_pose = detect_point_to_seat()
+            TalkingMotion("take a seat").resolve().perform()
+            image_switch_publisher.pub_now(ImageEnum.SOFA.value)
 
             if not guest_pose:
                 # move head a little
@@ -345,7 +370,7 @@ def demo(step):
                 guest1.set_pose(guest_pose)
 
             if step >= 9:
-                # introduce everyone
+                # introduce everyone to guest 2
                 introduce(host, guest2)
                 rospy.sleep(3)
                 introduce(guest1, guest2)
