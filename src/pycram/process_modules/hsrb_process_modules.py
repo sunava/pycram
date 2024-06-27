@@ -709,6 +709,24 @@ class HSRBPointingReal(ProcessModule):
         giskard.move_arm_to_pose(pointing_pose)
 
 
+class HSRBOpenDoorReal(ProcessModule):
+    """
+    HSR will perform open action on grasped handel for a door
+    """
+
+    def _execute(self, designator: DoorOpenMotion.Motion) -> Any:
+        giskard.open_doorhandle(designator.handle)
+
+
+class HSRBGraspHandleReal(ProcessModule):
+    """
+    HSR will grasp given (door-)handle
+    """
+
+    def _execute(self, designator: GraspHandleMotion.Motion) -> Any:
+        giskard.grasp_doorhandle(designator.handle)
+
+
 class HSRBGraspDishwasherHandleReal(ProcessModule):
     """Grasps the dishwasher handle"""
 
@@ -764,6 +782,8 @@ class HSRBManager(ProcessModuleManager):
         self._pour_lock = Lock()
         self._head_follow_lock = Lock()
         self._pointing_lock = Lock()
+        self._open_door_lock = Lock()
+        self._grasp_handle_lock = Lock()
 
     def navigate(self):
         if ProcessModuleManager.execution_type == "simulated":
@@ -906,3 +926,15 @@ class HSRBManager(ProcessModuleManager):
             return HSRBPointingReal(self._pointing_lock)
         elif ProcessModuleManager.execution_type == "semi_real":
             return HSRBPointingReal(self._pointing_lock)
+
+    def door_opening(self):
+        if ProcessModuleManager.execution_type == "real":
+            return HSRBOpenDoorReal(self._open_door_lock)
+        elif ProcessModuleManager.execution_type == "semi_real":
+            return HSRBOpenDoorReal(self._open_door_lock)
+
+    def grasp_door_handle(self):
+        if ProcessModuleManager.execution_type == "real":
+            return HSRBGraspHandleReal(self._grasp_handle_lock)
+        elif ProcessModuleManager.execution_type == "semi_real":
+            return HSRBGraspHandleReal(self._grasp_handle_lock)

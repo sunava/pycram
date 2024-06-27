@@ -73,19 +73,25 @@ def door_opening():
     NavigateAction([pose1]).resolve().perform()
     MoveJointsMotion(["wrist_roll_joint"], [-1.57]).resolve().perform()
     MoveTorsoAction([0.4]).resolve().perform()
-    MoveGripperMotion(motion="open", gripper="left").resolve().perform()
-
-    # grasp door
-    giskardpy.grasp_doorhandle("iai_kitchen/living_room:arena:door_handle_inside")
-    MoveGripperMotion(motion="close", gripper="left").resolve().perform()
-
-    # open door
-    giskardpy.open_doorhandle("kitchen_2/living_room:arena:door_handle_inside")
-    MoveGripperMotion(motion="open", gripper="left").resolve().perform()
+    DoorOpenAction("iai_kitchen/living_room:arena:door_handle_inside")
 
     # move away from door
     pose2 = Pose([1.9, 4.5, 0], [0, 0, 1, 0])
     NavigateAction([pose2]).resolve().perform()
+
+
+def get_attributes(guest: HumanDescription):
+    """
+    storing attributes and face of person in front of robot
+    :param guest: variable to stare information in
+    """
+    attr_list = DetectAction(technique='attributes', state='start').resolve().perform()
+    guest.set_attributes(attr_list)
+    rospy.loginfo(attr_list)
+
+    # remember face
+    new_id = DetectAction(technique='human', state='face').resolve().perform()[1][0]
+    guest.set_id(new_id)
 
 
 def welcome_guest(num, guest: HumanDescription):
@@ -159,25 +165,22 @@ def welcome_guest(num, guest: HumanDescription):
 
     TalkingMotion("i will show you the living room now").resolve().perform()
 
-    # get attributes
+    # get attributes and face if first guest
     if num == 1:
         try:
-            attr_list = DetectAction(technique='attributes', state='start').resolve().perform()
-            guest.set_attributes(attr_list)
-            new_id = DetectAction(technique='human', state='face').resolve().perform()[1][0]
-            guest.set_id(new_id)
-            rospy.loginfo(attr_list)
-        except PerceptionObjectNotFound:
-            TalkingMotion("please step in front of me").resolve().perform()
-            rospy.sleep(3)
-            # get attributes again
-            attr_list = DetectAction(technique='attributes', state='start').resolve().perform()
-            guest.set_attributes(attr_list)
-            rospy.loginfo(attr_list)
+            get_attributes(guest)
 
-            # set ID again
-            new_id = DetectAction(technique='human', state='face').resolve().perform()[1][0]
-            guest.set_id(new_id)
+        except PerceptionObjectNotFound:
+            # failure handling, if human has stepped away
+            TalkingMotion("please step in front of me").resolve().perform()
+            rospy.sleep(3.5)
+            #
+            try:
+                get_attributes(guest)
+
+            except PerceptionObjectNotFound:
+                print("continue without attributes")
+
     return guest
 
 
@@ -187,7 +190,6 @@ def demo(step):
         global guest1
 
         # signal start
-
         image_switch_publisher.pub_now(ImageEnum.HI.value)
 
         # receive data from nlp via topic

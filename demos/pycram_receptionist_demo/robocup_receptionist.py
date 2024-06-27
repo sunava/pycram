@@ -66,29 +66,44 @@ def doorbell_cb(data):
 
 
 def door_opening():
+    TalkingMotion("waiting for guests").resolve().perform()
 
     # Pre-Pose for door opening
     ParkArmsAction([Arms.LEFT]).resolve().perform()
     pose1 = Pose([1.3, 4.35, 0], [0, 0, 1, 0])
     NavigateAction([pose1]).resolve().perform()
     MoveJointsMotion(["wrist_roll_joint"], [-1.57]).resolve().perform()
-    MoveTorsoAction([0.35]).resolve().perform()
-    MoveGripperMotion(motion="open", gripper="left").resolve().perform()
-
-    # grasp door
-    giskardpy.grasp_doorhandle("iai_kitchen/living_room:arena:door_handle_inside")
-    MoveGripperMotion(motion="close", gripper="left").resolve().perform()
-
-    # open door
-    giskardpy.open_doorhandle("kitchen_2/living_room:arena:door_handle_inside")
-    MoveGripperMotion(motion="open", gripper="left").resolve().perform()
+    MoveTorsoAction([0.4]).resolve().perform()
+    DoorOpenAction("iai_kitchen/living_room:arena:door_handle_inside")
 
     # move away from door
-    pose2 = Pose([1.85, 4.5, 0], [0, 0, 1, 0])
+    pose2 = Pose([1.9, 4.5, 0], [0, 0, 1, 0])
     NavigateAction([pose2]).resolve().perform()
 
 
-def welcome_guest(num, guest):
+def get_attributes(guest: HumanDescription):
+    """
+    storing attributes and face of person in front of robot
+    :param guest: variable to store information in
+    """
+    # get clothes and gender
+    attr_list = DetectAction(technique='attributes', state='start').resolve().perform()
+    guest.set_attributes(attr_list)
+    rospy.loginfo(attr_list)
+
+    # remember face
+    # todo: check return type new_id should be dict not number
+    new_id = DetectAction(technique='human', state='face').resolve().perform()[1][0]
+    guest.set_id(new_id)
+
+
+def welcome_guest(num, guest: HumanDescription):
+    """
+    talking sequence to get name and favorite drink of guest
+    and attributes if it is the first guest
+    :param num: number of guest
+    :param guest: variable to store information in
+    """
     global callback
 
     TalkingMotion("Welcome, please step in front of me").resolve().perform()
@@ -159,20 +174,22 @@ def welcome_guest(num, guest):
 
     TalkingMotion("i will show you the living room now").resolve().perform()
 
-    # get attributes
+    # get attributes and face if first guest
     if num == 1:
         try:
-            attr_list = DetectAction(technique='attributes', state='start').resolve().perform()
-            guest.set_attributes(attr_list)
-            new_id = DetectAction(technique='human', state='face').resolve().perform()[1][0]
-            guest.set_id(new_id)
-            rospy.loginfo(attr_list)
+            get_attributes(guest)
+
         except PerceptionObjectNotFound:
+            # failure handling, if human has stepped away
             TalkingMotion("please step in front of me").resolve().perform()
-            rospy.sleep(3)
-            attr_list = DetectAction(technique='attributes', state='start').resolve().perform()
-            new_id = DetectAction(technique='human', state='face').resolve().perform()[1][0]
-            guest.set_id(new_id)
+            rospy.sleep(3.5)
+            #
+            try:
+                get_attributes(guest)
+
+            except PerceptionObjectNotFound:
+                print("continue without attributes")
+
     return guest
 
 
@@ -226,8 +243,7 @@ def demo(step):
             guest1 = welcome_guest(1, guest1)
 
         if step <= 2:
-            # leading to livingroom and pointing to free seat
-
+            # leading to living room and pointing to free seat
             TalkingMotion("please step out of the way and follow me").resolve().perform()
 
             # stop looking at human
@@ -242,7 +258,7 @@ def demo(step):
             TalkingMotion("Welcome to the living room").resolve().perform()
 
             # detect host
-            host_pose = DetectAction(technique='human').resolve().perform()
+            new_id = DetectAction(technique='human', state='face').resolve().perform()[1][0]
             host.set_pose(host_pose[1])
             host_pose = DetectAction(technique='human', state='stop').resolve().perform()
 
