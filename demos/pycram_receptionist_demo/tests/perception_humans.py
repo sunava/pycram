@@ -26,8 +26,8 @@ robot.set_color([0.5, 0.5, 0.9, 1])
 # careful that u spawn the correct kitchen
 kitchen = Object("kitchen", ObjectType.ENVIRONMENT, "suturo_lab_version_15.urdf")
 giskardpy.init_giskard_interface()
-host = HumanDescription("James", fav_drink="water")
-guest1 = HumanDescription("bob", fav_drink="tea")
+host = HumanDescription("Lukas", fav_drink="water")
+guest1 = HumanDescription("Jule", fav_drink="tea")
 
 #for obj in world.current_bullet_world.objects:
 #    print(obj)
@@ -47,37 +47,38 @@ def p():
             TalkingMotion("Test").resolve().perform()
             rospy.sleep(1)
             # update poses from guest1 and host
-            id_humans = {}
+
             TalkingMotion("get number of host").resolve().perform()
-            rospy.sleep(1)
             id_humans = DetectAction(technique='human', state='face').resolve().perform()[1]
             for key in id_humans.keys():
                 host.set_id(key)
+                host_pose = id_humans[host.id]
+                print(host.id)
 
-            rospy.sleep(3)
             TalkingMotion("get number of guest").resolve().perform()
-            id_humans = DetectAction(technique='human', state='face').resolve().perform()[1]
-            for key in id_humans.keys():
-                guest1.set_id(key)
+            guest1.set_id("44")
 
             rospy.sleep(1)
             TalkingMotion("please switch seats").resolve().perform()
-            rospy.sleep(3)
+            rospy.sleep(2)
 
             id_humans = DetectAction(technique='human', state='face').resolve().perform()[1]
 
             try:
+                print(host.id)
                 host_pose = id_humans[host.id]
                 host.set_pose(host_pose)
             except KeyError:
                 print("host pose not updated")
 
             try:
+                print(guest1.id)
                 guest1_pose = id_humans[guest1.id]
                 guest1.set_pose(guest1_pose)
             except KeyError:
                 print("guest1 pose not updated")
 
+            HeadFollowAction('start').resolve().perform()
             introduce(guest1, host)
 
 

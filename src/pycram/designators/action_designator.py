@@ -1918,7 +1918,7 @@ class DoorOpenAction(ActionDesignatorDescription):
             MoveGripperMotion(motion="open", gripper="left").resolve().perform()
             GraspHandleMotion(self.handle).resolve().perform()
             MoveGripperMotion(motion="close", gripper="left").resolve().perform()
-            DoorOpenMotion(self.handle)
+            DoorOpenMotion(self.handle).resolve().perform()
             MoveGripperMotion(motion="open", gripper="left").resolve().perform()
 
     def __init__(self, handle: str, resolver=None):

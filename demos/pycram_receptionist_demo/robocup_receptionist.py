@@ -66,15 +66,14 @@ def doorbell_cb(data):
 
 
 def door_opening():
-    TalkingMotion("waiting for guests").resolve().perform()
 
     # Pre-Pose for door opening
     ParkArmsAction([Arms.LEFT]).resolve().perform()
-    pose1 = Pose([1.3, 4.35, 0], [0, 0, 1, 0])
+    pose1 = Pose([1.35, 4.4, 0], [0, 0, 1, 0])
     NavigateAction([pose1]).resolve().perform()
     MoveJointsMotion(["wrist_roll_joint"], [-1.57]).resolve().perform()
     MoveTorsoAction([0.4]).resolve().perform()
-    DoorOpenAction("iai_kitchen/living_room:arena:door_handle_inside")
+    DoorOpenAction("kitchen_2/living_room:arena:door_handle_inside").resolve().perform()
 
     # move away from door
     pose2 = Pose([1.9, 4.5, 0], [0, 0, 1, 0])
@@ -258,7 +257,7 @@ def demo(step):
             TalkingMotion("Welcome to the living room").resolve().perform()
 
             # detect host
-            new_id = DetectAction(technique='human', state='face').resolve().perform()[1][0]
+            host_pose = DetectAction(technique='human').resolve().perform()[1][0]
             host.set_pose(host_pose[1])
             host_pose = DetectAction(technique='human', state='stop').resolve().perform()
 
@@ -351,16 +350,6 @@ def demo(step):
                 rospy.sleep(3)
                 introduce(guest1, guest2)
                 rospy.sleep(3)
-
-
-
-
-
-
-
-
-
-
 
 
 demo(0)

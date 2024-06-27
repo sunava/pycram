@@ -362,13 +362,12 @@ class HSRBDetectingReal(ProcessModule):
             human_pose = queryHuman()
             return human_pose
         elif desig.state == "face":
+            # TODO: PerceptionObjectNotFound
             res = faces_queryHuman()
             id_dict = {}
             if res.res:
-                #print(res.res)
                 for ele in res.res:
-                    id_dict[ele.type] = ele.pose
-                print(id_dict)
+                    id_dict[ele.type] = ele.pose[0]
                 return id_dict
             else:
                 return []
