@@ -29,7 +29,8 @@ try:
     from speech_processing.msg import dict_object
 except ModuleNotFoundError as e:
     rospy.logwarn("Failed to import speech_processing messages, frontiers can not be used")
-
+now = datetime.now()
+short_str = now.strftime("%Y-%m-%d_%H:%M:%S")
 world = BulletWorld("DIRECT")
 viz = VizMarkerPublisher()
 robot = Object("pr2", "robot", "pr2.urdf", pose=Pose([1, 2, 0]))
@@ -287,8 +288,6 @@ def monitor_func():
     return False
 
 def save_statistics_to_file(statistics):
-    now = datetime.now()
-    short_str = now.strftime("%Y-%m-%d_%H:%M:%S")
     directory = rospy.get_param('/interrupt_demo_node/workdir') + '/robot_logs'
     filename = directory + '/statistics_' + short_str + '.json'
     if not os.path.exists(directory):
