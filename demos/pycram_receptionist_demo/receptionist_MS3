@@ -3,7 +3,7 @@ ALLES IN HSR_MODE ÖFFNEN!!!!!!
 1. pycharm
 
 2. Receptionist Launch (startet rviz, couch, giskard, rasa und doorbell):
-roslaunch pycram recpetionist.launch
+roslaunch pycram receptionist.launch
 
 3. Perception:
 robokudo_venv

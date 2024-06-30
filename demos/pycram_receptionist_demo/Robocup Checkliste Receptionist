@@ -1,4 +1,5 @@
 spezifische Änderungen für neue Maps:
+[spezielle Anmerkung: Audo Topic immer zwei Mal anmachen!!! sonst funktioniert es wahrscheinlich nicht]
 
 - Pre Pose fürs Tür Öffnen anpassen
 ""
@@ -28,3 +29,5 @@ guest_pose = detect_point_to_seat()
 # move head a little to perceive chairs
 MoveJointsMotion(["head_pan_joint"], [-0.3]).resolve().perform()
 ""
+
+- ggf. beim ersten mal host im Wohnzimmer finden Failure handling einbauen, falls human detection nichts findet

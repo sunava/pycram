@@ -32,7 +32,7 @@ kitchen_desig = ObjectDesignatorDescription(names=["kitchen"])
 pub_nlp = rospy.Publisher('/startListener', String, queue_size=10)
 response = ""
 callback = False
-doorbell = True
+doorbell = False
 timeout = 15  # 15 seconds timeout
 
 
@@ -77,7 +77,7 @@ def door_opening():
     MoveTorsoAction([0.4]).resolve().perform()
 
     # grasp handle and open door
-    DoorOpenAction("kitchen_2/living_room:arena:door_handle_inside").resolve().perform()
+    DoorOpenAction("iai_kitchen/living_room:arena:door_handle_inside").resolve().perform()
 
     # move away from door
     pose2 = Pose([1.9, 4.5, 0], [0, 0, 1, 0])
@@ -89,15 +89,15 @@ def get_attributes(guest: HumanDescription):
     storing attributes and face of person in front of robot
     :param guest: variable to store information in
     """
+    # remember face
+    keys = DetectAction(technique='human', state='face').resolve().perform()[1]
+    new_id = keys["keys"][0]
+    guest1.set_id(new_id)
+
     # get clothes and gender
     attr_list = DetectAction(technique='attributes', state='start').resolve().perform()
-    guest.set_attributes(attr_list)
+    guest1.set_attributes(attr_list)
     rospy.loginfo(attr_list)
-
-    # remember face
-    # todo: check return type new_id should be dict not number
-    new_id = DetectAction(technique='human', state='face').resolve().perform()[1][0]
-    guest.set_id(new_id)
 
 
 def welcome_guest(num, guest: HumanDescription):
@@ -126,7 +126,7 @@ def welcome_guest(num, guest: HumanDescription):
 
     # signal to start listening
     pub_nlp.publish("start listening")
-    rospy.sleep(3)
+    rospy.sleep(2)
     image_switch_publisher.pub_now(ImageEnum.TALK.value)
     sound_publisher.publish_sound_request()
 
@@ -160,12 +160,16 @@ def welcome_guest(num, guest: HumanDescription):
         while i < 2:
             TalkingMotion("please repeat your name and drink loud and clear").resolve().perform()
             pub_nlp.publish("start")
-            rospy.sleep(3.5)
+            rospy.sleep(1.5)
             image_switch_publisher.pub_now(ImageEnum.TALK.value)
             sound_publisher.publish_sound_request()
 
+            start_time = time.time()
             while not callback:
                 rospy.sleep(1)
+                if time.time() - start_time == timeout:
+                    print("guest needs to repeat")
+                    image_switch_publisher.pub_now(ImageEnum.JREPEAT.value)
             callback = False
 
             if response[0] == "<GUEST>":
@@ -175,23 +179,24 @@ def welcome_guest(num, guest: HumanDescription):
             else:
                 i += 1
 
-    TalkingMotion("i will show you the living room now").resolve().perform()
-
     # get attributes and face if first guest
     if num == 1:
         try:
+            TalkingMotion("please wait and look at me").resolve().perform()
             get_attributes(guest)
 
         except PerceptionObjectNotFound:
             # failure handling, if human has stepped away
             TalkingMotion("please step in front of me").resolve().perform()
             rospy.sleep(3.5)
-            #
+
             try:
                 get_attributes(guest)
 
             except PerceptionObjectNotFound:
                 print("continue without attributes")
+
+    TalkingMotion("i will show you the living room now").resolve().perform()
 
     return guest
 
@@ -204,17 +209,19 @@ def detect_point_to_seat():
 
     # detect free seat
     seat = DetectAction(technique='location', state="sofa").resolve().perform()
+    print(seat)
     free_seat = False
     # loop through all seating options detected by perception
     for place in seat[1]:
         if place[0] == 'False':
             PointingMotion(float(place[1]), float(place[2]), float(place[3])).resolve().perform()
             free_seat = True
-            pose_guest = PoseStamped()
-            pose_guest.header.frame_id = "/map"
-            pose_guest.pose.position.x = float(place[1])
-            pose_guest.pose.position.y = float(place[2])
-            pose_guest.pose.position.z = float(place[3])
+            pose_guest = PointStamped()
+            pose_guest.header.frame_id = "map"
+            pose_guest.point.x = float(place[1])
+            pose_guest.point.y = float(place[2])
+            pose_guest.point.z = 0.85
+            print("found seat")
             return pose_guest
     return free_seat
 
@@ -294,7 +301,15 @@ def demo(step):
                 pub_pose.publish(guest1.pose)
             TalkingMotion("please take a seat next to your host").resolve().perform()
             image_switch_publisher.pub_now(ImageEnum.SOFA.value)
-            rospy.sleep(2.5)
+
+            try:
+                keys = DetectAction(technique='human', state='face').resolve().perform()[1]
+                host.set_id(keys["keys"][0])
+
+            except PerceptionObjectNotFound:
+                print("no id found")
+
+            rospy.sleep(1)
 
             # introduce humans and look at them
             introduce(host, guest1)
@@ -316,7 +331,7 @@ def demo(step):
                 time.sleep(0.5)
 
             # TODO: Giskard has to fix world state
-            # door_opening()
+            door_opening()
 
             pose2 = Pose([1.85, 4.5, 0], [0, 0, 1, 0])
             NavigateAction([pose2]).resolve().perform()
@@ -337,37 +352,51 @@ def demo(step):
             MoveGripperMotion(motion="close", gripper="left").resolve().perform()
 
             # place new guest in living room
-            TalkingMotion("Welcome to the living room").resolve().perform()
 
-        if step >= 7:
+        if step <= 7:
             # update poses from guest1 and host
+            id_humans = DetectAction(technique='human', state='face').resolve().perform()[1]["keys"]
 
-            id_humans = DetectAction(technique='human', state='face').resolve().perform()[1]
-            try:
-                host_pose = id_humans[host.id]
-                host.set_pose(host_pose)
-            except KeyError:
-                print("host pose not updated")
 
-            try:
-                guest1_pose = id_humans[guest1.id]
-                guest1.set_pose(guest1_pose)
-            except KeyError:
-                print("guest1 pose not updated")
+            found_guest = False
+            for key in id_humans:
+                if key == guest1.id:
+                    guest1_pose = id_humans[guest1.id]
+                    TalkingMotion("found guest").resolve().perform()
+                    # guest1.set_pose(guest1_pose)
+                    found_guest = True
+                else:
+                    host_pose = id_humans[key]
+                    # host.set_pose(host_pose)
+
+            if not found_guest:
+                TalkingMotion("please look at me").resolve().perform()
+                id_humans = DetectAction(technique='human', state='face').resolve().perform()[1]["keys"]
+
+                found_guest = False
+                for key in id_humans:
+                    if key == guest1.id:
+                        guest1_pose = id_humans[guest1.id]
+                        guest1.set_pose(guest1_pose)
+                        found_guest = True
+                    else:
+                        host_pose = id_humans[key]
+                        host.set_pose(host_pose)
 
         if step >= 8:
             # find a place for guest2 to sit and point
             guest_pose = detect_point_to_seat()
             TalkingMotion("take a seat").resolve().perform()
-            image_switch_publisher.pub_now(ImageEnum.SOFA.value)
+            #image_switch_publisher.pub_now(ImageEnum.SOFA.value)
 
             if not guest_pose:
                 # move head a little
                 MoveJointsMotion(["head_pan_joint"], [-0.3]).resolve().perform()
                 guest_pose = detect_point_to_seat()
-                guest1.set_pose(guest_pose)
+                if guest_pose:
+                    guest2.set_pose(guest_pose)
             else:
-                guest1.set_pose(guest_pose)
+                guest2.set_pose(guest_pose)
 
             if step >= 9:
                 # introduce everyone to guest 2
@@ -377,4 +406,4 @@ def demo(step):
                 rospy.sleep(3)
 
 
-demo(0)
+demo(6)

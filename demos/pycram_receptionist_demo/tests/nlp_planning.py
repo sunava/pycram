@@ -35,7 +35,7 @@ doorbell = False
 
 # Declare variables for humans
 host = HumanDescription("Alina", fav_drink="water")
-guest1 = HumanDescription("guest1")
+guest = HumanDescription("guest1")
 guest2 = HumanDescription("guest2")
 seat_number = 2
 
@@ -45,6 +45,7 @@ def data_cb(data):
     global callback
 
     response = data.data.split(",")
+    print(response)
     callback = True
 
 
@@ -53,6 +54,82 @@ def doorbell_cb(data):
     doorbell = True
 
 
+def welcome_guest(num, guest: HumanDescription):
+    """
+    talking sequence to get name and favorite drink of guest
+    and attributes if it is the first guest
+    :param num: number of guest
+    :param guest: variable to store information in
+    """
+    global callback
+    callback = False
+    # look for human
+    DetectAction(technique='human').resolve().perform()
+
+    # look at guest and introduce
+    HeadFollowAction('start').resolve().perform()
+    TalkingMotion("Hello, i am Toya and my favorite drink is oil").resolve().perform()
+    rospy.sleep(3)
+    TalkingMotion("please answer me after the sound").resolve().perform()
+    rospy.sleep(2)
+    TalkingMotion("What is your name and favorite drink?").resolve().perform()
+    rospy.sleep(2)
+
+    # signal to start listening
+    pub_nlp.publish("start listening")
+    rospy.sleep(2)
+    image_switch_publisher.pub_now(ImageEnum.TALK.value)
+    sound_publisher.publish_sound_request()
+
+    # wait for nlp answer
+    while not callback:
+        rospy.sleep(1)
+    callback = False
+
+    if response[0] == "<GUEST>":
+        # success a name and intent was understood
+        if response[1] != "<None>":
+            TalkingMotion("please confirm if i got your name right").resolve().perform()
+            guest.set_drink(response[2])
+            rospy.sleep(1)
+            guest.set_name(name_confirm(response[1]))
+
+        else:
+            # save heard drink
+            if response[2]:
+                guest.set_drink(response[2])
+
+            # ask for name again once
+            guest.set_name(name_repeat())
+
+        # confirm favorite drink
+        guest.set_drink(drink_confirm(guest.fav_drink))
+
+    else:
+        # two chances to get name and drink
+        i = 0
+        while i < 2:
+            TalkingMotion("please repeat your name and drink loud and clear").resolve().perform()
+            pub_nlp.publish("start")
+            rospy.sleep(1.5)
+            image_switch_publisher.pub_now(ImageEnum.TALK.value)
+            sound_publisher.publish_sound_request()
+
+            start_time = time.time()
+            while not callback:
+                rospy.sleep(1)
+                if time.time() - start_time == timeout:
+                    print("guest needs to repeat")
+                    image_switch_publisher.pub_now(ImageEnum.JREPEAT.value)
+            callback = False
+
+            if response[0] == "<GUEST>":
+                guest.set_name(response[1])
+                guest.set_drink(response[2])
+                break
+            else:
+                i += 1
+
 def misc_fct():
     global response
     global callback
@@ -60,16 +137,14 @@ def misc_fct():
     rospy.Subscriber("/nlp_out", String, data_cb)
 
     with real_robot:
-        # receive data from nlp via topic
-        rospy.Subscriber("nlp_out", String, data_cb)
-        rospy.Subscriber("nlp_out2", String, doorbell_cb)
+        welcome_guest(1, guest)
+        rospy.sleep(3)
+        TalkingMotion("next one").resolve().perform()
+        rospy.sleep(3)
+        welcome_guest(2, guest2)
+        rospy.sleep(3)
+        introduce(guest, guest2)
 
-        TalkingMotion("waiting for bell").resolve().perform()
-
-        while not doorbell:
-            print("no bell")
-
-        TalkingMotion("Bell detected").resolve().perform()
 
 
 

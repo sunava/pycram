@@ -44,50 +44,30 @@ def p():
             # get attributes
 
 
-            TalkingMotion("Test").resolve().perform()
-            rospy.sleep(1)
-            # update poses from guest1 and host
-
-            TalkingMotion("get number of host").resolve().perform()
-            id_humans = DetectAction(technique='human', state='face').resolve().perform()[1]
-            for key in id_humans.keys():
-                host.set_id(key)
-                host_pose = id_humans[host.id]
-                print(host.id)
-
-            TalkingMotion("get number of guest").resolve().perform()
-            guest1.set_id("44")
-
-            rospy.sleep(1)
-            TalkingMotion("please switch seats").resolve().perform()
-            rospy.sleep(2)
-
-            id_humans = DetectAction(technique='human', state='face').resolve().perform()[1]
+            #TalkingMotion("Test").resolve().perform()
+            #rospy.sleep(1)
 
             try:
-                print(host.id)
-                host_pose = id_humans[host.id]
-                host.set_pose(host_pose)
-            except KeyError:
-                print("host pose not updated")
+                # remember face
+                keys = DetectAction(technique='human', state='face').resolve().perform()[1]
+                new_id = keys["keys"][0]
+                guest1.set_id(new_id)
 
-            try:
-                print(guest1.id)
-                guest1_pose = id_humans[guest1.id]
-                guest1.set_pose(guest1_pose)
+
+                # get clothes and gender
+                attr_list = DetectAction(technique='attributes', state='start').resolve().perform()
+                guest1.set_attributes(attr_list)
+                rospy.loginfo(attr_list)
+
             except KeyError:
-                print("guest1 pose not updated")
+                print("error")
 
             HeadFollowAction('start').resolve().perform()
-            introduce(guest1, host)
+            pub_pose.publish(keys[new_id])
 
-
-
-
-            # TODO: face recognition
-            # TODO face and attr at same time??
-            TalkingMotion("end").resolve().perform()
             rospy.sleep(2)
+            TalkingMotion("end").resolve().perform()
+
 
         if seat:
             # new Query for free seat
@@ -112,36 +92,13 @@ def p():
 def ms3_perception():
     with real_robot:
         TalkingMotion("start").resolve().perform()
-        rospy.sleep(2)
 
-        # lead human to living room
-        # NavigateAction([door_to_couch]).resolve().perform()
-
-        TalkingMotion("Welcome to the living room").resolve().perform()
-        host_pose = DetectAction(technique='human').resolve().perform()
-        host.set_pose(host_pose[1])
-        host_pose = DetectAction(technique='human', state='stop').resolve().perform()
-        seat = DetectAction(technique='location', state="sofa").resolve().perform()
-        for place in seat[1]:
-            if place[0] == 'False':
-                PointingMotion(float(place[1]), float(place[2]), float(place[3])).resolve().perform()
-                pose_guest1 = PoseStamped()
-                pose_guest1.header.frame_id = "/map"
-                pose_guest1.pose.position.x = float(place[1])
-                pose_guest1.pose.position.y = float(place[2])
-                pose_guest1.pose.position.z = float(place[3])
-                guest1.set_pose(pose_guest1)
-                break
 
         HeadFollowAction('start').resolve().perform()
-        pub_pose.publish(guest1.pose)
-        TalkingMotion("please take a seat next to your host").resolve().perform()
+        host_pose = DetectAction(technique='human').resolve().perform()
+        print(host_pose)
 
-        # introduce humans and look at them
-
-        introduce(host, guest1)
-        describe(guest1)
-        HeadFollowAction('stop').resolve().perform()
+        rospy.sleep(10)
 
         TalkingMotion("end").resolve().perform()
 

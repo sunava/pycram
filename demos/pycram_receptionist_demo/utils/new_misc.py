@@ -1,5 +1,7 @@
 import time
 import rospy
+from geometry_msgs.msg import PointStamped
+
 from pycram.designators.object_designator import Pose, PoseStamped, HumanDescription
 from pycram.designators.motion_designator import TalkingMotion
 from pycram.enums import ImageEnum
@@ -10,7 +12,7 @@ from pycram.utilities.robocup_utils import TextToSpeechPublisher, ImageSwitchPub
 
 # Publisher for NLP
 pub_nlp = rospy.Publisher('/startListener', String, queue_size=10)
-pub_pose = rospy.Publisher('/human_pose', PoseStamped, queue_size=10)
+pub_pose = rospy.Publisher('/human_pose', PointStamped, queue_size=10)
 # /hsrb/serial_node
 pub_color = rospy.Publisher('/hsrb/command_status_led', UInt16, queue_size=5, latch=True)
 response = ""
@@ -47,14 +49,6 @@ def data_cb(data):
     response.append("None")
     callback = True
 
-def repeat_call():
-    TalkingMotion("i am sorry, please repeat after the sound").resolve().perform()
-    rospy.sleep(0.6)
-    pub_nlp.publish("start")
-    rospy.sleep(3.5)
-    image_switch_publisher.pub_now(ImageEnum.TALK.value)
-    sound_publisher.publish_sound_request()
-
 
 def name_confirm(name):
     """
@@ -66,6 +60,7 @@ def name_confirm(name):
 
     global callback
     global response
+    callback = False
     rospy.Subscriber("nlp_out", String, data_cb)
 
     TalkingMotion("is your name " + str(name) + "?").resolve().perform()
@@ -80,10 +75,11 @@ def name_confirm(name):
     start_time = time.time()
     while not callback:
         # signal repeat to human
-        if time.time() - start_time > timeout:
+        if time.time() - start_time == timeout:
             print("guest needs to repeat")
             image_switch_publisher.pub_now(ImageEnum.JREPEAT.value)
 
+    image_switch_publisher.pub_now(ImageEnum.HI.value)
     callback = False
 
     if response[1].strip() == "True":
@@ -102,10 +98,11 @@ def name_confirm(name):
         start_time = time.time()
         while not callback:
             # signal repeat to human
-            if time.time() - start_time > timeout:
+            if time.time() - start_time == timeout:
                 print("guest needs to repeat")
                 image_switch_publisher.pub_now(ImageEnum.JREPEAT.value)
 
+        image_switch_publisher.pub_now(ImageEnum.HI.value)
         callback = False
 
         if response[0] == "<GUEST>" and response[1].strip() != "None":
@@ -123,6 +120,7 @@ def name_repeat():
 
     global callback
     global response
+    callback = False
     got_name = False
     rospy.Subscriber("nlp_out", String, data_cb)
 
@@ -139,10 +137,11 @@ def name_repeat():
         start_time = time.time()
         while not callback:
             # signal repeat to human
-            if time.time() - start_time > timeout:
+            if time.time() - start_time == timeout:
                 print("guest needs to repeat")
                 image_switch_publisher.pub_now(ImageEnum.JREPEAT.value)
 
+        image_switch_publisher.pub_now(ImageEnum.HI.value)
         callback = False
 
         if response[0] == "<GUEST>" and response[1].strip() != "None":
@@ -159,6 +158,7 @@ def drink_confirm(drink):
 
     global callback
     global response
+    callback = False
     rospy.Subscriber("nlp_out", String, data_cb)
 
     TalkingMotion("is your favorite drink " + str(drink) + "?").resolve().perform()
@@ -173,10 +173,11 @@ def drink_confirm(drink):
     start_time = time.time()
     while not callback:
         # signal repeat to human
-        if time.time() - start_time > timeout:
+        if time.time() - start_time == timeout:
             print("guest needs to repeat")
             image_switch_publisher.pub_now(ImageEnum.JREPEAT.value)
 
+    image_switch_publisher.pub_now(ImageEnum.HI.value)
     callback = False
 
     if response[1].strip() == "True":
@@ -195,10 +196,11 @@ def drink_confirm(drink):
         start_time = time.time()
         while not callback:
             # signal repeat to human
-            if time.time() - start_time > timeout:
+            if time.time() - start_time == timeout:
                 print("guest needs to repeat")
                 image_switch_publisher.pub_now(ImageEnum.JREPEAT.value)
 
+        image_switch_publisher.pub_now(ImageEnum.HI.value)
         callback = False
 
         if response[0] == "<GUEST>" and response[2].strip() != "None":
