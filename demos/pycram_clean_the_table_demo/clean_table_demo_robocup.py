@@ -27,7 +27,7 @@ LEN_WISHED_SORTED_OBJ_LIST = len(wished_sorted_obj_list)
 # x pose of the end of the couch table
 table_pose = 4.84
 picking_up_cutlery_height = 0.43
-pickup_location_name = "couch table"
+pickup_location_name = "couch_table"
 placing_location_name = "dishwasher"
 placing_location_name_left = "dishwasher_left"
 placing_location_name_right = "dishwasher_right"

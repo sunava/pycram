@@ -6,7 +6,7 @@ import pycram.external_interfaces.giskard as giskardpy
 from pycram.designators.object_designator import *
 from std_msgs.msg import String
 from pycram.plan_failures import EnvironmentUnreachable, GripperClosedCompletely
-
+#todo: change to giskardpy_new
 
 def sort_objects(robot: BulletWorldObject, obj_dict: dict, wished_sorted_obj_list: list):
     """
