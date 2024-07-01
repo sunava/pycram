@@ -25,7 +25,7 @@ except ModuleNotFoundError as e:
     rospy.logwarn("Failed to import speech_processing messages, frontiers can not be used")
 now = datetime.now()
 short_str = now.strftime("%Y-%m-%d_%H:%M:%S")
-world = BulletWorld("DIRECT")
+world = BulletWorld()
 viz = VizMarkerPublisher()
 robot = Object("pr2", "robot", "pr2.urdf", pose=Pose([1, 2, 0]))
 apartment = Object("apartment", "environment", "apartment-small.urdf")
@@ -36,7 +36,8 @@ bowl = Object("bowl", "bowl", "bowl.stl", pose=Pose([2.5, 2.2, 1.02]), color=[1,
 spoon = Object("spoon", "spoon", "spoon.stl", pose=Pose([2.4, 2.2, 0.85]), color=[0, 0, 1, 1])
 cereal = Object("cereal", "cereal", "breakfast_cereal.stl", pose=Pose([2.5, 2.4, 1.05]), color=[0, 1, 0, 1])
 cup = Object("cup", "cup", "jeroen_cup.stl", pose=Pose([0.5, 1.6, 1.38], [0, 0, 1, 0]))
-
+human = Object("humanf", "human", "female_sitting.stl",  pose=Pose([4.9, 5.0, 0], [0, 0, 0, 1]))
+human = Object("humans", "human", "female_standing.stl",  pose=Pose([3.0, 5.0, 0], [0, 0, 0, 1]))
 object_states = {"milk1": "old_location", "milk2": "old_location", "bowl": "old_location", "spoon": "old_location",
                  "cereal": "old_location", "cup": "old_location"}
 
@@ -150,6 +151,11 @@ def update_current_command():
                               dict_object(type="cereal", color="", name="", location="", size=""),
                               dict_object(type="cup", color="", name="", location="", size=""),
                               dict_object(type="spoon", color="", name="", location="", size="")]
+            update_object_state("milk1", "should_be_moved", obj_desig.pose.position)
+            update_object_state("bowl", "should_be_moved", obj_desig.pose.position)
+            update_object_state("spoon", "should_be_moved", obj_desig.pose.position)
+            update_object_state("cereal", "should_be_moved", obj_desig.pose.position)
+            update_object_state("cup", "should_be_moved", obj_desig.pose.position)
             fluent.modify_objects_in_use(objects_to_add, [])
 
         elif minor_cmd == "replace_object":
@@ -163,14 +169,18 @@ def update_current_command():
                 del_obj = del_cmd[0]
                 del_attributes = (
                     del_obj.type.lower(), del_obj.color, del_obj.name.lower(), del_obj.location, del_obj.size.lower())
+                update_object_state(obj_name, "old_location", obj_desig.pose.position)
             else:
+                ignored_commands += 1
                 del_attributes = None
+
 
             add_cmd = current_cmd.get("minor", {}).get("add_object")
             if add_cmd:
                 add_obj = add_cmd[0]
                 new_attributes = (
                     add_obj.type.lower(), add_obj.color, add_obj.name.lower(), add_obj.location, add_obj.size.lower())
+                update_object_state(obj_name, "new_location", obj_desig.pose.position)
             else:
                 ignored_commands += 1
                 new_attributes = None
@@ -246,12 +256,13 @@ def move_and_detect(obj_type, obj_size, obj_color):
         current_location = "countertop"
 
         LookAtAction(targets=[
-            pick_pose]).resolve().perform()  # object_desig = DetectAction(BelieveObject(types=[obj_type] if obj_type else None,  #                                          sizes=[obj_size] if obj_size else None,  #                                          colors=[obj_color] if obj_color else None)).resolve().perform()
+            pick_pose]).resolve().perform()
+
     status, object_dict = DetectAction(technique='all').resolve().perform()
     filtered_dict = {key: obj for key, obj in object_dict.items() if ((
-                                                                              obj_type is None or obj_type.strip() == "" or obj.bullet_world_object.type.lower() == obj_type.lower()) and (
-                                                                              obj_size is None or obj_size.strip() == "" or obj.bullet_world_object.size.lower() == obj_size.lower()) and (
-                                                                              obj_color is None or obj_color == [] or obj.bullet_world_object.color == obj_color))}
+        obj_type is None or obj_type.strip() == "" or obj.bullet_world_object.type.lower() == obj_type.lower()) and (
+        obj_size is None or obj_size.strip() == "" or obj.bullet_world_object.size.lower() == obj_size.lower()) and (
+        obj_color is None or obj_color == [] or obj.bullet_world_object.color == obj_color))}
 
     object_desig = next(iter(filtered_dict.values()))
     original_pose = object_desig.pose
@@ -282,12 +293,14 @@ def announce_bring(name: str, type: str, color: str, location: str, size: str, d
 def announce_recovery(old_desig):
     update_object_state(old_desig.name, "recovering", old_desig.pose.position)
     from_robot_publish("Recovery", False, True, True, "table", "countertop")
-    print("Recovering from Interrupt")  # print("I am not interruptable here at the moment")
+    print("Recovering from Interrupt")
+    # print("I am not interruptable here at the moment")
 
 
 def announce_pick_place(case: str, type: str, color: str, size: str):
     print(
-        f"I will now {case.lower()} the {size.lower(), color.lower(), type.lower()}")  # print("I am not interruptable here at the moment")
+        f"I will now {case.lower()} the {size.lower(), color.lower(), type.lower()}")
+    # print("I am not interruptable here at the moment")
 
 
 def place_and_pick_new_obj(old_desig, location, obj_type, obj_size, obj_color):
@@ -334,7 +347,7 @@ def from_robot_publish(step, interrupt, move_arm, move_base, robot_location, des
                               move_base, robot_location, destination_location)
 
 
-def statsprint():
+def statsprint(results):
     print(f"######### Statistic #########")
     print(f"Total Commands: {results['total_commands']}")
     print(f"Objects Replaced: {results['objects_replaced']}")
@@ -365,7 +378,7 @@ with simulated_robot:
         if not unhandled_objects:
             results = calculate_statistics(minor_interrupt_count, major_interrupt_count, object_states,
                                            ignored_commands, short_str)
-            statsprint()
+            statsprint(results)
             rospy.logwarn("Waiting for next human command")
             fluent.activate_subs()
             fluent.minor_interrupt.pulsed().wait_for()
