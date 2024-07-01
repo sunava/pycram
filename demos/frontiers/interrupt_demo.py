@@ -216,14 +216,11 @@ def update_current_command():
                 new_location = None
 
             if new_location:
-                try:
-                    if new_location != destination_location:
-                        age = age ^ 1
-                        if destination_location:
-                            destination_location = 'table' if age == 1 else 'countertop'
-                    raise ChangeLocationException
-                except ChangeLocationException:
-                    ignored_commands += 1
+                if new_location != destination_location:
+                    age = age ^ 1
+                    if destination_location:
+                        destination_location = 'table' if age == 1 else 'countertop'
+                raise ChangeLocationException
 
         elif major_cmd == "stop":
             major_interrupt_count += 1
@@ -337,7 +334,7 @@ def place_and_pick_new_obj(old_desig, location, obj_type, obj_size, obj_color):
     if drawer_open_loc is not None:
         used_arm = "left" if drawer_open_loc.arms[0] == "right" else "right"
     else:
-        used_arm = "right"
+        used_arm = "left"
 
     PlaceAction(old_desig, [used_arm], [grasp], [location]).resolve().perform()
     if old_desig.bullet_world_object.type.lower() in ["spoon", "cup"]:
@@ -352,11 +349,14 @@ def place_and_pick_new_obj(old_desig, location, obj_type, obj_size, obj_color):
 
     ParkArmsAction([Arms.BOTH]).resolve().perform()
     obj_desig = move_and_detect(obj_type, obj_size, obj_color)
-    used_arm = "left" if drawer_open_loc.arms[0] == "right" else "right"
+    if drawer_open_loc is not None:
+        used_arm = "left" if drawer_open_loc.arms[0] == "right" else "right"
+    else:
+        used_arm = "left"
     grasp = "top" if obj_type == "spoon" else "front"
     PickUpAction.Action(obj_desig, used_arm, grasp).perform()
     ParkArmsAction([Arms.BOTH]).resolve().perform()
-    if old_desig.bullet_world_object.type.lower() in ["spoon", "cup"]:
+    if obj_desig.bullet_world_object.type.lower() in ["spoon", "cup"]:
         CloseAction(object_designator_description=handle_desig, arms=[drawer_open_loc.arms[0]]).resolve().perform()
     ParkArmsAction([Arms.BOTH]).resolve().perform()
 
@@ -448,7 +448,7 @@ with simulated_robot:
             ParkArmsAction.Action(Arms.BOTH).perform()
             grasp = "top" if obj_type == "spoon" else "front"
             if obj_type in ["spoon", "cup"]:
-                used_arm = "left" if drawer_open_loc.arms[0] == "right" else "left"
+                used_arm = "left" if drawer_open_loc.arms[0] == "right" else "right"
                 PickUpAction(obj_desig, [used_arm], [grasp]).resolve().perform()
 
                 ParkArmsAction([Arms.BOTH]).resolve().perform()
