@@ -17,6 +17,7 @@ from utils.utils import *
 
 sleep = True
 ignored_commands = 0
+changed_locations = 0
 minor_interrupt_count = 0
 major_interrupt_count = 0
 try:
@@ -137,7 +138,7 @@ def get_nav_pose(object_type, location):
 
 def update_current_command():
     global current_cmd, obj_type, obj_color, obj_name, obj_location, obj_size, unhandled_objects, age, destination_location
-    global minor_interrupt_count, major_interrupt_count, ignored_commands
+    global minor_interrupt_count, major_interrupt_count, ignored_commands, changed_locations
 
     current_cmd = fluent.next_command()
 
@@ -223,6 +224,7 @@ def update_current_command():
                     age = age ^ 1
                     if destination_location:
                         destination_location = 'table' if age == 1 else 'countertop'
+                    changed_locations += 1
                 else:
                     ignored_commands += 1
 
@@ -378,6 +380,7 @@ def statsprint(results):
     print(f"######### Statistic #########")
     print(f"Total Commands: {results['total_commands']}")
     print(f"Objects Replaced: {results['objects_replaced']}")
+    print(f"Changed Locations: {results['changed_locations']}")
     print(f"Objects Not in Correct Place: {results['objects_not_correct']}")
     print(f"Ignored Commands: {results['ignored_commands']}")
     print(f"Failure Rate: {results['failure_success_rate']}%")
@@ -404,7 +407,7 @@ with simulated_robot:
         previous_states = object_states.copy()  # Keep track of the states before the command
         if not unhandled_objects:
             results = calculate_statistics(minor_interrupt_count, major_interrupt_count, object_states,
-                                           ignored_commands, short_str)
+                                           ignored_commands, short_str, changed_locations)
             statsprint(results)
             rospy.logwarn("Waiting for next human command")
             fluent.activate_subs()

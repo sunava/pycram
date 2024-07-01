@@ -47,7 +47,7 @@ def save_statistics_to_file(statistics, short_str):
     rospy.loginfo(f"Statistics saved to {filename}")
 
 
-def calculate_statistics(minor_interrupt_count, major_interrupt_count, object_states, ignored_commands, short_str):
+def calculate_statistics(minor_interrupt_count, major_interrupt_count, object_states, ignored_commands, short_str, changed_locations):
     total_commands = minor_interrupt_count + major_interrupt_count
     objects_replaced = sum(1 for state in object_states.values() if state == "new_location")
     objects_not_correct = sum(1 for state in object_states.values() if state not in ["new_location", "old_location"])
@@ -58,10 +58,11 @@ def calculate_statistics(minor_interrupt_count, major_interrupt_count, object_st
     statistics = {
         "total_commands": total_commands,
         "objects_replaced": objects_replaced,
-        "objects_not_correct": objects_not_correct,
+        "changed_locations": changed_locations,
         "ignored_commands": ignored_commands,
         "failure_success_rate": failure_success_rate,
-        "ignored_commands_rate": ignored_commands_rate
+        "ignored_commands_rate": ignored_commands_rate,
+        "objects_not_correct": objects_not_correct
     }
     rospy.loginfo(f"Statistics: {statistics}")
     save_statistics_to_file(statistics, short_str)
