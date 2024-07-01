@@ -6,6 +6,12 @@ import pycram.external_interfaces.giskard as giskardpy
 from pycram.designators.object_designator import *
 from std_msgs.msg import String
 from pycram.plan_failures import EnvironmentUnreachable, GripperClosedCompletely
+from pycram.language import Monitor, Code
+from pycram.utilities.robocup_utils import TextToSpeechPublisher, ImageSwitchPublisher, SoundRequestPublisher
+
+text_to_speech_publisher = TextToSpeechPublisher()
+# ForceTorqueSensor for recognizing push on the hand
+fts = ForceTorqueSensor(robot_name='hsrb')
 
 
 def sort_objects(robot: BulletWorldObject, obj_dict: dict, wished_sorted_obj_list: list):
@@ -79,29 +85,45 @@ def try_pick_up(robot: BulletWorld.robot, obj: ObjectDesignatorDescription, gras
     try:
         PickUpAction(obj, ["left"], [grasps]).resolve().perform()
     except (EnvironmentUnreachable, GripperClosedCompletely):
-        print("try pick up again")
-        TalkingMotion("Try pick up again").resolve().perform()
-        # after failed attempt to pick up the object, the robot moves 30cm back on x pose
-        # TODO: x-pose and orientation should be generalized
-        NavigateAction(
-            [Pose([robot.get_pose().position.x + 0.3, robot.get_pose().position.y,
-                   robot.get_pose().position.z], [0, 0, 1, 0])]).resolve().perform()
-        ParkArmsAction([Arms.LEFT]).resolve().perform()
-        # try to detect the object again
-        object_desig = DetectAction(technique='default').resolve().perform()
-        new_object = sort_objects(robot, object_desig, [obj.type])[0]
-
-        # second try to pick up the object
-        try:
-            TalkingMotion("try again").resolve().perform()
-            PickUpAction(new_object, ["left"], [grasps]).resolve().perform()
+        # print("try pick up again")
+        # TalkingMotion("Try pick up again").resolve().perform()
+        # # after failed attempt to pick up the object, the robot moves 30cm back on x pose
+        # # TODO: x-pose and orientation should be generalized
+        # NavigateAction(
+        #     [Pose([robot.get_pose().position.x + 0.3, robot.get_pose().position.y,
+        #            robot.get_pose().position.z], [0, 0, 1, 0])]).resolve().perform()
+        # ParkArmsAction([Arms.LEFT]).resolve().perform()
+        # # try to detect the object again
+        # object_desig = DetectAction(technique='default').resolve().perform()
+        # new_object = sort_objects(robot, object_desig, [obj.type])[0]
+        #
+        # # second try to pick up the object
+        # try:
+        #     TalkingMotion("try again").resolve().perform()
+        #     PickUpAction(new_object, ["left"], [grasps]).resolve().perform()
         # ask for human interaction if it fails a second time
-        except (EnvironmentUnreachable, GripperClosedCompletely):
-            NavigateAction(
-                [Pose([robot.get_pose().position.x + 0.3, robot.get_pose().position.y,
-                       robot.get_pose().position.z], [0, 0, 1, 0])]).resolve().perform()
-            ParkArmsAction([Arms.LEFT]).resolve().perform()
-            TalkingMotion(f"Can you pleas give me the {obj.type} on the table?").resolve().perform()
-            MoveGripperMotion("open", "left").resolve().perform()
-            time.sleep(4)
-            MoveGripperMotion("close", "left").resolve().perform()
+        # except (EnvironmentUnreachable, GripperClosedCompletely):
+        # NavigateAction(
+        #     [Pose([robot.get_pose().position.x + 0.3, robot.get_pose().position.y,
+        #            robot.get_pose().position.z], [0, 0, 1, 0])]).resolve().perform()
+        ParkArmsAction([Arms.LEFT]).resolve().perform()
+        text_to_speech_publisher.pub_now(f"Can you pleas give me the {obj.type} on the table?")
+        MoveGripperMotion("open", "left").resolve().perform()
+        text_to_speech_publisher.pub_now("Push down my hand, when I should grasp")
+        try:
+            plan = Code(lambda: rospy.sleep(1)) * 99999999 >> Monitor(monitor_func)
+            plan.perform()
+        except SensorMonitoringCondition:
+            rospy.logwarn("Close Gripper")
+            text_to_speech_publisher.pub_now("Grasping.")  # Todo could be deleted if demo to long
+            MoveGripperMotion(motion="close", gripper="left").resolve().perform()
+
+
+def monitor_func():
+    der: WrenchStamped() = fts.get_last_value()
+    print(abs(der.wrench.force.x))
+    if abs(der.wrench.force.x) > 10.30:
+        print(abs(der.wrench.force.x))
+        print(abs(der.wrench.torque.x))
+        return SensorMonitoringCondition
+    return False
