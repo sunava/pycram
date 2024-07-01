@@ -36,8 +36,8 @@ bowl = Object("bowl", "bowl", "bowl.stl", pose=Pose([2.5, 2.2, 1.02]), color=[1,
 spoon = Object("spoon", "spoon", "spoon.stl", pose=Pose([2.4, 2.2, 0.85]), color=[0, 0, 1, 1])
 cereal = Object("cereal", "cereal", "breakfast_cereal.stl", pose=Pose([2.5, 2.4, 1.05]), color=[0, 1, 0, 1])
 cup = Object("cup", "cup", "jeroen_cup.stl", pose=Pose([0.5, 1.6, 1.38], [0, 0, 1, 0]))
-human = Object("humanf", "human", "female_sitting.stl",  pose=Pose([4.9, 5.0, 0], [0, 0, 0, 1]))
-human = Object("humans", "human", "female_standing.stl",  pose=Pose([3.0, 5.0, 0], [0, 0, 0, 1]))
+human = Object("humanf", "human", "female_sitting.stl", pose=Pose([4.9, 5.0, 0], [0, 0, 0, 1]))
+human = Object("humans", "human", "female_standing.stl", pose=Pose([3.0, 5.0, 0], [0, 0, 0, 1]))
 object_states = {"milk1": "old_location", "milk2": "old_location", "bowl": "old_location", "spoon": "old_location",
                  "cereal": "old_location", "cup": "old_location"}
 
@@ -137,7 +137,7 @@ def get_nav_pose(object_type, location):
 
 def update_current_command():
     global current_cmd, obj_type, obj_color, obj_name, obj_location, obj_size, unhandled_objects, age, destination_location
-    global minor_interrupt_count, major_interrupt_count, igno_commands
+    global minor_interrupt_count, major_interrupt_count, ignored_commands
 
     current_cmd = fluent.next_command()
 
@@ -172,9 +172,7 @@ def update_current_command():
                     del_obj.type.lower(), del_obj.color, del_obj.name.lower(), del_obj.location, del_obj.size.lower())
                 update_object_state(obj_name, "old_location", obj_desig.pose.position)
             else:
-                ignored_commands += 1
                 del_attributes = None
-
 
             add_cmd = current_cmd.get("minor", {}).get("add_object")
             if add_cmd:
@@ -183,7 +181,6 @@ def update_current_command():
                     add_obj.type.lower(), add_obj.color, add_obj.name.lower(), add_obj.location, add_obj.size.lower())
                 update_object_state(obj_name, "new_location", obj_desig.pose.position)
             else:
-                ignored_commands += 1
                 new_attributes = None
 
             if old_attributes == del_attributes and new_attributes:
@@ -196,7 +193,6 @@ def update_current_command():
                     ignored_commands += 1
                     update_object_state(obj_desig.name, "recovering", obj_desig.pose.position)
 
-
         elif minor_cmd == "bring_me":
             minor_interrupt_count += 1
             add_cmd = current_cmd.get("minor", {}).get("add_object")
@@ -204,9 +200,14 @@ def update_current_command():
                 add_obj = add_cmd[0]
                 fluent.modify_objects_in_use([add_obj], [])
 
-                unhandled_objects.append(add_obj.type.lower())
-                #print(f"Added {add_obj.type.lower()} to the list that will be processed")
+                unhandled_objects.append(
+                    add_obj.type.lower())
+            else:
+                ignored_commands += 1
+
         elif minor_cmd == "change_location":
+            minor_interrupt_count += 1
+
             add_cmd = current_cmd.get("minor", {}).get("add_object")
             if add_cmd:
                 add_obj = add_cmd[0]
@@ -215,13 +216,14 @@ def update_current_command():
                 new_location = None
 
             if new_location:
-                if new_location != destination_location:
-                    age = age ^ 1
-                    if destination_location:
-                        destination_location = 'table' if age == 1 else 'countertop'
-
-
-            raise ChangeLocationException
+                try:
+                    if new_location != destination_location:
+                        age = age ^ 1
+                        if destination_location:
+                            destination_location = 'table' if age == 1 else 'countertop'
+                    raise ChangeLocationException
+                except ChangeLocationException:
+                    ignored_commands += 1
 
         elif major_cmd == "stop":
             major_interrupt_count += 1
@@ -275,14 +277,14 @@ def move_and_detect(obj_type, obj_size, obj_color):
         NavigateAction(target_locations=[Pose([1.7, 1.9, 0])]).resolve().perform()
         current_location = "countertop"
 
-        LookAtAction(targets=[
-            pick_pose]).resolve().perform()
+        LookAtAction(targets=[pick_pose]).resolve().perform()
 
     status, object_dict = DetectAction(technique='all').resolve().perform()
-    filtered_dict = {key: obj for key, obj in object_dict.items() if ((
-        obj_type is None or obj_type.strip() == "" or obj.bullet_world_object.type.lower() == obj_type.lower()) and (
-        obj_size is None or obj_size.strip() == "" or obj.bullet_world_object.size.lower() == obj_size.lower()) and (
-        obj_color is None or obj_color == [] or obj.bullet_world_object.color == obj_color))}
+    filtered_dict = {key: obj for key, obj in object_dict.items() if (
+            (obj_type is None or obj_type.strip() == "" or obj.bullet_world_object.type.lower() == obj_type.lower())
+            and (
+                    obj_size is None or obj_size.strip() == "" or obj.bullet_world_object.size.lower() == obj_size.lower())
+            and (obj_color is None or obj_color == [] or obj.bullet_world_object.color == obj_color))}
 
     object_desig = next(iter(filtered_dict.values()))
     original_pose = object_desig.pose
@@ -313,14 +315,12 @@ def announce_bring(name: str, type: str, color: str, location: str, size: str, d
 def announce_recovery(old_desig):
     update_object_state(old_desig.name, "recovering", old_desig.pose.position)
     from_robot_publish("Recovery", False, True, True, "table", "countertop")
-    print("Recovering from Interrupt")
-    # print("I am not interruptable here at the moment")
+    print("Recovering from Interrupt")  # print("I am not interruptable here at the moment")
 
 
 def announce_pick_place(case: str, type: str, color: str, size: str):
     print(
-        f"I will now {case.lower()} the {size.lower(), color.lower(), type.lower()}")
-    # print("I am not interruptable here at the moment")
+        f"I will now {case.lower()} the {size.lower(), color.lower(), type.lower()}")  # print("I am not interruptable here at the moment")
 
 
 def place_and_pick_new_obj(old_desig, location, obj_type, obj_size, obj_color):
@@ -408,7 +408,6 @@ with simulated_robot:
 
         for obj in unhandled_objects:
             if obj in handled_objects:
-                ignored_commands += 1
                 rospy.logerr(f"Object {obj} was already handled, continuing")
 
                 from_robot_publish("already_done", False, False, False, current_location, "")
@@ -420,7 +419,6 @@ with simulated_robot:
         if unhandled_object:
             obj = fluent.objects_in_use.get(unhandled_object, None)
         else:
-            ignored_commands += 1
             obj = None
 
         if obj:
@@ -483,15 +481,16 @@ with simulated_robot:
                 [get_nav_pose(obj_type, destination_location)]).resolve().perform()) + announce >> Monitor(monitor_func)
 
             ###### Construct recovery behaviour (Navigate to island => place object => detect new object => pick up new object ######
-            recover_normal = Code(lambda: announce_recovery(old_desig=obj_desig)) + Code( lambda: place_and_pick_new_obj(obj_desig, original_pose, obj_type, obj_size, obj_color))
+            recover_normal = Code(lambda: announce_recovery(old_desig=obj_desig)) + Code(
+                lambda: place_and_pick_new_obj(obj_desig, original_pose, obj_type, obj_size, obj_color))
 
             ###### Construct recovery behaviour (Navigate to island => place object => detect new object => pick up new object ######
-            recover_location = Code(lambda: announce_recovery(old_desig=obj_desig)) + Code(lambda: NavigateAction(
-                [get_nav_pose(obj_type, destination_location)]).resolve().perform())
+            recover_location = Code(lambda: announce_recovery(old_desig=obj_desig)) + Code(
+                lambda: NavigateAction([get_nav_pose(obj_type, destination_location)]).resolve().perform())
 
             ###### Execute plan ######
-            RetryMonitor(plan, max_tries=5, recovery={ChangeLocationException: recover_location,
-                                                      PlanFailure: recover_normal}).perform()
+            RetryMonitor(plan, max_tries=5,
+                         recovery={ChangeLocationException: recover_location, PlanFailure: recover_normal}).perform()
 
             ###### Hand the object according to Scenario 5 ######
             from_robot_publish("placing", True, True, False, current_location, "")
