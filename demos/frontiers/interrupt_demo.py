@@ -448,7 +448,7 @@ with simulated_robot:
             ParkArmsAction.Action(Arms.BOTH).perform()
             grasp = "top" if obj_type == "spoon" else "front"
             if obj_type in ["spoon", "cup"]:
-                used_arm = "left" if drawer_open_loc.arms[0] == "right" else "right"
+                used_arm = "left" if drawer_open_loc.arms[0] == "right" else "left"
                 PickUpAction(obj_desig, [used_arm], [grasp]).resolve().perform()
 
                 ParkArmsAction([Arms.BOTH]).resolve().perform()
