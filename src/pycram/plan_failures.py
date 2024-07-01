@@ -5,6 +5,13 @@ class PlanFailure(Exception):
         """Create a new plan failure."""
         Exception.__init__(self, *args, **kwargs)
 
+class ChangeLocationException(PlanFailure):
+    """Implementation of plan failures."""
+
+    def __init__(self, *args, **kwargs):
+        """Create a new plan failure."""
+        Exception.__init__(self, *args, **kwargs)
+
 
 class MajorInterrupt(Exception):
     """Implementation of Frontiers Major Interrupt."""

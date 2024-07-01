@@ -112,7 +112,7 @@ class RetryMonitor(FailureHandling):
         perform(): Implements the retry logic.
     """
 
-    def __init__(self, designator_description: Monitor, max_tries: int = 3, recovery: Language = None):
+    def __init__(self, designator_description: Monitor, max_tries: int = 3, recovery: dict = None):
         """
         Initializes a new instance of the Retry class.
 
@@ -123,8 +123,19 @@ class RetryMonitor(FailureHandling):
         """
         super().__init__(designator_description)
         self.max_tries = max_tries
-        self.recovery = recovery
         self.lock = Lock()
+        if recovery is None:
+            self.recovery = {}
+        else:
+            if not isinstance(recovery, dict):
+                raise ValueError(
+                    "Recovery must be a dictionary with exception types as keys and Language instances as values.")
+            for key, value in recovery.items():
+                if not issubclass(key, BaseException):
+                    raise TypeError("Keys in the recovery dictionary must be exception types.")
+                if not isinstance(value, Language):
+                    raise TypeError("Values in the recovery dictionary must be instances of the Language class.")
+            self.recovery = recovery
 
     def perform(self):
         """
@@ -175,8 +186,9 @@ class RetryMonitor(FailureHandling):
                     tries += 1
                     if tries >= self.max_tries:
                         raise e
-                    if self.recovery:
-                        self.recovery.perform()
+                    exception_type = type(e)
+                    if exception_type in self.recovery:
+                        self.recovery[exception_type].perform()
                 except MajorInterrupt as e:
                     raise e
         return status, flatten(res)
