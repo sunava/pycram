@@ -9,7 +9,7 @@ from pycram.external_interfaces.interrupt_actionclient import InterruptClient
 from pycram.failure_handling import Retry, RetryMonitor
 from pycram.fluent import Fluent
 from pycram.language import Monitor, Code
-from pycram.plan_failures import MajorInterrupt
+from pycram.plan_failures import MajorInterrupt, PlanFailure, ChangeLocationException
 from pycram.pose import Pose
 from pycram.bullet_world import BulletWorld, Object
 from pycram.process_module import simulated_robot, with_simulated_robot
@@ -45,7 +45,7 @@ obj_color = ""
 obj_name = ""
 obj_location = ""
 obj_size = ""
-age = ""
+age = 0
 place_pose = None
 nav_pose = None
 original_pose = None
@@ -53,6 +53,7 @@ obj_desig = None
 handle_desig = None
 current_cmd = None
 current_location = None
+destination_location = None
 drawer_open_loc = None
 used_arm = "left"
 grasp = "front"
@@ -155,12 +156,14 @@ def get_nav_pose(object_type, location):
 
 
 def update_current_command():
-    global current_cmd, obj_type, obj_color, obj_name, obj_location, obj_size, unhandled_objects
+    global current_cmd, obj_type, obj_color, obj_name, obj_location, obj_size, unhandled_objects, destination_location, age
     current_cmd = fluent.next_command()
 
     if current_cmd:
         minor_cmd = current_cmd.get("minor", {}).get("command")
         major_cmd = current_cmd.get("major", {}).get("command")
+        add_obj = None
+        del_obj = None
 
         if minor_cmd == "setting_breakfast":
             objects_to_add = [
@@ -175,10 +178,8 @@ def update_current_command():
         # elif minor_cmd == "object":
         elif minor_cmd == "replace_object":
             old_attributes = (obj_type.lower(), obj_color, obj_name.lower(), obj_location, obj_size.lower())
-
             del_cmd = current_cmd.get("minor", {}).get("del_object")
-            add_obj = None
-            del_obj = None
+
             if del_cmd:
                 del_obj = del_cmd[0]
                 del_attributes = (
@@ -206,20 +207,38 @@ def update_current_command():
                 fluent.modify_objects_in_use([add_obj], [])
                 unhandled_objects.append(add_obj.type.lower())
                 print(f"Added {add_obj.type.lower()}")
+        elif minor_cmd == "change_location":
+            add_cmd = current_cmd.get("minor", {}).get("add_object")
+            if add_cmd:
+                add_obj = add_cmd[0]
+                new_location = add_obj.location
+            else:
+                new_location = None
+
+            if new_location:
+                if new_location != destination_location:
+                    age = age ^ 1
+                    if destination_location:
+                        destination_location = 'table' if age == 1 else 'countertop'
+
+            raise ChangeLocationException
         elif major_cmd == "stop":
             return
 
 
 def monitor_func():
-    global obj_type, obj_color, obj_name, obj_location, obj_size, age, current_cmd
+    global obj_type, obj_color, obj_name, obj_location, obj_size, age, current_cmd, destination_location
     if fluent.minor_interrupt.get_value():
         old_attributes = (obj_type.lower(), obj_color, obj_name.lower(), obj_location, obj_size.lower())
+        old_destination_location = destination_location
         update_current_command()
 
         new_attributes = (obj_type.lower(), obj_color, obj_name.lower(), obj_location, obj_size.lower())
         fluent.minor_interrupt.set_value(False)
 
         if new_attributes != old_attributes:
+            return True
+        if old_destination_location != destination_location:
             return True
         return False
     elif fluent.major_interrupt.get_value():
@@ -446,11 +465,16 @@ with simulated_robot:
                 monitor_func)
 
             ###### Construct recovery behaviour (Navigate to island => place object => detect new object => pick up new object ######
-            recover = Code(lambda: announce_recovery()) + Code(
+            recover_normal = Code(lambda: announce_recovery()) + Code(
                 lambda: place_and_pick_new_obj(obj_desig, original_pose, obj_type, obj_size, obj_color))
 
+            ###### Construct recovery behaviour (Navigate to island => place object => detect new object => pick up new object ######
+            recover_location = Code(lambda: announce_recovery()) + Code(lambda: NavigateAction(
+                [get_nav_pose(obj_type, destination_location)]).resolve().perform())
+
             ###### Execute plan ######
-            RetryMonitor(plan, max_tries=5, recovery=recover).perform()
+            RetryMonitor(plan, max_tries=5, recovery={ChangeLocationException: recover_location,
+                                                      PlanFailure: recover_normal}).perform()
 
             ###### Hand the object according to Scenario 5 ######
             from_robot_publish("placing", True, True, False, current_location, "")
