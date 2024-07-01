@@ -38,7 +38,7 @@ def p():
 
         if attributes:
             # to signal the start of demo
-            # TalkingMotion("Hello, i am ready for the test").resolve().perform()
+            # TalkingMotion("Hello, i am ready for the pp.py").resolve().perform()
             ParkArmsAction([Arms.LEFT]).resolve().perform()
 
             TalkingMotion("Welcome, please step in").resolve().perform()

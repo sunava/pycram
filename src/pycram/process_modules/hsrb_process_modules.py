@@ -17,7 +17,7 @@ from ..external_interfaces.ik import request_ik
 from ..external_interfaces.robokudo import *
 from ..helper import _apply_ik
 from ..local_transformer import LocalTransformer
-from ..external_interfaces.navigate import queryPoseNav
+#from ..external_interfaces.navigate import queryPoseNav
 from ..process_module import ProcessModule
 
 
@@ -337,8 +337,7 @@ class HSRBMoveHeadReal(ProcessModule):
         giskard.avoid_all_collisions()
         giskard.achieve_joint_goal(
             {"head_pan_joint": new_pan + current_pan, "head_tilt_joint": new_tilt + current_tilt})
-        giskard.achieve_joint_goal(
-            {"head_pan_joint": new_pan + current_pan, "head_tilt_joint": new_tilt + current_tilt})
+        
 
 
 class HSRBDetectingReal(ProcessModule):
