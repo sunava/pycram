@@ -246,7 +246,7 @@ class ParkArmsAction(ActionDesignatorDescription):
                 kwargs["left_arm_config"] = "park"
                 MoveArmJointsMotion(**kwargs).resolve().perform()
                 # MoveTorsoAction([0.005]).resolve().perform()
-                MoveTorsoAction([0.20]).resolve().perform()
+                MoveTorsoAction([0.10]).resolve().perform()
             # add park right arm if wanted
             if self.arm in [Arms.RIGHT, Arms.BOTH]:
                 kwargs["right_arm_config"] = "park"
@@ -707,7 +707,6 @@ class PlaceGivenObjAction(ActionDesignatorDescription):
 
             # placing everything else or the Metalplate in the dishwasher
             else:
-                print("In else of placing")
                 if self.grasp == "top":
                     oTm.pose.position.z += 0.05
 

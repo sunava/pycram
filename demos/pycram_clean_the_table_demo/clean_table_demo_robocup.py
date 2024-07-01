@@ -2,6 +2,7 @@ import time
 from enum import Enum
 import rospy.core
 from demos.pycram_clean_the_table_demo.utils.misc import *
+from pycram.external_interfaces.navigate import PoseNavigator
 from pycram.process_module import real_robot, semi_real_robot
 from pycram.ros.robot_state_updater import RobotStateUpdater
 from pycram.ros.viz_marker_publisher import VizMarkerPublisher
@@ -14,12 +15,14 @@ from pycram.language import Monitor, Code
 start_signal_waiter = StartSignalWaiter()
 text_to_speech_publisher = TextToSpeechPublisher()
 image_switch_publisher = ImageSwitchPublisher()
-
+print("here")
+move = PoseNavigator()
+print("here2")
 # list of cutlery objects
 CUTLERY = ["Spoon", "Fork", "Knife", "Plasticknife"]
 
 # Wished objects for the Demo
-wished_sorted_obj_list = ["Metalplate", "Metalbowl", "Metalmug", "Fork", "Spoon"]
+wished_sorted_obj_list = ["Metalplate", "Metalbowl","Fork", "Spoon", "Metalmug"]
 
 # length of wished list for failure handling
 LEN_WISHED_SORTED_OBJ_LIST = len(wished_sorted_obj_list)
@@ -40,6 +43,8 @@ door_name = "sink_area_dish_washer_door"
 # Intermediate positions for a safer navigation
 move_to_the_middle_table_pose = [2.2, 1.98, 0]
 move_to_the_middle_dishwasher_pose = [2.2, -0.1, 0]
+
+goal_pose = None
 
 # ForceTorqueSensor for recognizing push on the hand
 fts = ForceTorqueSensor(robot_name='hsrb')
@@ -125,10 +130,9 @@ def pickup_and_place_objects(sorted_obj: list):
 
         # todo check if parallel is working
         if sorted_obj[value].type == "Metalplate" or sorted_obj[value].type == "Metalbowl":
-            navigate = NavigateAction(target_locations=[Pose(move_to_the_middle_table_pose, [0, 0, 1, 0])])
-            turn_arm = MoveJointsMotion(["arm_roll_joint"], [-1.5])
-            plan = navigate | turn_arm
-            plan.perform()
+            move.pub_now(Pose(move_to_the_middle_table_pose, [0, 0, 1, 0]))
+            MoveJointsMotion(["arm_roll_joint"], [-1.5]).resolve().perform()
+
         placing_pose = get_placing_pos(sorted_obj[value].type)
         # todo: silverware tray must be on the right side of the dishwasher
         if placing_pose.position.x >= get_placing_pos("check").position.x:
@@ -140,8 +144,7 @@ def pickup_and_place_objects(sorted_obj: list):
         image_switch_publisher.pub_now(8)
         grasp = "front"
 
-        PlaceAction(sorted_obj[value], ["left"], [grasp],
-                    [placing_pose]).resolve().perform()
+        PlaceAction(sorted_obj[value], ["left"], [grasp],[placing_pose]).resolve().perform()
         image_switch_publisher.pub_now(0)
         # For the safety in cases where the HSR is not placing, better drop the object to not colide with the kitchen drawer when moving to parkArms arm config
         MoveGripperMotion("open", "left").resolve().perform()
@@ -161,7 +164,19 @@ def monitor_func():
         return SensorMonitoringCondition
     return False
 
+def _pose_to_pose_stamped(pose: Pose) -> PoseStamped:
+    """
+    Transforms a PyCRAM pose to a PoseStamped message, this is necessary since Giskard NEEDS a PoseStamped message
+    otherwise it will crash.
 
+    :param pose: PyCRAM pose that should be converted
+    :return: An equivalent PoseStamped message
+    """
+    ps = PoseStamped()
+    ps.pose = pose.pose
+    ps.header = pose.header
+
+    return ps
 def get_placing_pos(obj):
     lt = LocalTransformer()
     dishwasher_main_name = "sink_area_dish_washer_main"
@@ -194,15 +209,20 @@ def get_placing_pos(obj):
     newp = lt.transform_pose(dishwasher, "map")  # link statt map wenn 1) verwendet. map wenn 2) verwendet
     print(newp)
     world.current_bullet_world.add_vis_axis(newp)
-    return newp.pose
+    res = Pose([newp.pose.position.x,newp.pose.position.y, newp.pose.position.z],[newp.pose.orientation.x, newp.pose.orientation.y, newp.pose.orientation.z, newp.pose.orientation.w])
+    return res
 
 
-def check_position(goal_pose):
+
+def check_position():
+    global goal_pose
     current_pose = robot.get_pose().pose.position
     euclidean_dist = math.sqrt(pow((goal_pose.pose.position.x - current_pose.x), 2) +
                                pow((goal_pose.pose.position.y - current_pose.y), 2))
-    if euclidean_dist <= 0.15:
+    if euclidean_dist < 0.5:
+        print("return true")
         return True
+    print("return false")
     return False
 
 
@@ -213,41 +233,32 @@ def navigate_to(location_name: str, y: Optional[float] = None):
     :param y: y pose to navigate to the couch table for picking up objects
     :param location_name: defines the name of the location to move to
     """
+    global goal_pose
     if location_name == pickup_location_name and y is not None:
         goal_pose = Pose([3.9, y, 0], [0, 0, 0, 1])
-        if not check_position(goal_pose):
-            NavigateAction(target_locations=[Pose(move_to_the_middle_table_pose, [0, 0, 1, 1])]).resolve().perform()
-        nav = NavigateAction(target_locations=[goal_pose])
-        plan = nav * 3 >> Monitor(check_position(goal_pose))  # todo: check what to do with goal_pose
-        plan.perform()
+        if not check_position():
+            move.pub_now(Pose(move_to_the_middle_table_pose, [0, 0, 1, 1]))
+        while not check_position():
+            move.pub_now(goal_pose)
     elif location_name == placing_location_name_left:
+        print("left")
         goal_pose = Pose([3.5, -1.32, 0], [0, 0, 1, 0])
-        nav1 = NavigateAction(target_locations=[Pose(move_to_the_middle_table_pose, [0, 0, 1, 0])])
-        nav2 = NavigateAction(target_locations=[Pose(move_to_the_middle_dishwasher_pose, [0, 0, -1, 1])])
-        plan1 = nav1 + nav2
-        plan1.perform()
+        move.pub_now(Pose(move_to_the_middle_table_pose, [0, 0, 1, 0]))
+        move.pub_now(Pose(move_to_the_middle_dishwasher_pose, [0, 0, -1, 1]))
+        while not check_position():
+            move.pub_now(goal_pose)
 
-        nav = NavigateAction(target_locations=[goal_pose])
-        plan2 = nav * 3 >> Monitor(check_position(goal_pose))  # todo: check what to do with goal_pose
-        plan2.perform()
     elif location_name == placing_location_name_right:
         goal_pose = Pose([1.95, -1.48, 0], [0, 0, 0, 1])
-        nav1 = NavigateAction(target_locations=[Pose(move_to_the_middle_table_pose, [0, 0, 1, 0])])
-        nav2 = NavigateAction(target_locations=[Pose(move_to_the_middle_dishwasher_pose, [0, 0, -1, 1])])
-        plan1 = nav1 + nav2
-        plan1.perform()
-
-        nav = NavigateAction(target_locations=[goal_pose])
-        plan2 = nav * 3 >> Monitor(check_position(goal_pose))  # todo: check what to do with goal_pose
-        plan2.perform()
+        move.pub_now(Pose(move_to_the_middle_table_pose, [0, 0, 1, 0]))
+        move.pub_now(Pose(move_to_the_middle_dishwasher_pose, [0, 0, -1, 1]))
+        while not check_position():
+            move.pub_now(goal_pose)
     elif location_name == placing_location_name:
         goal_pose = Pose([2.55, -0.9, 0], [0, 0, -1, 1])
-        turn_arm = MoveJointsMotion(["wrist_roll_joint"], [-1.5])
-        nav = NavigateAction(target_locations=[goal_pose])
-        plan1 = nav | turn_arm
-        plan1.perform()  # todo are here problems with the next plan
-        plan2 = nav * 3 >> Monitor(check_position(goal_pose))  # todo: check what to do with goal_pose
-        plan2.perform()
+        MoveJointsMotion(["wrist_roll_joint"], [-1.5]).resolve().perform()
+        while not check_position():
+            move.pub_now(goal_pose)
     else:
         rospy.logerr(f"Failure. Y-Value must be set for the navigateAction to the {pickup_location_name}")
 
@@ -261,15 +272,15 @@ def navigate_and_detect():
     text_to_speech_publisher.pub_now("Navigating")
 
     navigate_to(pickup_location_name, 2.45)  # 1.6
-    move_up = MoveTorsoAction([0.1]).resolve().perform()
-    look_at = LookAtAction(targets=[Pose([5.0, 2.45, 0.15])])
-    plan = move_up | look_at
+    MoveTorsoAction([0.1]).resolve().perform()
+    LookAtAction(targets=[Pose([5.0, 2.45, 0.15])]).resolve().perform()
+    #plan = move_up | look_at
     # couch table
-    plan.perform()
+    #plan.perform()
     text_to_speech_publisher.pub_now("Perceiving")
     image_switch_publisher.pub_now(10)
     try:
-        object_desig = DetectAction(technique='region', state=pickup_location_name).resolve().perform()
+        object_desig = DetectAction(technique='all').resolve().perform()
         giskardpy.sync_worlds()
     except PerceptionObjectNotFound:
         object_desig = {}
@@ -344,10 +355,9 @@ def failure_handling2(sorted_obj: list, new_sorted_obj: list):
             # deleted a navigate
 
             if wished_sorted_obj_list[val] == "Metalplate" or wished_sorted_obj_list[val] == "Metalbowl":
-                navigate = NavigateAction(target_locations=[Pose(move_to_the_middle_table_pose, [0, 0, 1, 0])])
-                turn_arm = MoveJointsMotion(["arm_roll_joint"], [-1.5])
-                plan = navigate | turn_arm
-                plan.perform()
+                move.pub_now(Pose(move_to_the_middle_table_pose, [0, 0, 1, 0]))
+                MoveJointsMotion(["arm_roll_joint"], [-1.5]).resolve().perform()
+
                 # todo: silverware tray must be on the right side of the dishwasher
                 if placing_pose.position.x >= get_placing_pos("check").position.x:
                     navigate_to(placing_location_name_left)
@@ -393,12 +403,12 @@ with ((real_robot)):
     image_switch_publisher.pub_now(2)
     OpenDishwasherAction(handle_name, door_name, 0.6, 1.4, ["left"]).resolve().perform()
 
-    talk = text_to_speech_publisher.pub_now("Please pull out the lower rack")
+    text_to_speech_publisher.pub_now("Please pull out the lower rack")
     # todo can talk be integrated
-    park = ParkArmsAction([Arms.LEFT])
-    open_gripper = MoveGripperMotion("open", "left")
-    plan = talk | park | open_gripper
-    plan.perform()
+    park = ParkArmsAction([Arms.LEFT]).resolve().perform()
+    open_gripper = MoveGripperMotion("open", "left").resolve().perform()
+    # plan = park | open_gripper
+    # plan.perform()
     # todo example code
     # excecute_plan("parallel", task1=ParkArmsAction([Arms.LEFT]), task2=MoveGripperMotion("open", "left"), task3=text_to_speech_publisher.pub_now("Please pull out the lower rack"))
     # excecute_plan("parallel", task1=ParkArmsAction([Arms.LEFT]), task2=MoveGripperMotion("close", "left"))
