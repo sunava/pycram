@@ -348,7 +348,7 @@ class SemanticCostmapLocation(LocationDesignatorDescription):
         height_offset = 0
         if self.for_object:
             min, max = self.for_object.bullet_world_object.get_AABB()
-            height_offset = (max[2] - min[2]) / 2
+            height_offset = ((max[2] - min[2]) / 2) + 0.01
         for maybe_pose in pose_generator(sem_costmap):
             maybe_pose.position.z += height_offset
             yield self.Location(maybe_pose)
@@ -356,7 +356,6 @@ class SemanticCostmapLocation(LocationDesignatorDescription):
 
 def find_placeable_pose(enviroment_link, enviroment_desig, robot_desig, arm, world,
                         margin_cm=0.2, inner_margin_cm=0.1, object_desig=None):
-    print("finding")
     # rospy.loginfo("Create a SemanticCostmapLocation instance")
     location_desig = SemanticCostmapLocation(urdf_link_name=enviroment_link,
                                              part_of=enviroment_desig,

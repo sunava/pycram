@@ -13,7 +13,7 @@ from ..utilities import tf_wrapper as tf
 # if TYPE_CHECKING:
 #     from giskardpy.python_interface.python_interface import GiskardWrapper
 #     from giskard_msgs.msg import MoveResult, UpdateWorldResponse
-# \giskard_wrapper = None
+giskard_wrapper = None
 # giskard_wrapper: GiskardWrapper = None
 giskard_update_service = None
 is_init = False
@@ -155,8 +155,29 @@ def spawn_box(name: str, size: tuple, pose: Pose) -> 'UpdateWorldResponse':
     """
     return giskard_wrapper.world.add_box(name, size, pose)
 
-
-# Sending Goals to Giskard
+#
+# # Sending Goals to Giskard
+# def drive_brum(goal_poses: List[PoseStamped]) -> 'MoveResult':
+#     """
+#     Takes a list of poses geometry_msgs:pose_stamped and tries to move the robot to these positions.
+#
+#     :param goal_poses: List of poses that the robot should move to
+#     :return: MoveResult message for this goal
+#     """
+#     root_link = 'map'
+#     tip_link = 'base_link'
+#     sync_worlds()
+#     cart_monitor1 = giskard_wrapper.monitors.add_cartesian_pose(root_link=root_link,
+#                                                                 tip_link=tip_link,
+#                                                                 goal_poses=goal_poses[-1],
+#                                                                 name='cart goal 1')
+#     giskard_wrapper.motion_goals.add_cartesian_poses(goal_poses=goal_poses,
+#                                                     name='g1',
+#                                                     root_link=root_link,
+#                                                     tip_link=tip_link,
+#                                                     end_condition=cart_monitor1)
+#     giskard_wrapper.motion_goals.avoid_all_collisions()
+#     return giskard_wrapper.execute()
 
 
 def achieve_joint_goal(goal_poses: Dict[str, float]) -> 'MoveResult':
@@ -167,96 +188,120 @@ def achieve_joint_goal(goal_poses: Dict[str, float]) -> 'MoveResult':
     :param goal_poses: Dictionary with joint names and position goals
     :return: MoveResult message for this goal
     """
-    #sync_worlds()
+    # sync_worlds()
     giskard_wrapper.add_default_end_motion_conditions()
-    giskard_wrapper.motion_goals.add_joint_position(goal_poses, end_condition="")
+    joint_monitor1 = giskard_wrapper.monitors.add_joint_position(goal_poses, 0.02, name='joint monitor 1')
+    giskard_wrapper.motion_goals.add_joint_position(goal_poses, end_condition=joint_monitor1)
     return giskard_wrapper.execute()
+
 
 def achieve_sequence_te(pose1):
     root_link = 'map'
     tip_link = 'hand_gripper_tool_frame'
     sync_worlds()
-    giskard_wrapper.add_default_end_motion_conditions()
-
-    # monitor1 = giskard_wrapper.monitors.add_cartesian_pose(name='pose1',
-    #                                                          root_link=root_link,
-    #                                                          tip_link=tip_link,
-    #                                                          goal_pose=pose1)
-    # monitor2 = giskard_wrapper.monitors.add_cartesian_pose(name='pose2',
-    #                                                        root_link=root_link,
-    #                                                        tip_link=tip_link,
-    #                                                        goal_pose=pose2,
-    #                                                        start_condition=monitor1)
-    # end_monitor = giskard_wrapper.monitors.add_local_minimum_reached()
-    #
-    giskard_wrapper.motion_goals.add_cartesian_pose(goal_pose=pose1,
+    cart_monitor1 = giskard_wrapper.monitors.add_cartesian_pose(root_link=root_link,
+                                                                tip_link=tip_link,
+                                                                goal_pose=_pose_to_pose_stamped(pose1),
+                                                                position_threshold=0.02,
+                                                                orientation_threshold=0.04,
+                                                                name='cart goal 1')
+    giskard_wrapper.motion_goals.add_cartesian_pose(goal_pose=_pose_to_pose_stamped(pose1),
                                                     name='g1',
                                                     root_link=root_link,
-                                                    tip_link=tip_link)
-    # giskard_wrapper.motion_goals.add_cartesian_pose(goal_pose=pose2,
-    #                                                 name='g2',
-    #                                                 root_link=root_link,
-    #                                                 tip_link=tip_link,
-    #                                                 start_condition=monitor1,
-    #                                                 end_condition=f'{monitor2} and {end_monitor}')
-    giskard_wrapper.motion_goals.allow_all_collisions()
-    # giskard_wrapper.monitors.add_end_motion(start_condition=' and '.join([end_monitor, monitor2]))
-    giskard_wrapper.execute()
-
+                                                    tip_link=tip_link,
+                                                    end_condition=cart_monitor1)
+    giskard_wrapper.motion_goals.avoid_all_collisions()
+    return giskard_wrapper.execute()
 
 
 def achieve_sequence_pick_up(pose1, pose2, pose3, pose4):
     root_link = 'map'
     tip_link = 'hand_gripper_tool_frame'
     cart_monitor1 = giskard_wrapper.monitors.add_cartesian_pose(root_link=root_link,
-                                                                 tip_link=tip_link,
-                                                                 goal_pose=pose1,
-                                                                 name='cart goal 1')
+                                                                tip_link=tip_link,
+                                                                goal_pose=_pose_to_pose_stamped(pose1),
+                                                                position_threshold=0.02,
+                                                                orientation_threshold=0.04,
+                                                                name='cart goal 1')
     cart_monitor2 = giskard_wrapper.monitors.add_cartesian_pose(root_link=root_link,
-                                                                 tip_link=tip_link,
-                                                                 goal_pose=pose2,
-                                                                 name='cart goal 2',
+                                                                tip_link=tip_link,
+                                                                goal_pose=_pose_to_pose_stamped(pose2),
+                                                                name='cart goal 2',
                                                                 start_condition=cart_monitor1)
     gripper_closed = giskard_wrapper.monitors.add_close_hsr_gripper(start_condition=cart_monitor2,
-                                                                   name='close gripper')
+                                                                    name='close gripper')
     cart_monitor3 = giskard_wrapper.monitors.add_cartesian_pose(root_link=root_link,
-                                                                 tip_link=tip_link,
-                                                                 goal_pose=pose3,
-                                                                 name='cart goal 3',
+                                                                tip_link=tip_link,
+                                                                goal_pose=_pose_to_pose_stamped(pose3),
+                                                                name='cart goal 3',
                                                                 start_condition=gripper_closed)
     cart_monitor4 = giskard_wrapper.monitors.add_cartesian_pose(root_link=root_link,
-                                                                 tip_link=tip_link,
-                                                                 goal_pose=pose4,
-                                                                 name='cart goal 4',
+                                                                tip_link=tip_link,
+                                                                goal_pose=_pose_to_pose_stamped(pose4),
+                                                                name='cart goal 4',
                                                                 start_condition=cart_monitor3)
     end_monitor = giskard_wrapper.monitors.add_local_minimum_reached(start_condition=cart_monitor4)
 
     giskard_wrapper.motion_goals.add_cartesian_pose(name='g1',
                                                     root_link=root_link,
                                                     tip_link=tip_link,
-                                                    goal_pose=pose1,
+                                                    goal_pose=_pose_to_pose_stamped(pose1),
                                                     end_condition=cart_monitor1)
     giskard_wrapper.motion_goals.add_cartesian_pose(name='g2',
                                                     root_link=root_link,
                                                     tip_link=tip_link,
-                                                    goal_pose=pose1,
+                                                    goal_pose=_pose_to_pose_stamped(pose2),
                                                     start_condition=cart_monitor1,
                                                     end_condition=cart_monitor2)
     giskard_wrapper.motion_goals.add_cartesian_pose(name='g3',
                                                     root_link=root_link,
                                                     tip_link=tip_link,
-                                                    goal_pose=pose1,
+                                                    goal_pose=_pose_to_pose_stamped(pose3),
                                                     start_condition=gripper_closed,
                                                     end_condition=cart_monitor3)
     giskard_wrapper.motion_goals.add_cartesian_pose(name='g4',
                                                     root_link=root_link,
                                                     tip_link=tip_link,
-                                                    goal_pose=pose1,
+                                                    goal_pose=_pose_to_pose_stamped(pose4),
                                                     start_condition=cart_monitor3,
                                                     end_condition=cart_monitor4)
     giskard_wrapper.motion_goals.allow_all_collisions()
     giskard_wrapper.monitors.add_end_motion(start_condition=end_monitor)
     giskard_wrapper.execute()
+
+
+def achieve_sequence_place(pose1, pose2):
+    root_link = 'map'
+    tip_link = 'hand_gripper_tool_frame'
+    cart_monitor1 = giskard_wrapper.monitors.add_cartesian_pose(root_link=root_link,
+                                                                tip_link=tip_link,
+                                                                goal_pose=_pose_to_pose_stamped(pose1),
+                                                                position_threshold=0.02,
+                                                                orientation_threshold=0.04,
+                                                                name='cart goal 1')
+    cart_monitor2 = giskard_wrapper.monitors.add_cartesian_pose(root_link=root_link,
+                                                                tip_link=tip_link,
+                                                                goal_pose=_pose_to_pose_stamped(pose2),
+                                                                name='cart goal 2',
+                                                                start_condition=cart_monitor1)
+
+    end_monitor = giskard_wrapper.monitors.add_local_minimum_reached(start_condition=cart_monitor2)
+
+    giskard_wrapper.motion_goals.add_cartesian_pose(name='g1',
+                                                    root_link=root_link,
+                                                    tip_link=tip_link,
+                                                    goal_pose=_pose_to_pose_stamped(pose1),
+                                                    end_condition=cart_monitor1)
+    giskard_wrapper.motion_goals.add_cartesian_pose(name='g2',
+                                                    root_link=root_link,
+                                                    tip_link=tip_link,
+                                                    goal_pose=_pose_to_pose_stamped(pose2),
+                                                    start_condition=cart_monitor1,
+                                                    end_condition=cart_monitor2)
+    giskard_wrapper.motion_goals.avoid_all_collisions()
+    giskard_wrapper.monitors.add_end_motion(start_condition=end_monitor)
+    giskard_wrapper.execute()
+
 
 def cml(drive_back):
     print("in cml")
@@ -354,8 +399,9 @@ def achieve_align_planes_goal(goal_normal: List[float], tip_link: str, tip_norma
     :return: MoveResult message for this goal
     """
     sync_worlds()
-    giskard_wrapper.motion_goals.set_align_planes_goal(make_vector_stamped(goal_normal), tip_link, make_vector_stamped(tip_normal),
-                                          root_link)
+    giskard_wrapper.motion_goals.set_align_planes_goal(make_vector_stamped(goal_normal), tip_link,
+                                                       make_vector_stamped(tip_normal),
+                                                       root_link)
     return giskard_wrapper.execute()
 
 
@@ -376,7 +422,7 @@ def achieve_open_container_goal(tip_link: str, environment_link: str, goal_state
         giskard_wrapper.motion_goals.set_open_container_goal(tip_link, environment_link)
     else:
         giskard_wrapper.motion_goals.set_open_container_goal(tip_link, environment_link, goal_joint_state=goal_state,
-                                                special_door=special_door)
+                                                             special_door=special_door)
 
     giskard_wrapper.motion_goals.allow_all_collisions()
     return giskard_wrapper.execute()
@@ -500,7 +546,9 @@ def avoid_collisions(object1: Object, object2: Object) -> None:
     :param object1: The first BulletWorld Object
     :param object2: The second BulletWorld Object
     """
-    giskard_wrapper.motion_goals.avoid_collision(-1, object1.name + "_" + str(object1.id), object2.name + "_" + str(object2.id))
+    giskard_wrapper.motion_goals.avoid_collision(-1, object1.name + "_" + str(object1.id),
+                                                 object2.name + "_" + str(object2.id))
+
 
 #
 # # Creating ROS messages
@@ -617,21 +665,46 @@ def avoid_collisions(object1: Object, object2: Object) -> None:
 def cancel_all_called_goals():
     giskard_wrapper.cancel_all_goals()
     rospy.loginfo("Canceling all goals towards Giskard")
+
+
+def _pose_to_pose_stamped(pose: Pose) -> PoseStamped:
+    """
+    Transforms a PyCRAM pose to a PoseStamped message, this is necessary since Giskard NEEDS a PoseStamped message
+    otherwise it will crash.
+
+    :param pose: PyCRAM pose that should be converted
+    :return: An equivalent PoseStamped message
+    """
+    ps = PoseStamped()
+    ps.pose = pose.pose
+    ps.header = pose.header
+
+    return ps
+
+
 #
 #
-# def move_head_to_pose(pose: PointStamped):
-#     """
-#     moves head to given position
-#     :param pose: pose that head will rotate to
-#     """
-#     # TODO: necessary? there is a LookAtAction?
-#     # TODO: needs to be tested!
-#     p_axis = Vector3Stamped()
-#     p_axis.vector = (0, 0, 1)
-#     giskard_wrapper.motion_goals.set_pointing_goal(goal_point=pose,
-#                                                    tip_link="head_center_camera_frame",
-#                                                    pointing_axis=p_axis,
-#                                                    root_link="base_footprint")
+def move_head_to_pose(pose1):
+    """
+    moves head to given position
+    :param pose: pose that head will rotate to
+    """
+    p_axis = Vector3Stamped()
+    p_axis.vector = (0, 0, 1)
+    sync_worlds()
+    giskard_wrapper.add_default_end_motion_conditions()
+    giskard_wrapper.motion_goals.add_pointing(goal_point=_pose_to_pose_stamped(pose1),
+                                              name='g1',
+                                              root_link="base_footprint",
+                                              tip_link="head_center_camera_frame",
+                                              pointing_axis=p_axis)
+    giskard_wrapper.motion_goals.allow_all_collisions()
+    giskard_wrapper.execute()
+
+
+def allow_all_collisions():
+    giskard_wrapper.motion_goals.allow_all_collisions()
+
 #
 #
 # def move_arm_to_pose(pose: PointStamped):

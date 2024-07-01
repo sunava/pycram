@@ -30,7 +30,7 @@ class HSRBDescription(RobotDescription):
         # Arm
         arm_joints = ["arm_flex_joint", "arm_roll_joint", "wrist_flex_joint", "wrist_roll_joint"]
         arm_links = ["arm_flex_link", "arm_roll_link", "wrist_flex_link", "wrist_roll_link"]
-        arm_carry = {"park": [0, 1.5, -1.85, 0]}
+        arm_carry = {"park": [0, -1.5, -1.50, 0]}
         arm_placing_plate = {"place_plate": [-1.8, 0, -0.5, -1.5]}
         arm_pick_up_paper = {"pick_up_paper": [-2.0, -0.17, -0.14, -0.9]}
         arm_open_dishwasher = {"open_dishwasher": [-1.2, -0.1, -0.28, -1.51]}

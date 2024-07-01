@@ -14,7 +14,7 @@ import threading
 from .fluent import Fluent
 from .plan_failures import PlanFailure, NotALanguageExpression
 from .external_interfaces import giskard_new as giskardpy
-
+from .external_interfaces import navigate as move
 
 class Language(NodeMixin):
     """
@@ -293,6 +293,7 @@ class Monitor(Language):
                             if giskardpy.giskard_wrapper:
                                 print("Interrupting Monitor Giskard")
                                 giskardpy.giskard_wrapper.interrupt()
+                            move.interrupt()
                             if hasattr(child, 'interrupt'):
                                 child.interrupt()
 
@@ -331,6 +332,7 @@ class Monitor(Language):
             child.interrupt()
         if giskard.giskard_wrapper:
             giskard.giskard_wrapper.interrupt()
+        move.interrupt()
 
 
 class Sequential(Language):

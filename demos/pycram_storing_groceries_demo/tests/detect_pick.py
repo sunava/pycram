@@ -30,7 +30,7 @@ wished_sorted_obj_list = ["Metalbowl", "Cerealbox", "Milkpack", "Spoon", "Chips"
 with real_robot:
     print(robot.get_complete_joint_state())
 
-    TalkingMotion("starting test").resolve().perform()
+    TalkingMotion("starting pp.py").resolve().perform()
     rospy.sleep(2)
     desig = navigate_and_detect('table')
     sorted_obj = sort_obj(desig, robot)
@@ -42,5 +42,5 @@ with real_robot:
         MoveTorsoAction([0.05]).resolve().perform()
         MoveTorsoAction([0.1]).resolve().perform()
 
-    TalkingMotion("test end").resolve().perform()
+    TalkingMotion("pp.py end").resolve().perform()
 

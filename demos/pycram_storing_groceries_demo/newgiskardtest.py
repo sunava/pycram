@@ -3,6 +3,7 @@ import rospy
 
 from demos.pycram_storing_groceries_demo.utils.misc import *
 from pycram.designators.location_designator import find_placeable_pose
+from pycram.language import Code
 
 from pycram.ros.robot_state_updater import RobotStateUpdater, KitchenStateUpdater
 from pycram.designators.action_designator import *
@@ -129,9 +130,7 @@ def get_closest_pose(obj_pose, pose_list):
     return nearest_pose
 
 
-def pickupnew(object_desig, grasp, arm):
-    talk.pub_now("SOON!!!")
-    # Initialize the local transformer and robot reference
+def pickerino(object_desig, grasp, arm, talk):
     lt = LocalTransformer()
     robot = BulletWorld.robot
     # Retrieve object and robot from designators
@@ -156,47 +155,90 @@ def pickupnew(object_desig, grasp, arm):
 
     tool_frame = robot_description.get_tool_frame(arm)
     special_knowledge_offset = lt.transform_pose(oTmG, robot.get_link_tf_frame(tool_frame))
-    z = 0.04
+    y = 0.04
+    special_knowledge_offset.pose.position.y -= y
     if grasp == "top":
         z = 0.025
-    special_knowledge_offset.pose.position.z += z
+        special_knowledge_offset.pose.position.z -= z
+
     push_baseTm = lt.transform_pose(special_knowledge_offset, "map")
     special_knowledge_offsetTm = lt.transform_pose(special_knowledge_offset, "map")
     liftingTm = push_baseTm
     liftingTm.pose.position.z += 0.03
-
-    talk.pub_now("NEW GISKARD!!!")
-    print(oTmG, special_knowledge_offsetTm, push_baseTm, liftingTm)
-    giskardpy.achieve_sequence_te(oTmG, special_knowledge_offsetTm, push_baseTm, liftingTm)
-    # # !!!!!!!!!!!!!
-    # MoveTCPMotion(oTmG, arm, allow_gripper_collision=False).resolve().perform()
-    #
-    # rospy.logwarn("Offset now")
-    # # !!!!!!!!!!!!!11
-    # MoveTCPMotion(special_knowledge_offsetTm, arm, allow_gripper_collision=False).resolve().perform()
-    #
-    # rospy.logwarn("Pushing now")
-    # # !!!!!!!!!!!!!11
-    # MoveTCPMotion(push_baseTm, arm, allow_gripper_collision=False).resolve().perform()
-    #
-    # # Finalize the pick-up by closing the gripper and lifting the object
-    # rospy.logwarn("Close Gripper")
-    # # !!!!!!!!!!!!!11
-    # MoveGripperMotion(motion="close", gripper=arm, allow_gripper_collision=True).resolve().perform()
-    #
-    # rospy.logwarn("Lifting now")
-    #
-    # # !!!!!!!!!!!!!11
-    # MoveTCPMotion(liftingTm, arm, allow_gripper_collision=False).resolve().perform()
+    talk.pub_now("Pick Up now!" + object.type)
+    giskardpy.achieve_sequence_pick_up(oTmG, special_knowledge_offsetTm, push_baseTm, liftingTm)
+    # MoveGripperMotion(motion="open", gripper=arm, allow_gripper_collision=True).resolve().perform()
 
     tool_frame = robot_description.get_tool_frame(arm)
     robot.attach(object=object_desig.bullet_world_object, link=tool_frame)
 
 
+def pakerino():
+    config = robot_description.get_static_joint_chain("left", "park")
+    giskardpy.avoid_all_collisions()
+    giskardpy.achieve_joint_goal(config)
+    MoveTorsoAction([0.1]).resolve().perform()
+
+
+def monitor_func_place():
+    der = fts.get_last_value()
+    if abs(der.wrench.force.x) > 10.30:
+        return SensorMonitoringCondition
+    return False
+
+
+def placerino(grasp, arm, talk, target_location):
+    lt = LocalTransformer()
+    robot = BulletWorld.robot
+    oTm = target_location
+
+    if grasp == "top":
+        oTm.pose.position.z += 0.035
+
+    grasp_rotation = robot_description.grasps.get_orientation_for_grasp(grasp)
+    oTb = lt.transform_pose(oTm, robot.get_link_tf_frame("base_link"))
+    oTb.orientation = grasp_rotation
+    special_knowledge_offset = oTb
+    x = 0.04
+    special_knowledge_offset.pose.position.x -= x
+    if grasp == "top":
+        y = 0.025
+        special_knowledge_offset.pose.position.y -= y
+    oTmG = lt.transform_pose(oTb, "map")
+    push_baseTm = lt.transform_pose(special_knowledge_offset, "map")
+
+    #tool_frame = robot_description.get_tool_frame(arm)
+    #special_knowledge_offset = lt.transform_pose(oTmG, robot.get_link_tf_frame(tool_frame))
+
+
+    #push_baseTm = lt.transform_pose(special_knowledge_offset, "map")
+    #special_knowledge_offsetTm = lt.transform_pose(special_knowledge_offset, "map")
+    push_baseTm.pose.position.z -= 1
+    world.current_bullet_world.add_vis_axis(oTmG)
+    world.current_bullet_world.add_vis_axis(push_baseTm)
+    # talk.pub_now("Placing now!")
+    #gw = giskardpy.achieve_sequence_te(oTmG)
+
+    # try:
+    #     plan = Code(lambda: giskardpy.achieve_sequence_te(push_baseTm)) >> Monitor(monitor_func_place)
+    #     plan.perform()
+    # except SensorMonitoringCondition:
+    #     rospy.logwarn("interrupted")
+    # talk.pub_now("opening my gripper")
+    # MoveGripperMotion(motion="open", gripper="left").resolve().perform()
+    # robot.detach_all()
+
+
+
+
+
+
+
+
 def demo(step):
     with real_robot:
         # Wait for the start signal
-        # ParkArmsAction([Arms.LEFT]).resolve().perform()
+        pakerino()
 
         groups_in_shelf = {
             "Kitchen Utensils and Tools": None,
@@ -214,7 +256,7 @@ def demo(step):
             talk.pub_now("driving", True)
             move.query_pose_nav(table_pose)
             look_pose = kitchen.get_link_pose("popcorn_table:p_table:table_center")
-            look_pose.pose.position.x+=0.5
+            look_pose.pose.position.x += 0.5
             LookAtAction(targets=[look_pose]).resolve().perform()  # 0.18
 
             table_obj = DetectAction(technique='all').resolve().perform()
@@ -231,8 +273,13 @@ def demo(step):
         if step <= 4:
             # print(groups_on_table.keys())
             for obj in groups_on_table.values():
-                pickupnew(obj[0], "front", "left")
+                pickerino(obj[0], "front", "left", talk)
+                pakerino()
+
+                pakerino()
                 # PickUpAction(obj[0], ["left"], ["front"]).resolve().perform()
 
-
-demo(3)
+        if step <= 5:
+            locationtoplace = Pose([2.4868790796016738, 5.717920690528091, 0.815])
+            placerino("front", "left", talk, locationtoplace)
+demo(5)

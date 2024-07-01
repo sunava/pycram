@@ -112,21 +112,15 @@ class TextToSpeechPublisher:
         :param text: The text to be spoken.
         :param language: The language of the text. 1 for English, 0 for Japanese. Default is 1 (English).
         """
-        rospy.loginfo(text)
-        rospy.loginfo("Waiting for /talking_sentence to be empty...")
-        while self.talking_sentence != '':
-            rospy.sleep(0.1)  # Sleep for 100ms and check again
-
-        rospy.loginfo("Publishing Text to Voice")
+        rospy.loginfo("talkstring:" + text)
+        # while self.talking_sentence != '':
+        #     rospy.sleep(0.1)  # Sleep for 100ms and check again
         text_to_speech = Voice()
         text_to_speech.language = language
         text_to_speech.sentence = text
-
-        rospy.loginfo("Waiting for subscribers to connect...")
         while self.pub.get_num_connections() == 0:
             rospy.sleep(0.1)  # Sleep for 100ms and check again
         self.pub.publish(text_to_speech)
-        rospy.loginfo("Voice request published")
 
 
 class ImageSwitchPublisher:
