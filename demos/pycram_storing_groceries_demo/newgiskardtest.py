@@ -8,7 +8,9 @@ from pycram.ros.robot_state_updater import RobotStateUpdater, KitchenStateUpdate
 from pycram.designators.action_designator import *
 from pycram.enums import ObjectType
 from pycram.process_module import real_robot
-import pycram.external_interfaces.giskard as giskardpy
+import pycram.external_interfaces.giskard_new as giskardpy
+# import pycram.external_interfaces.giskard as giskardpy_old
+
 import pycram.external_interfaces.robokudo as robokudo
 from pycram.external_interfaces.navigate import PoseNavigator
 from pycram.ros.robot_state_updater import RobotStateUpdater
@@ -38,7 +40,7 @@ KitchenStateUpdater("/tf", "/iai_kitchen/joint_states")
 giskardpy.init_giskard_interface()
 # #robokudo.init_robokudo_interface()
 # #rospy.sleep(2)
-giskardpy.spawn_kitchen()
+# giskardpy.spawn_kitchen()
 #
 # # Shelf Variables
 # shelf_pose = Pose([4.417880842356951,4.913135736923778, 0] ,[0, 0, 0, 1])
@@ -128,6 +130,7 @@ def get_closest_pose(obj_pose, pose_list):
 
 
 def pickupnew(object_desig, grasp, arm):
+    talk.pub_now("SOON!!!")
     # Initialize the local transformer and robot reference
     lt = LocalTransformer()
     robot = BulletWorld.robot
@@ -150,8 +153,6 @@ def pickupnew(object_desig, grasp, arm):
 
     rospy.logwarn("Picking up now")
     BulletWorld.current_bullet_world.add_vis_axis(oTmG)
-    #!!!!!!!!!!!!!
-    MoveTCPMotion(oTmG, arm, allow_gripper_collision=False).resolve().perform()
 
     tool_frame = robot_description.get_tool_frame(arm)
     special_knowledge_offset = lt.transform_pose(oTmG, robot.get_link_tf_frame(tool_frame))
@@ -164,27 +165,29 @@ def pickupnew(object_desig, grasp, arm):
     liftingTm = push_baseTm
     liftingTm.pose.position.z += 0.03
 
-
-
-    rospy.logwarn("Offset now")
-    # !!!!!!!!!!!!!11
-    MoveTCPMotion(special_knowledge_offsetTm, arm, allow_gripper_collision=False).resolve().perform()
-
-    rospy.logwarn("Pushing now")
-    # !!!!!!!!!!!!!11
-    MoveTCPMotion(push_baseTm, arm, allow_gripper_collision=False).resolve().perform()
-
-    # Finalize the pick-up by closing the gripper and lifting the object
-    rospy.logwarn("Close Gripper")
-    # !!!!!!!!!!!!!11
-    MoveGripperMotion(motion="close", gripper=arm, allow_gripper_collision=True).resolve().perform()
-
-    rospy.logwarn("Lifting now")
-
-    # !!!!!!!!!!!!!11
-    MoveTCPMotion(liftingTm, arm, allow_gripper_collision=False).resolve().perform()
-
-
+    talk.pub_now("NEW GISKARD!!!")
+    print(oTmG, special_knowledge_offsetTm, push_baseTm, liftingTm)
+    giskardpy.achieve_sequence_te(oTmG, special_knowledge_offsetTm, push_baseTm, liftingTm)
+    # # !!!!!!!!!!!!!
+    # MoveTCPMotion(oTmG, arm, allow_gripper_collision=False).resolve().perform()
+    #
+    # rospy.logwarn("Offset now")
+    # # !!!!!!!!!!!!!11
+    # MoveTCPMotion(special_knowledge_offsetTm, arm, allow_gripper_collision=False).resolve().perform()
+    #
+    # rospy.logwarn("Pushing now")
+    # # !!!!!!!!!!!!!11
+    # MoveTCPMotion(push_baseTm, arm, allow_gripper_collision=False).resolve().perform()
+    #
+    # # Finalize the pick-up by closing the gripper and lifting the object
+    # rospy.logwarn("Close Gripper")
+    # # !!!!!!!!!!!!!11
+    # MoveGripperMotion(motion="close", gripper=arm, allow_gripper_collision=True).resolve().perform()
+    #
+    # rospy.logwarn("Lifting now")
+    #
+    # # !!!!!!!!!!!!!11
+    # MoveTCPMotion(liftingTm, arm, allow_gripper_collision=False).resolve().perform()
 
     tool_frame = robot_description.get_tool_frame(arm)
     robot.attach(object=object_desig.bullet_world_object, link=tool_frame)
@@ -193,21 +196,8 @@ def pickupnew(object_desig, grasp, arm):
 def demo(step):
     with real_robot:
         # Wait for the start signal
-        ParkArmsAction([Arms.LEFT]).resolve().perform()
-        if step <= 0:
-            start_signal_waiter.wait_for_startsignal()
+        # ParkArmsAction([Arms.LEFT]).resolve().perform()
 
-            # continue with the rest of the script
-            rospy.loginfo("Start signal received, now proceeding with tasks.")
-
-        # move to shelf
-        if step <= 1:
-            rospy.logerr("driving")
-            talk.pub_now("driving", True)
-            move.query_pose_nav(rotated_shelf_pose)
-            move.query_pose_nav(shelf_pose)
-
-        # perceive shelf
         groups_in_shelf = {
             "Kitchen Utensils and Tools": None,
             "Containers and Drinkware": None,
@@ -219,105 +209,30 @@ def demo(step):
         }
         groups_on_table = {}
 
-        if step <= 2:
-            look_pose = kitchen.get_link_pose("shelf:shelf:shelf_floor_1")
+        if step <= 3:
+            rospy.logerr("driving")
+            talk.pub_now("driving", True)
+            move.query_pose_nav(table_pose)
+            look_pose = kitchen.get_link_pose("popcorn_table:p_table:table_center")
+            look_pose.pose.position.x+=0.5
             LookAtAction(targets=[look_pose]).resolve().perform()  # 0.18
-            shelf_obj = DetectAction(technique='all').resolve().perform()
-            first, *remaining = shelf_obj
+
+            table_obj = DetectAction(technique='all').resolve().perform()
+            first, *remaining = table_obj
             for dictionary in remaining:
                 for value in dictionary.values():
-
                     try:
                         group = find_group(value.type)
-                        link = get_closet_link_to_pose(value.pose)
-                        groups_in_shelf[group] = [value.pose, link, value]
+                        groups_on_table[value.name] = [value, group]
 
                     except AttributeError:
                         pass
-            print(groups_in_shelf)
-        # if step <= 3:
-        #     rospy.logerr("driving")
-        #     talk.pub_now("driving", True)
-        #     move.query_pose_nav(rotated_shelf_pose)
-        #     move.query_pose_nav(table_pose)
-        #     look_pose = kitchen.get_link_pose("popcorn_table:p_table:table_center")
-        #     look_pose.pose.position.x+=0.5
-        #     world.current_bullet_world.add_vis_axis(look_pose)
-        #     LookAtAction(targets=[look_pose]).resolve().perform()  # 0.18
-        #
-        #     table_obj = DetectAction(technique='all').resolve().perform()
-        #     first, *remaining = table_obj
-        #     for dictionary in remaining:
-        #         for value in dictionary.values():
-        #             try:
-        #                 group = find_group(value.type)
-        #                 groups_on_table[value.name] = [value, group]
-        #
-        #             except AttributeError:
-        #                 pass
-        #
-        # if step <= 4:
-        #     # print(groups_on_table.keys())
-        #     for obj in groups_on_table.values():
-        #         PickUpAction(obj[0], ["left"], ["front"]).resolve().perform()
-        #
-        #         rospy.logerr("driving")
-        #         talk.pub_now("driving", True)
-        #         move.query_pose_nav(rotated_shelf_pose)
-        #         move.query_pose_nav(shelf_pose)
-        #
-        #         if groups_in_shelf[obj[1]] is not None:
-        #             try:
-        #                 link = groups_in_shelf[obj[1]][1]
-        #                 group_pose = groups_in_shelf[obj[1]][0]
-        #             except TypeError:
-        #                 pass  # for now, later new group
-        #             place_poses = find_placeable_pose(link, kitchen_desig.resolve(), robot_desig.resolve(), "left",
-        #                                               world, 0.2, object_desig=obj[0])
-        #             if place_poses:
-        #                 nearest_pose_to_group = get_closest_pose(group_pose, place_poses)
-        #                 world.current_bullet_world.add_vis_axis(nearest_pose_to_group)
-        #                 PlaceAction(obj[0], ["left"], ["front"], [nearest_pose_to_group]).resolve().perform()
 
-        # if groups_in_shelf[group] is not None:
-        #     posey = find_placeable_pose(link, kitchen_desig.resolve(), robot_desig.resolve(), "left",
-        #                                 world, 0, object_desig=value)
-        #     world.current_bullet_world.add_vis_axis(posey)
-        #     print("done im iter")
-        print("done")
-        # res = sort_new(shelf_obj, robot)
-        #
-        #
-        #
-        # # object sorted by distance to robot
-        # sorted_objects = res[0]
-        # print("sorted obj: " + str(sorted_objects))
-        #
-        # # dict with object poses
-        # object_list_poses = res[1]
-        # print("pose list: " + str(object_list_poses))
-        #
-        # # update perceived info to shelves
-        # order_items_to_shelves(object_list_poses, shelves)
-
-        # TODO: next steps
-
-        # navigate to table and perceive
-
-        # while objects on table:
-
-        # pick up nearest object
-
-        # navigate to shelf
-
-        # place object depending on shelf areas
-
-        # end?
+        if step <= 4:
+            # print(groups_on_table.keys())
+            for obj in groups_on_table.values():
+                pickupnew(obj[0], "front", "left")
+                # PickUpAction(obj[0], ["left"], ["front"]).resolve().perform()
 
 
-# print(kitchen.get_link_pose("shelf:shelf:shelf_floor_2"))
-# get_closet_link_to_pose()
-demo(2)
-# rospy.sleep(1)
-# print(robot.get_pose())
-# print(kitchen.links)
+demo(3)
