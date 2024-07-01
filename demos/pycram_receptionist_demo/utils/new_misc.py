@@ -1,16 +1,27 @@
+import time
 import rospy
+from geometry_msgs.msg import PointStamped
+
 from pycram.designators.object_designator import Pose, PoseStamped, HumanDescription
 from pycram.designators.motion_designator import TalkingMotion
+from pycram.enums import ImageEnum
 from pycram.helper import axis_angle_to_quaternion
 from std_msgs.msg import String, UInt16
 
+from pycram.utilities.robocup_utils import TextToSpeechPublisher, ImageSwitchPublisher, SoundRequestPublisher
+
 # Publisher for NLP
 pub_nlp = rospy.Publisher('/startListener', String, queue_size=10)
-pub_pose = rospy.Publisher('/human_pose', PoseStamped, queue_size=10)
+pub_pose = rospy.Publisher('/human_pose', PointStamped, queue_size=10)
 # /hsrb/serial_node
 pub_color = rospy.Publisher('/hsrb/command_status_led', UInt16, queue_size=5, latch=True)
 response = ""
 callback = False
+timeout = 5
+
+text_to_speech_publisher = TextToSpeechPublisher()
+image_switch_publisher = ImageSwitchPublisher()
+sound_publisher = SoundRequestPublisher()
 
 # TODO: set to False when NLP has implemented that feature
 
@@ -33,6 +44,7 @@ def data_cb(data):
     global response
     global callback
 
+    image_switch_publisher.pub_now(ImageEnum.HI.value)
     response = data.data.split(",")
     response.append("None")
     callback = True
@@ -48,16 +60,26 @@ def name_confirm(name):
 
     global callback
     global response
+    callback = False
     rospy.Subscriber("nlp_out", String, data_cb)
 
     TalkingMotion("is your name " + str(name) + "?").resolve().perform()
     rospy.sleep(0.8)
     pub_nlp.publish("start now")
-    rospy.sleep(2)
 
+    #sound/picture
+    rospy.sleep(3.5)
+    image_switch_publisher.pub_now(ImageEnum.TALK.value)
+    sound_publisher.publish_sound_request()
+
+    start_time = time.time()
     while not callback:
-        rospy.sleep(1)
+        # signal repeat to human
+        if time.time() - start_time == timeout:
+            print("guest needs to repeat")
+            image_switch_publisher.pub_now(ImageEnum.JREPEAT.value)
 
+    image_switch_publisher.pub_now(ImageEnum.HI.value)
     callback = False
 
     if response[1].strip() == "True":
@@ -68,8 +90,19 @@ def name_confirm(name):
         rospy.sleep(0.6)
         pub_nlp.publish("start")
 
+        # sound/picture
+        rospy.sleep(3.5)
+        image_switch_publisher.pub_now(ImageEnum.TALK.value)
+        sound_publisher.publish_sound_request()
+
+        start_time = time.time()
         while not callback:
-            rospy.sleep(1)
+            # signal repeat to human
+            if time.time() - start_time == timeout:
+                print("guest needs to repeat")
+                image_switch_publisher.pub_now(ImageEnum.JREPEAT.value)
+
+        image_switch_publisher.pub_now(ImageEnum.HI.value)
         callback = False
 
         if response[0] == "<GUEST>" and response[1].strip() != "None":
@@ -87,6 +120,7 @@ def name_repeat():
 
     global callback
     global response
+    callback = False
     got_name = False
     rospy.Subscriber("nlp_out", String, data_cb)
 
@@ -95,8 +129,19 @@ def name_repeat():
         rospy.sleep(0.7)
         pub_nlp.publish("start")
 
+        # sound/picture
+        rospy.sleep(3.5)
+        image_switch_publisher.pub_now(ImageEnum.TALK.value)
+        sound_publisher.publish_sound_request()
+
+        start_time = time.time()
         while not callback:
-            rospy.sleep(1)
+            # signal repeat to human
+            if time.time() - start_time == timeout:
+                print("guest needs to repeat")
+                image_switch_publisher.pub_now(ImageEnum.JREPEAT.value)
+
+        image_switch_publisher.pub_now(ImageEnum.HI.value)
         callback = False
 
         if response[0] == "<GUEST>" and response[1].strip() != "None":
@@ -113,15 +158,26 @@ def drink_confirm(drink):
 
     global callback
     global response
+    callback = False
     rospy.Subscriber("nlp_out", String, data_cb)
 
     TalkingMotion("is your favorite drink " + str(drink) + "?").resolve().perform()
     rospy.sleep(0.6)
     pub_nlp.publish("start")
 
-    while not callback:
-        rospy.sleep(1)
+    # sound/picture
+    rospy.sleep(3.5)
+    image_switch_publisher.pub_now(ImageEnum.TALK.value)
+    sound_publisher.publish_sound_request()
 
+    start_time = time.time()
+    while not callback:
+        # signal repeat to human
+        if time.time() - start_time == timeout:
+            print("guest needs to repeat")
+            image_switch_publisher.pub_now(ImageEnum.JREPEAT.value)
+
+    image_switch_publisher.pub_now(ImageEnum.HI.value)
     callback = False
 
     if response[1].strip() == "True":
@@ -132,8 +188,19 @@ def drink_confirm(drink):
         rospy.sleep(0.6)
         pub_nlp.publish("start")
 
+        # sound/picture
+        rospy.sleep(3.5)
+        image_switch_publisher.pub_now(ImageEnum.TALK.value)
+        sound_publisher.publish_sound_request()
+
+        start_time = time.time()
         while not callback:
-            rospy.sleep(1)
+            # signal repeat to human
+            if time.time() - start_time == timeout:
+                print("guest needs to repeat")
+                image_switch_publisher.pub_now(ImageEnum.JREPEAT.value)
+
+        image_switch_publisher.pub_now(ImageEnum.HI.value)
         callback = False
 
         if response[0] == "<GUEST>" and response[2].strip() != "None":
@@ -179,6 +246,7 @@ def describe(human: HumanDescription):
     :param human: human to be described
     """
     if human.attributes:
+
         if human.pose:
             pub_pose.publish(human.pose)
 

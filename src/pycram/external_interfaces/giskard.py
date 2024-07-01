@@ -566,7 +566,7 @@ def move_arm_to_pose(pose: PointStamped):
 
 
 def grasp_doorhandle(handle_name: str):
-    print("open door with handle")
+    print("grasp handle")
 
     giskard_wrapper.set_hsrb_door_handle_grasp(handle_name=handle_name)
     giskard_wrapper.allow_all_collisions()
