@@ -362,12 +362,15 @@ class HSRBDetectingReal(ProcessModule):
             human_pose = queryHuman()
             return human_pose
         elif desig.state == "face":
-            # TODO: PerceptionObjectNotFound
+
             res = faces_queryHuman()
             id_dict = {}
+            keys = []
             if res.res:
                 for ele in res.res:
-                    id_dict[ele.type] = ele.pose[0]
+                    id_dict[int(ele.type)] = ele.pose[0]
+                    keys.append(int(ele.type))
+                id_dict["keys"] = keys
                 return id_dict
             else:
                 return []
@@ -379,8 +382,7 @@ class HSRBDetectingReal(ProcessModule):
         elif desig.technique == 'location':
             seat = desig.state
             seat_human_pose = seat_queryHuman(seat)
-            # print(seat_human_pose[0].attribute[0].split(','))
-            # print(seat_human_pose[0].attribute[1])
+
             if seat == "long_table" or seat == "popcorn_table":
                 loc_list = []
                 for loc in seat_human_pose[0].attribute:
