@@ -1,0 +1,13 @@
+<launch>
+
+    <include file="/home/vee/UHH_UB_AgeAwareHRI/src/cognitive_archi/pycram/launch/ik_and_description.launch"/>
+    
+    <node name="rviz" pkg="rviz" type="rviz" args="-d /home/vee/UHH_UB_AgeAwareHRI/src/cognitive_archi/pycram/launch/pycram_rviz_config.rviz" required="true"/>
+
+       <node name="interrupt_demo_node"
+        pkg="pycram"
+        type="interrupt_demo.py"
+        output="screen">
+    <param name="workdir" value="/home/vee/UHH_UB_AgeAwareHRI" />
+  </node>
+</launch>
