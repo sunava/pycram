@@ -532,6 +532,11 @@ class PlaceAction(ActionDesignatorDescription):
             if execute:
                 MoveTCPMotion(push_baseTm, self.arm).resolve().perform()
             if self.object_designator.type == "Metalplate":
+                loweringTm = push_baseTm
+                loweringTm.pose.position.z -= 0.08
+                BulletWorld.current_bullet_world.add_vis_axis(loweringTm)
+                if execute:
+                    MoveTCPMotion(loweringTm, self.arm).resolve().perform()
                 # rTb = Pose([0,-0.1,0], [0,0,0,1],"base_link")
                 rospy.logwarn("sidepush monitoring")
                 TalkingMotion("sidepush.").resolve().perform()
@@ -620,7 +625,7 @@ class PlaceAction(ActionDesignatorDescription):
 
 class PlaceGivenObjAction(ActionDesignatorDescription):
     """
-     A class representing a designator for a place action of human given objects, allowing a robot to place a
+       A class representing a designator for a place action of human given objects, allowing a robot to place a
      human given object, that could not be picked up or were not found in the FOV.
 
     This class encapsulates the details of the place action of human given objects, including the type of the object to
@@ -663,9 +668,10 @@ class PlaceGivenObjAction(ActionDesignatorDescription):
             robot = BulletWorld.robot
             # oTm = Object Pose in Frame map
             oTm = self.target_location
+            execute = True
 
             # TODO add for other robots
-            if self.object_type == "Metalplate" and robot.name == "hsrb":
+            if self.object_type == "Metalplate" and self.on_table and robot.name == "hsrb":
 
                 grasp_rotation = robot_description.grasps.get_orientation_for_grasp("front")
                 oTb = lt.transform_pose(oTm, robot.get_link_tf_frame("base_link"))
@@ -674,22 +680,22 @@ class PlaceGivenObjAction(ActionDesignatorDescription):
 
                 rospy.logwarn("Placing now")
                 MoveTCPMotion(oTmG, self.arm).resolve().perform()
-                if self.on_table:
-                    MoveTorsoAction([0.62]).resolve().perform()
-                    kwargs = dict()
 
-                    # taking in the predefined arm configuration for placing
-                    if self.arm in ["left", "both"]:
-                        kwargs["left_arm_config"] = "place_plate"
-                        MoveArmJointsMotion(**kwargs).resolve().perform()
+                MoveTorsoAction([0.62]).resolve().perform()
+                kwargs = dict()
 
-                    # turning the gripper downwards to better drop the plate
-                    MoveJointsMotion(["wrist_flex_joint"], [-0.8]).resolve().perform()
+                # taking in the predefined arm configuration for placing
+                if self.arm in ["left", "both"]:
+                    kwargs["left_arm_config"] = "place_plate"
+                    MoveArmJointsMotion(**kwargs).resolve().perform()
 
-                    # correct a possible sloped orientation
-                    NavigateAction(
-                        [Pose([robot.get_pose().pose.position.x, robot.get_pose().pose.position.y,
-                               0])]).resolve().perform()
+                # turning the gripper downwards to better drop the plate
+                MoveJointsMotion(["wrist_flex_joint"], [-0.8]).resolve().perform()
+
+                # correct a possible sloped orientation
+                NavigateAction(
+                    [Pose([robot.get_pose().pose.position.x, robot.get_pose().pose.position.y,
+                             0])]).resolve().perform()
 
                 MoveGripperMotion(motion="open", gripper="left").resolve().perform()
 
@@ -699,18 +705,24 @@ class PlaceGivenObjAction(ActionDesignatorDescription):
                     [Pose([robot.get_pose().pose.position.x - 0.1, robot.get_pose().pose.position.y,
                            0])]).resolve().perform()
 
-            # placing everything else except the Metalplate
+            # placing everything else or the Metalplate in the dishwasher
             else:
+                print("In else of placing")
                 if self.grasp == "top":
                     oTm.pose.position.z += 0.05
 
+                # Determine the grasp orientation and transform the pose to the base link frame
                 grasp_rotation = robot_description.grasps.get_orientation_for_grasp(self.grasp)
                 oTb = lt.transform_pose(oTm, robot.get_link_tf_frame("base_link"))
+                # Set pose to the grasp rotation
                 oTb.orientation = grasp_rotation
+                # Transform the pose to the map frame
                 oTmG = lt.transform_pose(oTb, "map")
 
                 rospy.logwarn("Placing now")
-                MoveTCPMotion(oTmG, self.arm).resolve().perform()
+                BulletWorld.current_bullet_world.add_vis_axis(oTmG)
+                if execute:
+                    MoveTCPMotion(oTmG, self.arm).resolve().perform()
 
                 tool_frame = robot_description.get_tool_frame(self.arm)
                 push_base = lt.transform_pose(oTmG, robot.get_link_tf_frame(tool_frame))
@@ -723,8 +735,30 @@ class PlaceGivenObjAction(ActionDesignatorDescription):
                 push_baseTm = lt.transform_pose(push_base, "map")
 
                 rospy.logwarn("Pushing now")
-                MoveTCPMotion(push_baseTm, self.arm).resolve().perform()
+                BulletWorld.current_bullet_world.add_vis_axis(push_baseTm)
+                if execute:
+                    MoveTCPMotion(push_baseTm, self.arm).resolve().perform()
+                if self.object_type == "Metalplate":
+                    loweringTm = push_baseTm
+                    loweringTm.pose.position.z -= 0.08
+                    BulletWorld.current_bullet_world.add_vis_axis(loweringTm)
+                    if execute:
+                        MoveTCPMotion(loweringTm, self.arm).resolve().perform()
+                    # rTb = Pose([0,-0.1,0], [0,0,0,1],"base_link")
+                    rospy.logwarn("sidepush monitoring")
+                    TalkingMotion("sidepush.").resolve().perform()
+                    side_push = Pose(
+                        [push_baseTm.pose.position.x, push_baseTm.pose.position.y + 0.125, loweringTm.pose.position.z],
+                        [push_baseTm.orientation.x, push_baseTm.orientation.y, push_baseTm.orientation.z,
+                         push_baseTm.orientation.w])
+                    try:
+                        plan = MoveTCPMotion(side_push, self.arm) >> Monitor(monitor_func)
+                        plan.perform()
+                    except (SensorMonitoringCondition):
+                        rospy.logwarn("Open Gripper")
+                        MoveGripperMotion(motion="open", gripper=self.arm).resolve().perform()
 
+                # Finalize the placing by opening the gripper and lifting the arm
                 rospy.logwarn("Open Gripper")
                 MoveGripperMotion(motion="open", gripper=self.arm).resolve().perform()
 
@@ -732,8 +766,8 @@ class PlaceGivenObjAction(ActionDesignatorDescription):
                 liftingTm = push_baseTm
                 liftingTm.pose.position.z += 0.08
                 BulletWorld.current_bullet_world.add_vis_axis(liftingTm)
-
-                MoveTCPMotion(liftingTm, self.arm).resolve().perform()
+                if execute:
+                    MoveTCPMotion(liftingTm, self.arm).resolve().perform()
 
     def __init__(self,
                  object_types: List[str], arms: List[str], target_locations: List[Pose], grasps: List[str],
@@ -1851,17 +1885,8 @@ class HeadFollowAction(ActionDesignatorDescription):
         def perform(self) -> None:
             HeadFollowMotion(self.state).resolve().perform()
 
-        # def insert(self, session: sqlalchemy.orm.session.Session, **kwargs) -> ORMAction:
-        #    print("in insert parkArms")
-        #    action = super().insert(session)
-        #    session.add(action)
-        #    session.commit()
-        #    return action
-
     def __init__(self, state: str, resolver=None):
         """
-        Moves the arms in the pre-defined parking position. Arms are taken from pycram.enum.Arms
-
         :param state: defines if the robot should start/stop looking at human
         :param resolver: An optional resolver that returns a performable designator from the designator description
         """
@@ -1870,8 +1895,43 @@ class HeadFollowAction(ActionDesignatorDescription):
 
     def ground(self) -> Action:
         """
-        Default resolver that returns a performable designator with the first element of the list of possible arms
-
+        Default resolver
         :return: A performable designator
         """
         return self.Action(self.state)
+
+
+class DoorOpenAction(ActionDesignatorDescription):
+    """
+    grasp and open door
+    """
+
+    @dataclasses.dataclass
+    class Action(ActionDesignatorDescription.Action):
+        handle: str
+        """
+        defines the handle of the door to open
+        """
+
+        @with_tree
+        def perform(self) -> None:
+            MoveGripperMotion(motion="open", gripper="left").resolve().perform()
+            GraspHandleMotion(self.handle).resolve().perform()
+            MoveGripperMotion(motion="close", gripper="left").resolve().perform()
+            DoorOpenMotion(self.handle).resolve().perform()
+            MoveGripperMotion(motion="open", gripper="left").resolve().perform()
+
+    def __init__(self, handle: str, resolver=None):
+        """
+        :param handle: handle in tf to grasp
+        :param resolver: An optional resolver that returns a performable designator from the designator description
+        """
+        super().__init__(resolver)
+        self.handle = handle
+
+    def ground(self) -> Action:
+        """
+        Default resolver
+        :return: A performable designator
+        """
+        return self.Action(self.handle)

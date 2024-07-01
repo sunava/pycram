@@ -12,7 +12,8 @@ from tmc_msgs.msg import Voice
 import pycram.bullet_world_reasoning as btr
 from ..designators.motion_designator import *
 from ..enums import JointType, ObjectType, State
-from ..external_interfaces import giskard_new as giskard
+
+from ..external_interfaces import giskard # change to giskard_new as giskard
 from ..external_interfaces.ik import request_ik
 from ..external_interfaces.robokudo import *
 from ..helper import _apply_ik
@@ -361,7 +362,17 @@ class HSRBDetectingReal(ProcessModule):
         if desig.technique == 'human' and (desig.state == 'start' or desig.state == None):
             human_pose = queryHuman()
             return human_pose
-
+        elif desig.state == "face":
+            # TODO: PerceptionObjectNotFound
+            res = faces_queryHuman()
+            id_dict = {}
+            if res.res:
+                for ele in res.res:
+                    id_dict[ele.type] = ele.pose[0]
+                return id_dict
+            else:
+                return []
+            return res
         elif desig.state == "stop":
             stop_queryHuman()
             return "stopped"
@@ -393,6 +404,7 @@ class HSRBDetectingReal(ProcessModule):
             human_pose_attr = attributes_queryHuman()
             counter = 0
             # wait for human to come
+            # TODO: try catch block
             while not human_pose_attr.res and counter < 6:
                 human_pose_attr = attributes_queryHuman()
                 counter += 1
@@ -494,16 +506,28 @@ class HSRBDetectingReal(ProcessModule):
             query_result = queryEmpty(ObjectDesignatorDescription(types=[desig.object_type]))
             perceived_objects = []
             for i in range(0, len(query_result.res)):
+                print("#######################################################")
+                print(query_result.res[i])
                 try:
                     obj_pose = Pose.from_pose_stamped(query_result.res[i].pose[0])
                 except IndexError:
-                    continue
+                    obj_pose = Pose.from_pose_stamped(query_result.res[i].pose)
+                    pass
                 obj_type = query_result.res[i].type
-                obj_size = query_result.res[i].shape_size[0].dimensions
-                obj_color = query_result.res[i].color[0]
+                obj_size = None
+                try:
+                     obj_size = query_result.res[i].shape_size[0].dimensions
+                except IndexError:
+                    pass
+                obj_color = None
+                try:
+                    obj_color = query_result.res[i].color[0]
+                except IndexError:
+                    pass
+
                 if desig.object_type:
                     if not desig.object_type.lower() in obj_type.lower():
-                        continue
+                        pass
                 color_switch = {
                     "red": [1, 0, 0, 1],
                     "yellow": [1, 1, 0, 1],
@@ -521,9 +545,11 @@ class HSRBDetectingReal(ProcessModule):
                 if color is None:
                     color = [0, 0, 0, 1]
 
+
                 hsize = [obj_size.x / 2, obj_size.y / 2, obj_size.z / 2]
                 osize = [obj_size.x, obj_size.y, obj_size.z]
                 id = BulletWorld.current_bullet_world.add_rigid_box(obj_pose, hsize, color)
+
                 box_object = Object(obj_type + "_" + str(rospy.get_time()), obj_type, pose=obj_pose, color=color, id=id,
                                     customGeom={"size": osize})
                 box_object.set_pose(obj_pose)
@@ -681,6 +707,24 @@ class HSRBPointingReal(ProcessModule):
         giskard.move_arm_to_pose(pointing_pose)
 
 
+class HSRBOpenDoorReal(ProcessModule):
+    """
+    HSR will perform open action on grasped handel for a door
+    """
+
+    def _execute(self, designator: DoorOpenMotion.Motion) -> Any:
+        giskard.open_doorhandle(designator.handle)
+
+
+class HSRBGraspHandleReal(ProcessModule):
+    """
+    HSR will grasp given (door-)handle
+    """
+
+    def _execute(self, designator: GraspHandleMotion.Motion) -> Any:
+        giskard.grasp_doorhandle(designator.handle)
+
+
 class HSRBGraspDishwasherHandleReal(ProcessModule):
     """Grasps the dishwasher handle"""
 
@@ -736,6 +780,8 @@ class HSRBManager(ProcessModuleManager):
         self._pour_lock = Lock()
         self._head_follow_lock = Lock()
         self._pointing_lock = Lock()
+        self._open_door_lock = Lock()
+        self._grasp_handle_lock = Lock()
 
     def navigate(self):
         if ProcessModuleManager.execution_type == "simulated":
@@ -878,3 +924,15 @@ class HSRBManager(ProcessModuleManager):
             return HSRBPointingReal(self._pointing_lock)
         elif ProcessModuleManager.execution_type == "semi_real":
             return HSRBPointingReal(self._pointing_lock)
+
+    def door_opening(self):
+        if ProcessModuleManager.execution_type == "real":
+            return HSRBOpenDoorReal(self._open_door_lock)
+        elif ProcessModuleManager.execution_type == "semi_real":
+            return HSRBOpenDoorReal(self._open_door_lock)
+
+    def grasp_door_handle(self):
+        if ProcessModuleManager.execution_type == "real":
+            return HSRBGraspHandleReal(self._grasp_handle_lock)
+        elif ProcessModuleManager.execution_type == "semi_real":
+            return HSRBGraspHandleReal(self._grasp_handle_lock)

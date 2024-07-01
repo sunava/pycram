@@ -996,10 +996,10 @@ class HeadFollowMotion(MotionDesignatorDescription):
 
     def ground(self) -> Motion:
         """
-        Default resolver for pouring motion designator, returns a resolved motion designator for the input parameters.
+        Default resolver for head following motion designator, returns a resolved motion designator for the input parameters.
         :return: A resolved motion designator
         """
-        return self.Motion(self.cmd,state=self.state)
+        return self.Motion(self.cmd, state=self.state)
 
 
 class PointingMotion(MotionDesignatorDescription):
@@ -1047,3 +1047,72 @@ class PointingMotion(MotionDesignatorDescription):
         :return: A resolved motion designator
         """
         return self.Motion(self.cmd, self.x_coordinate, self.y_coordinate, self.z_coordinate)
+
+
+class DoorOpenMotion(MotionDesignatorDescription):
+    """
+    Designator for opening a door
+    """
+
+    @dataclasses.dataclass
+    class Motion(MotionDesignatorDescription.Motion):
+        handle: str
+        """
+        name of the handle joint so that giskard knows how to open the door
+        """
+
+        def perform(self):
+            pm_manager = ProcessModuleManager.get_manager()
+            return pm_manager.door_opening().execute(self)
+
+    def __init__(self, handle: str, resolver: Optional[Callable] = None):
+        """
+        Lets the robot pour based on the given parameter.
+        :param handle: defines handle of the door to open it
+        :param resolver: An alternative resolver
+        """
+        super().__init__(resolver)
+        self.cmd: str = 'openDoor'
+        self.handle: str = handle
+
+    def ground(self) -> Motion:
+        """
+        Default resolver for opening motion designator, returns a resolved motion designator for the input parameters.
+        :return: A resolved motion designator
+        """
+        return self.Motion(self.cmd, handle=self.handle)
+
+
+class GraspHandleMotion(MotionDesignatorDescription):
+    """
+    Designator for grasping a (door-)handle
+    """
+
+    @dataclasses.dataclass
+    class Motion(MotionDesignatorDescription.Motion):
+        handle: str
+        """
+        name of the handle joint so that giskard knows where to grasp the handle
+        """
+
+        def perform(self):
+            pm_manager = ProcessModuleManager.get_manager()
+            return pm_manager.grasp_door_handle().execute(self)
+
+    def __init__(self, handle: str, resolver: Optional[Callable] = None):
+        """
+        Lets the robot pour based on the given parameter.
+        :param handle: defines handle that should be grasped
+        :param resolver: An alternative resolver
+        """
+        super().__init__(resolver)
+        self.cmd: str = 'graspDoor'
+        self.handle: str = handle
+
+    def ground(self) -> Motion:
+        """
+        Default resolver for grasping motion designator, returns a resolved motion designator for the input parameters.
+        :return: A resolved motion designator
+        """
+        return self.Motion(self.cmd, handle=self.handle)
+
