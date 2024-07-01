@@ -202,33 +202,36 @@ def update_current_command():
 
                 unhandled_objects.append(
                     add_obj.type.lower())
-                if add_obj.type.lower()  in unhandled_objects:
+                if add_obj.type.lower() in unhandled_objects:
                     print("ist drin")
             else:
                 ignored_commands += 1
 
         elif minor_cmd == "change_location":
             minor_interrupt_count += 1
-
             add_cmd = current_cmd.get("minor", {}).get("add_object")
+
             if add_cmd:
                 add_obj = add_cmd[0]
                 new_location = add_obj.location
+
             else:
                 new_location = None
 
-            if new_location:
-                try:
-                    if new_location != destination_location:
-                        age = age ^ 1
-                        if destination_location:
-                            destination_location = 'table' if age == 1 else 'countertop'
-                    raise ChangeLocationException
-                except ChangeLocationException:
+            if new_location and destination_location:
+                if new_location != destination_location:
+                    age = age ^ 1
+                    if destination_location:
+                        destination_location = 'table' if age == 1 else 'countertop'
+                else:
                     ignored_commands += 1
+
+            else:
+                ignored_commands += 1
         elif major_cmd == "stop":
             major_interrupt_count += 1
             return
+        else:  ignored_commands += 1
 
 
 def monitor_func():
@@ -244,7 +247,7 @@ def monitor_func():
         if new_attributes != old_attributes:
             return True
         if old_destination_location != destination_location:
-            return True
+            raise ChangeLocationException
         return False
     elif fluent.major_interrupt.get_value():
         return MajorInterrupt
