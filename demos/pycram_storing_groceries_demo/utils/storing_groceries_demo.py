@@ -21,7 +21,7 @@ with real_robot:
     shelf_obj = DetectAction(technique='all').resolve().perform()
     sorted_obj_list = sort_obj(shelf_obj, robot)
 
-    # navigate to test area
+    # navigate to pp.py area
     NavigateAction([pose_test_area]).resolve().perform()
 
     # optional goal: open cabinet door

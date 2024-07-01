@@ -91,7 +91,7 @@ with real_robot:
     #MoveJointsMotion(["arm_lift_joint"], [0.1]).resolve().perform()
 
     #print(robot.get_complete_joint_state())
-    TalkingMotion("starting test").resolve().perform()
+    TalkingMotion("starting pp.py").resolve().perform()
     pre_place()
 
     #placing(100)
@@ -101,7 +101,7 @@ with real_robot:
     if placing_sequence:
 
         pre_place()
-        TalkingMotion("starting test").resolve().perform()
+        TalkingMotion("starting pp.py").resolve().perform()
 
         # rospy.sleep(1.5)
         # pose2 = Pose([2.23, 1.96, 0.0], [0, 0, 0.68, 0.731])

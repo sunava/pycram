@@ -345,7 +345,7 @@ class PickUpAction(ActionDesignatorDescription):
             # Move to the pre-grasp position and visualize the action
             rospy.logwarn("Picking up now")
             BulletWorld.current_bullet_world.add_vis_axis(oTmG)
-            # Execute Bool, because sometimes u only want to visualize the poses to test things
+            # Execute Bool, because sometimes u only want to visualize the poses to pp.py things
             if execute:
                 MoveTCPMotion(oTmG, self.arm, allow_gripper_collision=False).resolve().perform()
 
@@ -1646,7 +1646,7 @@ class PouringAction(ActionDesignatorDescription):
             # rospy.logwarn("Pre Pour")
             # BulletWorld.current_bullet_world.add_vis_axis(oTmso)
             #
-            # #Execute Bool, because sometimes u only want to visualize the poses to test things
+            # #Execute Bool, because sometimes u only want to visualize the poses to pp.py things
             # if execute:
             #     MoveTCPMotion(oTmso, self.arm, allow_gripper_collision=False).resolve().perform()
             #

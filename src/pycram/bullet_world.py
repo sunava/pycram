@@ -1622,7 +1622,7 @@ def _is_cached(path: str, name: str, cach_dir: str) -> bool:
     p = pathlib.Path(cach_dir + file_name)
     if p.exists():
         return True
-    # Returns filename without the filetype, e.g. returns "test" for "test.txt"
+    # Returns filename without the filetype, e.g. returns "pp.py" for "pp.py.txt"
     file_stem = pathlib.Path(path).stem
     p = pathlib.Path(cach_dir + file_stem + ".urdf")
     if p.exists():

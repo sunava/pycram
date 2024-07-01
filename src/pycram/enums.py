@@ -91,3 +91,5 @@ class ImageEnum(Enum):
     DRIVINGBACK = 13
     PUSHBUTTONS = 14
     FOLLOWSTOP = 15
+    JREPEAT = 16
+    SOFA = 17

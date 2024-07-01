@@ -337,3 +337,45 @@ def attributes_queryHuman() -> Any:
     client.wait_for_result()
 
     return query_result
+
+def query_waving_human() -> ObjectDesignatorDescription.Object:
+    """
+    Sends a query to RoboKudo to look for an object that fits the description given by the Object designator description.
+    For sending the query to RoboKudo a simple action client will be created and the Object designator description is
+    sent as a goal.
+
+    :param object_desc: The object designator description which describes the object that should be perceived
+    :return: An object designator for the found object, if there was an object that fitted the description.
+    """
+    #init_robokudo_interface()
+    from robokudo_msgs.msg import QueryAction, QueryGoal, QueryResult
+
+    global query_result
+
+    def active_callback():
+        rospy.loginfo("Send query to Robokudo")
+
+    def done_callback(state, result):
+        rospy.loginfo("Finished perceiving")
+        global query_result
+        query_result = result
+
+    def feedback_callback(msg):
+        pass
+
+    object_goal = QueryGoal()
+
+    client = actionlib.SimpleActionClient('robokudo/query', QueryAction)
+    rospy.loginfo("Waiting for action server")
+    client.wait_for_server()
+    client.send_goal(object_goal, active_cb=active_callback, done_cb=done_callback, feedback_cb=feedback_callback)
+    wait = client.wait_for_result()
+    pose_candidate = None
+    # todo check if query is even filled
+    try:
+        for i in range(0, len(query_result.res[0].pose)):
+            pose = Pose.from_pose_stamped(query_result.res[0].pose[i])
+            pose_candidate = pose
+    except IndexError:
+        pass
+    return pose_candidate

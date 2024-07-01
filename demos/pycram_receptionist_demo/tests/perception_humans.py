@@ -41,7 +41,22 @@ def p():
         attributes = True
 
         if attributes:
-            # get attributes
+
+            # to signal the start of demo
+            # TalkingMotion("Hello, i am ready for the pp.py").resolve().perform()
+            ParkArmsAction([Arms.LEFT]).resolve().perform()
+
+            TalkingMotion("Welcome, please step in").resolve().perform()
+            MoveTorsoAction([0.1]).resolve().perform()
+
+            TalkingMotion("detecting human now").resolve().perform()
+            rospy.sleep(2)
+            desig = DetectAction(technique='human', state='start').resolve().perform()
+            HeadFollowAction('start').resolve().perform()
+            pub_nlp.publish("start listening")
+            # desig = DetectAction(technique='attributes').resolve().perform()
+
+
 
 
             #TalkingMotion("Test").resolve().perform()
