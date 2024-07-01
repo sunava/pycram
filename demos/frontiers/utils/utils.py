@@ -67,3 +67,12 @@ def calculate_statistics(minor_interrupt_count, major_interrupt_count, object_st
     save_statistics_to_file(statistics, short_str)
 
     return statistics
+
+def update_object_state(obj_name, state, current_location, globaldict):
+    if obj_name in globaldict["object_states"]:
+        if state == "new_location" and obj_name in globaldict["original_locations"]:
+            if globaldict["original_locations"][obj_name] != current_location:
+                globaldict["object_states"][obj_name] = state
+        elif state == "old_location" and obj_name in globaldict["original_locations"]:
+            if globaldict["original_locations"][obj_name] == current_location:
+                globaldict["object_states"][obj_name] = state

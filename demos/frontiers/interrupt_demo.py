@@ -202,6 +202,8 @@ def update_current_command():
 
                 unhandled_objects.append(
                     add_obj.type.lower())
+                if add_obj.type.lower()  in unhandled_objects:
+                    print("ist drin")
             else:
                 ignored_commands += 1
 
@@ -216,12 +218,14 @@ def update_current_command():
                 new_location = None
 
             if new_location:
-                if new_location != destination_location:
-                    age = age ^ 1
-                    if destination_location:
-                        destination_location = 'table' if age == 1 else 'countertop'
-                raise ChangeLocationException
-
+                try:
+                    if new_location != destination_location:
+                        age = age ^ 1
+                        if destination_location:
+                            destination_location = 'table' if age == 1 else 'countertop'
+                    raise ChangeLocationException
+                except ChangeLocationException:
+                    ignored_commands += 1
         elif major_cmd == "stop":
             major_interrupt_count += 1
             return
@@ -290,7 +294,7 @@ def move_and_detect(obj_type, obj_size, obj_color):
 
 def announce_pick(name: str, type: str, color: str, location: str, size: str):
     global sleep
-    print(f"I will now pick up the {size.lower()} {color.lower()} {type.lower()} at location {location.lower()} ")
+    print(f"I will now pick up the {size.lower()} {color.lower()} {type.lower()}")
     # print(f"I am now interruptable for 5 seconds")
     fluent.activate_subs()
     if sleep:
@@ -409,7 +413,7 @@ with simulated_robot:
         for obj in unhandled_objects:
             if obj in handled_objects:
                 rospy.logerr(f"Object {obj} was already handled, continuing")
-
+                ignored_commands += 1
                 from_robot_publish("already_done", False, False, False, current_location, "")
 
         # Filter out already handled objects
