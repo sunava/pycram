@@ -74,8 +74,6 @@ drawer_open_loc = None
 used_arm = "left"
 grasp = "front"
 
-pub_objects_in_use = rospy.Publisher("/objects_in_use", message_objects_in_use, queue_size=10)
-
 
 def update_object_state(obj_name, state, current_location):
     global object_states
@@ -147,11 +145,6 @@ mylistofobj = [dict_object(type="bowl", color="white", name="bowl", location="co
                dict_object(type="cup", color="white", name="cup", location="", size="Normal"),
                dict_object(type="spoon", color="white", name="spoon", location="kitchen_drawer", size="normal")]
 
-# objpub = rospy.Publisher("/objects_in_use", message_objects_in_use, queue_size=10)
-# msg = message_objects_in_use()
-# msg.objects = mylistofobj
-# objpub.publish(msg)
-
 
 def update_current_command():
     global current_cmd, obj_type, obj_color, obj_name, obj_location, obj_size, unhandled_objects, age, destination_location
@@ -174,16 +167,13 @@ def update_current_command():
                 dict_object(type="milk", color="red", name="milk2", location="countertop", size="big"),
                 dict_object(type="cereal", color="green", name="cereal", location="countertop", size="normal"),
                 dict_object(type="cup", color="white", name="cup", location="", size="Normal"),
-                dict_object(type="spoon", color="white", name="spoon", location="kitchen_drawer", size="normal")]
+                dict_object(type="spoon", color="white", name="spoon", location="kitchen_drawer", size="normal")
+            ]
 
-            # update_object_state("milk1", "should_be_moved", obj_desig.pose.position)
-            # update_object_state("bowl", "should_be_moved", obj_desig.pose.position)
-            # update_object_state("spoon", "should_be_moved", obj_desig.pose.position)
-            # update_object_state("cereal", "should_be_moved", obj_desig.pose.position)
-            # update_object_state("cup", "should_be_moved", obj_desig.pose.position)
             fluent.modify_objects_in_use(objects_to_add, [])
 
         elif minor_cmd == "replace_object":
+            print("got replace")
             minor_interrupt_count += 1
             old_attributes = (obj_type.lower(), obj_color, obj_name.lower(), obj_location, obj_size.lower())
             del_cmd = current_cmd.get("minor", {}).get("del_object")
@@ -191,8 +181,9 @@ def update_current_command():
             if del_cmd:
                 del_obj = del_cmd[0]
                 del_attributes = (
-                    del_obj.type.lower(), del_obj.color, del_obj.name.lower(), del_obj.location, del_obj.size.lower())
-                update_object_state(obj_name, "old_location", obj_desig.pose.position)
+                    del_obj.type.lower(), del_obj.color, del_obj.name.lower(), del_obj.location, del_obj.size.lower()
+                )
+                print(f"Old attributes: {old_attributes}, Delete attributes: {del_attributes}")
             else:
                 del_attributes = None
 
@@ -200,20 +191,21 @@ def update_current_command():
             if add_cmd:
                 add_obj = add_cmd[0]
                 new_attributes = (
-                    add_obj.type.lower(), add_obj.color, add_obj.name.lower(), add_obj.location, add_obj.size.lower())
-                update_object_state(obj_name, "new_location", obj_desig.pose.position)
+                    add_obj.type.lower(), add_obj.color, add_obj.name.lower(), add_obj.location, add_obj.size.lower()
+                )
+                print(f"New attributes: {new_attributes}")
             else:
                 new_attributes = None
 
             if old_attributes == del_attributes and new_attributes:
                 fluent.modify_objects_in_use([add_obj], [del_obj])
-                try:
-                    unhandled_objects.remove(obj_type)
-                    obj_type, obj_color, obj_name, obj_location, obj_size = new_attributes
-                    unhandled_objects.append(obj_type)
-                except ValueError:
-                    ignored_commands += 1
-                    update_object_state(obj_desig.name, "recovering", obj_desig.pose.position)
+                unhandled_objects.remove(obj_type)
+                obj_type, obj_color, obj_name, obj_location, obj_size = new_attributes
+                unhandled_objects.append(obj_type)
+                print(f"Replaced object with new attributes: {new_attributes}")
+            else:
+                rospy.logerr("Attributes do not match for replacement or new attributes are missing. Ignoring")
+                ignored_commands += 1
 
         elif minor_cmd == "bring_me":
             minor_interrupt_count += 1
@@ -221,9 +213,7 @@ def update_current_command():
             if add_cmd:
                 add_obj = add_cmd[0]
                 fluent.modify_objects_in_use([add_obj], [])
-
-                unhandled_objects.append(
-                    add_obj.type.lower())
+                unhandled_objects.append(add_obj.type.lower())
             else:
                 ignored_commands += 1
 
@@ -234,7 +224,6 @@ def update_current_command():
             if add_cmd:
                 add_obj = add_cmd[0]
                 new_location = add_obj.location
-
             else:
                 new_location = None
 
@@ -246,15 +235,14 @@ def update_current_command():
                     changed_locations += 1
                 else:
                     ignored_commands += 1
-
             else:
                 ignored_commands += 1
+
         elif major_cmd == "stop":
             major_interrupt_count += 1
             return
         else:
             ignored_commands += 1
-
 
 def monitor_func():
     global obj_type, obj_color, obj_name, obj_location, obj_size, age, current_cmd, destination_location
@@ -306,11 +294,10 @@ def move_and_detect(obj_type, obj_size, obj_color):
         LookAtAction(targets=[pick_pose]).resolve().perform()
 
     status, object_dict = DetectAction(technique='all').resolve().perform()
-    filtered_dict = {key: obj for key, obj in object_dict.items() if (
-            (obj_type is None or obj_type.strip() == "" or obj.bullet_world_object.type.lower() == obj_type.lower())
-            and (
-                    obj_size is None or obj_size.strip() == "" or obj.bullet_world_object.size.lower() == obj_size.lower())
-            and (obj_color is None or obj_color == [] or obj.bullet_world_object.color == obj_color))}
+    filtered_dict = {key: obj for key, obj in object_dict.items() if ((
+                                                                                  obj_type is None or obj_type.strip() == "" or obj.bullet_world_object.type.lower() == obj_type.lower()) and (
+                                                                              obj_size is None or obj_size.strip() == "" or obj.bullet_world_object.size.lower() == obj_size.lower()) and (
+                                                                                  obj_color is None or obj_color == [] or obj.bullet_world_object.color == obj_color))}
 
     if not filtered_dict:
         rospy.logwarn("No objects found matching the criteria.")
@@ -326,8 +313,7 @@ def announce_pick(name: str, type: str, color: str, location: str, size: str):
     # print(f"I am now interruptable for 5 seconds")
     fluent.activate_subs()
     if sleep:
-        time.sleep(5)
-    fluent.deactivate_subs()  # print(f"I am not interruptable any more")
+        time.sleep(5)  # fluent.deactivate_subs()  # print(f"I am not interruptable any more")
 
 
 def announce_bring(name: str, type: str, color: str, location: str, size: str, destination: str):
@@ -337,8 +323,7 @@ def announce_bring(name: str, type: str, color: str, location: str, size: str, d
     fluent.activate_subs()
     global sleep
     if sleep:
-        time.sleep(10)
-    fluent.deactivate_subs()  # print(f"I am not interruptable any more")
+        time.sleep(13)  # fluent.deactivate_subs()  # print(f"I am not interruptable any more")
 
 
 def announce_recovery(old_desig):
@@ -414,13 +399,10 @@ def statsprint(results):
 
 
 with (simulated_robot):
-    logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
-
     ###### Prepare robot ######
     ParkArmsAction.Action(Arms.BOTH).perform()
-
     MoveTorsoAction([0.25]).resolve().perform()
-
+    fluent.activate_subs()
     current_location = "countertop"
     from_robot_publish("set_parameters", True, False, False, current_location, "")
     handled_objects = list()
@@ -435,12 +417,12 @@ with (simulated_robot):
                                            ignored_commands, short_str, changed_locations)
             # statsprint(results)
             rospy.logwarn("Waiting for next human command")
-            fluent.activate_subs()
+            # fluent.activate_subs()
             fluent.minor_interrupt.pulsed().wait_for()
-            fluent.deactivate_subs()
+            # fluent.deactivate_subs()
             update_current_command()
-            rospy.logwarn(f"Received command: {current_cmd.get('minor', {}).get('command')}")
-            # from_robot_publish("set_parameters", True, False, False, current_location, "")
+            rospy.logwarn(
+                f"Received command: {current_cmd.get('minor', {}).get('command')}")  # from_robot_publish("set_parameters", True, False, False, current_location, "")
 
         for obj in unhandled_objects:
             if obj in handled_objects:
@@ -476,7 +458,7 @@ with (simulated_robot):
                 obj_size = obj.size
                 grasp = "top" if obj_type == "spoon" else "front"
 
-                fluent.minor_interrupt.set_value(False)
+                # fluent.minor_interrupt.set_value(False)
                 age = fluent.age
 
                 ###### Announce object and wait ######
@@ -537,9 +519,8 @@ with (simulated_robot):
                     lambda: NavigateAction([get_nav_pose(obj_type, destination_location)]).resolve().perform())
 
                 ###### Execute plan ######
-                RetryMonitor(plan, max_tries=5,
-                             recovery={ChangeLocationException: recover_location,
-                                       PlanFailure: recover_normal}).perform()
+                RetryMonitor(plan, max_tries=5, recovery={ChangeLocationException: recover_location,
+                                                          PlanFailure: recover_normal}).perform()
 
                 ###### Hand the object according to Scenario 5 ######
                 from_robot_publish("transporting_deliver", True, True, False, current_location, "")
