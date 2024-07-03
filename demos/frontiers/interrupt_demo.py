@@ -26,7 +26,7 @@ except ModuleNotFoundError as e:
     rospy.logwarn("Failed to import speech_processing messages, frontiers can not be used")
 now = datetime.now()
 short_str = now.strftime("%Y-%m-%d_%H:%M:%S")
-world = BulletWorld()
+world = BulletWorld("DIRECT")
 viz = VizMarkerPublisher()
 robot = Object("pr2", "robot", "pr2.urdf", pose=Pose([1, 2, 0]))
 apartment = Object("apartment", "environment", "apartment-small.urdf")
