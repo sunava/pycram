@@ -116,15 +116,17 @@ def save_statistics_to_file(statistics, short_str):
         combined_statistics = combine_statistics_from_directory(directory)
         write_json_file(combined_statistics, output_file)
         print(f"Combined statistics have been written to {output_file}")
+        print(f"Cleard robots log tmp folder")
+        # Clear the directory before saving new statistics
+        clear_directory(directory)
         once = True
 
 
-    # Clear the directory before saving new statistics
-    clear_directory(directory)
-    print(f"Cleard robots log tmp folder")
+
+
     with open(filename, 'w') as file:
         json.dump(statistics, file, indent=4)
-    rospy.loginfo(f"Statistics saved to {filename}")
+    #rospy.loginfo(f"Statistics saved to {filename}")
 
 
 def clear_directory(directory):
@@ -161,7 +163,7 @@ def calculate_statistics(minor_interrupt_count, major_interrupt_count, object_st
         "ignored_commands_rate": ignored_commands_rate,
         "objects_not_correct": objects_not_correct
     }
-    rospy.loginfo(f"Statistics: {statistics}")
+    #rospy.loginfo(f"Statistics: {statistics}")
     save_statistics_to_file(statistics, short_str)
 
     return statistics

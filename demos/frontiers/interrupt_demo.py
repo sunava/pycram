@@ -2,6 +2,8 @@
 import logging
 from datetime import datetime
 
+import rospy
+
 from pycram.bullet_world import BulletWorld, Object
 from pycram.designators.action_designator import *
 from pycram.designators.location_designator import *
@@ -41,7 +43,7 @@ human = Object("humanf", "human", "female_sitting.stl", pose=Pose([4.9, 5.0, 0],
 human = Object("humans", "human", "female_standing.stl", pose=Pose([3.0, 5.0, 0], [0, 0, 0, 1]))
 object_states = {"milk1": "old_location", "milk2": "old_location", "bowl": "old_location", "spoon": "old_location",
                  "cereal": "old_location", "cup": "old_location"}
-
+objecterinos_typos =["milk", "bowl", "spoon", "cereal", "cup"]
 # Assuming original_locations and current_locations dictionaries are defined and updated accordingly
 original_locations = {"milk1": [2.5, 2, 1.02], "milk2": [2.5, 1.7, 1.02], "bowl": [2.5, 2.2, 1.02],
                       "spoon": [2.4, 2.2, 0.85], "cereal": [2.5, 2.4, 1.05], "cup": [0.5, 1.6, 1.38]}
@@ -253,7 +255,6 @@ def monitor_func():
         return MajorInterrupt
     return False
 
-
 @with_simulated_robot
 def move_and_detect(obj_type, obj_size, obj_color):
     global original_pose, current_location, drawer_open_loc, handle_desig
@@ -289,6 +290,9 @@ def move_and_detect(obj_type, obj_size, obj_color):
             and (
                     obj_size is None or obj_size.strip() == "" or obj.bullet_world_object.size.lower() == obj_size.lower())
             and (obj_color is None or obj_color == [] or obj.bullet_world_object.color == obj_color))}
+
+    if not filtered_dict:
+        rospy.logwarn("No objects found matching the criteria.")
 
     object_desig = next(iter(filtered_dict.values()))
     original_pose = object_desig.pose
@@ -356,16 +360,17 @@ def place_and_pick_new_obj(old_desig, location, obj_type, obj_size, obj_color):
 
     ParkArmsAction([Arms.BOTH]).resolve().perform()
     obj_desig = move_and_detect(obj_type, obj_size, obj_color)
-    if drawer_open_loc is not None:
-        used_arm = "left" if drawer_open_loc.arms[0] == "right" else "right"
-    else:
-        used_arm = "left"
-    grasp = "top" if obj_type == "spoon" else "front"
-    PickUpAction.Action(obj_desig, used_arm, grasp).perform()
-    ParkArmsAction([Arms.BOTH]).resolve().perform()
-    if obj_desig.bullet_world_object.type.lower() in ["spoon", "cup"]:
-        CloseAction(object_designator_description=handle_desig, arms=[drawer_open_loc.arms[0]]).resolve().perform()
-    ParkArmsAction([Arms.BOTH]).resolve().perform()
+    if obj_desig:
+        if drawer_open_loc is not None:
+            used_arm = "left" if drawer_open_loc.arms[0] == "right" else "right"
+        else:
+            used_arm = "left"
+        grasp = "top" if obj_type == "spoon" else "front"
+        PickUpAction.Action(obj_desig, used_arm, grasp).perform()
+        ParkArmsAction([Arms.BOTH]).resolve().perform()
+        if obj_desig.bullet_world_object.type.lower() in ["spoon", "cup"]:
+            CloseAction(object_designator_description=handle_desig, arms=[drawer_open_loc.arms[0]]).resolve().perform()
+        ParkArmsAction([Arms.BOTH]).resolve().perform()
 
 
 def from_robot_publish(step, interrupt, move_arm, move_base, robot_location, destination_location):
@@ -386,7 +391,7 @@ def statsprint(results):
     print(f"#############################")
 
 
-with simulated_robot:
+with (simulated_robot):
     logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 
     ###### Prepare robot ######
@@ -418,7 +423,7 @@ with simulated_robot:
             if obj in handled_objects:
                 rospy.logerr(f"Object {obj} was already handled, continuing")
                 ignored_commands += 1
-                from_robot_publish("already_done", False, False, False, current_location, "")
+                from_robot_publish("already_done", True, False, False, current_location, "")
 
         # Filter out already handled objects
         unhandled_objects = [obj for obj in unhandled_objects if obj not in handled_objects]
@@ -430,88 +435,99 @@ with simulated_robot:
             obj = None
 
         if obj:
-            obj_type = obj.type
-            obj_color = obj.color
-            obj_name = obj.name
-            obj_location = obj.location
-            obj_size = obj.size
-            grasp = "top" if obj_type == "spoon" else "front"
+            if obj.type not in objecterinos_typos:
+                rospy.logerr(f"Object {obj.type} cant be handled due criteria, continuing")
+                ignored_commands += 1
+                from_robot_publish("already_done", True, False, False, current_location, "")
+                if obj.type in unhandled_objects:
+                    unhandled_objects.remove(obj.type)
 
-            fluent.minor_interrupt.set_value(False)
-            age = fluent.age
-
-            ###### Announce object and wait ######
-            announce = Code(lambda: announce_pick(obj_name, obj_type, obj_color, current_location, obj_size))
-
-            ###### Move and detect object ######
-            obj_desig = Code(lambda: move_and_detect(obj_type, obj_size, obj_color))
-
-            ###### construct and monitor subplan ######
-            plan = announce + obj_desig >> Monitor(monitor_func)
-
-            ###### Execute plan ######
-            _, [_, obj_desig] = RetryMonitor(plan, max_tries=5).perform()
-
-            ###### Park robot ######
-            ParkArmsAction.Action(Arms.BOTH).perform()
-            grasp = "top" if obj_type == "spoon" else "front"
-            if obj_type in ["spoon", "cup"]:
-                used_arm = "left" if drawer_open_loc.arms[0] == "right" else "right"
-                PickUpAction(obj_desig, [used_arm], [grasp]).resolve().perform()
-
-                ParkArmsAction([Arms.BOTH]).resolve().perform()
-
-                close_loc = drawer_open_loc.pose
-                NavigateAction([close_loc]).resolve().perform()
-
-                CloseAction(object_designator_description=handle_desig,
-                            arms=[drawer_open_loc.arms[0]]).resolve().perform()
-
-                ParkArmsAction([Arms.BOTH]).resolve().perform()
+                if obj.type not in handled_objects:
+                    handled_objects.append(obj.type)
             else:
-                used_arm = "left"
-                ###### Pickup Object ######
-                from_robot_publish("picking_up", True, True, False, "countertop", "")
-                PickUpAction.Action(obj_desig, used_arm, grasp).perform()
-                update_object_state(obj_desig.name, "being_moved", obj_desig.pose.position)
+                obj_type = obj.type
+                obj_color = obj.color
+                obj_name = obj.name
+                obj_location = obj.location
+                obj_size = obj.size
+                grasp = "top" if obj_type == "spoon" else "front"
+
+                fluent.minor_interrupt.set_value(False)
+                age = fluent.age
+
+                ###### Announce object and wait ######
+                announce = Code(lambda: announce_pick(obj_name, obj_type, obj_color, current_location, obj_size))
+
+                ###### Move and detect object ######
+                obj_desig = Code(lambda: move_and_detect(obj_type, obj_size, obj_color))
+
+                ###### construct and monitor subplan ######
+                plan = announce + obj_desig >> Monitor(monitor_func)
+
+                ###### Execute plan ######
+                _, [_, obj_desig] = RetryMonitor(plan, max_tries=5).perform()
 
                 ###### Park robot ######
                 ParkArmsAction.Action(Arms.BOTH).perform()
+                grasp = "top" if obj_type == "spoon" else "front"
+                if obj_type in ["spoon", "cup"]:
+                    used_arm = "left" if drawer_open_loc.arms[0] == "right" else "right"
+                    PickUpAction(obj_desig, [used_arm], [grasp]).resolve().perform()
 
-            destination_location = 'table' if age == 1 else 'countertop'
+                    ParkArmsAction([Arms.BOTH]).resolve().perform()
 
-            ###### Announce Navigation action and wait ######
-            announce = Code(
-                lambda: announce_bring(obj_name, obj_type, obj_color, obj_location, obj_size, destination_location))
+                    close_loc = drawer_open_loc.pose
+                    NavigateAction([close_loc]).resolve().perform()
 
-            ###### Construct subplan ######
-            plan = Code(lambda: NavigateAction(
-                [get_nav_pose(obj_type, destination_location)]).resolve().perform()) + announce >> Monitor(monitor_func)
+                    CloseAction(object_designator_description=handle_desig,
+                                arms=[drawer_open_loc.arms[0]]).resolve().perform()
 
-            ###### Construct recovery behaviour (Navigate to island => place object => detect new object => pick up new object ######
-            recover_normal = Code(lambda: announce_recovery(old_desig=obj_desig)) + Code(
-                lambda: place_and_pick_new_obj(obj_desig, original_pose, obj_type, obj_size, obj_color))
+                    ParkArmsAction([Arms.BOTH]).resolve().perform()
+                else:
+                    used_arm = "left"
+                    ###### Pickup Object ######
+                    from_robot_publish("picking_up", True, True, False, "countertop", "")
+                    PickUpAction.Action(obj_desig, used_arm, grasp).perform()
+                    update_object_state(obj_desig.name, "being_moved", obj_desig.pose.position)
 
-            ###### Construct recovery behaviour (Navigate to island => place object => detect new object => pick up new object ######
-            recover_location = Code(lambda: announce_recovery(old_desig=obj_desig)) + Code(
-                lambda: NavigateAction([get_nav_pose(obj_type, destination_location)]).resolve().perform())
+                    ###### Park robot ######
+                    ParkArmsAction.Action(Arms.BOTH).perform()
 
-            ###### Execute plan ######
-            RetryMonitor(plan, max_tries=5,
-                         recovery={ChangeLocationException: recover_location, PlanFailure: recover_normal}).perform()
+                destination_location = 'table' if age == 1 else 'countertop'
 
-            ###### Hand the object according to Scenario 5 ######
-            from_robot_publish("placing", True, True, False, current_location, "")
-            grasp = "top" if obj_type == "spoon" else "front"
-            PlaceAction(obj_desig, [used_arm], [grasp],
-                        [get_place_pose(obj_type, destination_location)]).resolve().perform()
-            update_object_state(obj_desig.name, "new_location", obj_desig.pose.position)
+                ###### Announce Navigation action and wait ######
+                announce = Code(
+                    lambda: announce_bring(obj_name, obj_type, obj_color, obj_location, obj_size, destination_location))
 
-            ParkArmsAction([Arms.BOTH]).resolve().perform()
-            from_robot_publish("task_done", True, False, False, current_location, "")
+                ###### Construct subplan ######
+                plan = Code(lambda: NavigateAction(
+                    [get_nav_pose(obj_type, destination_location)]).resolve().perform()) + announce >> Monitor(monitor_func)
 
-            if obj_type in unhandled_objects:
-                unhandled_objects.remove(obj_type)
+                ###### Construct recovery behaviour (Navigate to island => place object => detect new object => pick up new object ######
+                recover_normal = Code(lambda: announce_recovery(old_desig=obj_desig)) + Code(
+                    lambda: place_and_pick_new_obj(obj_desig, original_pose, obj_type, obj_size, obj_color))
 
-            if obj_type not in handled_objects:
-                handled_objects.append(obj_type)
+                ###### Construct recovery behaviour (Navigate to island => place object => detect new object => pick up new object ######
+                recover_location = Code(lambda: announce_recovery(old_desig=obj_desig)) + Code(
+                    lambda: NavigateAction([get_nav_pose(obj_type, destination_location)]).resolve().perform())
+
+                ###### Execute plan ######
+                RetryMonitor(plan, max_tries=5,
+                             recovery={ChangeLocationException: recover_location, PlanFailure: recover_normal}).perform()
+
+                ###### Hand the object according to Scenario 5 ######
+                from_robot_publish("placing", True, True, False, current_location, "")
+                grasp = "top" if obj_type == "spoon" else "front"
+                PlaceAction(obj_desig, [used_arm], [grasp],
+                            [get_place_pose(obj_type, destination_location)]).resolve().perform()
+                update_object_state(obj_desig.name, "new_location", obj_desig.pose.position)
+
+                ParkArmsAction([Arms.BOTH]).resolve().perform()
+
+                from_robot_publish("task_done", True, False, False, current_location, "")
+
+                if obj_type in unhandled_objects:
+                    unhandled_objects.remove(obj_type)
+
+                if obj_type not in handled_objects:
+                    handled_objects.append(obj_type)
