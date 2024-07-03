@@ -2,6 +2,7 @@ import rospy
 from sensor_msgs.msg import LaserScan
 from sound_play.msg import SoundRequestActionGoal, SoundRequest
 from std_msgs.msg import Int32
+from tmc_control_msgs.msg import GripperApplyEffortActionGoal
 from tmc_msgs.msg import Voice
 from pycram.designators.object_designator import *
 
@@ -152,6 +153,21 @@ class ImageSwitchPublisher:
             rospy.sleep(0.1)  # Sleep for 100ms and check again
         self.pub.publish(self.msg)
         rospy.loginfo("Image switch request published")
+
+
+class HSRBMoveGripperReal():
+    def __init__(self, latch=True):
+        self.pub = rospy.Publisher('/hsrb/gripper_controller/grasp/goal', GripperApplyEffortActionGoal,
+                                   queue_size=10, latch=latch)
+        self.msg = GripperApplyEffortActionGoal()
+
+    def pub_now(self, motion: str):
+        if motion == "open":
+            self.msg.goal.effort = 0.8
+            self.pub.publish(self.msg)
+        elif motion == "close":
+            self.msg.goal.effort = -0.8
+            self.pub.publish(self.msg)
 
 # Hints: List for image view (mit Zahlen ändert man das Bild)
 # "hi.png" -> 0

@@ -68,7 +68,7 @@ def monitor_func_place():
 
 
 
-def placerino(grasp, arm, talk, target_location):
+def placerino(obj, grasp, arm, talk, target_location, kitchen_name):
     lt = LocalTransformer()
     robot = BulletWorld.robot
     oTm = target_location
@@ -96,12 +96,7 @@ def placerino(grasp, arm, talk, target_location):
     #special_knowledge_offsetTm = lt.transform_pose(special_knowledge_offset, "map")
     # push_baseTm.pose.position.z -= 2
     talk.pub_now("Placing now!")
-    giskardpy.achieve_sequence_te(oTmG)
-    try:
-        plan = Code(lambda: giskardpy.achieve_sequence_te(push_baseTm)) >> Monitor(monitor_func_place)
-        plan.perform()
-    except SensorMonitoringCondition:
-        rospy.logwarn("interrupted")
+    giskardpy.achieve_placing_without_prepose(oTmG, obj.name, kitchen_nameecho"Pane4";execbash)
 
     talk.pub_now("opening my gripper")
     MoveGripperMotion(motion="open", gripper="left").resolve().perform()
