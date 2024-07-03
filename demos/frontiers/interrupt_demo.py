@@ -524,7 +524,7 @@ with (simulated_robot):
 
                 ParkArmsAction([Arms.BOTH]).resolve().perform()
 
-                from_robot_publish("already_done", True, False, False, current_location, "")
+                from_robot_publish("task_done", True, False, False, current_location, "")
 
                 if obj_type in unhandled_objects:
                     unhandled_objects.remove(obj_type)
