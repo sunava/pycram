@@ -23,7 +23,7 @@ changed_locations = 0
 minor_interrupt_count = 0
 major_interrupt_count = 0
 try:
-    from speech_processing.msg import dict_object
+    from speech_processing.msg import dict_object, message_objects_in_use
 except ModuleNotFoundError as e:
     rospy.logwarn("Failed to import speech_processing messages, frontiers can not be used")
 now = datetime.now()
@@ -43,7 +43,7 @@ human = Object("humanf", "human", "female_sitting.stl", pose=Pose([4.9, 5.0, 0],
 human = Object("humans", "human", "female_standing.stl", pose=Pose([3.0, 5.0, 0], [0, 0, 0, 1]))
 object_states = {"milk1": "old_location", "milk2": "old_location", "bowl": "old_location", "spoon": "old_location",
                  "cereal": "old_location", "cup": "old_location"}
-objecterinos_typos =["milk", "bowl", "spoon", "cereal", "cup"]
+objecterinos_typos = ["milk", "bowl", "spoon", "cereal", "cup"]
 # Assuming original_locations and current_locations dictionaries are defined and updated accordingly
 original_locations = {"milk1": [2.5, 2, 1.02], "milk2": [2.5, 1.7, 1.02], "bowl": [2.5, 2.2, 1.02],
                       "spoon": [2.4, 2.2, 0.85], "cereal": [2.5, 2.4, 1.05], "cup": [0.5, 1.6, 1.38]}
@@ -73,6 +73,8 @@ destination_location = None
 drawer_open_loc = None
 used_arm = "left"
 grasp = "front"
+
+pub_objects_in_use = rospy.Publisher("/objects_in_use", message_objects_in_use, queue_size=10)
 
 
 def update_object_state(obj_name, state, current_location):
@@ -138,9 +140,23 @@ def get_nav_pose(object_type, location):
     return pose
 
 
+mylistofobj = [dict_object(type="bowl", color="white", name="bowl", location="countertop", size="normal"),
+               dict_object(type="milk", color="blue", name="milk1", location="countertop", size="normal"),
+               dict_object(type="milk", color="red", name="milk2", location="countertop", size="big"),
+               dict_object(type="cereal", color="green", name="cereal", location="countertop", size="normal"),
+               dict_object(type="cup", color="white", name="cup", location="", size="Normal"),
+               dict_object(type="spoon", color="white", name="spoon", location="kitchen_drawer", size="normal")]
+
+# objpub = rospy.Publisher("/objects_in_use", message_objects_in_use, queue_size=10)
+# msg = message_objects_in_use()
+# msg.objects = mylistofobj
+# objpub.publish(msg)
+
+
 def update_current_command():
     global current_cmd, obj_type, obj_color, obj_name, obj_location, obj_size, unhandled_objects, age, destination_location
     global minor_interrupt_count, major_interrupt_count, ignored_commands, changed_locations
+    global mylistofobj
 
     current_cmd = fluent.next_command()
 
@@ -152,16 +168,19 @@ def update_current_command():
 
         if minor_cmd == "setting_breakfast":
             minor_interrupt_count += 1
-            objects_to_add = [dict_object(type="bowl", color="", name="", location="", size=""),
-                              dict_object(type="milk", color="", name="", location="", size=""),
-                              dict_object(type="cereal", color="", name="", location="", size=""),
-                              dict_object(type="cup", color="", name="", location="", size=""),
-                              dict_object(type="spoon", color="", name="", location="", size="")]
-            update_object_state("milk1", "should_be_moved", obj_desig.pose.position)
-            update_object_state("bowl", "should_be_moved", obj_desig.pose.position)
-            update_object_state("spoon", "should_be_moved", obj_desig.pose.position)
-            update_object_state("cereal", "should_be_moved", obj_desig.pose.position)
-            update_object_state("cup", "should_be_moved", obj_desig.pose.position)
+            objects_to_add = [
+                dict_object(type="bowl", color="white", name="bowl", location="countertop", size="normal"),
+                dict_object(type="milk", color="blue", name="milk1", location="countertop", size="normal"),
+                dict_object(type="milk", color="red", name="milk2", location="countertop", size="big"),
+                dict_object(type="cereal", color="green", name="cereal", location="countertop", size="normal"),
+                dict_object(type="cup", color="white", name="cup", location="", size="Normal"),
+                dict_object(type="spoon", color="white", name="spoon", location="kitchen_drawer", size="normal")]
+
+            # update_object_state("milk1", "should_be_moved", obj_desig.pose.position)
+            # update_object_state("bowl", "should_be_moved", obj_desig.pose.position)
+            # update_object_state("spoon", "should_be_moved", obj_desig.pose.position)
+            # update_object_state("cereal", "should_be_moved", obj_desig.pose.position)
+            # update_object_state("cup", "should_be_moved", obj_desig.pose.position)
             fluent.modify_objects_in_use(objects_to_add, [])
 
         elif minor_cmd == "replace_object":
@@ -233,7 +252,8 @@ def update_current_command():
         elif major_cmd == "stop":
             major_interrupt_count += 1
             return
-        else:  ignored_commands += 1
+        else:
+            ignored_commands += 1
 
 
 def monitor_func():
@@ -254,6 +274,7 @@ def monitor_func():
     elif fluent.major_interrupt.get_value():
         return MajorInterrupt
     return False
+
 
 @with_simulated_robot
 def move_and_detect(obj_type, obj_size, obj_color):
@@ -332,7 +353,7 @@ def announce_pick_place(case: str, type: str, color: str, size: str):
 
 
 def place_and_pick_new_obj(old_desig, location, obj_type, obj_size, obj_color):
-    global obj_desig, used_arm, grasp
+    global obj_desig, used_arm, grasp, drawer_open_loc
 
     # Code(lambda: NavigateAction([get_recovery_pose()]).resolve().perform())
     if old_desig.bullet_world_object.type.lower() in ["spoon", "cup"]:
@@ -358,6 +379,7 @@ def place_and_pick_new_obj(old_desig, location, obj_type, obj_size, obj_color):
 
         CloseAction(object_designator_description=handle_desig, arms=[drawer_open_loc.arms[0]]).resolve().perform()
 
+    drawer_open_loc = None
     ParkArmsAction([Arms.BOTH]).resolve().perform()
     obj_desig = move_and_detect(obj_type, obj_size, obj_color)
     if obj_desig:
@@ -411,13 +433,14 @@ with (simulated_robot):
         if not unhandled_objects:
             results = calculate_statistics(minor_interrupt_count, major_interrupt_count, object_states,
                                            ignored_commands, short_str, changed_locations)
-            #statsprint(results)
+            # statsprint(results)
             rospy.logwarn("Waiting for next human command")
             fluent.activate_subs()
             fluent.minor_interrupt.pulsed().wait_for()
             fluent.deactivate_subs()
             update_current_command()
             rospy.logwarn(f"Received command: {current_cmd.get('minor', {}).get('command')}")
+            # from_robot_publish("set_parameters", True, False, False, current_location, "")
 
         for obj in unhandled_objects:
             if obj in handled_objects:
@@ -439,6 +462,7 @@ with (simulated_robot):
                 rospy.logerr(f"Object {obj.type} cant be handled due criteria, continuing")
                 ignored_commands += 1
                 from_robot_publish("already_done", True, False, False, current_location, "")
+                from_robot_publish("task_done", True, False, False, current_location, "")
                 if obj.type in unhandled_objects:
                     unhandled_objects.remove(obj.type)
 
@@ -501,7 +525,8 @@ with (simulated_robot):
 
                 ###### Construct subplan ######
                 plan = Code(lambda: NavigateAction(
-                    [get_nav_pose(obj_type, destination_location)]).resolve().perform()) + announce >> Monitor(monitor_func)
+                    [get_nav_pose(obj_type, destination_location)]).resolve().perform()) + announce >> Monitor(
+                    monitor_func)
 
                 ###### Construct recovery behaviour (Navigate to island => place object => detect new object => pick up new object ######
                 recover_normal = Code(lambda: announce_recovery(old_desig=obj_desig)) + Code(
@@ -513,7 +538,8 @@ with (simulated_robot):
 
                 ###### Execute plan ######
                 RetryMonitor(plan, max_tries=5,
-                             recovery={ChangeLocationException: recover_location, PlanFailure: recover_normal}).perform()
+                             recovery={ChangeLocationException: recover_location,
+                                       PlanFailure: recover_normal}).perform()
 
                 ###### Hand the object according to Scenario 5 ######
                 from_robot_publish("transporting_deliver", True, True, False, current_location, "")
