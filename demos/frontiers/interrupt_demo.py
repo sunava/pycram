@@ -311,7 +311,7 @@ def announce_pick(name: str, type: str, color: str, location: str, size: str):
 
 def announce_bring(name: str, type: str, color: str, location: str, size: str, destination: str):
     print(f"I will now bring the {size.lower(), color.lower(), type.lower()} to you")
-    from_robot_publish("transporting", True, False, True, "countertop", destination)
+    from_robot_publish("transporting_deliver", True, False, True, "countertop", destination)
     # print(f"I am now interruptable for 10 seconds")
     fluent.activate_subs()
     global sleep
@@ -400,7 +400,7 @@ with (simulated_robot):
     MoveTorsoAction([0.25]).resolve().perform()
 
     current_location = "countertop"
-    from_robot_publish("initial", True, False, False, current_location, "")
+    from_robot_publish("set_parameters", True, False, False, current_location, "")
     handled_objects = list()
     unhandled_objects = list()
 
@@ -486,7 +486,7 @@ with (simulated_robot):
                 else:
                     used_arm = "left"
                     ###### Pickup Object ######
-                    from_robot_publish("picking_up", True, True, False, "countertop", "")
+                    from_robot_publish("transporting_fetch", True, True, False, "countertop", "")
                     PickUpAction.Action(obj_desig, used_arm, grasp).perform()
                     update_object_state(obj_desig.name, "being_moved", obj_desig.pose.position)
 
@@ -516,7 +516,7 @@ with (simulated_robot):
                              recovery={ChangeLocationException: recover_location, PlanFailure: recover_normal}).perform()
 
                 ###### Hand the object according to Scenario 5 ######
-                from_robot_publish("placing", True, True, False, current_location, "")
+                from_robot_publish("transporting_deliver", True, True, False, current_location, "")
                 grasp = "top" if obj_type == "spoon" else "front"
                 PlaceAction(obj_desig, [used_arm], [grasp],
                             [get_place_pose(obj_type, destination_location)]).resolve().perform()
@@ -524,7 +524,7 @@ with (simulated_robot):
 
                 ParkArmsAction([Arms.BOTH]).resolve().perform()
 
-                from_robot_publish("task_done", True, False, False, current_location, "")
+                from_robot_publish("already_done", True, False, False, current_location, "")
 
                 if obj_type in unhandled_objects:
                     unhandled_objects.remove(obj_type)
