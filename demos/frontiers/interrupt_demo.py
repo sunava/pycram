@@ -203,7 +203,6 @@ def update_current_command():
 
                 unhandled_objects.append(
                     add_obj.type.lower())
-                if add_obj.type.lower() in unhandled_objects:
             else:
                 ignored_commands += 1
 
@@ -509,7 +508,7 @@ with simulated_robot:
             update_object_state(obj_desig.name, "new_location", obj_desig.pose.position)
 
             ParkArmsAction([Arms.BOTH]).resolve().perform()
-            from_robot_publish("task_done", False, False, False, current_location, "")
+            from_robot_publish("task_done", True, False, False, current_location, "")
 
             if obj_type in unhandled_objects:
                 unhandled_objects.remove(obj_type)
