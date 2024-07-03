@@ -1,8 +1,71 @@
 import json
 import os
+import shutil
 
 from pycram.designators.object_designator import *
 from pycram.pose import Pose
+
+import json
+import os
+from collections import OrderedDict
+from datetime import datetime
+now = datetime.now()
+
+def read_json_file(file_path):
+    with open(file_path, 'r') as file:
+        return json.load(file)
+
+
+def combine_statistics_from_directory(directory_path):
+    combined_statistics = {}
+
+    for filename in os.listdir(directory_path):
+        if filename.endswith(".json"):
+            file_path = os.path.join(directory_path, filename)
+            statistics = read_json_file(file_path)
+            for key, value in statistics.items():
+                if key in combined_statistics:
+                    combined_statistics[key] += value
+                else:
+                    combined_statistics[key] = value
+
+    # Calculate additional statistics
+    total_commands = combined_statistics.get('total_commands', 0)
+    objects_replaced = combined_statistics.get('objects_replaced', 0)
+    objects_not_correct = combined_statistics.get('objects_not_correct', 0)
+    ignored_commands = combined_statistics.get('ignored_commands', 0)
+    changed_locations = combined_statistics.get('changed_locations', 0)
+
+    # Calculate ignored commands rate
+    if total_commands > 0:
+        combined_statistics['ignored_commands_rate'] = (ignored_commands / total_commands) * 100
+    else:
+        combined_statistics['ignored_commands_rate'] = 0.0
+
+    # Calculate failed/lost commands
+    failed_lost_commands = total_commands - (
+            objects_replaced + objects_not_correct + ignored_commands + changed_locations)
+    combined_statistics['failed/lost_commands'] = failed_lost_commands
+
+    return combined_statistics
+
+
+def write_json_file(data, file_path):
+    # Specify the desired order of keys
+    ordered_data = OrderedDict()
+    ordered_data['total_commands'] = data.get('total_commands', 0)
+    ordered_data['objects_replaced'] = data.get('objects_replaced', 0)
+    ordered_data['changed_locations'] = data.get('changed_locations', 0)
+    ordered_data['objects_not_correct'] = data.get('objects_not_correct', 0)
+    ordered_data['ignored_commands'] = data.get('ignored_commands', 0)
+    ordered_data['lost_commands'] = data.get('failed/lost_commands', 0)
+    ordered_data['failure_success_rate'] = data.get('failure_success_rate', 0.0)
+    ordered_data['ignored_commands_rate'] = data.get('ignored_commands_rate', 0.0)
+
+    with open(file_path, 'w') as file:
+        json.dump(ordered_data, file, indent=4)
+
+
 
 
 def color_map(color):
@@ -36,18 +99,52 @@ def get_place_pose(object_type, location):
     pose = poses.get((object_type, location))
     return pose
 
-
+once = False
 def save_statistics_to_file(statistics, short_str):
-    directory = rospy.get_param('/interrupt_demo_node/workdir') + '/robot_logs'
+    global once
+    directory = rospy.get_param('/interrupt_demo_node/workdir') + '/robot_logs/tmp'
+
     filename = directory + '/statistics_' + short_str + '.json'
+
     if not os.path.exists(directory):
         os.makedirs(directory)
+
+
+    if not once:
+        short_str = now.strftime("-%d-%m-%y-%H:%M")
+        output_file = directory + '/../robot_combined_statistics' + short_str + '.json'
+        combined_statistics = combine_statistics_from_directory(directory)
+        write_json_file(combined_statistics, output_file)
+        print(f"Combined statistics have been written to {output_file}")
+        once = True
+
+
+    # Clear the directory before saving new statistics
+    clear_directory(directory)
+    print(f"Cleard robots log tmp folder")
     with open(filename, 'w') as file:
         json.dump(statistics, file, indent=4)
     rospy.loginfo(f"Statistics saved to {filename}")
 
 
-def calculate_statistics(minor_interrupt_count, major_interrupt_count, object_states, ignored_commands, short_str, changed_locations):
+def clear_directory(directory):
+    """
+    Clear all files in the given directory.
+    """
+    if os.path.exists(directory):
+        for filename in os.listdir(directory):
+            file_path = os.path.join(directory, filename)
+            try:
+                if os.path.isfile(file_path) or os.path.islink(file_path):
+                    os.unlink(file_path)
+                elif os.path.isdir(file_path):
+                    shutil.rmtree(file_path)
+            except Exception as e:
+                rospy.logerror(f'Failed to delete {file_path}. Reason: {e}')
+
+
+def calculate_statistics(minor_interrupt_count, major_interrupt_count, object_states, ignored_commands, short_str,
+                         changed_locations):
     total_commands = minor_interrupt_count + major_interrupt_count
     objects_replaced = sum(1 for state in object_states.values() if state == "new_location")
     objects_not_correct = sum(1 for state in object_states.values() if state not in ["new_location", "old_location"])
@@ -68,6 +165,7 @@ def calculate_statistics(minor_interrupt_count, major_interrupt_count, object_st
     save_statistics_to_file(statistics, short_str)
 
     return statistics
+
 
 def update_object_state(obj_name, state, current_location, globaldict):
     if obj_name in globaldict["object_states"]:
