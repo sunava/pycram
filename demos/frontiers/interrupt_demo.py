@@ -408,7 +408,7 @@ with simulated_robot:
         if not unhandled_objects:
             results = calculate_statistics(minor_interrupt_count, major_interrupt_count, object_states,
                                            ignored_commands, short_str, changed_locations)
-            statsprint(results)
+            #statsprint(results)
             rospy.logwarn("Waiting for next human command")
             fluent.activate_subs()
             fluent.minor_interrupt.pulsed().wait_for()
