@@ -204,7 +204,6 @@ def update_current_command():
                 unhandled_objects.append(
                     add_obj.type.lower())
                 if add_obj.type.lower() in unhandled_objects:
-                    print("ist drin")
             else:
                 ignored_commands += 1
 
