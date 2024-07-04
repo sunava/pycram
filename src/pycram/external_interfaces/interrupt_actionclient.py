@@ -14,7 +14,7 @@ class InterruptClient:
         self.minor_interrupt = Fluent()
         self.major_interrupt = Fluent()
 
-        self.nlp_frequency = 10.0
+        self.nlp_frequency = 5.0
         self.nlp_timestamp = 0.0
         self.command_queue = Fluent(value=[])
         self.objects_in_use = {}
