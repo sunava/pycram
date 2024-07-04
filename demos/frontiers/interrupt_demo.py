@@ -17,7 +17,7 @@ from pycram.process_module import simulated_robot, with_simulated_robot
 from pycram.ros.viz_marker_publisher import VizMarkerPublisher
 from utils.utils import *
 
-sleep = False
+sleep = True
 ignored_commands = 0
 changed_locations = 0
 minor_interrupt_count = 0
