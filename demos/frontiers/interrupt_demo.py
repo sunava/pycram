@@ -183,7 +183,10 @@ def update_current_command():
                 del_attributes = (
                     del_obj.type.lower(), del_obj.color, del_obj.name.lower(), del_obj.location, del_obj.size.lower()
                 )
-                print(f"Old attributes: {old_attributes}, Delete attributes: {del_attributes}")
+                if all(attr == '' for attr in del_attributes):
+                    del_attributes = None
+                else:
+                    print(f"Old attributes: {old_attributes}, Delete attributes: {del_attributes}")
             else:
                 del_attributes = None
 
@@ -193,7 +196,10 @@ def update_current_command():
                 new_attributes = (
                     add_obj.type.lower(), add_obj.color, add_obj.name.lower(), add_obj.location, add_obj.size.lower()
                 )
-                print(f"New attributes: {new_attributes}")
+                if all(attr == '' for attr in new_attributes):
+                    new_attributes = None
+                else:
+                    print(f"New attributes: {new_attributes}")
             else:
                 new_attributes = None
 
@@ -212,8 +218,11 @@ def update_current_command():
             add_cmd = current_cmd.get("minor", {}).get("add_object")
             if add_cmd:
                 add_obj = add_cmd[0]
-                fluent.modify_objects_in_use([add_obj], [])
-                unhandled_objects.append(add_obj.type.lower())
+                if obj_type != add_obj.type.lower():
+                    fluent.modify_objects_in_use([add_obj], [])
+                    unhandled_objects.append(add_obj.type.lower())
+                else:
+                    ignored_commands += 1
             else:
                 ignored_commands += 1
 
@@ -313,7 +322,7 @@ def announce_pick(name: str, type: str, color: str, location: str, size: str):
     global sleep
     print(f"I will now pick up the {size.lower()} {color.lower()} {type.lower()}")
     # print(f"I am now interruptable for 5 seconds")
-    fluent.activate_subs()
+    # fluent.activate_subs()
     if sleep:
         time.sleep(5)  # fluent.deactivate_subs()  # print(f"I am not interruptable any more")
 
@@ -322,7 +331,7 @@ def announce_bring(name: str, type: str, color: str, location: str, size: str, d
     print(f"I will now bring the {size.lower(), color.lower(), type.lower()} to you")
     from_robot_publish("transporting_deliver", True, False, True, "countertop", destination)
     # print(f"I am now interruptable for 10 seconds")
-    fluent.activate_subs()
+    # fluent.activate_subs()
     global sleep
     if sleep:
         time.sleep(13)  # fluent.deactivate_subs()  # print(f"I am not interruptable any more")
@@ -417,7 +426,7 @@ with (simulated_robot):
         if not unhandled_objects:
             results = calculate_statistics(minor_interrupt_count, major_interrupt_count, object_states,
                                            ignored_commands, short_str, changed_locations)
-            # statsprint(results)
+            statsprint(results)
             rospy.logwarn("Waiting for next human command")
             # fluent.activate_subs()
             fluent.minor_interrupt.pulsed().wait_for()
@@ -541,3 +550,10 @@ with (simulated_robot):
 
                     if obj_type not in handled_objects:
                         handled_objects.append(obj_type)
+
+                    obj_type = ""
+                    obj_color = ""
+                    obj_name = ""
+                    obj_location = ""
+                    obj_size = ""
+                    obj_desig = None
