@@ -19,7 +19,7 @@ response = ""
 callback = False
 timeout = 5
 
-text_to_speech_publisher = TextToSpeechPublisher()
+talk = TextToSpeechPublisher()
 image_switch_publisher = ImageSwitchPublisher()
 sound_publisher = SoundRequestPublisher()
 

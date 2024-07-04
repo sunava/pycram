@@ -2,8 +2,9 @@ import rospy
 from pycram.designators.action_designator import *
 from demos.pycram_receptionist_demo.utils.new_misc import *
 from pycram.enums import ObjectType
+from pycram.external_interfaces.navigate import PoseNavigator
 from pycram.process_module import real_robot
-import pycram.external_interfaces.giskard as giskardpy
+import pycram.external_interfaces.giskard_new as giskardpy
 from pycram.ros.robot_state_updater import RobotStateUpdater
 from pycram.ros.viz_marker_publisher import VizMarkerPublisher
 from pycram.designators.location_designator import *
@@ -11,11 +12,12 @@ from pycram.designators.object_designator import *
 from pycram.bullet_world import BulletWorld, Object
 from std_msgs.msg import String, Bool
 from pycram.enums import ImageEnum as ImageEnum
-from pycram.utilities.robocup_utils import TextToSpeechPublisher, ImageSwitchPublisher, SoundRequestPublisher
+from pycram.utilities.robocup_utils import TextToSpeechPublisher, ImageSwitchPublisher, SoundRequestPublisher, \
+    HSRBMoveGripperReal
 
 world = BulletWorld("DIRECT")
 # v = VizMarkerPublisher()
-
+gripper = HSRBMoveGripperReal()
 robot = Object("hsrb", "robot", "../../resources/" + robot_description.name + ".urdf")
 robot_desig = ObjectDesignatorDescription(names=["hsrb"]).resolve()
 robot.set_color([0.5, 0.5, 0.9, 1])
@@ -27,15 +29,17 @@ giskardpy.init_giskard_interface()
 kitchen_desig = ObjectDesignatorDescription(names=["kitchen"])
 
 # giskardpy.sync_worlds()
+move = PoseNavigator()
+talk = TextToSpeechPublisher()
 
 # variables for communcation with nlp
 pub_nlp = rospy.Publisher('/startListener', String, queue_size=10)
 response = ""
 callback = False
-doorbell = False
+doorbell = True
 timeout = 15  # 15 seconds timeout
 
-
+giskardpy.sync_worlds()
 # Declare variables for humans
 host = HumanDescription("Vanessa", fav_drink="coffee")
 guest1 = HumanDescription("bob", fav_drink="tea")
@@ -65,23 +69,37 @@ def data_cb(data):
 def doorbell_cb(data):
     global doorbell
     doorbell = True
-
+def pakerino(torso_z=0.15, config=None):
+    if not config:
+        config = {'arm_lift_joint': torso_z, 'arm_flex_joint': 0, 'arm_roll_joint': -1.2, 'wrist_flex_joint': -1.5,
+              'wrist_roll_joint': 0}
+    giskardpy.avoid_all_collisions()
+    giskardpy.achieve_joint_goal(config)
+    print("Parking done")
 
 def door_opening():
-
-    # Pre-Pose for door opening
-    ParkArmsAction([Arms.LEFT]).resolve().perform()
+    config = {'arm_lift_joint': 0.4, 'arm_flex_joint': 0, 'arm_roll_joint': -1.2, 'wrist_flex_joint': -1.5,
+              'wrist_roll_joint': -1.57}
+    config = {'arm_lift_joint': 0.4, 'arm_flex_joint': 0, 'arm_roll_joint': 1.5, 'wrist_flex_joint': -1.5,
+              'wrist_roll_joint': -1.57}
+    pakerino(config=config)
     pose1 = Pose([1.35, 4.4, 0], [0, 0, 1, 0])
-    NavigateAction([pose1]).resolve().perform()
-    MoveJointsMotion(["wrist_roll_joint"], [-1.57]).resolve().perform()
-    MoveTorsoAction([0.4]).resolve().perform()
+    move.pub_now(pose1)
 
-    # grasp handle and open door
-    DoorOpenAction("iai_kitchen/living_room:arena:door_handle_inside").resolve().perform()
+    # grasp handle
+    gripper.pub_now("open")
+    giskardpy.grasp_doorhandle("kitchen_2/living_room:arena:door_handle_inside")
+    gripper.pub_now("close")
 
+    # open door
+    giskardpy.open_doorhandle("kitchen_2/living_room:arena:door_handle_inside")
+    gripper.pub_now("open")
+    config = {'arm_lift_joint': 0.4, 'arm_flex_joint': 0, 'arm_roll_joint': 1.5, 'wrist_flex_joint': -1.5,
+              'wrist_roll_joint': -1.57}
+    pakerino(config)
     # move away from door
     pose2 = Pose([1.9, 4.5, 0], [0, 0, 1, 0])
-    NavigateAction([pose2]).resolve().perform()
+    move.pub_now(pose2)
 
 
 def get_attributes(guest: HumanDescription):
@@ -109,7 +127,8 @@ def welcome_guest(num, guest: HumanDescription):
     """
     global callback
 
-    TalkingMotion("Welcome, please step in front of me").resolve().perform()
+    talk.pub_now("Welcome, please step in front of me", True)
+    #TalkingMotion("Welcome, please step in front of me").resolve().perform()
     ParkArmsAction([Arms.LEFT]).resolve().perform()
 
     # look for human
@@ -117,11 +136,14 @@ def welcome_guest(num, guest: HumanDescription):
 
     # look at guest and introduce
     HeadFollowAction('start').resolve().perform()
-    TalkingMotion("Hello, i am Toya and my favorite drink is oil").resolve().perform()
+    talk.pub_now("Hello, i am Toya and my favorite drink is oil", True)
+    #TalkingMotion("Hello, i am Toya and my favorite drink is oil").resolve().perform()
     rospy.sleep(3)
-    TalkingMotion("please answer me after the sound").resolve().perform()
+    talk.pub_now("please answer me after the sound", True)
+    # TalkingMotion("please answer me after the sound").resolve().perform()
     rospy.sleep(2)
-    TalkingMotion("What is your name and favorite drink?").resolve().perform()
+    talk.pub_now("What is your name and favorite drink?", True)
+    # TalkingMotion("What is your name and favorite drink?").resolve().perform()
     rospy.sleep(2)
 
     # signal to start listening
@@ -138,7 +160,8 @@ def welcome_guest(num, guest: HumanDescription):
     if response[0] == "<GUEST>":
         # success a name and intent was understood
         if response[1] != "<None>":
-            TalkingMotion("please confirm if i got your name right").resolve().perform()
+            talk.pub_now("please confirm if i got your name right", True)
+            # TalkingMotion("please confirm if i got your name right").resolve().perform()
             guest.set_drink(response[2])
             rospy.sleep(1)
             guest.set_name(name_confirm(response[1]))
@@ -158,7 +181,8 @@ def welcome_guest(num, guest: HumanDescription):
         # two chances to get name and drink
         i = 0
         while i < 2:
-            TalkingMotion("please repeat your name and drink loud and clear").resolve().perform()
+            talk.pub_now("please repeat your name and drink loud and clear", True)
+            # TalkingMotion("please repeat your name and drink loud and clear").resolve().perform()
             pub_nlp.publish("start")
             rospy.sleep(1.5)
             image_switch_publisher.pub_now(ImageEnum.TALK.value)
@@ -221,6 +245,7 @@ def detect_point_to_seat():
             pose_guest.point.x = float(place[1])
             pose_guest.point.y = float(place[2])
             pose_guest.point.z = 0.85
+            giskardpy.move_arm_to_point(pose_guest)
             print("found seat")
             return pose_guest
     return free_seat
@@ -258,6 +283,7 @@ def demo(step):
             doorbell = False
 
             door_opening()
+
 
         if step <= 1:
             # reception/talking sequence
@@ -406,4 +432,4 @@ def demo(step):
                 rospy.sleep(3)
 
 
-demo(6)
+demo(0)

@@ -183,7 +183,7 @@ def queryRegion(region: str) -> ObjectDesignatorDescription.Object:
 def queryHuman() -> Any:
     """
     Sends a query to RoboKudo to look for a Human
-    returns a PoseStamped of pose where human is. keeps publishing it onto the
+    returns a PointStamped of pose where human is. keeps publishing it onto the
     topic /human_pose
     """
     init_robokudo_interface()
@@ -225,7 +225,7 @@ def queryHuman() -> Any:
     # if no human is detected
     human_bool = False
     waiting_human = False
-    rospy.Subscriber("/human_pose", PoseStamped, callback)
+    rospy.Subscriber("/human_pose", PointStamped, callback)
 
     while not human_bool:
         rospy.sleep(0.5)
