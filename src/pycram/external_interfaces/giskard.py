@@ -78,7 +78,7 @@ def sync_worlds() -> None:
     bullet_object_names = set()
     for obj in BulletWorld.current_bullet_world.objects:
         if obj.name != robot_description.name and len(obj.links) != 1:
-            if obj.name != 'floor':
+            if obj.name != 'floor' or obj.type != "robot":
                 bullet_object_names.add(obj.name + "_" + str(obj.id))
 
     giskard_object_names = set(giskard_wrapper.get_group_names())
