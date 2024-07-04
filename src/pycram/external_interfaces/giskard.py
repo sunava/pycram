@@ -531,7 +531,7 @@ def cancel_all_called_goals():
     rospy.loginfo("Canceling all goals towards Giskard")
 
 
-def move_head_to_pose(pose: PointStamped):
+def move_head_to_pose(pose: PoseStamped):
     """
     moves head to given position
     :param pose: pose that head will rotate to
@@ -540,7 +540,11 @@ def move_head_to_pose(pose: PointStamped):
     # TODO: needs to be tested!
     p_axis = Vector3Stamped()
     p_axis.vector = (0, 0, 1)
-    giskard_wrapper.set_pointing_goal(goal_point=pose,
+    pointSt = PointStamped()
+    pointSt.header = pose.header
+    pointSt.point = pose.pose.position
+
+    giskard_wrapper.set_pointing_goal(goal_point=_pose_to_pose_stamped(pointSt),
                                       tip_link="head_center_camera_frame",
                                       pointing_axis=p_axis,
                                       root_link="base_footprint")

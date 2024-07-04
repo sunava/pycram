@@ -13,7 +13,8 @@ import pycram.bullet_world_reasoning as btr
 from ..designators.motion_designator import *
 from ..enums import JointType, ObjectType, State
 
-from ..external_interfaces import giskard # change to giskard_new as giskard
+from ..external_interfaces import giskard_new as giskard
+# change to giskard_new as giskard
 from ..external_interfaces.ik import request_ik
 from ..external_interfaces.robokudo import *
 from ..helper import _apply_ik
@@ -330,7 +331,8 @@ class HSRBMoveHeadReal(ProcessModule):
         pose_in_tilt = local_transformer.transform_pose(target, robot.get_link_tf_frame("head_tilt_link"))
 
         new_pan = np.arctan2(pose_in_pan.position.y, pose_in_pan.position.x)
-        new_tilt = np.arctan2(pose_in_tilt.position.z, pose_in_tilt.position.x + pose_in_tilt.position.y)
+        new_tilt = np.arctan2(pose_in_tilt.position.z, np.sqrt(pose_in_tilt.position.x ** 2 + pose_in_tilt.position.y ** 2))
+
 
         current_pan = robot.get_joint_state("head_pan_joint")
         current_tilt = robot.get_joint_state("head_tilt_joint")

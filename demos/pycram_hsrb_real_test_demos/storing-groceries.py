@@ -234,7 +234,7 @@ def demo(step):
                 if nearest_pose_to_group:
                     world.current_bullet_world.add_vis_axis(nearest_pose_to_group)
                     talk.pub_now("placing to group:" + obj[1])
-                    utils.placerino("front", "left", talk, nearest_pose_to_group)
+                    utils.placerino(obj[0], "front", "left", talk, nearest_pose_to_group, kitchen_desig.names)
                     NavigateAction([table_pose]).resolve().perform()
                     # move.query_pose_nav(rotated_shelf_pose)
                     # move.query_pose_nav(table_pose)
