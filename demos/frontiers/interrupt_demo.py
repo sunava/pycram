@@ -199,7 +199,7 @@ def update_current_command():
 
             if old_attributes == del_attributes and new_attributes:
                 fluent.modify_objects_in_use([add_obj], [del_obj])
-                unhandled_objects.remove(obj_type)
+                #unhandled_objects.remove(obj_type)
                 obj_type, obj_color, obj_name, obj_location, obj_size = new_attributes
                 unhandled_objects.append(obj_type)
                 print(f"Replaced object with new attributes: {new_attributes}")
