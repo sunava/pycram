@@ -196,8 +196,8 @@ def current_snapshot(obj_type):
                                                      nearVal=0.1,
                                                      farVal=100.0)
 
-    width, height, rgbImg, depthImg, segImg = p.getCameraImage(width=1920,  # Width for 16:9 aspect ratio
-                                                               height=1080,  # Height for 16:9 aspect ratio
+    width, height, rgbImg, depthImg, segImg = p.getCameraImage(width=1920,
+                                                               height=1080,
                                                                viewMatrix=view_matrix,
                                                                projectionMatrix=projection_matrix)
     rgb_array = np.array(rgbImg)
@@ -208,7 +208,8 @@ def current_snapshot(obj_type):
 
     if not os.path.exists(directory):
         os.makedirs(directory)
+    now_time = datetime.now()
 
-    short_str = now.strftime("-%d-%m-%y-%H:%M")
-    output_file = directory + f'/../snapshot_{obj_type}_' + short_str + '.png'
+    short_str = now_time.strftime("-%d-%m-%y-%H:%M:%S")
+    output_file = directory + f'/../snapshot_' + short_str + f'_{obj_type}.png'
     image.save(output_file)
