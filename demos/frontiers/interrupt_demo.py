@@ -3,7 +3,6 @@ import logging
 from datetime import datetime
 
 import rospy
-
 from pycram.bullet_world import BulletWorld, Object
 from pycram.designators.action_designator import *
 from pycram.designators.location_designator import *
@@ -542,7 +541,7 @@ with (simulated_robot):
                     update_object_state(obj_desig.name, "new_location", obj_desig.pose.position)
 
                     ParkArmsAction([Arms.BOTH]).resolve().perform()
-
+                    current_snapshot(obj_type)
                     from_robot_publish("task_done", True, False, False, current_location, "")
 
                     if obj_type in unhandled_objects:
