@@ -135,7 +135,8 @@ def welcome_guest(num, guest: HumanDescription):
     DetectAction(technique='human').resolve().perform()
 
     # look at guest and introduce
-    HeadFollowAction('start').resolve().perform()
+    giskardpy.move_head_to_human()
+    # HeadFollowAction('start').resolve().perform()
     talk.pub_now("Hello, i am Toya and my favorite drink is oil", True)
     #TalkingMotion("Hello, i am Toya and my favorite drink is oil").resolve().perform()
     rospy.sleep(3)
@@ -294,7 +295,7 @@ def demo(step):
             TalkingMotion("please step out of the way and follow me").resolve().perform()
 
             # stop looking at human
-            HeadFollowAction('stop').resolve().perform()
+            giskardpy.cancel_all_called_goals()
             DetectAction(technique='human', state='stop').resolve().perform()
 
             # lead human to living room
@@ -321,7 +322,7 @@ def demo(step):
 
         if step <= 3:
             # introduce guest1 and host
-            HeadFollowAction('start').resolve().perform()
+            giskardpy.move_head_to_human()
             rospy.sleep(1)
             if guest1.pose:
                 pub_pose.publish(guest1.pose)
@@ -370,7 +371,7 @@ def demo(step):
             TalkingMotion("please step out of the way and follow me").resolve().perform()
 
             # stop looking at human
-            HeadFollowAction('stop').resolve().perform()
+            giskardpy.cancel_all_called_goals()
             DetectAction(technique='human', state='stop').resolve().perform()
 
             # lead human to living room
@@ -426,6 +427,7 @@ def demo(step):
 
             if step >= 9:
                 # introduce everyone to guest 2
+                giskardpy.move_head_to_human()
                 introduce(host, guest2)
                 rospy.sleep(3)
                 introduce(guest1, guest2)
