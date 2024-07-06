@@ -3,7 +3,6 @@ import rospy
 from geometry_msgs.msg import PointStamped
 
 from pycram.designators.object_designator import Pose, PoseStamped, HumanDescription
-from pycram.designators.motion_designator import TalkingMotion
 from pycram.enums import ImageEnum
 from pycram.helper import axis_angle_to_quaternion
 from std_msgs.msg import String, UInt16
@@ -21,7 +20,7 @@ timeout = 5
 
 talk = TextToSpeechPublisher()
 image_switch_publisher = ImageSwitchPublisher()
-sound_publisher = SoundRequestPublisher()
+
 
 # TODO: set to False when NLP has implemented that feature
 
@@ -63,14 +62,14 @@ def name_confirm(name):
     callback = False
     rospy.Subscriber("nlp_out", String, data_cb)
 
-    TalkingMotion("is your name " + str(name) + "?").resolve().perform()
+    talk.pub_now("is your name " + str(name) + "?")
     rospy.sleep(0.8)
     pub_nlp.publish("start now")
 
     #sound/picture
     rospy.sleep(3.5)
     image_switch_publisher.pub_now(ImageEnum.TALK.value)
-    sound_publisher.publish_sound_request()
+
 
     start_time = time.time()
     while not callback:
@@ -83,17 +82,17 @@ def name_confirm(name):
     callback = False
 
     if response[1].strip() == "True":
-        TalkingMotion("alright").resolve().perform()
+        talk.pub_now("alright")
         return name
     else:
-        TalkingMotion("please repeat your name").resolve().perform()
+        talk.pub_now("please repeat your name")
         rospy.sleep(0.6)
         pub_nlp.publish("start")
 
         # sound/picture
         rospy.sleep(3.5)
         image_switch_publisher.pub_now(ImageEnum.TALK.value)
-        sound_publisher.publish_sound_request()
+
 
         start_time = time.time()
         while not callback:
@@ -109,7 +108,7 @@ def name_confirm(name):
             return response[1]
 
         else:
-            TalkingMotion("i have to continue with wrong name, im sorry").resolve().perform()
+            talk.pub_now("i have to continue with wrong name, im sorry")
             return name
 
 
@@ -125,14 +124,13 @@ def name_repeat():
     rospy.Subscriber("nlp_out", String, data_cb)
 
     while not got_name:
-        TalkingMotion("i am sorry, please repeat your name").resolve().perform()
+        talk.pub_now("i am sorry, please repeat your name")
         rospy.sleep(0.7)
         pub_nlp.publish("start")
 
         # sound/picture
         rospy.sleep(3.5)
         image_switch_publisher.pub_now(ImageEnum.TALK.value)
-        sound_publisher.publish_sound_request()
 
         start_time = time.time()
         while not callback:
@@ -161,14 +159,13 @@ def drink_confirm(drink):
     callback = False
     rospy.Subscriber("nlp_out", String, data_cb)
 
-    TalkingMotion("is your favorite drink " + str(drink) + "?").resolve().perform()
+    talk.pub_now("is your favorite drink " + str(drink) + "?")
     rospy.sleep(0.6)
     pub_nlp.publish("start")
 
     # sound/picture
     rospy.sleep(3.5)
     image_switch_publisher.pub_now(ImageEnum.TALK.value)
-    sound_publisher.publish_sound_request()
 
     start_time = time.time()
     while not callback:
@@ -181,17 +178,16 @@ def drink_confirm(drink):
     callback = False
 
     if response[1].strip() == "True":
-        TalkingMotion("great, nice to meet you").resolve().perform()
+        talk.pub_now("great, nice to meet you")
         return drink
     else:
-        TalkingMotion("i am sorry, please repeat the drink").resolve().perform()
+        talk.pub_now("i am sorry, please repeat the drink")
         rospy.sleep(0.6)
         pub_nlp.publish("start")
 
         # sound/picture
         rospy.sleep(3.5)
         image_switch_publisher.pub_now(ImageEnum.TALK.value)
-        sound_publisher.publish_sound_request()
 
         start_time = time.time()
         while not callback:
@@ -220,21 +216,21 @@ def introduce(human1: HumanDescription, human2: HumanDescription):
     if human1.pose:
         pub_pose.publish(human1.pose)
         rospy.sleep(1.0)
-    TalkingMotion(f"Hey, {human1.name}").resolve().perform()
+    talk.pub_now(f"Hey, {human1.name}")
     rospy.sleep(2.0)
 
     if human2.pose:
         pub_pose.publish(human2.pose)
         rospy.sleep(1)
-    TalkingMotion(f" This is {human2.name} and their favorite drink is {human2.fav_drink}").resolve().perform()
+    talk.pub_now(f" This is {human2.name} and their favorite drink is {human2.fav_drink}")
     rospy.sleep(2)
-    TalkingMotion(f"Hey, {human2.name}").resolve().perform()
+    talk.pub_now(f"Hey, {human2.name}")
     rospy.sleep(1.5)
 
     if human1.pose:
         pub_pose.publish(human1.pose)
         rospy.sleep(1.5)
-    TalkingMotion(f" This is {human1.name} and their favorite drink is {human1.fav_drink}").resolve().perform()
+    talk.pub_now(f" This is {human1.name} and their favorite drink is {human1.fav_drink}")
 
     rospy.sleep(1)
 
@@ -250,23 +246,23 @@ def describe(human: HumanDescription):
         if human.pose:
             pub_pose.publish(human.pose)
 
-        TalkingMotion(f"I will describe {human.name} further now").resolve().perform()
+        talk.pub_now(f"I will describe {human.name} further now")
         rospy.sleep(1)
 
         # gender
-        TalkingMotion(f"i think your gender is {human.attributes[0]}").resolve().perform()
+        talk.pub_now(f"i think your gender is {human.attributes[0]}")
         rospy.sleep(1)
 
         # headgear or not
-        TalkingMotion(f"you are {human.attributes[1]}").resolve().perform()
+        talk.pub_now(f"you are {human.attributes[1]}")
         rospy.sleep(1)
 
         # kind of clothes
-        TalkingMotion(f"you are  {human.attributes[2]}").resolve().perform()
+        talk.pub_now(f"you are  {human.attributes[2]}")
         rospy.sleep(1)
 
         # brightness of clothes
-        TalkingMotion(f"you are wearing {human.attributes[3]}").resolve().perform()
+        talk.pub_now(f"you are wearing {human.attributes[3]}")
         rospy.sleep(1)
 
 

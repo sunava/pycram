@@ -629,7 +629,8 @@ def move_head_to_human():
     """
 
     giskard_wrapper.motion_goals.continuous_pointing_head()
-    giskard_wrapper.execute(wait=False, add_default=False)
+    giskard_wrapper.add_default_end_motion_conditions()
+    return giskard_wrapper.execute()
 
 
 # def stop_looking():

@@ -28,8 +28,9 @@ roslaunch giskardpy giskardpy_hsr_real_vel.launch)
 
 
 
-
-
+# Launch Script path
+cd /home/suturo/suturo23_24/pycram_ws/src/pycram/demos/util-scripts
+python3 setup-recepetionist.py
 
 
 7. Debugging
