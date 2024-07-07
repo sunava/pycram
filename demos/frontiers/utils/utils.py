@@ -50,9 +50,9 @@ def combine_statistics_from_directory(directory_path):
         combined_statistics['ignored_commands_rate'] = 0.0
 
     # Calculate failed/lost commands
-    failed_lost_commands = total_commands - (
-            objects_replaced + objects_not_correct + ignored_commands + changed_locations)
-    combined_statistics['failed/lost_commands'] = failed_lost_commands
+    # failed_lost_commands = total_commands - (
+    #         objects_replaced + objects_not_correct + ignored_commands + changed_locations)
+    # combined_statistics['failed/lost_commands'] = failed_lost_commands
 
     return combined_statistics
 
@@ -65,7 +65,7 @@ def write_json_file(data, file_path):
     ordered_data['changed_locations'] = data.get('changed_locations', 0)
     ordered_data['objects_not_correct'] = data.get('objects_not_correct', 0)
     ordered_data['ignored_commands'] = data.get('ignored_commands', 0)
-    ordered_data['lost_commands'] = data.get('failed/lost_commands', 0)
+    # ordered_data['lost_commands'] = data.get('failed/lost_commands', 0)
     ordered_data['failure_success_rate'] = data.get('failure_success_rate', 0.0)
     ordered_data['ignored_commands_rate'] = data.get('ignored_commands_rate', 0.0)
 
@@ -213,3 +213,43 @@ def current_snapshot(obj_type):
     short_str = now_time.strftime("-%d-%m-%y-%H:%M:%S")
     output_file = directory + f'/../snapshot_' + short_str + f'_{obj_type}.png'
     image.save(output_file)
+
+
+def aggregate_robot_statistics(directory=rospy.get_param('/interrupt_demo_node/workdir') + '/robot_logs'):
+    summary = {
+        "total_commands": 0,
+        "objects_replaced": 0,
+        "changed_locations": 0,
+        "objects_not_correct": 0,
+        "ignored_commands": 0,
+        # "lost_commands": 0,
+        "failure_success_rate": 0.0,
+        "ignored_commands_rate": 0.0
+    }
+
+    files = os.listdir(directory)
+
+    json_files = [f for f in files if f.startswith("robot_combined_statistics") and f.endswith(".json")]
+
+    for json_file in json_files:
+        with open(os.path.join(directory, json_file), 'r') as f:
+            data = json.load(f)
+            summary["total_commands"] += data.get("total_commands", 0)
+            summary["objects_replaced"] += data.get("objects_replaced", 0)
+            summary["changed_locations"] += data.get("changed_locations", 0)
+            summary["objects_not_correct"] += data.get("objects_not_correct", 0)
+            summary["ignored_commands"] += data.get("ignored_commands", 0)
+            # summary["lost_commands"] += data.get("lost_commands", 0)
+            summary["failure_success_rate"] += data.get("failure_success_rate", 0.0)
+            summary["ignored_commands_rate"] += data.get("ignored_commands_rate", 0.0)
+
+    num_files = len(json_files)
+    if num_files > 0:
+        summary["failure_success_rate"] /= num_files
+        summary["ignored_commands_rate"] /= num_files
+
+    summary_file = os.path.join(directory, "statistics_summary.json")
+    with open(summary_file, 'w') as f:
+        json.dump(summary, f, indent=4)
+
+    print(f"Summary written to {summary_file}")
