@@ -3,27 +3,17 @@ import time
 
 import actionlib
 import rospy
-from geometry_msgs.msg import WrenchStamped, PoseStamped, PointStamped
+from geometry_msgs.msg import PointStamped
 from robokudo_msgs.msg import QueryAction, QueryGoal
 
-from pycram.designators.action_designator import fts, ParkArmsAction, DetectAction
-from pycram.designators.motion_designator import MoveGripperMotion
-from pycram.enums import Arms, ImageEnum
+import pycram.external_interfaces.giskard_new as giskardpy
+from pycram.designators.action_designator import fts
+from pycram.enums import ImageEnum
 from pycram.fluent import Fluent
 from pycram.language import Monitor, Code
-from pycram.plan_failures import SensorMonitoringCondition, PlanFailure, HumanNotFoundCondition
+from pycram.plan_failures import SensorMonitoringCondition, HumanNotFoundCondition
 from pycram.process_module import real_robot
-from utils.startup import startup
-from pycram.ros.robot_state_updater import RobotStateUpdater, KitchenStateUpdater
-
-from pycram.enums import ObjectType
-
-from pycram.external_interfaces.navigate import PoseNavigator
-from pycram.ros.robot_state_updater import RobotStateUpdater
-from pycram.ros.viz_marker_publisher import VizMarkerPublisher
-from pycram.bullet_world import BulletWorld, Object
-from pycram.utilities.robocup_utils import TextToSpeechPublisher, ImageSwitchPublisher, HSRBMoveGripperReal
-import pycram.external_interfaces.giskard_new as giskardpy
+from pycram.utilities.robocup_utils import TextToSpeechPublisher, ImageSwitchPublisher, HSRBMoveGripperReal, pakerino
 
 # Initialize the necessary components
 # world = BulletWorld("DIRECT")
@@ -167,16 +157,8 @@ def first_part(talk_bool):
             gripper.pub_now("close")
 
 
-def pakerino(torso_z=0.15, config=None): #moveme
-    if not config:
-        config = {'arm_lift_joint': torso_z, 'arm_flex_joint': 0, 'arm_roll_joint': -1.2, 'wrist_flex_joint': -1.5,
-                  'wrist_roll_joint': 0}
-    giskardpy.avoid_all_collisions()
-    giskardpy.achieve_joint_goal(config)
-    print("Parking done")
 
-
-def cml(step="default"): #worksme
+def cml(step="default"):  # worksme
 
     with real_robot:
         talk_bool = True
@@ -220,54 +202,10 @@ def cml(step="default"): #worksme
                     talk.pub_now("done.", talk_bool)
             elif isinstance(e, HumanNotFoundCondition):
                 cml("lost_human")
-            #fixme i dont know what to do here
+            # fixme i dont know what to do here
             else:
                 print("idk what happned")
 
 
-        #
-        # try:
-        #     plan = Code(lambda: giskardpy.cml(False)) >> Monitor(monitor_func_human)
-        #     plan.perform()
-        # except (SensorMonitoringCondition, HumanNotFoundCondition) as e :
-        #     print(e)
-        #     print("jo")
-        # if e == SensorMonitoringCondition:
-        #     rkclient.cancel_all_goals
-        #     talk.pub_now("We have arrived.", talk_bool)
-        #     talk.pub_now("I will open my Gripper, to give you the bag.", talk_bool)
-        #     talk.pub_now("Push down my Hand, when you are Ready.", talk_bool)
-        #     img.pub_now(ImageEnum.PUSHBUTTONS.value)
-        #     try:
-        #         plan = Code(lambda: rospy.sleep(1)) * 99999999 >> Monitor(monitor_func())
-        #         plan.perform()
-        #     except SensorMonitoringCondition:
-        #         gripper.pub_now("open")
-        #
-        #         talk.pub_now("Driving Back.", talk_bool)
-        #         img.pub_now(ImageEnum.DRIVINGBACK.value)
-        #         giskardpy.cml(True)
-        #         talk.pub_now("done.", talk_bool)
-        # else:
-        #     print(e)
+cml("default")
 
-
-# goal_msg = QueryGoal()
-# print(goal_msg)
-# gis()
-cml("lost_human")
-# "hi.png" -> 0
-# "talk_bool.png" -> 1
-# "dish.png" -> lost_humanlost_human2
-# "done.png" -> 3
-# "drop.png" -> 4
-# "handover.png" -> 5
-# "order.png" -> 6
-# "picking.png" -> 7
-# "placing.png" -> 8
-# "repeat.png" -> 9
-# "search.png" -> 10
-# "waving.mp4" -> 11
-# "following" -> 12
-# "drivingback" -> 13
-# "pushbuttons" -> 14

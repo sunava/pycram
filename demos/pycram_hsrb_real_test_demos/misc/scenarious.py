@@ -3,7 +3,6 @@ import rospy
 from pycram.utilities.robocup_utils import TextToSpeechPublisher, ImageSwitchPublisher, SoundRequestPublisher
 
 text_to_speech_publisher = TextToSpeechPublisher()
-#text_to_speech_publisher.init()
 image_switch_publisher = ImageSwitchPublisher()
 sound_publisher = SoundRequestPublisher()
 
