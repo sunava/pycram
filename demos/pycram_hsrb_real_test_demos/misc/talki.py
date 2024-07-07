@@ -8,7 +8,6 @@ class TextToSpeechPublisher():
         # Initialize the ROS node
         rospy.init_node('talk_request_action_goal_publisher', anonymous=True)
 
-
         # Create a publisher for the /talk_request_action/goal topic
         pub = rospy.Publisher('/talk_request_action/goal', TalkRequestActionGoal, queue_size=10)
         if self.pub.wait_for_server():

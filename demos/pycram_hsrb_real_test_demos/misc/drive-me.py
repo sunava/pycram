@@ -29,45 +29,10 @@ import rospy
 import actionlib
 from move_base_msgs.msg import MoveBaseAction, MoveBaseGoal
 
-move_client = None
-
-
-def interrupt():
-    global move_client
-    move_client.cancel_all_goals()
-
-class movebase_client():
-
-    def __init__(self):
-        global move_client
-        self.client = actionlib.SimpleActionClient('move_base', MoveBaseAction)
-        self.client.wait_for_server()
-        move_client = self.client
-
-
-    def interrupt(self):
-        global move_client
-        self.client.cancel_all_goals()
-
-    def pub_now(self, navpose):
-        rospy.logerr("Action server not available!")
-        goal = MoveBaseGoal()
-        goal.target_pose.header.frame_id = "map"
-        goal.target_pose.header.stamp = rospy.Time.now()
-        goal.target_pose = navpose
-
-        self.client.send_goal(goal)
-        wait = self.client.wait_for_result()
-        if not wait:
-            rospy.logerr("Action server not available!")
-            rospy.signal_shutdown("Action server not available!")
-        else:
-            return self.client.get_result()
-
 
 if __name__ == '__main__':
-    navPose = Pose([4,2.19,0])
-    move = movebase_client()
+    navPose = Pose([2.7,1.9,0])
+    move = navi.PoseNavigator()
     move.pub_now(navPose)
 
 
