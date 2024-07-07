@@ -2,6 +2,11 @@ import json
 import os
 import shutil
 
+import pybullet as p
+import pybullet_data
+import numpy as np
+from PIL import Image
+
 from pycram.designators.object_designator import *
 from pycram.pose import Pose
 
@@ -9,7 +14,9 @@ import json
 import os
 from collections import OrderedDict
 from datetime import datetime
+
 now = datetime.now()
+
 
 def read_json_file(file_path):
     with open(file_path, 'r') as file:
@@ -66,8 +73,6 @@ def write_json_file(data, file_path):
         json.dump(ordered_data, file, indent=4)
 
 
-
-
 def color_map(color):
     color_switch = {
         "red": [1, 0, 0, 1],
@@ -99,7 +104,10 @@ def get_place_pose(object_type, location):
     pose = poses.get((object_type, location))
     return pose
 
+
 once = False
+
+
 def save_statistics_to_file(statistics, short_str):
     global once
     directory = rospy.get_param('/interrupt_demo_node/workdir') + '/robot_logs/tmp'
@@ -108,7 +116,6 @@ def save_statistics_to_file(statistics, short_str):
 
     if not os.path.exists(directory):
         os.makedirs(directory)
-
 
     if not once:
         short_str = now.strftime("-%d-%m-%y-%H:%M")
@@ -121,12 +128,9 @@ def save_statistics_to_file(statistics, short_str):
         clear_directory(directory)
         once = True
 
-
-
-
     with open(filename, 'w') as file:
         json.dump(statistics, file, indent=4)
-    #rospy.loginfo(f"Statistics saved to {filename}")
+    # rospy.loginfo(f"Statistics saved to {filename}")
 
 
 def clear_directory(directory):
@@ -163,7 +167,7 @@ def calculate_statistics(minor_interrupt_count, major_interrupt_count, object_st
         "ignored_commands_rate": ignored_commands_rate,
         "objects_not_correct": objects_not_correct
     }
-    #rospy.loginfo(f"Statistics: {statistics}")
+    # rospy.loginfo(f"Statistics: {statistics}")
     save_statistics_to_file(statistics, short_str)
 
     return statistics
@@ -177,3 +181,35 @@ def update_object_state(obj_name, state, current_location, globaldict):
         elif state == "old_location" and obj_name in globaldict["original_locations"]:
             if globaldict["original_locations"][obj_name] == current_location:
                 globaldict["object_states"][obj_name] = state
+
+
+def current_snapshot(obj_type):
+    view_matrix = p.computeViewMatrixFromYawPitchRoll(cameraTargetPosition=[4, 3, 1],
+                                                      distance=3,
+                                                      yaw=45,
+                                                      pitch=-22.5,
+                                                      roll=0,
+                                                      upAxisIndex=2)
+    aspect_ratio = 16.0 / 9.0
+    projection_matrix = p.computeProjectionMatrixFOV(fov=60,
+                                                     aspect=aspect_ratio,
+                                                     nearVal=0.1,
+                                                     farVal=100.0)
+
+    width, height, rgbImg, depthImg, segImg = p.getCameraImage(width=1920,
+                                                               height=1080,
+                                                               viewMatrix=view_matrix,
+                                                               projectionMatrix=projection_matrix)
+    rgb_array = np.array(rgbImg)
+    rgb_array = rgb_array[:, :, :3]
+
+    image = Image.fromarray(rgb_array)
+    directory = rospy.get_param('/interrupt_demo_node/workdir') + '/robot_logs/tmp'
+
+    if not os.path.exists(directory):
+        os.makedirs(directory)
+    now_time = datetime.now()
+
+    short_str = now_time.strftime("-%d-%m-%y-%H:%M:%S")
+    output_file = directory + f'/../snapshot_' + short_str + f'_{obj_type}.png'
+    image.save(output_file)
