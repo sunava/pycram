@@ -292,8 +292,8 @@ class Monitor(Language):
                             print("the child killer")
                             if giskardpy.giskard_wrapper:
                                 print("Interrupting Monitor Giskard")
-                                giskardpy.giskard_wrapper.interrupt()
-                            move.interrupt()
+                                giskardpy.cancel_all_called_goals()
+                            #move.interrupt()
                             if hasattr(child, 'interrupt'):
                                 child.interrupt()
 
@@ -330,8 +330,8 @@ class Monitor(Language):
         print("Interrupting Monitor")
         for child in self.children:
             child.interrupt()
-        if giskard.giskard_wrapper:
-            giskard.giskard_wrapper.interrupt()
+        if (giskardpy.giskard_wrapper):
+            giskardpy.cancel_all_called_goals()
         move.interrupt()
 
 
@@ -630,5 +630,5 @@ class Code(Language):
 
     def interrupt(self) -> None:
         print("Code Expression Interrupt")
-        pass
         #raise NotImplementedError
+        pass

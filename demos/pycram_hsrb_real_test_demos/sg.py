@@ -416,28 +416,28 @@ def demo(step):
             talk.pub_now("driving", True)
             move.pub_now(table_pose)
 
-            look_pose = kitchen.get_link_pose("popcorn_table:p_table:table_center")
-            # look_pose.pose.position.x += 0.5
-            giskardpy.move_head_to_pose(locationtoplace)
-            # giskardpy.move_head_to_pose(look_pose)
-            # LookAtAction(targets=[look_pose]).resolve().perform()  # 0.18
-            # LookAtAction(targets=[look_pose]).resolve().perform()
-            table_obj = DetectAction(technique='all').resolve().perform()
-            first, *remaining = table_obj
-            for dictionary in remaining:
-                for value in dictionary.values():
-                    try:
-                        group = find_group(value.type)
-                        groups_on_table[value.name] = [value, group]
-
-                    except AttributeError:
-                        pass
-        obj_to_place = None
-
-
-        if step <= 4:
-            process_groups_on_table(groups_on_table)
-            gripper.pub_now("open")
+        #     look_pose = kitchen.get_link_pose("popcorn_table:p_table:table_center")
+        #     # look_pose.pose.position.x += 0.5
+        #     giskardpy.move_head_to_pose(locationtoplace)
+        #     # giskardpy.move_head_to_pose(look_pose)
+        #     # LookAtAction(targets=[look_pose]).resolve().perform()  # 0.18
+        #     # LookAtAction(targets=[look_pose]).resolve().perform()
+        #     table_obj = DetectAction(technique='all').resolve().perform()
+        #     first, *remaining = table_obj
+        #     for dictionary in remaining:
+        #         for value in dictionary.values():
+        #             try:
+        #                 group = find_group(value.type)
+        #                 groups_on_table[value.name] = [value, group]
+        #
+        #             except AttributeError:
+        #                 pass
+        # obj_to_place = None
+        #
+        #
+        # if step <= 4:
+        #     process_groups_on_table(groups_on_table)
+        #     gripper.pub_now("open")
 
 
 demo(0)

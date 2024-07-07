@@ -106,13 +106,14 @@ class TextToSpeechPublisher:
         if talk:
             self.talking_sentence = msg.data
 
-    def pub_now(self, text, language=1):
+    def pub_now(self, text, language=1, sleep=0):
         """
         Publishes a text-to-speech request with the given text and language.
 
         :param text: The text to be spoken.
         :param language: The language of the text. 1 for English, 0 for Japanese. Default is 1 (English).
         """
+        rospy.sleep(sleep)
         rospy.loginfo("talkstring:" + text)
         # while self.talking_sentence != '':
         #     rospy.sleep(0.1)  # Sleep for 100ms and check again

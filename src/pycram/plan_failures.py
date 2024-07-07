@@ -15,6 +15,9 @@ class SensorMonitoringCondition(PlanFailure):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
+class HumanNotFoundCondition(PlanFailure):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
 
 class FailureDiagnosis(PlanFailure):
     """"""

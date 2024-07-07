@@ -1480,7 +1480,12 @@ class Object:
 
     @property
     def current_pose(self):
-        return self._current_pose
+        try:
+            return self._current_pose
+        except AttributeError:
+            # Handle the case where _current_pose doesn't exist
+            rospy.logwarn("The attribute '_current_pose' does not exist.")
+            return None  # or some default value if it makes sense
 
 
 def filter_contact_points(contact_points, exclude_ids) -> List:

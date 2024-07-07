@@ -351,9 +351,17 @@ def achieve_sequence_place(pose1, pose2):
 
 
 def cml(drive_back):
-    print("in cml")
-    giskard_wrapper.motion_goals.add_carry_my_luggage(name='cmb', drive_back=drive_back)
-    return giskard_wrapper.execute()
+    try:
+        print("in cml")
+        giskard_wrapper.motion_goals.add_carry_my_luggage(name='cmb', drive_back=drive_back)
+        giskard_exe= giskard_wrapper.execute()
+        print(giskard_exe)
+    except:
+        if giskard_exe.error.code == 2:
+            print("works fine")
+        else:
+            print("cml error")
+
 
 
 def achieve_cartesian_goal(goal_pose: Pose, tip_link: str, root_link: str) -> 'MoveResult':
