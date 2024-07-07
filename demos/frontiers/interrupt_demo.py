@@ -133,7 +133,6 @@ def get_nav_pose(object_type, location):
              ('cup', 'table'): Pose([4.3, 3.9, 0]), ('cup', 'countertop'): Pose([3.8, 3.9, 0], [0, 0, 1, 0]), }
 
     pose = poses.get((object_type, location))
-    current_location = location
     return pose
 
 
@@ -165,7 +164,7 @@ def update_current_command():
                 #dict_object(type="milk", color="blue", name="milk1", location="countertop", size="normal"),
                 dict_object(type="milk", color="red", name="milk2", location="countertop", size="big"),
                 dict_object(type="cereal", color="green", name="cereal", location="countertop", size="normal"),
-                #dict_object(type="cup", color="white", name="cup", location="", size="Normal"),
+                dict_object(type="cup", color="white", name="cup", location="", size="Normal"),
                 dict_object(type="spoon", color="blue", name="spoon", location="", size="normal")
             ]
 
@@ -275,11 +274,17 @@ def monitor_func():
 @with_simulated_robot
 def move_and_detect(obj_type, obj_size, obj_color):
     global original_pose, current_location, drawer_open_loc, handle_desig
+    if obj_type == "cup":
+        from_robot_publish("transporting_search", True, False, True, current_location, "cabinet")
+    else:
+        from_robot_publish("transporting_search", True, False, True, current_location, "countertop")
+
     obj_color = color_map(obj_color)
     if obj_type == "spoon":
         handle_desig = ObjectPart(names=["handle_cab10_t"], part_of=apartment_desig.resolve())
         pose = Pose([1.75, 1.79, 0], [0, 0, 0.533512180079847, 0.8457923821520558])
         drawer_open_loc = AccessingLocation.Location(pose, ["left"])
+        current_location = "countertop"
         NavigateAction([drawer_open_loc.pose]).resolve().perform()
         OpenAction(object_designator_description=handle_desig, arms=[drawer_open_loc.arms[0]]).resolve().perform()
         spoon.detach(apartment)
@@ -291,6 +296,7 @@ def move_and_detect(obj_type, obj_size, obj_color):
         handle_desig = ObjectPart(names=['handle_cab1_top_door'], part_of=apartment_desig.resolve())
         pose = Pose([1.2, 1.5, 0], [0, 0, 1, 0])
         drawer_open_loc = AccessingLocation.Location(pose, ["left"])
+        current_location = "cabinet"
         NavigateAction([drawer_open_loc.pose]).resolve().perform()
         OpenAction(object_designator_description=handle_desig, arms=[drawer_open_loc.arms[0]]).resolve().perform()
         LookAtAction([Pose([0.5, 1.6, 1.48])]).resolve().perform()
@@ -327,19 +333,32 @@ def announce_pick(name: str, type: str, color: str, location: str, size: str):
 
 
 def announce_bring(name: str, type: str, color: str, location: str, size: str, destination: str):
+    global current_location
     print(f"I will now bring the {size.lower(), color.lower(), type.lower()} to you")
-    from_robot_publish("transporting_deliver", True, False, True, "countertop", destination)
+    from_robot_publish("transporting_deliver", True, False, True, current_location, destination)
+    current_location = destination
     # print(f"I am now interruptable for 10 seconds")
     # fluent.activate_subs()
     global sleep
     if sleep:
-        time.sleep(13)  # fluent.deactivate_subs()  # print(f"I am not interruptable any more")
+        time.sleep(13)
+    # fluent.deactivate_subs()  # print(f"I am not interruptable any more")
 
 
-def announce_recovery(old_desig):
-    update_object_state(old_desig.name, "recovering", old_desig.pose.position)
-    from_robot_publish("Recovery", False, True, True, "table", "countertop")
-    print("Recovering from Interrupt")  # print("I am not interruptable here at the moment")
+def announce_recovery(old_desig, full_recovery = True):
+    if full_recovery:
+        update_object_state(old_desig.name, "recovering", old_desig.pose.position)
+        if obj_type == "cup":
+            from_robot_publish("transporting_deliver", False, True, True, current_location, "cabinet")
+        else:
+            from_robot_publish("transporting_deliver", False, True, True, current_location, "countertop")
+
+        print("Recovering from Interrupt")  # print("I am not interruptable here at the moment")
+    else:
+        from_robot_publish("transporting_deliver", False, True, True, current_location, destination_location)
+
+        print("Changing location")
+
 
 
 def announce_pick_place(case: str, type: str, color: str, size: str):
@@ -348,7 +367,14 @@ def announce_pick_place(case: str, type: str, color: str, size: str):
 
 
 def place_and_pick_new_obj(old_desig, location, obj_type, obj_size, obj_color):
-    global obj_desig, used_arm, grasp, drawer_open_loc
+    global obj_desig, used_arm, grasp, drawer_open_loc, current_location
+
+    if old_desig.bullet_world_object.type.lower() == "cup":
+        from_robot_publish("transporting_deliver", True, True, True, current_location, "cabinet")
+        current_location = "cabinet"
+    else:
+        from_robot_publish("transporting_deliver", True, True, True, current_location, "countertop")
+        current_location = "countertop"
 
     # Code(lambda: NavigateAction([get_recovery_pose()]).resolve().perform())
     if old_desig.bullet_world_object.type.lower() in ["spoon", "cup"]:
@@ -362,7 +388,7 @@ def place_and_pick_new_obj(old_desig, location, obj_type, obj_size, obj_color):
         used_arm = "left" if drawer_open_loc.arms[0] == "right" else "right"
     else:
         used_arm = "left"
-
+    location.pose.position.z -= 0.05
     PlaceAction(old_desig, [used_arm], [grasp], [location]).resolve().perform()
     if old_desig.bullet_world_object.type.lower() in ["spoon", "cup"]:
         if old_desig.bullet_world_object.type.lower() == "spoon":
@@ -432,7 +458,7 @@ with (simulated_robot):
             # fluent.deactivate_subs()
             update_current_command()
             rospy.logwarn(
-                f"Received command: {current_cmd.get('minor', {}).get('command')}")  # from_robot_publish("set_parameters", True, False, False, current_location, "")
+                f"Received command: {current_cmd.get('minor', {}).get('command')}")
 
         for obj in unhandled_objects:
             if obj in handled_objects:
@@ -483,10 +509,14 @@ with (simulated_robot):
                 ###### Execute plan ######
                 _, [_, obj_desig] = RetryMonitor(plan, max_tries=5).perform()
 
+                if obj_desig.bullet_world_object.type.lower() == "cup":
+                    print(obj_desig.bullet_world_object.pose.position)
+
                 if obj_desig:
                     ###### Park robot ######
                     ParkArmsAction.Action(Arms.BOTH).perform()
                     grasp = "top" if obj_type == "spoon" else "front"
+                    from_robot_publish("transporting_fetch", True, True, False, current_location, "")
                     if obj_type in ["spoon", "cup"]:
                         used_arm = "left" if drawer_open_loc.arms[0] == "right" else "right"
                         PickUpAction(obj_desig, [used_arm], [grasp]).resolve().perform()
@@ -503,7 +533,6 @@ with (simulated_robot):
                     else:
                         used_arm = "left"
                         ###### Pickup Object ######
-                        from_robot_publish("transporting_fetch", True, True, False, "countertop", "")
                         PickUpAction.Action(obj_desig, used_arm, grasp).perform()
                         update_object_state(obj_desig.name, "being_moved", obj_desig.pose.position)
 
@@ -526,7 +555,7 @@ with (simulated_robot):
                         lambda: place_and_pick_new_obj(obj_desig, original_pose, obj_type, obj_size, obj_color))
 
                     ###### Construct recovery behaviour (Navigate to island => place object => detect new object => pick up new object ######
-                    recover_location = Code(lambda: announce_recovery(old_desig=obj_desig)) + Code(
+                    recover_location = Code(lambda: announce_recovery(old_desig=obj_desig, full_recovery=False)) + Code(
                         lambda: NavigateAction([get_nav_pose(obj_type, destination_location)]).resolve().perform())
 
                     ###### Execute plan ######
