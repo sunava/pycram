@@ -53,7 +53,7 @@ def initial_adding_objects() -> None:
     groups = giskard_wrapper.world.get_group_names()
     for obj in BulletWorld.current_bullet_world.objects:
         if obj != BulletWorld.robot and len(obj.links) >= 1:
-            if obj.name != 'floor':
+            if obj.name != 'floor' or obj.type != "robot" or obj.name != "hsrb":
                 name = obj.name + "_" + str(obj.id)
 
                 if name not in groups:
@@ -84,7 +84,7 @@ def sync_worlds() -> None:
     bullet_object_names = set()
     for obj in BulletWorld.current_bullet_world.objects:
         if obj.name != robot_description.name and len(obj.links) != 1:
-            if obj.name != 'floor':
+            if obj.name != 'floor' or obj.type != "robot" or obj.name != "hsrb":
                 bullet_object_names.add(obj.name + "_" + str(obj.id))
 
     giskard_object_names = set(giskard_wrapper.world.get_group_names())
@@ -93,6 +93,10 @@ def sync_worlds() -> None:
     if not bullet_object_names.union(robot_name).issubset(giskard_object_names):
         giskard_wrapper.world.clear()
     initial_adding_objects()
+
+
+def clear() -> None:
+    giskard_wrapper.world.clear()
 
 
 def update_pose(object: Object) -> 'UpdateWorldResponse':
@@ -112,11 +116,12 @@ def spawn_object(object: Object) -> None:
 
     :param object: BulletWorld object that should be spawned
     """
-    if hasattr(object, "path"):
-        spawn_urdf(object.name + "_" + str(object.id), object.path, object.get_pose())
-    else:
-        geom = object.customGeom["size"]
-        spawn_box(object.name + "_" + str(object.id), geom, object.get_pose())
+    if "hsrb" not in object.name:
+        if hasattr(object, "path"):
+            spawn_urdf(object.name + "_" + str(object.id), object.path, object.get_pose())
+        else:
+            geom = object.customGeom["size"]
+            spawn_box(object.name + "_" + str(object.id), geom, object.get_pose())
 
 
 def spawn_urdf(name: str, urdf_path: str, pose: Pose) -> 'UpdateWorldResponse':
@@ -245,7 +250,7 @@ def achieve_sequence_te(pose1, obj_desig):
 def achieve_sequence_pick_up(pose1, pose2):
     root_link = 'map'
     tip_link = 'hand_gripper_tool_frame'
-    # sync_worlds()
+    sync_worlds()
     cart_monitor1 = giskard_wrapper.monitors.add_cartesian_pose(root_link=root_link,
                                                                 tip_link=tip_link,
                                                                 goal_pose=_pose_to_pose_stamped(pose1),
@@ -297,8 +302,10 @@ def achieve_sequence_pick_up(pose1, pose2):
     #                                                 goal_pose=_pose_to_pose_stamped(pose4),
     #                                                 start_condition=cart_monitor3,
     #                                                 end_condition=cart_monitor4)
-    giskard_wrapper.motion_goals.allow_all_collisions()
+
     giskard_wrapper.monitors.add_end_motion(start_condition=end_monitor)
+    giskard_wrapper.motion_goals.avoid_all_collisions()
+    giskard_wrapper.motion_goals.allow_collision(group1='gripper', group2=CollisionEntry.ALL, start_condition=cart_monitor1)
     return giskard_wrapper.execute()
 
 
@@ -344,9 +351,17 @@ def achieve_sequence_place(pose1, pose2):
 
 
 def cml(drive_back):
-    print("in cml")
-    giskard_wrapper.motion_goals.add_carry_my_luggage(name='cmb', drive_back=drive_back)
-    return giskard_wrapper.execute()
+    try:
+        print("in cml")
+        giskard_wrapper.motion_goals.add_carry_my_luggage(name='cmb', drive_back=drive_back)
+        giskard_exe= giskard_wrapper.execute()
+        print(giskard_exe)
+    except:
+        if giskard_exe.error.code == 2:
+            print("works fine")
+        else:
+            print("cml error")
+
 
 
 def achieve_cartesian_goal(goal_pose: Pose, tip_link: str, root_link: str) -> 'MoveResult':

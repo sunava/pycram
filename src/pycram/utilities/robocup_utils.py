@@ -170,29 +170,24 @@ class TextToSpeechPublisher:
         # self.talking_sentence = msg.data
 
     def pub_now(self, text, talk: bool = True):
+
         """
         Publishes a text-to-speech request with the given text.
 
         :param text: The text to be spoken.
-        :param talk: Boolean flag to determine whether to publish the message. Default is True.
+        :param language: The language of the text. 1 for English, 0 for Japanese. Default is 1 (English).
         """
-        rospy.loginfo("Preparing to publish text: " + text)
-        if talk:
-            # rate = rospy.Rate(10)  # 10 Hz
-            # while self.talking_sentence != '':
-            #     rospy.loginfo("Waiting for the current talking sentence to finish...")
-            #     rate.sleep()
+        rospy.sleep(sleep)
+        rospy.loginfo("talkstring:" + text)
+        # while self.talking_sentence != '':
+        #     rospy.sleep(0.1)  # Sleep for 100ms and check again
+        text_to_speech = Voice()
+        text_to_speech.language = language
+        text_to_speech.sentence = text
+        while self.pub.get_num_connections() == 0:
+            rospy.sleep(0.1)  # Sleep for 100ms and check again
+        self.pub.publish(text_to_speech)
 
-            text_to_speech = Voice()
-            text_to_speech.language = 1
-            text_to_speech.sentence = text
-            rospy.loginfo("Waiting for subscribers...")
-            while self.pub.get_num_connections() == 0:
-                rospy.sleep(0.2)
-
-            rospy.loginfo("Publishing text-to-speech request")
-            self.pub.publish(text_to_speech)
-            rospy.loginfo("Published: " + text)
 
 
 class ImageSwitchPublisher:
