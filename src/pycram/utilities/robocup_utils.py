@@ -1,9 +1,10 @@
+import actionlib
 import rospy
 from sensor_msgs.msg import LaserScan
 from sound_play.msg import SoundRequestActionGoal, SoundRequest
 from std_msgs.msg import Int32
 from tmc_control_msgs.msg import GripperApplyEffortActionGoal
-from tmc_msgs.msg import Voice
+from tmc_msgs.msg import Voice, TalkRequestAction, TalkRequestActionGoal
 from pycram.designators.object_designator import *
 
 
@@ -80,35 +81,98 @@ class StartSignalWaiter:
 
         rospy.loginfo("Start signal received.")
 
+    def something_in_the_way(self):
+        """
+        Subscribe to the laser scan topic and wait for an obstacle to appear within a specified distance
+        before continuing.
+        """
+
+        def laser_scan_callback(msg):
+            ranges = list(msg.ranges)
+            rospy.loginfo(f"Received laser scan with {len(ranges)} ranges")
+            # Ensure there are enough elements in ranges
+            if len(ranges) > 501:
+                obstacle_detected = False
+                # Check if any value in the range 461 to 501 is smaller than 1.0
+                for i in range(460, 500):
+                    #print(ranges[i])
+                    if ranges[i] < 0.98:
+                        obstacle_detected = True
+                        rospy.loginfo(f"Obstacle detected at index {i} with range {ranges[i]}")
+                        break
+                if obstacle_detected:
+                    self.fluent.set_value(True)
+                    rospy.loginfo("Obstacle detected within 1.0 meter, unsubscribing from topic")
+                    self.current_subscriber.unregister()
+                    return True
+                else:
+                    self.fluent.set_value(True)
+                    rospy.loginfo("No Obstacle detected within 1.0 meter, unsubscribing from topic")
+                    self.current_subscriber.unregister()
+                    return False
+
+
+        rospy.loginfo("Waiting for obstacle detection signal.")
+        self.current_subscriber = rospy.Subscriber("hsrb/base_scan", LaserScan, laser_scan_callback)
+
+        rospy.loginfo("Waiting for obstacle to be detected")
+        self.fluent.wait_for()
+
+        rospy.loginfo("Obstacle detection signal received.")
+
 
 class TextToSpeechPublisher:
     """
     A class to publish text-to-speech requests in a ROS environment.
     """
-
-    def __init__(self, topic='/talk_request', queue_size=10):
+    #
+    # def __init__(self):  #
+    #     rospy.loginfo("talk init")
+    #     self.client = actionlib.SimpleActionClient('talk_request_action', TalkRequestAction)
+    #     rospy.loginfo("talk done")
+    # def init(self):
+    #     if self.client.wait_for_server():
+    #         rospy.loginfo("Waiting for talk ActionServer")
+    #     else:
+    #         rospy.loginfo("done waiting for talk action server")
+    #
+    # def interrupt(self):
+    #     self.client.cancel_all_goals()
+    #
+    # def pub_now(self, sentence, talk=True):
+    #     if talk:
+    #         msg = TalkRequestActionGoal()
+    #         msg.goal.data.language = 1
+    #         msg.goal.data.sentence = sentence
+    #         self.client.send_goal(msg)
+    #         wait = self.client.wait_for_result()
+    #         if not wait:
+    #             rospy.logerr("Action server not available!")
+    #
+    def __init__(self, topic='/talk_request', queue_size=100):
         """
         Initializes the TextToSpeechPublisher with a ROS publisher.
 
         :param topic: The ROS topic to publish text-to-speech requests to. Default is '/talk_request'.
-        :param queue_size: The size of the message queue for the publisher. Default is 10.
+        :param queue_size: The size of the message queue for the publisher. Default is 100.
         """
         self.pub = rospy.Publisher(topic, Voice, queue_size=queue_size)
         self.talking_sentence = ''
         rospy.Subscriber('/talking_sentence', String, self.talking_sentence_callback)
 
-    def talking_sentence_callback(self, msg, talk: bool = True):
+    def talking_sentence_callback(self, msg):
         """
         Callback function to update the talking_sentence attribute.
 
         :param msg: The ROS message received from the /talking_sentence topic.
         """
-        if talk:
-            self.talking_sentence = msg.data
+        #rospy.loginfo("Received message on /talking_sentence")
+        # self.talking_sentence = msg.data
 
-    def pub_now(self, text, language=1, sleep=0):
+    def pub_now(self, text, talk: bool = True):
+
         """
-        Publishes a text-to-speech request with the given text and language.
+        Publishes a text-to-speech request with the given text.
 
         :param text: The text to be spoken.
         :param language: The language of the text. 1 for English, 0 for Japanese. Default is 1 (English).
@@ -123,6 +187,7 @@ class TextToSpeechPublisher:
         while self.pub.get_num_connections() == 0:
             rospy.sleep(0.1)  # Sleep for 100ms and check again
         self.pub.publish(text_to_speech)
+
 
 
 class ImageSwitchPublisher:

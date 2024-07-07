@@ -32,6 +32,12 @@ guest1 = HumanDescription("Jule", fav_drink="tea")
 #for obj in world.current_bullet_world.objects:
 #    print(obj)
 
+def pakerino(torso_z=0.15):
+    config = {'arm_lift_joint': torso_z, 'arm_flex_joint': 0, 'arm_roll_joint': -1.2, 'wrist_flex_joint': -1.5,
+              'wrist_roll_joint': 0}
+    giskardpy.avoid_all_collisions()
+    giskardpy.achieve_joint_goal(config)
+    print("Parking done")
 
 # kitchen.set_joint_state("iai_kitchen:arena:door_origin_revolute_joint", 1)
 
@@ -44,29 +50,28 @@ def p():
 
             # to signal the start of demo
             # TalkingMotion("Hello, i am ready for the pp.py").resolve().perform()
-            ParkArmsAction([Arms.LEFT]).resolve().perform()
+            #ParkArmsAction([Arms.LEFT]).resolve().perform()
 
-            TalkingMotion("Welcome, please step in").resolve().perform()
-            MoveTorsoAction([0.1]).resolve().perform()
+            TalkingMotion("Test").resolve().perform()
+            #pakerino(0.15)
 
             TalkingMotion("detecting human now").resolve().perform()
-            rospy.sleep(2)
             desig = DetectAction(technique='human', state='start').resolve().perform()
-            HeadFollowAction('start').resolve().perform()
-            pub_nlp.publish("start listening")
+            giskardpy.move_head_to_human()
+            #pub_nlp.publish("start listening")
             # desig = DetectAction(technique='attributes').resolve().perform()
-
-
-
-
-            #TalkingMotion("Test").resolve().perform()
-            #rospy.sleep(1)
+            #rospy.sleep(7)
 
             try:
                 # remember face
-                keys = DetectAction(technique='human', state='face').resolve().perform()[1]
-                new_id = keys["keys"][0]
-                guest1.set_id(new_id)
+                #keys = DetectAction(technique='human', state='face').resolve().perform()[1]
+                #print(keys)
+                #new_id = keys["keys"][0]
+                #guest1.set_id(new_id)
+                #print(new_id)
+
+                #TalkingMotion("attributes now now").resolve().perform()
+                rospy.sleep(2)
 
 
                 # get clothes and gender
@@ -77,8 +82,10 @@ def p():
             except KeyError:
                 print("error")
 
-            HeadFollowAction('start').resolve().perform()
-            pub_pose.publish(keys[new_id])
+            #HeadFollowAction('start').resolve().perform()
+            print("keee")
+            #print(keys[new_id])
+            #pub_pose.publish(keys[new_id])
 
             rospy.sleep(2)
             TalkingMotion("end").resolve().perform()
