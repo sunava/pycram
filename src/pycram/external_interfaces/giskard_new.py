@@ -200,6 +200,7 @@ def achieve_joint_goal(goal_poses: Dict[str, float]) -> 'MoveResult':
 
     giskard_wrapper.motion_goals.add_joint_position(goal_poses)
     giskard_wrapper.add_default_end_motion_conditions()
+    giskard_wrapper.motion_goals.avoid_all_collisions()
     return giskard_wrapper.execute()
 
 
@@ -247,23 +248,23 @@ def achieve_sequence_te(pose1, obj_desig):
     return giskard_wrapper.execute()
 
 
-def achieve_sequence_pick_up(pose1, pose2):
+def achieve_sequence_pick_up(pose1):
     root_link = 'map'
     tip_link = 'hand_gripper_tool_frame'
     sync_worlds()
     cart_monitor1 = giskard_wrapper.monitors.add_cartesian_pose(root_link=root_link,
                                                                 tip_link=tip_link,
                                                                 goal_pose=_pose_to_pose_stamped(pose1),
-                                                                position_threshold=0.04,
-                                                                orientation_threshold=0.06,
-                                                                name='cart goal 1')
-    cart_monitor2 = giskard_wrapper.monitors.add_cartesian_pose(root_link=root_link,
-                                                                tip_link=tip_link,
-                                                                goal_pose=_pose_to_pose_stamped(pose2),
-                                                                position_threshold=0.015,
+                                                                position_threshold=0.02,
                                                                 orientation_threshold=0.02,
-                                                                name='cart goal 2',
-                                                                start_condition=cart_monitor1)
+                                                                name='cart goal 1')
+    # cart_monitor2 = giskard_wrapper.monitors.add_cartesian_pose(root_link=root_link,
+    #                                                             tip_link=tip_link,
+    #                                                             goal_pose=_pose_to_pose_stamped(pose2),
+    #                                                             position_threshold=0.03,
+    #                                                             orientation_threshold=0.03,
+    #                                                             name='cart goal 2',
+    #                                                             start_condition=cart_monitor1)
     # gripper_closed = giskard_wrapper.monitors.add_close_hsr_gripper(start_condition=cart_monitor2,
     #                                                                 name='close gripper')
     # cart_monitor3 = giskard_wrapper.monitors.add_cartesian_pose(root_link=root_link,
@@ -276,19 +277,19 @@ def achieve_sequence_pick_up(pose1, pose2):
     #                                                             goal_pose=_pose_to_pose_stamped(pose4),
     #                                                             name='cart goal 4',
     #                                                             start_condition=cart_monitor3)
-    end_monitor = giskard_wrapper.monitors.add_local_minimum_reached(start_condition=cart_monitor2)
+    end_monitor = giskard_wrapper.monitors.add_local_minimum_reached(start_condition=cart_monitor1)
 
     giskard_wrapper.motion_goals.add_cartesian_pose(name='g1',
                                                     root_link=root_link,
                                                     tip_link=tip_link,
                                                     goal_pose=_pose_to_pose_stamped(pose1),
                                                     end_condition=cart_monitor1)
-    giskard_wrapper.motion_goals.add_cartesian_pose(name='g2',
-                                                    root_link=root_link,
-                                                    tip_link=tip_link,
-                                                    goal_pose=_pose_to_pose_stamped(pose2),
-                                                    start_condition=cart_monitor1,
-                                                    end_condition=cart_monitor2)
+    # giskard_wrapper.motion_goals.add_cartesian_pose(name='g2',
+    #                                                 root_link=root_link,
+    #                                                 tip_link=tip_link,
+    #                                                 goal_pose=_pose_to_pose_stamped(pose2),
+    #                                                 start_condition=cart_monitor1,
+    #                                                 end_condition=cart_monitor2)
 
     # giskard_wrapper.motion_goals.add_cartesian_pose(name='g3',
     #                                                 root_link=root_link,
@@ -304,8 +305,8 @@ def achieve_sequence_pick_up(pose1, pose2):
     #                                                 end_condition=cart_monitor4)
 
     giskard_wrapper.monitors.add_end_motion(start_condition=end_monitor)
-    giskard_wrapper.motion_goals.avoid_all_collisions()
-    giskard_wrapper.motion_goals.allow_collision(group1='gripper', group2=CollisionEntry.ALL, start_condition=cart_monitor1)
+    #giskard_wrapper.motion_goals.avoid_all_collisions()
+    giskard_wrapper.motion_goals.allow_collision(group1='gripper', group2=CollisionEntry.ALL)
     return giskard_wrapper.execute()
 
 
