@@ -29,7 +29,7 @@ run_command(f'gnome-terminal -- bash -c "tmux new-session -d -s {session_name}; 
             f'tmux split-window -v -t {session_name}:0.0; '
             f'tmux split-window -v -t {session_name}:0.1; '
             f'tmux split-window -v -t {session_name}:0.2; '
-            f'tmux send-keys -t {session_name}:0.0 \'hsr;roslaunch suturo_bringup envi_bringup.launch\' C-m; '
+            f'tmux send-keys -t {session_name}:0.0 \'hsr;roslaunch suturo_bringup sg_bringup.launch\' C-m; '
             f'tmux send-keys -t {session_name}:0.1 \'hsr;roslaunch giskardpy giskardpy_hsr_real_vel.launch\' C-m; '
             f'tmux send-keys -t {session_name}:0.2 \'hsr;workonrobokudo; rosrun robokudo main.py _ae=object_detection _ros_pkg=milestone1\' C-m; '
             f'tmux send-keys -t {session_name}:0.3 \'sshpass -p hsrhmi ssh -t hsr-hmi@hsrb.local\' C-m; '

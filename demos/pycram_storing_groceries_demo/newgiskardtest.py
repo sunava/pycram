@@ -1,5 +1,7 @@
 import numpy as np
 import rospy
+import tf
+from geometry_msgs.msg import PointStamped
 
 from demos.pycram_storing_groceries_demo.utils.misc import *
 from pycram.designators.location_designator import find_placeable_pose
@@ -19,13 +21,13 @@ from pycram.ros.viz_marker_publisher import VizMarkerPublisher
 from pycram.designators.object_designator import *
 from pycram.bullet_world import BulletWorld, Object
 from pycram.utilities.robocup_utils import TextToSpeechPublisher, ImageSwitchPublisher, StartSignalWaiter, \
-    HSRBMoveGripperReal
+    HSRBMoveGripperReal, pakerino
 from pycram.designator import LocationDesignatorDescription
 import random
 
 world = BulletWorld()
 v = VizMarkerPublisher()
-kitchen = Object("kitchen", ObjectType.ENVIRONMENT, "suturo_lab_version_15.urdf")
+kitchen = Object("kitchen", ObjectType.ENVIRONMENT, "pre_robocup_sg.urdf")
 kitchen_desig = ObjectDesignatorDescription(names=["kitchen"])
 
 talk = TextToSpeechPublisher()
@@ -176,13 +178,6 @@ def pickerino(object_desig, grasp, arm, talk, frame):
     gripper.pub_now("close")
 
 
-def pakerino(torso_z=0.15, config=None):
-    if not config:
-        config = {'arm_lift_joint': torso_z, 'arm_flex_joint': 0, 'arm_roll_joint': -1.2, 'wrist_flex_joint': -1.5,
-                  'wrist_roll_joint': 0}
-    giskardpy.avoid_all_collisions()
-    giskardpy.achieve_joint_goal(config)
-    print("Parking done")
 
 
 def monitor_func_place():
@@ -256,7 +251,7 @@ def multiply_quaternions(q1, q2):
     return (x, y, z, w)
 
 
-def sort_object_data_by_angle_and_height_with_threshold(object_data, angle_threshold):
+def sort_object_data_by_angle_and_height_with_threshold(object_data, angle_threshold, grasp):
     # Sort the object_data by height in descending order
     sorted_by_height = sorted(object_data.items(), key=lambda item: -item[1]['height'])
 
@@ -279,16 +274,19 @@ def sort_object_data_by_angle_and_height_with_threshold(object_data, angle_thres
     return dict(adjusted_list)
 
 
-# Now `sorted_object_data` is sorted by the lowest angle and highest height
 
 
 def demo(step):
     with real_robot:
+        giskardpy.clear()
+
+
         # Wait for the start signal
         gripper.pub_now("close")
-        config = {'arm_lift_joint': 0.64, 'arm_flex_joint': 0, 'arm_roll_joint': -1.2, 'wrist_flex_joint': -1.5,
-                  'wrist_roll_joint': 0}
-        # pakerino()
+        pakerino()
+
+
+
 
         locationtoplace = Pose([2.6868790796016738, 5.717920690528091, 0.715])
 
@@ -305,167 +303,164 @@ def demo(step):
         groups_on_table = {}
 
         if step <= 3:
-            rospy.logerr("driving")
             talk.pub_now("driving", True)
             move.pub_now(table_pose)
-            pose1 = Pose([1.35, 4.4, 0], [0, 0, 1, 0])
-            move.pub_now(pose1)
-        #     look_pose = kitchen.get_link_pose("popcorn_table:p_table:table_center")
-        #     # look_pose.pose.position.x += 0.5
-        #     giskardpy.move_head_to_pose(locationtoplace)
-        #     # giskardpy.move_head_to_pose(look_pose)
-        #     # LookAtAction(targets=[look_pose]).resolve().perform()  # 0.18
-        #     # LookAtAction(targets=[look_pose]).resolve().perform()
-        #     table_obj = DetectAction(technique='all').resolve().perform()
-        #     first, *remaining = table_obj
-        #     for dictionary in remaining:
-        #         for value in dictionary.values():
-        #             try:
-        #                 group = find_group(value.type)
-        #                 groups_on_table[value.name] = [value, group]
-        #
-        #             except AttributeError:
-        #                 pass
-        # obj_to_place = None
-        #
-        #
-        # if step <= 4:
-        #     giskardpy.sync_worlds()
-        #     # print(groups_on_table.keys())
-        #     # Initialize an empty dictionary to store the data
-        #     object_data = {}
-        #
-        #     for obj in groups_on_table.values():
-        #         lt = LocalTransformer()
-        #         robot = BulletWorld.robot
-        #
-        #         # Retrieve object and robot from designators
-        #         object = obj[0].bullet_world_object
-        #
-        #         # Calculate the object's pose in the map frame
-        #         oTm = object.get_pose()
-        #         execute = True
-        #
-        #         oTb = lt.transform_pose(oTm, kitchen.get_link_tf_frame(popcorn_frame))
-        #         angle = helper.quaternion_to_angle((oTb.pose.orientation.x, oTb.pose.orientation.y,
-        #                                             oTb.pose.orientation.z, oTb.pose.orientation.w))
-        #         object_dim = object.get_object_dimensions()
-        #         print("obj deim von " + str(object.name) + str(object.get_object_dimensions()))
-        #
-        #         #height
-        #         if object_dim[2] < 0.11:
-        #             rospy.logwarn(object.name + "grasp is set to top")
-        #             grasp = "top"
-        #             #<oTb.pose.position.z += (object_dim[2]/10)
-        #         else:
-        #             rospy.logwarn(object.name + "grasp is set to front")
-        #             grasp = "front"
-        #
-        #         if object_dim[2]< 0.02:
-        #             oTb.pose.position.z = 0.011
-        #         grasp_rotation = robot_description.grasps.get_orientation_for_grasp(grasp)
-        #         if object_dim[0] > 0.099 or grasp == "top":
-        #             rospy.logwarn(object.name + "width is bigger then 0.099 or graso is set to top")
-        #             grasp_q = Quaternion(grasp_rotation[0], grasp_rotation[1], grasp_rotation[2], grasp_rotation[3])
-        #             oTb.orientation = multiply_quaternions(oTb.pose.orientation, grasp_q)
-        #
-        #         else:
-        #             rospy.logwarn(object.name + "object is small enough")
-        #             print(grasp_rotation)
-        #             oTb.orientation = grasp_rotation
-        #
-        #         oTmG = lt.transform_pose(oTb, "map")
-        #         print(obj[0].name)
-        #
-        #         offsetTbase = lt.transform_pose(oTb, obj[0].name)
-        #
-        #         if grasp == "top":
-        #             print("pose adjusted with z")
-        #             offsetTbase.pose.position.z += 0.0
-        #         else:
-        #             print("pose adjusted with y")
-        #             offsetTbase.pose.position.x -= 0.0
-        #
-        #
-        #         pre_pose = lt.transform_pose(offsetTbase, "map")
-        #         BulletWorld.current_bullet_world.add_vis_axis(oTmG)
-        #         # Store the data in the dictionary
-        #         object_data[object.name] = {
-        #             "pick_pose": oTmG,
-        #             "pre_pose": pre_pose,
-        #             "angle": angle,
-        #             "height": object_dim[2],
-        #             "width": object_dim[0],
-        #             "grasp": grasp,
-        #             "obj": obj[0]
-        #         }
-        #
-        #     # Example usage:
-        #     angle_threshold = 15  # Define your angle threshold here
-        #     sorted_and_adjusted_object_data = sort_object_data_by_angle_and_height_with_threshold(object_data,
-        #                                                                                           angle_threshold)
-        #
-        #     first_key = next(iter(sorted_and_adjusted_object_data))
-        #
-        #
-        #
-        #     for obj in sorted_and_adjusted_object_data:
-        #         object_info = object_data[obj]
-        #
-        #         # Access individual attributes
-        #         pick_pose = object_info['pick_pose']
-        #         pre_pose = object_info['pre_pose']
-        #         angle = object_info['angle']
-        #         height = object_info['height']
-        #         width = object_info['width']
-        #         grasp = object_info['grasp']
-        #         obj = object_info['obj']
-        #
-        #
-        #         gripper.pub_now("open")
-        #         talk.pub_now("Pick Up now!" + obj.bullet_world_object.name.split('_')[0])
-        #         #giskard_return = giskardpy.achieve_sequence_pick_up(pre_pose, pick_pose)
-        #
-        #         giskard_success = True
-        #         max_attempts = 3  # Limit the number of attempts to avoid infinite loops
-        #         attempts = 0
-        #
-        #         while giskard_success and attempts < max_attempts:
-        #             giskard_return = giskardpy.achieve_sequence_pick_up(pre_pose, pick_pose)
-        #             attempts += 1
-        #             if giskard_return.error and giskard_return.error.msg:
-        #                 giskard_success = False
-        #             else:
-        #                 # If the action was successful, break the loop
-        #                 # Alternatively, update the logic to retry if certain conditions are met
-        #                 break
-        #         #giskard_return = giskardpy.achieve_placing_without_prepose(oTmG, obj, kitchen)
-        #         # oTg = lt.transform_pose(oTmG, robot.get_link_tf_frame("hand_gripper_tool_frame"))
-        #         # oTg.pose.position.z += 0.03
-        #         # otm_special = lt.transform_pose(oTmG, "map")
-        #         # giskardpy.achieve_sequence_pick_up(otm_special)
-        #         print(giskard_return.error.msg)
-        #         giskardpy.achieve_attached(obj)
-        #         tip_link = 'hand_gripper_tool_frame'
-        #         BulletWorld.robot.attach(object=obj.bullet_world_object, link=tip_link)
-        #         gripper.pub_now("close")
-        #         giskardpy.avoid_all_collisions()
-        #         pakerino()
-        #         gripper.pub_now("open")
-        #
-        #
-        #
 
-        # locationtoplace = Pose([2.7868790796016738, 5.617920690528091, 0.815])
-        # placerino(obj_to_place, "front", "left", talk, locationtoplace, popcorn_frame)
+            look_pose = kitchen.get_link_pose("popcorn_table:p_table:table_center")
+            # look_pose.pose.position.x += 0.5
+            giskardpy.move_head_to_pose(locationtoplace)
+            # giskardpy.move_head_to_pose(look_pose)
+            # LookAtAction(targets=[look_pose]).resolve().perform()  # 0.18
+            # LookAtAction(targets=[look_pose]).resolve().perform()
+            talk.pub_now("perceiving", True)
+            try:
+                table_obj = DetectAction(technique='all').resolve().perform()
+                first, *remaining = table_obj
+                for dictionary in remaining:
+                    for value in dictionary.values():
+                        try:
+                            group = find_group(value.type)
+                            groups_on_table[value.name] = [value, group]
 
-        #
-        #
-        # obj_to_place = obj[0]
-        # # PickUpAction(obj[0], ["left"], ["front"]).resolve().perform()
+                        except AttributeError:
+                            pass
+            except PerceptionObjectNotFound:
+                rospy.logwarn("Could not find any objects")
 
-        # pakerino()
-        # gripper.pub_now("close")
+                talk.pub_now("I am Done, i hope i did good!")
+                pass
+
+        if groups_on_table:
+            lt = LocalTransformer()
+            groups_on_table_w_table_frame = {}
+            for key, obj in groups_on_table.items():
+                obj_pose = obj[0].bullet_world_object.pose
+                tf_link = kitchen.get_link_tf_frame(popcorn_frame)
+                oTb = lt.transform_pose(obj_pose, tf_link)
+                groups_on_table_w_table_frame[key] = (obj[0], oTb)
+
+            # Sort the dictionary by the x coordinate of the transformed pose
+            sorted_groups = sorted(groups_on_table_w_table_frame.items(), key=lambda item: item[1][1].position.x)
+            # Convert sorted list of tuples back to a dictionary if needed
+            sorted_dict = dict(sorted_groups)
+
+            giskardpy.sync_worlds()
+            # print(groups_on_table.keys())
+            # Initialize an empty dictionary to store the data
+            object_data = {}
+            pakerino()
+            if sorted_dict:
+                first_key, first_value = next(iter(sorted_dict.items()))
+                first_object = first_value[0]
+                oTb = first_value[1]
+                id = first_object.bullet_world_object.id
+                object_name = first_object.bullet_world_object.name
+                object = first_object.bullet_world_object
+                # Calculate the object's pose in the map frame
+                angle = helper.quaternion_to_angle((oTb.pose.orientation.x, oTb.pose.orientation.y,
+                                                    oTb.pose.orientation.z, oTb.pose.orientation.w))
+                object_dim = object.get_object_dimensions()
+
+
+                print("obj dim von " + str(object_name) + str(object_dim))
+
+                #todome you will have to check prerobocup if 0 or 1 here important is
+                if object_dim[2] < 0.065 or angle > 40 and (object_dim[0] > 0.09 and object_dim[1] > 0.09):
+                    rospy.logwarn(object_name + " grasp is set to top, angle: " + str(angle))
+                    rospy.logwarn(object_name + " and height " + str(object_dim[2]))
+                    rospy.logwarn(object_name + " and width " + str(object_dim[0]))
+                    grasp = "top"
+                else:
+                    rospy.logwarn(object_name + " grasp is set to front, angle: " + str(angle))
+                    rospy.logwarn(object_name + " and height " + str(object_dim[2]))
+                    rospy.logwarn(object_name + " and width " + str(object_dim[0]))
+                    grasp = "front"
+
+                offsetTbase = oTb.copy()
+                if grasp == "top":
+                    print("pose adjusted with z")
+                    oTb.pose.position.z += (object_dim[2] / 10)
+                    offsetTbase.pose.position.z += 0.04
+                    if object_dim[2] < 0.02:
+                        oTb.pose.position.z = 0.011
+                else:
+                    oTb.pose.position.x += 0.03
+                    offsetTbase.pose.position.x -= 0.06
+
+                grasp_rotation = robot_description.grasps.get_orientation_for_grasp(grasp)
+                if grasp == "top":
+                    grasp_q = Quaternion(grasp_rotation[0], grasp_rotation[1], grasp_rotation[2], grasp_rotation[3])
+                    oTb.orientation = multiply_quaternions(oTb.pose.orientation, grasp_q)
+                    offsetTbase.orientation = multiply_quaternions(offsetTbase.pose.orientation, grasp_q)
+                else:
+                    oTb.orientation = grasp_rotation
+                    offsetTbase.orientation = grasp_rotation
+
+                # noteme oTb is basicly the normal grasp
+                oTmG = lt.transform_pose(oTb, "map")
+                pre_pose = lt.transform_pose(offsetTbase, "map")
+                z_color = [1, 0, 1, 1]
+                BulletWorld.current_bullet_world.add_vis_axis(pre_pose, z_color=z_color)
+                BulletWorld.current_bullet_world.add_vis_axis(oTmG)
+
+                # # Store the data in the dictionary
+                # object_data[object.name] = {
+                #     "pick_pose": oTmG,
+                #     "pre_pose": pre_pose,
+                #     "angle": angle,
+                #     "height": object_dim[2],
+                #     "width": object_dim[0],
+                #     "grasp": grasp,
+                #     "obj": obj[0],
+                #     "id": id
+                # }
+
+                # Access individual attributes
+                pick_pose = oTmG
+                pre_pose = pre_pose
+                angle = angle
+                height = object_dim[2]
+                width = object_dim[0]
+                grasp = grasp
+                obj = object
+
+                config_for_placing = {
+                    'arm_flex_joint': 0,
+                    'arm_lift_joint': 0.15,
+                    'arm_roll_joint': 0,
+                    'wrist_flex_joint': -1.5,
+                    'wrist_roll_joint': 0,
+                }
+
+                pakerino(config=config_for_placing)
+
+                # gripper.pub_now("open")
+                # talk.pub_now("Pick Up now! " + obj.bullet_world_object.name.split('_')[0] + "from:  " + str(grasp))
+                # giskard_return = giskardpy.achieve_sequence_pick_up(pre_pose, pick_pose)
+
+
+
+                # world.current_bullet_world.add_vis_axis(pre_pose)
+                # world.current_bullet_world.add_vis_axis(pick_pose)
+                # giskard_return = giskardpy.achieve_sequence_pick_up(pre_pose, pick_pose)
+
+                # giskard_return = giskardpy.achieve_placing_without_prepose(oTmG, obj, kitchen)
+                # oTg = lt.transform_pose(oTmG, robot.get_link_tf_frame("hand_gripper_tool_frame"))
+                # oTg.pose.position.z += 0.03
+                # otm_special = lt.transform_pose(oTmG, "map")
+                # giskardpy.achieve_sequence_pick_up(otm_special)
+                # print(giskard_return.error.msg)
+
+                giskardpy.achieve_attached(object)
+                tip_link = 'hand_gripper_tool_frame'
+                BulletWorld.robot.attach(object=object, link=tip_link)
+                gripper.pub_now("close")
+                giskardpy.avoid_all_collisions()
+                pakerino()
+                gripper.pub_now("open")
+                world.current_bullet_world.remove_object_w_id([id])
+                giskardpy.clear()
+                demo(0)
 
 
 demo(0)

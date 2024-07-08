@@ -309,13 +309,11 @@ def achieve_sequence_pick_up(pose1, pose2):
     return giskard_wrapper.execute()
 
 
-def achieve_attached(obj_desig):
+def achieve_attached(obj_desig, tip_link='hand_gripper_tool_frame'):
     root_link = 'map'
-    tip_link = 'hand_gripper_tool_frame'
     sync_worlds()
     giskard_wrapper.world.update_parent_link_of_group(
-        name=obj_desig.bullet_world_object.name + "_" + str(obj_desig.bullet_world_object.id), parent_link=tip_link)
-
+        name=obj_desig.name + "_" + str(obj_desig.id), parent_link=tip_link)
 
 def achieve_sequence_place(pose1, pose2):
     root_link = 'map'

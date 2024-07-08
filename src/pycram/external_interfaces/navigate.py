@@ -54,16 +54,17 @@ class PoseNavigator():
             rospy.sleep(0.1)  # Sleep for 100ms and check again
         self.pub.publish(navpose)
 
-        near_goal = False
-        rospy.loginfo("Pose was published")
-        if self.toya_pose is not None:
-            dis = math.sqrt((self.goal_pose.pose.position.x - self.toya_pose.x) ** 2 +
-                            (self.goal_pose.pose.position.y - self.toya_pose.y) ** 2)
-            rospy.loginfo("Distance to goal: " + str(dis))
-            if dis < 0.15:
-                rospy.logwarn("Near Pose")
-                self.interrupt()
-                return True
-            else:
-                rospy.logerr("pose is not near goal, try recalling")
-                return False
+        while not rospy.is_shutdown():
+            near_goal = False
+            rospy.loginfo("Pose was published")
+            if self.toya_pose is not None:
+                dis = math.sqrt((self.goal_pose.pose.position.x - self.toya_pose.x) ** 2 +
+                                (self.goal_pose.pose.position.y - self.toya_pose.y) ** 2)
+                rospy.loginfo("Distance to goal: " + str(dis))
+                if dis < 0.04:
+                    rospy.logwarn("Near Pose")
+                    self.interrupt()
+                    return True
+                else:
+                    rospy.logerr("robot needs more time")
+                    rospy.sleep(0.2)

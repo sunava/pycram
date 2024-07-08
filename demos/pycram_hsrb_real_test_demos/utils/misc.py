@@ -96,7 +96,7 @@ def placerino(obj, grasp, arm, talk, target_location, kitchen_name):
     #special_knowledge_offsetTm = lt.transform_pose(special_knowledge_offset, "map")
     # push_baseTm.pose.position.z -= 2
     talk.pub_now("Placing now!")
-    giskardpy.achieve_placing_without_prepose(oTmG, obj.name, kitchen_nameecho"Pane4";execbash)
+    #giskardpy.achieve_placing_without_prepose(oTmG, obj.name, kitchen_nameecho"Pane4";execbash)
 
     talk.pub_now("opening my gripper")
     MoveGripperMotion(motion="open", gripper="left").resolve().perform()
