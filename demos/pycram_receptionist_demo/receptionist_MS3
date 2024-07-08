@@ -2,6 +2,16 @@ ALLES IN HSR_MODE ÖFFNEN!!!!!!
 
 1. pycharm
 
+
+##########################################################
+# Launch Script path
+cd /home/suturo/suturo23_24/pycram_ws/src/pycram/demos/util-scripts
+python3 setup-recepetionist.py
+
+########################################################
+
+oder:
+
 2. Receptionist Launch (startet rviz, couch, giskard, rasa und doorbell):
 roslaunch pycram receptionist.launch
 
@@ -28,16 +38,19 @@ roslaunch giskardpy giskardpy_hsr_real_vel.launch)
 
 
 
-# Launch Script path
-cd /home/suturo/suturo23_24/pycram_ws/src/pycram/demos/util-scripts
-python3 setup-recepetionist.py
-
 
 7. Debugging
 ssh administrator@hsrb.local
 docker logs --tail 50 --follow --timestamps docker.hsrb.robot.service  
 (htop alle jobs anzeigen)
+-------
+delay check:
+rostopic delay /hsrb/base_scan
 
+fixen mit shh auf admin und dann:
+sudo chronyd -q 'server 192.168.0.122 iburst'
+
+-----
 
 # wenn velocity Controller die ganze Zeit Fehler wirft
 admin mode:  roslaunch unload_load_my_controller.launch 

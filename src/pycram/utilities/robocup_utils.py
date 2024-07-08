@@ -105,7 +105,7 @@ class StartSignalWaiter:
             if len(ranges) > 501:
                 obstacle_detected = False
                 # Check if any value in the range 461 to 501 is smaller than 1.0
-                for i in range(460, 500):
+                for i in range(470, 510):
                     # print(ranges[i])
                     if ranges[i] < 0.98:
                         obstacle_detected = True
@@ -142,19 +142,21 @@ class TextToSpeechPublisher():
         self.status_list = msg.status_list
 
 
-    def pub_now(self, sentence):
-        while not rospy.is_shutdown():
-            if not self.status_list:  # Check if the status list is empty
-                goal_msg = TalkRequestActionGoal()
-                goal_msg.header.stamp =  rospy.Time.now()
-                goal_msg.goal.data.language = 1
-                goal_msg.goal.data.sentence = sentence
+    def pub_now(self, sentence, talk_bool: bool = True, wait_bool: bool = True):
+        rospy.loginfo(sentence)
+        if talk_bool:
+            while not rospy.is_shutdown():
+                if not self.status_list or not wait_bool:  # Check if the status list is empty
+                    goal_msg = TalkRequestActionGoal()
+                    goal_msg.header.stamp =  rospy.Time.now()
+                    goal_msg.goal.data.language = 1
+                    goal_msg.goal.data.sentence = sentence
 
-                while self.pub.get_num_connections() == 0:
-                    rospy.sleep(0.1)
+                    while self.pub.get_num_connections() == 0:
+                        rospy.sleep(0.1)
 
-                self.pub.publish(goal_msg)
-                break
+                    self.pub.publish(goal_msg)
+                    break
 
 class ImageSwitchPublisher:
     """

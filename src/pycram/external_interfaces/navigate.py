@@ -32,7 +32,7 @@ class PoseNavigator():
         print("interrupting hehe")
         self.client.cancel_all_goals()
 
-    def pub_now(self, navpose: PoseStamped) -> bool:
+    def pub_now(self, navpose: PoseStamped, interrupt_bool: bool = True) -> bool:
         rospy.logerr("New implementation!")
 
         self.goal_pose = navpose
@@ -62,8 +62,9 @@ class PoseNavigator():
             rospy.loginfo("Distance to goal: " + str(dis))
             if dis < 0.15:
                 rospy.logwarn("Near Pose")
-                self.interrupt()
+                if interrupt_bool:
+                    self.interrupt()
                 return True
-            else:
-                rospy.logerr("pose is not near goal, try recalling")
-                return False
+            # else:
+            #     rospy.logerr("pose is not near goal, try recalling")
+            #     return False

@@ -1,20 +1,22 @@
-import time
-
 import rospy
-from geometry_msgs.msg import PointStamped
+from move_base_msgs.msg import MoveBaseAction
+from roslibpy import actionlib
 
 from pycram.designators.action_designator import *
 from demos.pycram_receptionist_demo.utils.new_misc import *
-from pycram.designators.motion_designator import MoveGripperMotion
 from pycram.enums import ObjectType
+from pycram.external_interfaces.navigate import PoseNavigator
 from pycram.process_module import real_robot
-import pycram.external_interfaces.giskard as giskardpy
+import pycram.external_interfaces.giskard_new as giskardpy
 from pycram.ros.robot_state_updater import RobotStateUpdater
 from pycram.ros.viz_marker_publisher import VizMarkerPublisher
 from pycram.designators.location_designator import *
 from pycram.designators.object_designator import *
 from pycram.bullet_world import BulletWorld, Object
 from std_msgs.msg import String, Bool
+from pycram.enums import ImageEnum as ImageEnum
+from pycram.utilities.robocup_utils import TextToSpeechPublisher, ImageSwitchPublisher, SoundRequestPublisher, \
+    HSRBMoveGripperReal, StartSignalWaiter
 
 world = BulletWorld("DIRECT")
 v = VizMarkerPublisher()
@@ -23,10 +25,9 @@ robot = Object("hsrb", "robot", "../../resources/" + robot_description.name + ".
 robot_desig = ObjectDesignatorDescription(names=["hsrb"]).resolve()
 robot.set_color([0.5, 0.5, 0.9, 1])
 
-kitchen = Object("kitchen", ObjectType.ENVIRONMENT, "suturo_lab_version_10.urdf")
-print("giskard")
+kitchen = Object("kitchen", ObjectType.ENVIRONMENT, "pre_robocup_5.urdf")
 giskardpy.init_giskard_interface()
-giskardpy.sync_worlds()
+# giskardpy.sync_worlds()
 RobotStateUpdater("/tf", "/giskard_joint_states")
 kitchen_desig = BelieveObject(names=["kitchen"])
 print("starting nlp")
@@ -34,6 +35,8 @@ print("starting nlp")
 pub_nlp = rospy.Publisher('/startListener', String, queue_size=10)
 response = ""
 callback = False
+# giskardpy.sync_worlds()
+move = PoseNavigator()
 
 # Declare variables for humans
 host = HumanDescription("Lukas", fav_drink="Coffee")
@@ -124,7 +127,7 @@ def demo_tst():
 
         if test_all:
             # lead human to living room
-            NavigateAction([pose_kitchen_to_couch]).resolve().perform()
+            #NavigateAction([pose_kitchen_to_couch]).resolve().perform()
             NavigateAction([pose_couch]).resolve().perform()
             TalkingMotion("Welcome to the living room").resolve().perform()
             rospy.sleep(1)
@@ -271,29 +274,19 @@ def dishwasher():
                          arms=arms).resolve().perform()
 
 def looking():
-    object_orientation = axis_angle_to_quaternion([0, 0, 1], 180)
     with real_robot:
-        TalkingMotion("start").resolve().perform()
-        pose2 = Pose([2, 4.4, 0], [0, 0, 1, 0])
-        NavigateAction([pose2]).resolve().perform()
+        talk.pub_now("start")
+        print(robot.get_pose())
+        move.pub_now(after_door_pose)
+        talk.pub_now("rotate")
+        move.pub_now(after_door_ori, interrupt_bool=False)
+        talk.pub_now("navigate")
+        move.pub_now(pose_corner)
 
 
 
-# demo_tst()
-# open_tst()
-# partesr()
-#demo_tst()
+
+
 looking()
-#print("preparing dishwasher")
-#dishwasher()
 
-#with real_robot:
-#    ParkArmsAction(['left']).resolve().perform()
-
-# TODO: Faliure handling
-# Menschen nicht sehen
-# Navigieren, bis sie Pose erreicht, neu navigieren bis Punkt erreicht
-# für Platze kein freier Platz erkannt -> andere Head pose usw.
-# optional: wenn Mensch vor einem wahrgenommen -> call vom Roboter, dass Mensch hinten bleibt
-# Menschen usw nicht außerhalb der Arena wahrnehmen
 
