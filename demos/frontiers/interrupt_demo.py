@@ -164,7 +164,7 @@ def update_current_command():
                 #dict_object(type="milk", color="blue", name="milk1", location="countertop", size="normal"),
                 dict_object(type="milk", color="red", name="milk2", location="countertop", size="big"),
                 dict_object(type="cereal", color="green", name="cereal", location="countertop", size="normal"),
-                dict_object(type="cup", color="white", name="cup", location="", size="Normal"),
+                #dict_object(type="cup", color="white", name="cup", location="", size="Normal"),
                 dict_object(type="spoon", color="blue", name="spoon", location="", size="normal")
             ]
 
@@ -191,13 +191,16 @@ def update_current_command():
             add_cmd = current_cmd.get("minor", {}).get("add_object")
             if add_cmd:
                 add_obj = add_cmd[0]
-                new_attributes = (
-                    add_obj.type.lower(), add_obj.color, add_obj.name.lower(), add_obj.location, add_obj.size.lower()
-                )
-                if all(attr == '' for attr in new_attributes):
-                    new_attributes = None
+                if not handled_objects.__contains__(add_obj.type.lower()):
+                    new_attributes = (
+                        add_obj.type.lower(), add_obj.color, add_obj.name.lower(), add_obj.location, add_obj.size.lower()
+                    )
+                    if all(attr == '' for attr in new_attributes):
+                        new_attributes = None
+                    else:
+                        print(f"New attributes: {new_attributes}")
                 else:
-                    print(f"New attributes: {new_attributes}")
+                    new_attributes = None
             else:
                 new_attributes = None
 
@@ -208,7 +211,7 @@ def update_current_command():
                 unhandled_objects.append(obj_type)
                 print(f"Replaced object with new attributes: {new_attributes}")
             else:
-                rospy.logerr("Attributes do not match for replacement or new attributes are missing. Ignoring")
+                rospy.logerr("Attributes do not match for replacement, new attributes are missing, or object type has already been handled. Ignoring")
                 ignored_commands += 1
 
         elif minor_cmd == "bring_me":
