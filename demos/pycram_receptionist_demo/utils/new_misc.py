@@ -61,26 +61,21 @@ def multiply_quaternions(q1, q2):
 
 
 # door_pose
-robot_orientation1 = axis_angle_to_quaternion([0, 0, 1], 180)
+robot_orientation_living_room = axis_angle_to_quaternion([0, 0, 1], -90)
 after_door_pose = Pose([1.9, 4.5, 0], [0, 0, 1, 0])
 
 new_q = axis_angle_to_quaternion((0,0,1), -90)
-new_ori = multiply_quaternions(new_q, robot_orientation1)
+# new_ori = multiply_quaternions(new_q, robot_orientation1)
 
 pose_corner = Pose([1.9, 2.85, 0], [0, 0, 0, 1])
+pose_corner_back = Pose([1.9, 2.85, 0], [0, 0, 0.715, 0.698])
 
 after_door_ori = Pose([1.9, 4.5, 0], [0, 0, -0.7, 0.6])
 
 # Pose in the passage between kitchen and living room
-robot_orientation = Pose([3.65, 2.85, 0], [0,0,1,0])
-door_to_couch = Pose([3.65, 2.85, 0], robot_orientation)
+robot_orientation = [0, 0, -0.726, 0.686]
+door_to_couch = Pose([3.45, 2.8, 0], robot_orientation)
 
-
-new_q = axis_angle_to_quaternion((0,0,1), -90)
-#new_ori = multiply_quaternions(new_q, robot_orientation)
-door_to_couch_orientation = Pose([3.65, 2.85, 0], new_ori)
-
-door_to_couch_look = Pose([3.65, 2.8, 0.8], robot_orientation)
 
 
 def data_cb(data):
@@ -174,7 +169,7 @@ def name_repeat():
         pub_nlp.publish("start")
 
         # sound/picture
-        rospy.sleep(3.5)
+        rospy.sleep(3)
         image_switch_publisher.pub_now(ImageEnum.TALK.value)
 
         start_time = time.time()
@@ -190,6 +185,38 @@ def name_repeat():
         if response[0] == "<GUEST>" and response[1].strip() != "None":
             return response[1]
 
+def drink_repeat():
+    """
+    HRI-function to ask for drink again once.
+    """
+    global callback
+    global response
+    global wait_bool
+    callback = False
+    got_name = False
+    rospy.Subscriber("nlp_out", String, data_cb)
+
+    while not got_name:
+        talk.pub_now("i am sorry, please repeat your drink loud and clear", wait_bool=wait_bool)
+        rospy.sleep(1)
+        pub_nlp.publish("start")
+
+        # sound/picture
+        rospy.sleep(3)
+        image_switch_publisher.pub_now(ImageEnum.TALK.value)
+
+        start_time = time.time()
+        while not callback:
+            # signal repeat to human
+            if time.time() - start_time == timeout:
+                print("guest needs to repeat")
+                image_switch_publisher.pub_now(ImageEnum.JREPEAT.value)
+
+        image_switch_publisher.pub_now(ImageEnum.HI.value)
+        callback = False
+
+        if response[0] == "<GUEST>" and response[2].strip() != "None":
+            return response[2]
 
 def drink_confirm(drink):
     """
@@ -268,7 +295,7 @@ def introduce(human1: HumanDescription, human2: HumanDescription):
         pub_pose.publish(human2.pose)
         rospy.sleep(1)
     talk.pub_now(f" This is {human2.name} and their favorite drink is {human2.fav_drink}", wait_bool=wait_bool)
-    rospy.sleep(2)
+    rospy.sleep(2.2)
     talk.pub_now(f"Hey, {human2.name}", wait_bool=wait_bool)
     rospy.sleep(1.5)
 
