@@ -351,246 +351,6 @@
     <parent link="shelf:shelf:shelf_base_center"/>
     <child link="shelf:shelf:shelf_floor_2"/>
   </joint>
-  <joint name="wall_1_center_joint" type="fixed">
-    <origin xyz="0.515 0.5015 0.3" rpy="0 0 0"/>
-    <parent link="urdf_offset"/>
-    <child link="wall_1_link"/>
-  </joint>
-  <link name="wall_1_link">
-    <visual>
-      <origin xyz="0.0 0.0 0.0" rpy="0.0 0.0 1.5707963267948966"/>
-      <geometry>
-        <box size="0.173 0.06 0.6"/>
-      </geometry>
-      <material name="wall_pink"/>
-    </visual>
-    <collision>
-      <origin xyz="0.0 0.0 0.0" rpy="0.0 0.0 1.5707963267948966"/>
-      <geometry>
-        <box size="0.173 0.06 0.6"/>
-      </geometry>
-    </collision>
-  </link>
-  <joint name="wall_2_center_joint" type="fixed">
-    <origin xyz="0.91 0.53 0.3" rpy="0 0 0"/>
-    <parent link="urdf_offset"/>
-    <child link="wall_2_link"/>
-  </joint>
-  <link name="wall_2_link">
-    <visual>
-      <origin xyz="0.0 0.0 0.0" rpy="0.0 0.0 0.0"/>
-      <geometry>
-        <box size="1.32 0.06 0.6"/>
-      </geometry>
-      <material name="wall_pink"/>
-    </visual>
-    <collision>
-      <origin xyz="0.0 0.0 0.0" rpy="0.0 0.0 0.0"/>
-      <geometry>
-        <box size="1.32 0.06 0.6"/>
-      </geometry>
-    </collision>
-  </link>
-  <joint name="wall_3_center_joint" type="fixed">
-    <origin xyz="0.25 1.903 0.3" rpy="0 0 0"/>
-    <parent link="urdf_offset"/>
-    <child link="wall_3_link"/>
-  </joint>
-  <link name="wall_3_link">
-    <visual>
-      <origin xyz="0.0 0.0 0.0" rpy="0.0 0.0 1.5707963267948966"/>
-      <geometry>
-        <box size="2.8739999999999997 0.06 0.6"/>
-      </geometry>
-      <material name="wall_pink"/>
-    </visual>
-    <collision>
-      <origin xyz="0.0 0.0 0.0" rpy="0.0 0.0 1.5707963267948966"/>
-      <geometry>
-        <box size="2.8739999999999997 0.06 0.6"/>
-      </geometry>
-    </collision>
-  </link>
-  <joint name="wall_4_center_joint" type="fixed">
-    <origin xyz="4.13 3.92 0.3" rpy="0 0 0"/>
-    <parent link="urdf_offset"/>
-    <child link="wall_4_link"/>
-  </joint>
-  <link name="wall_4_link">
-    <visual>
-      <origin xyz="0.0 0.0 0.0" rpy="0.0 0.0 0.0"/>
-      <geometry>
-        <box size="2.6799999999999997 0.06 0.6"/>
-      </geometry>
-      <material name="wall_pink"/>
-    </visual>
-    <collision>
-      <origin xyz="0.0 0.0 0.0" rpy="0.0 0.0 0.0"/>
-      <geometry>
-        <box size="2.6799999999999997 0.06 0.6"/>
-      </geometry>
-    </collision>
-  </link>
-  <joint name="wall_5_center_joint" type="fixed">
-    <origin xyz="0.25 5.445 0.3" rpy="0 0 0"/>
-    <parent link="urdf_offset"/>
-    <child link="wall_5_link"/>
-  </joint>
-  <link name="wall_5_link">
-    <visual>
-      <origin xyz="0.0 0.0 0.0" rpy="0.0 0.0 1.5707963267948966"/>
-      <geometry>
-        <box size="2.3500000000000005 0.06 0.6"/>
-      </geometry>
-      <material name="wall_pink"/>
-    </visual>
-    <collision>
-      <origin xyz="0.0 0.0 0.0" rpy="0.0 0.0 1.5707963267948966"/>
-      <geometry>
-        <box size="2.3500000000000005 0.06 0.6"/>
-      </geometry>
-    </collision>
-  </link>
-  <joint name="wall_9_center_joint" type="fixed">
-    <origin xyz="0.97 -2.47 0.3" rpy="0 0 0"/>
-    <parent link="urdf_offset"/>
-    <child link="wall_9_link"/>
-  </joint>
-  <link name="wall_9_link">
-    <visual>
-      <origin xyz="0.0 0.0 0.0" rpy="0.0 0.0 0.0"/>
-      <geometry>
-        <box size="0.68 0.06 0.6"/>
-      </geometry>
-      <material name="wall_pink"/>
-    </visual>
-    <collision>
-      <origin xyz="0.0 0.0 0.0" rpy="0.0 0.0 0.0"/>
-      <geometry>
-        <box size="0.68 0.06 0.6"/>
-      </geometry>
-    </collision>
-  </link>
-  <joint name="wall_10_center_joint" type="fixed">
-    <origin xyz="0.6645000000000001 -2.0 0.3" rpy="0 0 0"/>
-    <parent link="urdf_offset"/>
-    <child link="wall_10_link"/>
-  </joint>
-  <link name="wall_10_link">
-    <visual>
-      <origin xyz="0.0 0.0 0.0" rpy="0.0 0.0 1.560012431117244"/>
-      <geometry>
-        <box size="1.0200593120010226 0.06 0.6"/>
-      </geometry>
-      <material name="wall_pink"/>
-    </visual>
-    <collision>
-      <origin xyz="0.0 0.0 0.0" rpy="0.0 0.0 1.560012431117244"/>
-      <geometry>
-        <box size="1.0200593120010226 0.06 0.6"/>
-      </geometry>
-    </collision>
-  </link>
-  <joint name="wall_11_center_joint" type="fixed">
-    <origin xyz="0.457 -1.5 0.3" rpy="0 0 0"/>
-    <parent link="urdf_offset"/>
-    <child link="wall_11_link"/>
-  </joint>
-  <link name="wall_11_link">
-    <visual>
-      <origin xyz="0.0 0.0 0.0" rpy="0.0 0.0 0.0"/>
-      <geometry>
-        <box size="0.404 0.06 0.6"/>
-      </geometry>
-      <material name="wall_pink"/>
-    </visual>
-    <collision>
-      <origin xyz="0.0 0.0 0.0" rpy="0.0 0.0 0.0"/>
-      <geometry>
-        <box size="0.404 0.06 0.6"/>
-      </geometry>
-    </collision>
-  </link>
-  <joint name="wall_12_center_joint" type="fixed">
-    <origin xyz="0.2575 -0.983 0.3" rpy="0 0 0"/>
-    <parent link="urdf_offset"/>
-    <child link="wall_12_link"/>
-  </joint>
-  <link name="wall_12_link">
-    <visual>
-      <origin xyz="0.0 0.0 0.0" rpy="0.0 0.0 1.566225974704932"/>
-      <geometry>
-        <box size="1.0940114259001137 0.06 0.6"/>
-      </geometry>
-      <material name="wall_pink"/>
-    </visual>
-    <collision>
-      <origin xyz="0.0 0.0 0.0" rpy="0.0 0.0 1.566225974704932"/>
-      <geometry>
-        <box size="1.0940114259001137 0.06 0.6"/>
-      </geometry>
-    </collision>
-  </link>
-  <joint name="wall_13_center_joint" type="fixed">
-    <origin xyz="0.41 -0.464 0.3" rpy="0 0 0"/>
-    <parent link="urdf_offset"/>
-    <child link="wall_13_link"/>
-  </joint>
-  <link name="wall_13_link">
-    <visual>
-      <origin xyz="0.0 0.0 0.0" rpy="0.0 0.0 0.0"/>
-      <geometry>
-        <box size="0.31999999999999995 0.06 0.6"/>
-      </geometry>
-      <material name="wall_pink"/>
-    </visual>
-    <collision>
-      <origin xyz="0.0 0.0 0.0" rpy="0.0 0.0 0.0"/>
-      <geometry>
-        <box size="0.31999999999999995 0.06 0.6"/>
-      </geometry>
-    </collision>
-  </link>
-  <joint name="wall_14_center_joint" type="fixed">
-    <origin xyz="2.915 6.62 0.3" rpy="0 0 0"/>
-    <parent link="urdf_offset"/>
-    <child link="wall_14_link"/>
-  </joint>
-  <link name="wall_14_link">
-    <visual>
-      <origin xyz="0.0 0.0 0.0" rpy="0.0 0.0 0.0"/>
-      <geometry>
-        <box size="5.33 0.06 0.6"/>
-      </geometry>
-      <material name="wall_pink"/>
-    </visual>
-    <collision>
-      <origin xyz="0.0 0.0 0.0" rpy="0.0 0.0 0.0"/>
-      <geometry>
-        <box size="5.33 0.06 0.6"/>
-      </geometry>
-    </collision>
-  </link>
-  <joint name="wall_15_center_joint" type="fixed">
-    <origin xyz="5.54 4.96 0.3" rpy="0 0 0"/>
-    <parent link="urdf_offset"/>
-    <child link="wall_15_link"/>
-  </joint>
-  <link name="wall_15_link">
-    <visual>
-      <origin xyz="0.0 0.0 0.0" rpy="0.0 0.0 1.5467046033699754"/>
-      <geometry>
-        <box size="3.320963715550051 0.06 0.6"/>
-      </geometry>
-      <material name="wall_pink"/>
-    </visual>
-    <collision>
-      <origin xyz="0.0 0.0 0.0" rpy="0.0 0.0 1.5467046033699754"/>
-      <geometry>
-        <box size="3.320963715550051 0.06 0.6"/>
-      </geometry>
-    </collision>
-  </link>
   <joint name="world_iai_kitchen:kitchen:room_joint" type="fixed">
     <origin xyz="3.0 0.75 -0.05" rpy="0.0 0.0 0.0"/>
     <parent link="urdf_offset"/>
@@ -2602,7 +2362,7 @@
     <limit effort="1.0" lower="0.0" upper="0.6283185307179586" velocity="1.0"/>
   </joint>
   <joint name="iai_kitchen:arena:door_handle_inside_joint" type="fixed">
-    <origin xyz="-0.04 0.0 0.045" rpy="0.0 0.0 1.5707963267948966"/>
+    <origin xyz="-0.04 0.0 0.09" rpy="0.0 0.0 1.5707963267948966"/>
     <parent link="iai_kitchen:arena:door_handle_link"/>
     <child link="iai_kitchen:arena:door_handle_inside"/>
   </joint>
@@ -2693,7 +2453,7 @@
     <limit effort="100.0" lower="-1.4" upper="0.0" velocity="10.0"/>
   </joint>
   <joint name="living_room:arena:door_hinge_joint" type="fixed">
-    <origin xyz="0.28 3.37 1.04" rpy="0.0 0.0 0.0"/>
+    <origin xyz="0.23 3.3 1.04" rpy="0.0 0.0 0.0"/>
     <axis xyz="0.0 0.0 0.0"/>
     <parent link="urdf_offset"/>
     <child link="living_room:arena:door_hinge"/>
@@ -2707,7 +2467,7 @@
     <limit effort="1.0" lower="0.0" upper="0.6283185307179586" velocity="1.0"/>
   </joint>
   <joint name="living_room:arena:door_handle_inside_joint" type="fixed">
-    <origin xyz="-0.04 0.0 0.045" rpy="0.0 0.0 1.5707963267948966"/>
+    <origin xyz="-0.04 0.0 0.09" rpy="0.0 0.0 1.5707963267948966"/>
     <parent link="living_room:arena:door_handle_link"/>
     <child link="living_room:arena:door_handle_inside"/>
   </joint>
