@@ -17,7 +17,7 @@ import utils.misc as utils
 
 world = BulletWorld()
 v = VizMarkerPublisher()
-kitchen = Object("kitchen", ObjectType.ENVIRONMENT, "suturo_lab_version_15.urdf")
+kitchen = Object("kitchen", ObjectType.ENVIRONMENT, "suturo_lab_version_15_reduced_corrected_v4.urdf")
 kitchen_desig = ObjectDesignatorDescription(names=["kitchen"])
 
 talk = TextToSpeechPublisher()

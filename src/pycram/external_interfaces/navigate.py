@@ -18,7 +18,7 @@ class PoseNavigator():
         rospy.loginfo("Waiting for move_base ActionServer")
         if self.client.wait_for_server():
             rospy.loginfo("Done")
-        self.pub = rospy.Publisher('goal', PoseStamped, queue_size=10, latch=True)
+        #self.pub = rospy.Publisher('goal', PoseStamped, queue_size=10, latch=True)
         self.toya_pose = None
         self.goal_pose = None
         self.toya_pose_sub = rospy.Subscriber("/amcl_pose", PoseWithCovarianceStamped, self.toya_pose_cb)
@@ -33,7 +33,6 @@ class PoseNavigator():
         self.client.cancel_all_goals()
 
     def pub_now(self, navpose: PoseStamped, interrupt_bool: bool = True) -> bool:
-        rospy.logerr("New implementation!")
 
         self.goal_pose = navpose
         goal = MoveBaseGoal()
@@ -50,21 +49,25 @@ class PoseNavigator():
 
         rospy.loginfo(f"Publishing navigation pose")
         rospy.loginfo("Waiting for subscribers to connect...")
-        while self.pub.get_num_connections() == 0:
-            rospy.sleep(0.1)  # Sleep for 100ms and check again
-        self.pub.publish(navpose)
+        self.client.send_goal(goal)
 
-        near_goal = False
-        rospy.loginfo("Pose was published")
-        if self.toya_pose is not None:
-            dis = math.sqrt((self.goal_pose.pose.position.x - self.toya_pose.x) ** 2 +
-                            (self.goal_pose.pose.position.y - self.toya_pose.y) ** 2)
-            rospy.loginfo("Distance to goal: " + str(dis))
-            if dis < 0.15:
-                rospy.logwarn("Near Pose")
-                if interrupt_bool:
+        while not rospy.is_shutdown():
+            near_goal = False
+            rospy.loginfo("Pose was published")
+            if self.toya_pose is not None:
+                dis = math.sqrt((self.goal_pose.pose.position.x - self.toya_pose.x) ** 2 +
+                                (self.goal_pose.pose.position.y - self.toya_pose.y) ** 2)
+                rospy.loginfo("Distance to goal: " + str(dis))
+                if dis < 0.04 and interrupt_bool:
+                    rospy.logwarn("Near Pose")
                     self.interrupt()
-                return True
-            # else:
-            #     rospy.logerr("pose is not near goal, try recalling")
-            #     return False
+                    return True
+                else:
+                    self.client.wait_for_result()
+                    rospy.logerr("robot needs more time")
+                    return True
+            else:
+                rospy.logerr("something is wrong with navigation")
+                return False
+
+

@@ -1,7 +1,7 @@
 import actionlib
 import rospy
 from actionlib_msgs.msg import GoalStatusArray
-from sensor_msgs.msg import LaserScan
+from sensor_msgs.msg import LaserScan, JointState
 from sound_play.msg import SoundRequestActionGoal, SoundRequest
 from std_msgs.msg import Int32
 from tmc_control_msgs.msg import GripperApplyEffortActionGoal
@@ -10,13 +10,13 @@ import pycram.external_interfaces.giskard_new as giskardpy
 from pycram.designators.object_designator import *
 
 
-def pakerino(torso_z=0.15, config=None):  # moveme
+def pakerino(torso_z=0.15, config=None
     if not config:
         config = {'arm_lift_joint': torso_z, 'arm_flex_joint': 0, 'arm_roll_joint': -1.2, 'wrist_flex_joint': -1.5,
                   'wrist_roll_joint': 0}
     giskardpy.avoid_all_collisions()
-    giskardpy.achieve_joint_goal(config)
-    print("Parking done")
+    return giskardpy.achieve_joint_goal(config)
+
 
 
 class SoundRequestPublisher:
@@ -130,7 +130,6 @@ class StartSignalWaiter:
 
         rospy.loginfo("Obstacle detection signal received.")
 
-
 class TextToSpeechPublisher():
 
     def __init__(self):
@@ -141,14 +140,13 @@ class TextToSpeechPublisher():
     def status_callback(self, msg):
         self.status_list = msg.status_list
 
-
-    def pub_now(self, sentence, talk_bool: bool = True, wait_bool: bool = True):
-        rospy.loginfo(sentence)
+    def pub_now(self, sentence, talk_bool: bool = True):
+        rospy.logerr("talking sentence: " + str(sentence))
         if talk_bool:
             while not rospy.is_shutdown():
-                if not self.status_list or not wait_bool:  # Check if the status list is empty
+                if not self.status_list:  # Check if the status list is empty
                     goal_msg = TalkRequestActionGoal()
-                    goal_msg.header.stamp =  rospy.Time.now()
+                    goal_msg.header.stamp = rospy.Time.now()
                     goal_msg.goal.data.language = 1
                     goal_msg.goal.data.sentence = sentence
 
@@ -157,6 +155,8 @@ class TextToSpeechPublisher():
 
                     self.pub.publish(goal_msg)
                     break
+
+                    
 
 class ImageSwitchPublisher:
     """
@@ -202,6 +202,58 @@ class HSRBMoveGripperReal():
         elif motion == "close":
             self.msg.goal.effort = -0.8
             self.pub.publish(self.msg)
+
+
+class GraspListener:
+    def __init__(self):
+
+        # Subscribe to the joint_states topic
+        rospy.Subscriber("/hsrb/robot_state/joint_states", JointState, self.joint_states_callback)
+
+        # Define the positions that indicate a grasp
+        # Define the positions that indicate a grasp
+        self.grasp_thresholds = {
+            "hand_r_distal_joint": (-1.3, 0.63),  # Adjusted based on open and closed state data with offset
+            "hand_l_distal_joint": (-1.3, 0.63)
+        }
+        # Open
+        # State:
+        # hand_r_distal_joint: -1.477408
+        # hand_l_distal_joint: -1.477408
+        # Closed
+        # State:
+        # hand_r_distal_joint: 0.800545
+        # hand_l_distal_joint: 0.782546
+
+        # Variable to store the grasp state
+        self.grasped = False
+
+    def check_grasp(self):
+        print(self.grasped)
+        return self.grasped
+
+    def joint_states_callback(self, msg):
+        # Extract the position of the relevant joints
+        try:
+            hand_r_index = msg.name.index("hand_r_distal_joint")
+            hand_l_index = msg.name.index("hand_l_distal_joint")
+
+            hand_r_position = msg.position[hand_r_index]
+            hand_l_position = msg.position[hand_l_index]
+
+            # Check if the positions are within the grasping thresholds
+            if (self.grasp_thresholds["hand_r_distal_joint"][0] <= hand_r_position <=
+                    self.grasp_thresholds["hand_r_distal_joint"][1] and
+                    self.grasp_thresholds["hand_l_distal_joint"][0] <= hand_l_position <=
+                    self.grasp_thresholds["hand_l_distal_joint"][1]):
+                self.grasped = True
+            else:
+                self.grasped = False
+
+            # rospy.loginfo("Grasp state: %s", "Grasped" if self.grasped else "Not grasped")
+
+        except ValueError as e:
+            rospy.logerr("Joint names not found in joint_states message: %s", e)
 
 # Hints: List for image view (mit Zahlen ändert man das Bild)
 # "hi.png" -> 0

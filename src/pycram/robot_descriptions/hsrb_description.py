@@ -68,7 +68,9 @@ class HSRBDescription(RobotDescription):
             {"front": [-1, 0, -1, 0],
              "left": [0, -1, 1, 0],
              "right": [0, -1, -1, 0.0],
-             "top": [-1, 0, 0, 0]})
+             "top": [-1, 0, 0, 0],
+             "front-angled": [-0.76, 0, -0.64, 0]})
+
 
     def get_camera_frame(self, name="head_center_camera"):
         # TODO: Hacky since only one optical camera frame from pr2 is used
