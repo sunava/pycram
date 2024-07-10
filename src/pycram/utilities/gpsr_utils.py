@@ -274,7 +274,7 @@ def process_pick_up_objects(obj_type, link):
         return grasped_bool
 
 #
-def follow_human():
+# def follow_human():
 
 
 
