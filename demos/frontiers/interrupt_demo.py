@@ -179,7 +179,7 @@ def update_current_command():
             if del_cmd:
                 del_obj = del_cmd[0]
                 del_attributes = (
-                    del_obj.type.lower(), del_obj.color, del_obj.name.lower(), del_obj.location, del_obj.size.lower()
+                    del_obj.type.lower(), del_obj.color, del_obj.name.lower(), "" , del_obj.size.lower()
                 )
                 if all(attr == '' for attr in del_attributes):
                     del_attributes = None
