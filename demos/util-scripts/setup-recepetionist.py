@@ -35,7 +35,7 @@ run_command(f'gnome-terminal -- bash -c "tmux new-session -d -s {session_name}; 
             f'tmux split-window -v -t {session_name}:0.6; '
             f'tmux split-window -v -t {session_name}:0.7; '
             # Terminal1 0: Rviz map launch 
-            f'tmux send-keys -t {session_name}:0.0 \'roslaunch suturo_bringup envi_bringup.launch\' C-m; '
+            f'tmux send-keys -t {session_name}:0.0 \'roslaunch suturo_bringup pre_robocup_door_envi.launch\' C-m; '
             
             # Terminal1 1: Giskard launch
             f'tmux send-keys -t {session_name}:0.1 \'roslaunch giskardpy giskardpy_hsr_real_vel.launch\' C-m; '

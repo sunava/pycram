@@ -25,7 +25,7 @@ robot = Object("hsrb", "robot", "../../resources/" + robot_description.name + ".
 robot_desig = ObjectDesignatorDescription(names=["hsrb"]).resolve()
 robot.set_color([0.5, 0.5, 0.9, 1])
 
-kitchen = Object("kitchen", ObjectType.ENVIRONMENT, "pre_robocup_3.urdf")
+kitchen = Object("kitchen", ObjectType.ENVIRONMENT, "pre_robocup_5.urdf")
 print("before giskard")
 giskardpy.init_giskard_interface()
 
@@ -35,18 +35,19 @@ kitchen_desig = ObjectDesignatorDescription(names=["kitchen"])
 
 # giskardpy.sync_worlds()
 move = PoseNavigator()
-move.init()
+#move.init()
 talk = TextToSpeechPublisher()
 #talk.init()
 # variables for communcation with nlp
 pub_nlp = rospy.Publisher('/startListener', String, queue_size=10)
 response = ""
+wait_bool = False
 callback = False
 doorbell = True
-timeout = 10  # 15 seconds timeout
+timeout = 15  # 10 seconds timeout
 laser = StartSignalWaiter()
 
-giskardpy.sync_worlds()
+
 # Declare variables for humans
 host = HumanDescription("Vanessa", fav_drink="coffee")
 guest1 = HumanDescription("bob", fav_drink="tea")
@@ -60,8 +61,8 @@ guest2.set_attributes(['female', 'with a hat', 'wearing a t-shirt', ' a bright t
 
 image_switch_publisher = ImageSwitchPublisher()
 
-
-
+giskardpy.clear()
+giskardpy.sync_worlds()
 
 def data_cb(data):
     global response
@@ -95,17 +96,17 @@ def door_opening():
 
     pakerino(config=config)
     # pose1 = Pose([1.35, 4.4, 0], [0, 0, 1, 0])
-    pose1 = Pose([1, 4, 0], [0, 0, 1, 0])
+    pose1 = Pose([1.1, 4.3, 0], [0, 0, 1, 0])
     move.pub_now(pose1)
     
     # grasp handle
-    talk.pub_now("grasp handle now", True)
+    talk.pub_now("grasp handle now")
     gripper.pub_now("open")
     giskardpy.grasp_doorhandle("kitchen_2/living_room:arena:door_handle_inside")
     gripper.pub_now("close")
 
     # open door
-    talk.pub_now("open dor now", True)
+    talk.pub_now("open dor now")
     giskardpy.open_doorhandle("kitchen_2/living_room:arena:door_handle_inside")
     gripper.pub_now("open")
 
@@ -113,17 +114,21 @@ def door_opening():
     if door_open_bool:
         talk.pub_now("I opened the door")
     else:
-        talk.pub_now("I made a mistake. Pleae open the door yourself")
-    # Arm to save position
-    talk.pub_now("park arms", True)
-    arm_to_left_config = {'arm_lift_joint': 0.4, 'arm_flex_joint': 0, 'arm_roll_joint': 1.5, 'wrist_flex_joint': -1.5,
-              'wrist_roll_joint': -1.57}
-    pakerino(config=arm_to_left_config)
+        talk.pub_now("I made a mistake. Please open the door yourself")
 
     # move away from door
-    talk.pub_now("move away from door", True)
-    pose2 = Pose([1.9, 4.5, 0], [0, 0, 1, 0])
-    move.pub_now(pose2)
+    if door_open_bool:
+        talk.pub_now("move away from door")
+        pose2 = Pose([1.65, 3.5, 0], [0, 0, 1, 0])
+        move.pub_now(pose2)
+
+    rospy.sleep(0.1)
+    pose3 = Pose([1.9, 4.5, 0], [0, 0, 1, 0])
+    move.pub_now(pose3)
+
+    # reset world state
+    giskardpy.clear()
+    giskardpy.sync_worlds()
 
 
 def get_attributes(guest: HumanDescription):
@@ -151,36 +156,36 @@ def welcome_guest(num, guest: HumanDescription):
     """
     global callback
 
-    talk.pub_now("Welcome, please step in front of me")
+    talk.pub_now("Welcome, please step in front of me and come close", wait_bool=wait_bool)
 
     # look for human
     DetectAction(technique='human').resolve().perform()
 
     # look at guest and introduce
     giskardpy.move_head_to_human()
+    rospy.sleep(1.5)
 
-    talk.pub_now("Hello, i am Toya and my favorite drink is oil", True)
+    talk.pub_now("Hello, i am Toya and my favorite drink is oil.", True, wait_bool=wait_bool)
+    rospy.sleep(2.5)
 
-    rospy.sleep(3)
-    talk.pub_now("please answer me after the sound", True)
+    talk.pub_now("please answer me after the sound", True, wait_bool=wait_bool)
+    rospy.sleep(1.4)
 
-    rospy.sleep(2)
-    talk.pub_now("What is your name and favorite drink?", True)
+    talk.pub_now("What is your name and favorite drink?", True, wait_bool=wait_bool)
+    rospy.sleep(0.9)
 
-    rospy.sleep(2)
 
     # signal to start listening
     pub_nlp.publish("start listening")
-    rospy.sleep(2.3)
-    image_switch_publisher.pub_now(ImageEnum.TALK.value)
 
+    image_switch_publisher.pub_now(ImageEnum.TALK.value)
 
     # wait for nlp answer
     start_time = time.time()
     while not callback:
         rospy.sleep(1)
 
-        if time.time() - start_time == timeout:
+        if int(time.time() - start_time) == timeout:
             print("guest needs to repeat")
             image_switch_publisher.pub_now(ImageEnum.JREPEAT.value)
     callback = False
@@ -210,17 +215,17 @@ def welcome_guest(num, guest: HumanDescription):
         # two chances to get name and drink
         i = 0
         while i < 2:
-            talk.pub_now("please repeat your name and drink loud and clear", True)
-            # TalkingMotion("please repeat your name and drink loud and clear").resolve().perform()
-            pub_nlp.publish("start")
-            rospy.sleep(2)
-            image_switch_publisher.pub_now(ImageEnum.TALK.value)
+            talk.pub_now("please repeat your name and drink loud and clear", True, wait_bool=wait_bool)
+            rospy.sleep(1.5)
 
+            pub_nlp.publish("start")
+            rospy.sleep(1.3)
+            image_switch_publisher.pub_now(ImageEnum.TALK.value)
 
             start_time = time.time()
             while not callback:
                 rospy.sleep(1)
-                if time.time() - start_time == timeout:
+                if int(time.time() - start_time) == timeout:
                     print("guest needs to repeat")
                     image_switch_publisher.pub_now(ImageEnum.JREPEAT.value)
             callback = False
@@ -235,12 +240,14 @@ def welcome_guest(num, guest: HumanDescription):
     # get attributes and face if first guest
     if num == 1:
         try:
-            talk.pub_now("please wait and look at me")
+            talk.pub_now("i will take a picture of you to recognize you later", wait_bool=wait_bool)
+            rospy.sleep(2)
+            talk.pub_now("please wait and look at me", wait_bool=wait_bool)
             get_attributes(guest)
 
         except PerceptionObjectNotFound:
             # failure handling, if human has stepped away
-            talk.pub_now("please step in front of me")
+            talk.pub_now("please step in front of me", wait_bool=wait_bool)
             rospy.sleep(3.5)
 
             try:
@@ -249,7 +256,7 @@ def welcome_guest(num, guest: HumanDescription):
             except PerceptionObjectNotFound:
                 print("continue without attributes")
 
-    talk.pub_now("i will show you the living room now")
+    talk.pub_now("i will show you the living room now", wait_bool=wait_bool)
 
     print(guest.id)
     return guest
@@ -263,24 +270,29 @@ def detect_point_to_seat():
 
     # detect free seat
     seat = DetectAction(technique='location', state="sofa").resolve().perform()
+    print("seat: " + str(seat))
     free_seat = False
     # loop through all seating options detected by perception
     for place in seat[1]:
         if place[0] == 'False':
 
             not_point_poe = Pose([float(place[1]), float(place[2]), 0.85])
-            print("place: "+ str(place))
+            print("place: " + str(place))
 
             lt = LocalTransformer()
             pose_in_robot_frame = lt.transform_pose(not_point_poe, robot.get_link_tf_frame("base_link"))
             print("in robot: " + str(pose_in_robot_frame))
-            if pose_in_robot_frame.pose.position.y > 0.05:
-                talk.pub_now("left from me")
+            if pose_in_robot_frame.pose.position.y > 0.35:
+                talk.pub_now("please take a seat to the left from me")
                 pose_in_robot_frame.pose.position.y += 0.8
 
-            else:
-                talk.pub_now("right from me")
+            elif pose_in_robot_frame.pose.position.y < -0.35:
+                talk.pub_now("please take a seat to the right from me")
                 pose_in_robot_frame.pose.position.y -= 0.8
+
+            else:
+                talk.pub_now("please take a seat in front of me")
+
             pose_in_map = lt.transform_pose(pose_in_robot_frame, "map")
 
 
@@ -298,17 +310,38 @@ def detect_point_to_seat():
             return pose_guest
     return free_seat
 
+def multiply_quaternions(q1, q2):
+    """
+    Multiply two quaternions.
+
+    Parameters:
+    q1 (tuple): First quaternion (x1, y1, z1, w1).
+    q2 (tuple): Second quaternion (x2, y2, z2, w2).
+
+    Returns:
+    tuple: The product of the two quaternions.
+    """
+
+    x1, y1, z1, w1 = q1.x, q1.y, q1.z, q1.w
+    x2, y2, z2, w2 = q2.x, q2.y, q2.z, q2.w
+
+    w = w1 * w2 - x1 * x2 - y1 * y2 - z1 * z2
+    x = w1 * x2 + x1 * w2 + y1 * z2 - z1 * y2
+    y = w1 * y2 - x1 * z2 + y1 * w2 + z1 * x2
+    z = w1 * z2 + x1 * y2 - y1 * x2 + z1 * w2
+    return (x, y, z, w)
 
 def demo(step):
     with real_robot:
+        global wait_bool
         global callback
         global doorbell
         global guest1
         global guest2
         pakerino()
         # signal start
-        rospy.logerr("here")
-        talk.pub_now("waiting for guests")
+
+        talk.pub_now("waiting for guests", wait_bool=wait_bool)
         image_switch_publisher.pub_now(ImageEnum.HI.value)
 
         # receive data from nlp via topic
@@ -331,7 +364,7 @@ def demo(step):
             # set it back to false for second guest
             doorbell = False
 
-            #door_opening()
+            door_opening()
 
         if step <= 1:
 
@@ -341,18 +374,20 @@ def demo(step):
 
         if step <= 2:
             # leading to living room and pointing to free seat
-            talk.pub_now("please step out of the way and follow me")
+            talk.pub_now("please step out of the way and follow me", wait_bool=wait_bool)
 
             # stop looking at human
             giskardpy.cancel_all_called_goals()
             DetectAction(technique='human', state='stop').resolve().perform()
 
             # lead human to living room
-            move.pub_now(door_to_couch)
+            move.pub_now(after_door_ori, interrupt_bool=False)
+            move.pub_now(pose_corner, interrupt_bool=False)
+            move.pub_now(door_to_couch, interrupt_bool=False)
             gripper.pub_now("close")
 
             # place new guest in living room
-            talk.pub_now("welcome to the living room")
+            talk.pub_now("welcome to the living room", wait_bool=wait_bool)
             giskardpy.move_head_to_pose(couch_pose_semantik)
             rospy.sleep(1)
 
@@ -379,7 +414,7 @@ def demo(step):
             if guest1.pose:
                 pub_pose.publish(guest1.pose)
 
-            talk.pub_now("please take a seat next to your host")
+            # talk.pub_now("please take a seat next to your host", wait_bool=wait_bool)
             # image_switch_publisher.pub_now(ImageEnum.SOFA.value)
 
             # try:
@@ -397,7 +432,7 @@ def demo(step):
 
         if step <= 4:
             # signal start
-            talk.pub_now("waiting for new guests")
+            talk.pub_now("waiting for new guests", wait_bool=wait_bool)
             image_switch_publisher.pub_now(ImageEnum.HI.value)
 
             # wait 10 seconds for sound
@@ -412,6 +447,7 @@ def demo(step):
 
             # TODO: Giskard has to fix world state
             # door_opening()
+            move.pub_now(robot_orientation, interrupt_bool=False)
 
             pose2 = Pose([1.85, 4.5, 0], [0, 0, 1, 0])
             move.pub_now(pose2)
@@ -421,16 +457,19 @@ def demo(step):
 
         if step <= 6:
             # leading to living room and pointing to free seat
-            talk.pub_now("please step out of the way and follow me")
+            talk.pub_now("please step out of the way and follow me", wait_bool=wait_bool)
 
             # stop looking at human
             giskardpy.cancel_all_called_goals()
             DetectAction(technique='human', state='stop').resolve().perform()
 
             # lead human to living room
+            move.pub_now(after_door_ori, interrupt_bool=False)
+            move.pub_now(pose_corner)
             move.pub_now(door_to_couch)
 
-            talk.pub_now("welcome to the living room")
+
+            talk.pub_now("welcome to the living room", wait_bool=wait_bool)
             giskardpy.move_head_to_pose(couch_pose_semantik)
             rospy.sleep(1)
             gripper.pub_now("close")
@@ -451,7 +490,7 @@ def demo(step):
                         print("key: " + str(key))
                         if key == guest1.id:
                             guest1_pose = human_dict[guest1.id]
-                            talk.pub_now("found guest")
+                            talk.pub_now("found guest", wait_bool=wait_bool)
                             found_guest = True
                             # guest1.set_pose(guest1_pose)
                             break
@@ -462,6 +501,10 @@ def demo(step):
 
                     if found_guest or counter > 3:
                         break
+                    elif counter == 2:
+                        talk.pub_now("please look at me", wait_bool=wait_bool)
+                        rospy.sleep(0.5)
+
                 except PerceptionObjectNotFound:
                      print("i am a faliure and i hate my life")
 
@@ -476,13 +519,11 @@ def demo(step):
 
 
         if step <= 8:
-            talk.pub_now("look at couch seat")
-            # TODO: Look at couch does not work
             giskardpy.move_head_to_pose(couch_pose_semantik)
 
             # find a place for guest2 to sit and point
             guest_pose = detect_point_to_seat()
-            talk.pub_now("take a seat")
+            # TODO fix sofa pic
             #image_switch_publisher.pub_now(ImageEnum.SOFA.value)
 
             if not guest_pose:
@@ -505,4 +546,5 @@ def demo(step):
                 rospy.sleep(3)
 
 
-demo(5)
+#door_opening()
+demo(1)

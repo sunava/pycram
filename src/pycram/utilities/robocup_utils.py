@@ -10,7 +10,7 @@ import pycram.external_interfaces.giskard_new as giskardpy
 from pycram.designators.object_designator import *
 
 
-def pakerino(torso_z=0.15, config=None):
+def pakerino(torso_z=0.15, config=None
     if not config:
         config = {'arm_lift_joint': torso_z, 'arm_flex_joint': 0, 'arm_roll_joint': -1.2, 'wrist_flex_joint': -1.5,
                   'wrist_roll_joint': 0}
@@ -105,7 +105,7 @@ class StartSignalWaiter:
             if len(ranges) > 501:
                 obstacle_detected = False
                 # Check if any value in the range 461 to 501 is smaller than 1.0
-                for i in range(460, 500):
+                for i in range(470, 510):
                     # print(ranges[i])
                     if ranges[i] < 0.98:
                         obstacle_detected = True
@@ -129,7 +129,6 @@ class StartSignalWaiter:
         self.fluent.wait_for()
 
         rospy.loginfo("Obstacle detection signal received.")
-
 
 class TextToSpeechPublisher():
 
@@ -157,6 +156,7 @@ class TextToSpeechPublisher():
                     self.pub.publish(goal_msg)
                     break
 
+                    
 
 class ImageSwitchPublisher:
     """

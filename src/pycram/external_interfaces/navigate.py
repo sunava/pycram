@@ -58,7 +58,6 @@ class PoseNavigator():
                 dis = math.sqrt((self.goal_pose.pose.position.x - self.toya_pose.x) ** 2 +
                                 (self.goal_pose.pose.position.y - self.toya_pose.y) ** 2)
                 rospy.loginfo("Distance to goal: " + str(dis))
-
                 if dis < 0.04 and interrupt_bool:
                     rospy.logwarn("Near Pose")
                     self.interrupt()
@@ -70,4 +69,5 @@ class PoseNavigator():
             else:
                 rospy.logerr("something is wrong with navigation")
                 return False
+
 
