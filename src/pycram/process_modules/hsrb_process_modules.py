@@ -399,8 +399,9 @@ class HSRBDetectingReal(ProcessModule):
             # when whole sofa gets checked, a list of lists is returned
             res = []
             for i in seat_human_pose[0].attribute:
-                res.append(i.split(',')[1:])
+                res.append(i.split(','))
 
+            print(res)
             return res
 
         elif desig.technique == 'attributes':
@@ -575,11 +576,10 @@ class HSRBMoveTCPReal(ProcessModule):
     def _execute(self, designator: MoveTCPMotion.Motion) -> Any:
         lt = LocalTransformer()
         pose_in_map = lt.transform_pose(designator.target, "map")
-        giskard.avoid_all_collisions()
-        if designator.allow_gripper_collision:
-            giskard.allow_gripper_collision(designator.arm)
-        giskard.achieve_cartesian_goal(pose_in_map, robot_description.get_tool_frame(designator.arm),
+        giskard_return = giskard.achieve_cartesian_goal(pose_in_map, robot_description.get_tool_frame(designator.arm),
                                        "map")
+        while not giskard_return:
+            rospy.sleep(0.1)
         return State.SUCCEEDED, "Nice"
 
 
