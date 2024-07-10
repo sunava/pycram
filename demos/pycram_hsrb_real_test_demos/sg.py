@@ -149,6 +149,8 @@ def find_pose_in_shelf(group, object, groups_in_shelf):
         place_poses = find_placeable_pose(link, kitchen_desig.resolve(), robot_desig.resolve(), "left", world, 0.1,
                                           object_desig=object)
         nearest_pose_to_group = get_closest_pose(group_pose, place_poses)
+
+    except TypeError:
         pace_poses = []
         for link in links_from_shelf:
             place_poses.append(
@@ -156,26 +158,11 @@ def find_pose_in_shelf(group, object, groups_in_shelf):
                                      object_desig=object), link)
             )
 
-        # in this case its the biggest group since why not? i assume most poses are then free
+        # in this case it's the biggest group since why not? i assume most poses are then free
         longest_group = max(place_poses, key=lambda x: len(x[0]))
         nearest_pose_to_group = longest_group[0]
-        group = ...  # Assuming 'group' is defined somewhere in your code
         groups_in_shelf[group][1] = longest_group[1]  # link
         groups_in_shelf[group][0] = nearest_pose_to_group
-
-        place_poses = []
-        for link in links_from_shelf:
-            place_poses.append(
-                find_placeable_pose(link, kitchen_desig.resolve(), robot_desig.resolve(), "left", world, 0.1,
-                                    object_desig=object), link)
-        # in this case its the biggest group since why not? i assume most poses are then free
-        longest_group = max(place_poses, key=len)
-        nearest_pose_to_group = longest_group[0]
-        groups_in_shelf[group][1] = link
-        groups_in_shelf[group][0] = nearest_pose_to_group
-    except TypeError:
-
-
 
     if nearest_pose_to_group:
         world.current_bullet_world.add_vis_axis(nearest_pose_to_group)
