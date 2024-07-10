@@ -80,7 +80,7 @@ def test_get_pose():
     get_place_poses_for_surface(links_from_shelf[1], milk)
 
 
-def place(object_name, object, grasp, target_location, link):
+def place(object_type, object, grasp, target_location, link):
     def monitor_func_place():
         global previous_value
         der = fts.get_last_value()
@@ -154,7 +154,7 @@ def place(object_name, object, grasp, target_location, link):
     return True
 
 
-#return grasped_bool
+#return grasped_bool, grasp, found_object
 def process_pick_up_objects(obj_type, link):
     look_pose = environment_raw.get_link_pose(link)
     # park
@@ -271,7 +271,7 @@ def process_pick_up_objects(obj_type, link):
             talk.pub_now("I was not able to grasped a object")
             grasped_bool = False
 
-        return grasped_bool
+        return grasped_bool, grasp, found_object
 
 #
 # def follow_human():
