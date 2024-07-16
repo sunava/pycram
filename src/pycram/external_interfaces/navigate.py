@@ -8,6 +8,7 @@ from move_base_msgs.msg import MoveBaseAction, MoveBaseGoal, MoveBaseActionGoal
 from pycram.fluent import Fluent
 
 
+import pycram.external_interfaces.giskard_new as giskardpy
 
 
 class PoseNavigator():
@@ -33,7 +34,6 @@ class PoseNavigator():
         self.client.cancel_all_goals()
 
     def pub_now(self, navpose: PoseStamped, interrupt_bool: bool = True) -> bool:
-
         self.goal_pose = navpose
         goal = MoveBaseGoal()
         goal.target_pose.header.seq = 0

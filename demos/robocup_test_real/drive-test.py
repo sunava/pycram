@@ -39,6 +39,11 @@ couch_pose_to_door = Pose([8.6, 0, 0],[0, 0, 1, 0])
 diswasher = Pose([9, 3, 0],[0, 0, 0.7, 0.7])  # ori
 schreibtisch = Pose([8.6, 0, 0],[0, 0, 1, 0])
 schreibtisch_to_eingang = Pose([4.8, 1.1, 0],[0, 0, -0.7, 0.7])
+
+long_table_1 = Pose([6.65, 4.6, 0],[0, 0, 0, 1])
+long_table_1_rotated = Pose([6.65, 4.6, 0],[0, 0, 1, 0])
+shelf_1 = Pose([6, 6, 0],[0, 0, 1, 0])
+shelf_1_rotated = Pose([6, 6, 0],[0, 0, 0, 1])
 if __name__ == '__main__':
     move = navi.PoseNavigator()
     rospy.sleep(1)

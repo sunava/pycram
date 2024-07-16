@@ -27,7 +27,7 @@ import random
 
 world = BulletWorld()
 v = VizMarkerPublisher()
-kitchen = Object("kitchen", ObjectType.ENVIRONMENT, "pre_robocup_sg.urdf")
+kitchen = Object("kitchen", ObjectType.ENVIRONMENT, "robocup_vanessa.urdf")
 kitchen_desig = ObjectDesignatorDescription(names=["kitchen"])
 grasp_listener = GraspListener()
 talk = TextToSpeechPublisher()
@@ -56,11 +56,14 @@ giskardpy.clear()
 # shelves = [lower_compartment, middle_compartment, upper_compartment]
 
 
-shelf_pose = Pose([4.375257854937237, 4.991582584825204, 0.0], [0.0, 0.0, 0, 1])
-rotated_shelf_pose = Pose([4.375257854937237, 4.991582584825204, 0.0],
-                          [0.0, 0.0, 0.7220721042045632, 0.6918178057332686])
-table_pose = Pose([2.862644998141083, 5.046512935221523, 0.0], [0.0, 0.0, 0.7769090622619312, 0.6296128246591604])
-table_pose_pre = Pose([2.862644998141083, 4.946512935221523, 0.0], [0.0, 0.0, 0.7769090622619312, 0.6296128246591604])
+
+shelf_pose = Pose([ 6.388613211499582, 5.896351795034112, 0.0], [0.0, 0.0, 1, 0])
+rotated_shelf_pose = Pose([ 6.388613211499582, 5.896351795034112, 0.0], [0.0, 0.0, 0, 1])
+# rotated_shelf_pose = Pose([4.375257854937237, 4.991582584825204, 0.0],
+#                           [0.0, 0.0, 0.7220721042045632, 0.6918178057332686])
+table_pose = Pose([6.6, 4.9, 0.0], [0.0, 0.0, 0, 1])
+table_pose_pre = Pose([6.7, 4.6,0.0], [0.0, 0.0, 1, 0])
+
 # List of objects
 objects = [
     "Fork", "Pitcher", "Bleachcleanserbottle", "Crackerbox", "Minisoccerball",
@@ -75,7 +78,7 @@ objects = [
     "screwdriver", "clamp", "hammer", "wooden_block", "Cornybox*"
 ]
 
-popcorn_frame = "popcorn_table:p_table:table_front_edge_center"
+popcorn_frame = "dinner_table:dinner_table:table_front_edge_center"
 # Group objects by similarity
 groups = {
     "Kitchen Utensils and Tools": ["Fork", "Spoon", "Knife"],
@@ -91,11 +94,9 @@ groups = {
     "Miscellaneous": ["Rubikscube", "Largemarker", "Scissors", "screwdriver", "clamp", "hammer", "wooden_block"]
 }
 
-links_from_shelf = [
-    'shelf:shelf:shelf_floor_0',
-    'shelf:shelf:shelf_floor_1',
-    'shelf:shelf:shelf_floor_2',
-]
+# 'shelf:shelf:shelf_floor_0',
+links_from_shelf = ['shelf_hohc:shelf_hohc:shelf_floor_0', 'shelf_hohc:shelf_hohc:shelf_floor_1', 'shelf_hohc:shelf_hohc:shelf_floor_2']
+
 giskardpy.sync_worlds()
 
 
@@ -156,16 +157,17 @@ def demo(step):
             talk.pub_now("driving", True)
             move.pub_now(table_pose)
 
-            look_pose = kitchen.get_link_pose("popcorn_table:p_table:table_center")
-            # look_pose.pose.position.x += 0.5
+            look_pose = kitchen.get_link_pose(popcorn_frame)
+            #look_pose.pose.position.y += 0.7
             perceive_conf = {
-                'arm_lift_joint': 0.20,
+                'arm_lift_joint': 0.30,
                 'wrist_flex_joint': 1.8,
                 'arm_roll_joint': -1,
             }
             pakerino(config=perceive_conf)
-            giskardpy.move_head_to_pose(locationtoplace)
-            # giskardpy.move_head_to_pose(look_pose)
+            #giskardpy.move_head_to_pose(locationtoplace)
+            look_pose.pose.position.z -= 0.05
+            giskardpy.move_head_to_pose(look_pose)
             # LookAtAction(targets=[look_pose]).resolve().perform()  # 0.18
             # LookAtAction(targets=[look_pose]).resolve().perform()
             talk.pub_now("perceiving", True)
@@ -174,6 +176,7 @@ def demo(step):
                 first, *remaining = table_obj
                 for dictionary in remaining:
                     for value in dictionary.values():
+                        print(value.type)
                         try:
                             group = find_group(value.type)
                             groups_on_table[value.name] = [value, group]
@@ -194,8 +197,8 @@ def demo(step):
                 tf_link = kitchen.get_link_tf_frame(popcorn_frame)
                 oTb = lt.transform_pose(obj_pose, tf_link)
                 grasp_set = None
-                if oTb.pose.position.x >= 0.10:
-                    grasp_set = "top"
+               # if oTb.pose.position.x >= 0.10:
+                    # grasp_set = "top"
 
                 groups_on_table_w_table_frame[key] = (obj[0], oTb, grasp_set)
 
@@ -224,7 +227,7 @@ def demo(step):
                 object_dim = object.get_object_dimensions()
 
                 print("obj dim von " + str(object_name) + str(object_dim))
-
+                graps_set = None
                 if grasp_set:
                     grasp = "top"
                 else:
@@ -269,7 +272,7 @@ def demo(step):
                 z_color = [1, 0, 1, 1]
                 BulletWorld.current_bullet_world.add_vis_axis(after_pose, z_color=z_color)
                 BulletWorld.current_bullet_world.add_vis_axis(oTmG)
-                move.pub_now(table_pose_pre)
+                #move.pub_now(table_pose_pre)
                 if grasp == "front":
                     config_for_placing = {'arm_lift_joint': -1,
                                           'arm_flex_joint': -0.16,
@@ -291,7 +294,7 @@ def demo(step):
 
                 gripper.pub_now("open")
                 talk.pub_now("Pick Up now! " + object_name.split('_')[0] + "from:  " + str(grasp))
-                giskard_return = giskardpy.achieve_sequence_pick_up(oTmG, after_pose)
+                giskard_return = giskardpy.achieve_sequence_pick_up(oTmG)
 
                 giskardpy.achieve_attached(object)
                 tip_link = 'hand_gripper_tool_frame'
@@ -313,6 +316,6 @@ def demo(step):
                 giskardpy.clear()
                 demo(0)
 
-
+print(robot.get_pose())
 
 demo(0)

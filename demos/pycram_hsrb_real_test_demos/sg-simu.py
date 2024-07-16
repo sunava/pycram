@@ -29,21 +29,9 @@ world = BulletWorld()
 v = VizMarkerPublisher()
 kitchen = Object("kitchen", ObjectType.ENVIRONMENT, "robocup_vanessa.urdf")
 kitchen_desig = ObjectDesignatorDescription(names=["kitchen"])
-grasp_listener = GraspListener()
-talk = TextToSpeechPublisher()
-img_swap = ImageSwitchPublisher()
-start_signal_waiter = StartSignalWaiter()
-move = PoseNavigator()
-lt = LocalTransformer()
-gripper = HSRBMoveGripperReal()
 robot = Object("hsrb", "robot", "../../resources/" + "hsrb" + ".urdf")
 robot.set_color([0.5, 0.5, 0.9, 1])
 robot_desig = ObjectDesignatorDescription(names=["hsrb"])
-RobotStateUpdater("/tf", "/hsrb/robot_state/joint_states")
-KitchenStateUpdater("/tf", "/iai_kitchen/joint_states")
-
-giskardpy.init_giskard_interface()
-giskardpy.clear()
 table_pose = Pose([6.6, 4.9, 0.0], [0.0, 0.0, 0, 1])
 long_table_1 = Pose([6.65, 4.6, 0],[0, 0, 0, 1])
 long_table_pick = Pose([6.60, 4.6, 0],[0, 0, 0, 1])
@@ -52,7 +40,7 @@ long_table_1_rotated = Pose([6.65, 4.6, 0],[0, 0, 1, 0])
 shelf_1 = Pose([6.2, 5.6, 0],[0, 0, 1, 0])
 shelf_1_rotated1 = Pose([6.2, 5.6, 0],[0, 0, -0.7, 0.7])
 shelf_1_rotated = Pose([6.2, 5.6, 0],[0, 0, 0, 1])
-
+lt = LocalTransformer()
 
 def multiply_quaternions(q1, q2):
     """
@@ -201,7 +189,7 @@ def find_pose_in_shelf(group, object, groups_in_shelf):
         z_height_to_next = get_z_height_to_next_link(link, z_offsets)
 
         pose_in_shelf = lt.transform_pose(nearest_pose_to_group, kitchen.get_link_tf_frame(link))
-        pose_in_shelf.pose.position.x = -0.10
+        # pose_in_shelf.pose.position.x = -0.005
         if z_height_to_next:
             pose_in_shelf.pose.position.z = (z_height_to_next / 2) - 0.01
         else:
@@ -489,43 +477,21 @@ def process_objects_in_shelf(talk_bool):
 
 groups_in_shelf = {}
 
+links_from_shelf = ['shelf_hohc:kitchen_cabinet:shelf_floor_0', 'shelf_hohc:kitchen_cabinet:shelf_floor_1', 'shelf_hohc:kitchen_cabinet:shelf_floor_2'
+    ,'shelf_hohc:kitchen_cabinet:shelf_floor_3','shelf_hohc:kitchen_cabinet:shelf_floor_4' ]
 
-def demo(step):
-    global groups_in_shelf
-    with ((((real_robot)))):
-        object_name = None,
-        object = None,
-        grasp = None,
-        talk_bool = None,
-        target_location = None,
-        link = None
-        talk_bool = True
-        gripper.pub_now("close")
-        pakerino()
+links_from_shelf = ['dinner_table:dinner_table:table_center']
 
-        if step <= 1:
-            talk.pub_now("driving", True)
-            #move.pub_now(shelf_1, interrupt_bool=False)
-            move.pub_now(table_pose, interrupt_bool=False)
-            groups_in_shelf = process_objects_in_shelf(talk_bool)
-            #move.pub_now(shelf_1_rotated1, interrupt_bool=False)
-            #move.pub_now(shelf_1_rotated, interrupt_bool=False)
+popcorn_frame = "popcorn_table:p_table:table_front_edge_center"
+milk = Object("milk", ObjectType.MILK, "milk.stl", pose=Pose([2.5, 2, 1.02]), color=[1, 0, 0, 1])
+cereal = Object("cereal", ObjectType.BREAKFAST_CEREAL, "breakfast_cereal.stl", pose=Pose([2.5, 2.3, 1.05]),
+                color=[0, 1, 0, 1])
+spoon = Object("spoon", ObjectType.SPOON, "spoon.stl", pose=Pose([2.4, 2.2, 0.85]), color=[0, 0, 1, 1])
+bowl = Object("bowl", ObjectType.BOWL, "bowl.stl", pose=Pose([2.5, 2.2, 1.02]), color=[1, 1, 0, 1])
 
 
-        if step <= 2:
-            try:
-                grasped_bool, grasp, group, object, obj_id, object_raw, groups_on_table = process_pick_up_objects(
-                    talk_bool)
-                print(grasped_bool, grasp, group, object, obj_id, object_raw, groups_on_table)
-            except TypeError:
-                print("done")
-                return
-        if step <= 3:
-            #move.pub_now(shelf_1, interrupt_bool=False)
-            #move.pub_now(table_pose, interrupt_bool=False)
-            place_pose, link = find_pose_in_shelf(group, object_raw, groups_in_shelf)
-            placeorpark(object.name, object, "front", talk_bool, place_pose, link, False)
-            #demo(2)
+place_pose, link = find_pose_in_shelf("None", milk, groups_in_shelf)
+milk.set_pose(place_pose)
 
 
 # previous_value = fts.get_last_value()
@@ -533,6 +499,6 @@ def demo(step):
 # monitor_func_place()
 
 #print(robot.get_pose())
-#print(kitchen.links)
+print(kitchen.links)
 #print(robot.get_pose())
-demo(0)
+

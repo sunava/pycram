@@ -80,6 +80,7 @@ def test_get_pose():
     get_place_poses_for_surface(links_from_shelf[1], milk)
 
 
+
 def place(object_type, object, grasp, target_location, link):
     def monitor_func_place():
         global previous_value
@@ -273,6 +274,8 @@ def process_pick_up_objects(obj_type, link):
 
         return grasped_bool, grasp, found_object
 
+
+test_get_pose()
 #
 # def follow_human():
 

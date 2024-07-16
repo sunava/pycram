@@ -31,8 +31,10 @@ from move_base_msgs.msg import MoveBaseAction, MoveBaseGoal
 
 
 if __name__ == '__main__':
-    navPose = Pose([2.7,1.9,0])
+    navPose = Pose([0,0,0])
     move = navi.PoseNavigator()
+    rospy.sleep(1)
+    rospy.loginfo("navi")
     move.pub_now(navPose)
 
 
