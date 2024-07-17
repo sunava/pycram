@@ -516,7 +516,7 @@ class HSRBDetectingReal(ProcessModule):
                     obj_pose = Pose.from_pose_stamped(query_result.res[i].pose[0])
                 except IndexError:
                     continue
-                    
+
                 obj_type = query_result.res[i].type
                 obj_size = None
                 try:

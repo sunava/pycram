@@ -1,7 +1,8 @@
 import numpy as np
 import rospy
 import tf
-from geometry_msgs.msg import PointStamped
+from dynamic_reconfigure.srv import ReconfigureRequest
+from geometry_msgs.msg import PointStamped, Twist
 
 from demos.pycram_storing_groceries_demo.utils.misc import *
 from pycram.designators.location_designator import find_placeable_pose
@@ -13,6 +14,10 @@ from pycram.enums import ObjectType, ImageEnum
 from pycram.process_module import real_robot
 import pycram.external_interfaces.giskard_new as giskardpy
 # import pycram.external_interfaces.giskard as giskardpy_old
+from pycram.utilities.robocup_utils import TextToSpeechPublisher, ImageSwitchPublisher, HSRBMoveGripperReal, pakerino
+from dynamic_reconfigure.msg import Config, BoolParameter, IntParameter, StrParameter, DoubleParameter, GroupState
+from dynamic_reconfigure.srv import Reconfigure, ReconfigureRequest
+
 
 import pycram.external_interfaces.robokudo as robokudo
 from pycram.external_interfaces.navigate import PoseNavigator
@@ -81,7 +86,72 @@ def multiply_quaternions(q1, q2):
     z = w1 * z2 + x1 * y2 - y1 * x2 + z1 * w2
     return (x, y, z, w)
 
+def set_parameters(new_parameters):
+    rospy.wait_for_service('/tmc_map_merger/inputs/base_scan/obstacle_circle/set_parameters')
+    try:
+        reconfigure_service = rospy.ServiceProxy('/tmc_map_merger/inputs/base_scan/obstacle_circle/set_parameters',
+                                                 Reconfigure)
+        config = Config()
 
+        # Set the new parameters
+        if 'forbid_radius' in new_parameters:
+            config.doubles.append(DoubleParameter(name='forbid_radius', value=new_parameters['forbid_radius']))
+        if 'obstacle_occupancy' in new_parameters:
+            config.ints.append(IntParameter(name='obstacle_occupancy', value=new_parameters['obstacle_occupancy']))
+        if 'obstacle_radius' in new_parameters:
+            config.doubles.append(DoubleParameter(name='obstacle_radius', value=new_parameters['obstacle_radius']))
+
+        # Empty parameters that are not being set
+        config.bools.append(BoolParameter(name='', value=False))
+        config.strs.append(StrParameter(name='', value=''))
+        config.groups.append(GroupState(name='', state=False, id=0, parent=0))
+
+        req = ReconfigureRequest(config=config)
+        reconfigure_service(req)
+        rospy.loginfo("Parameters updated successfully")
+
+    except rospy.ServiceException as e:
+        rospy.logerr("Service call failed: %s" % e)
+
+
+def move_vel(speed, distance, isForward, angle=0):
+    # Starts a new node
+    velocity_publisher = rospy.Publisher('/hsrb/command_velocity', Twist, queue_size=10)
+    vel_msg = Twist()
+
+    # Checking if the movement is forward or backwards
+    if isForward:
+        vel_msg.linear.x = abs(speed)
+    else:
+        vel_msg.linear.x = 0
+    if angle > 0:
+        vel_msg.angular.z = angle
+    else:
+        vel_msg.angular.z = 0
+    # Since we are moving just in x-axis
+    vel_msg.linear.y = 0
+    vel_msg.linear.z = 0
+    vel_msg.angular.x = 0
+    vel_msg.angular.y = 0
+
+
+    # Setting the current time for distance calculation
+    t0 = rospy.Time.now().to_sec()
+    current_distance = 0
+
+    # Loop to move the turtle a specified distance
+    while not rospy.is_shutdown() and current_distance < distance:
+        # Publish the velocity
+        velocity_publisher.publish(vel_msg)
+        # Take actual time to velocity calculation
+        t1 = rospy.Time.now().to_sec()
+        # Calculate distance
+        current_distance = speed * (t1 - t0)
+
+    # After the loop, stop the robot
+    vel_msg.linear.x = 0
+    # Force the robot to stop
+    velocity_publisher.publish(vel_msg)
 # List of objects
 objects = ["Fork", "Pitcher", "Bleachcleanserbottle", "Crackerbox", "Minisoccerball", "Baseball", "Mustardbottle",
            "Jellochocolatepuddingbox", "Wineglass", "Orange", "Coffeepack", "Softball", "Metalplate", "Pringleschipscan",
@@ -550,7 +620,7 @@ def demo(step):
         pakerino()
 
         if step <= 1:
-            talk.pub_now("driving", True)
+            #talk.pub_now("driving", True)
             img.pub_now(ImageEnum.DRIVINGBACK.value)
 
             move.pub_now(shelf_1, interrupt_bool=False)
@@ -583,11 +653,44 @@ def demo(step):
             demo(2)
 
 
-# previous_value = fts.get_last_value()
-#
-# monitor_func_place()
 
-#print(robot.get_pose())
-#print(kitchen.links)
-#print(robot.get_pose())
+
+
+
+
+
+try:
+
+    img.pub_now(ImageEnum.HI.value)  # hi im toya
+    talk.pub_now("Push down my Hand, when you are Ready.")
+    img.pub_now(ImageEnum.PUSHBUTTONS.value)
+    plan = Code(lambda: rospy.sleep(1)) * 999999 >> Monitor(monitor_func)
+    plan.perform()
+except SensorMonitoringCondition:
+    talk.pub_now("Starting Storing Grocery.")
+    # load everfyhing world giskard robokudo....
+    # Wait for the start signal
+
+    img.pub_now(ImageEnum.Hi.value)
+    start_signal_waiter.wait_for_startsignal()
+
+    # Once the start signal is received, continue with the rest of the script
+    rospy.loginfo("Start signal received, now proceeding with tasks.")
+    move_vel(speed=2, distance=4, isForward=True)
+    rospy.sleep(2)
+    new_parameters = {
+        'forbid_radius': 0.2,
+        'obstacle_occupancy': 5,
+        'obstacle_radius': 0.2
+    }
+
+    set_parameters(new_parameters)    # Once the start signal is received, continue with the rest of the script
+
+    rospy.sleep(1)
+    move_vel(0.2, 2, False, 0.03)
+    fake_pose_2 = Pose([4, 0.3, 0])
+    move.pub_fake_pose(fake_pose_2)
+    talk.pub_now("Lets Go, Driving to Shelf.")
+
+
 demo(0)
