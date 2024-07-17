@@ -22,8 +22,17 @@ class PoseNavigator():
         #self.pub = rospy.Publisher('goal', PoseStamped, queue_size=10, latch=True)
         self.toya_pose = None
         self.goal_pose = None
+        self.toya_pose_pub = rospy.Publisher("/initialpose", PoseWithCovarianceStamped, queue_size=100)
+
         self.toya_pose_sub = rospy.Subscriber("/amcl_pose", PoseWithCovarianceStamped, self.toya_pose_cb)
         rospy.loginfo("move_base init construct done")
+
+    def pub_fake_pose(self, fake_pose: PoseStamped):
+        msg = PoseWithCovarianceStamped()
+        msg.pose.pose.position = fake_pose.pose.position
+        msg.pose.pose.orientation = fake_pose.pose.orientation
+        msg.pose.covariance = [0.25, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.25, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.06853892326654787]
+        self.toya_pose_pub.publish(msg)
 
     def toya_pose_cb(self, msg):
         self.toya_pose = msg.pose.pose.position

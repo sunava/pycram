@@ -93,3 +93,4 @@ class ImageEnum(Enum):
     FOLLOWSTOP = 15
     JREPEAT = 16
     SOFA = 17
+    INSPECT = 18

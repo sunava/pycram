@@ -79,7 +79,7 @@ class StartSignalWaiter:
 
         def laser_scan_callback(msg):
             ranges = list(msg.ranges)
-            if len(ranges) > 481 and ranges[481] > 1.0:
+            if len(ranges) > 481 and ranges[481] > 0.5:
                 self.fluent.set_value(True)
                 rospy.loginfo("Door is open, unsubscribing from topic")
                 self.current_subscriber.unregister()
@@ -129,6 +129,29 @@ class StartSignalWaiter:
         self.fluent.wait_for()
 
         rospy.loginfo("Obstacle detection signal received.")
+
+
+
+
+
+    def update_ros_parameters(new_params):
+        """
+        Update specified parameters on the ROS parameter server.
+
+        :param new_params: Dictionary with new parameter values.
+        """
+        try:
+            rospy.init_node('update_params_node', anonymous=True)
+
+            for param, value in new_params.items():
+                rospy.set_param(param, value)
+
+            print("Parameters updated successfully.")
+
+        except rospy.ROSInterruptException as e:
+            print(f"An error occurred: {e}")
+
+
 
 class TextToSpeechPublisher():
 

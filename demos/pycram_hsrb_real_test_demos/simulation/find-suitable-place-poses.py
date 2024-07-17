@@ -40,12 +40,14 @@ table_pose = Pose([2.862644998141083, 5.046512935221523, 0.0], [0.0, 0.0, 0.7769
 table_pose_pre = Pose([2.862644998141083, 4.946512935221523, 0.0], [0.0, 0.0, 0.7769090622619312, 0.6296128246591604])
 
 milk = Object("milk", ObjectType.MILK, "milk.stl", pose=Pose([2.5, 2, 1.02]), color=[1, 0, 0, 1])
-cereal = Object("cereal", ObjectType.BREAKFAST_CEREAL, "breakfast_cereal.stl", pose=Pose([2.5, 2.3, 1.05]), color=[0, 1, 0, 1])
+cereal = Object("cereal", ObjectType.BREAKFAST_CEREAL, "breakfast_cereal.stl", pose=Pose([2.5, 2.3, 1.05]),
+                color=[0, 1, 0, 1])
 spoon = Object("spoon", ObjectType.SPOON, "spoon.stl", pose=Pose([2.4, 2.2, 0.85]), color=[0, 0, 1, 1])
 bowl = Object("bowl", ObjectType.BOWL, "bowl.stl", pose=Pose([2.5, 2.2, 1.02]), color=[1, 1, 0, 1])
 
-
 milk_desig = BelieveObject(names=["milk"])
+
+
 def multiply_quaternions(q1, q2):
     """
     Multiply two quaternions.
@@ -134,7 +136,6 @@ def get_closest_pose(obj_pose, pose_list):
     return nearest_pose
 
 
-
 def calculate_z_offsets(links_from_shelf):
     """
     Calculate the Z offsets between each link in links_from_shelf and return a dictionary mapping each link
@@ -156,6 +157,7 @@ def calculate_z_offsets(links_from_shelf):
 
     return z_offsets
 
+
 def get_z_height_to_next_link(link, z_offsets):
     """
     Return the Z height difference from the given link to the next link.
@@ -163,7 +165,7 @@ def get_z_height_to_next_link(link, z_offsets):
     return z_offsets.get(link, None)
 
 
-#noteme if you want to be able to run this in simulation you will have to do get.aabb without bullet world obj
+# noteme if you want to be able to run this in simulation you will have to do get.aabb without bullet world obj
 def find_pose_in_shelf(group, object, groups_in_shelf):
     link = None
     nearest_pose_to_group = None
@@ -187,8 +189,7 @@ def find_pose_in_shelf(group, object, groups_in_shelf):
         nearest_pose_to_group = longest_group[0][0]
         link = longest_group[1]
         if group not in groups_in_shelf:
-            groups_in_shelf[group] = [ nearest_pose_to_group, longest_group[1] ]
-
+            groups_in_shelf[group] = [nearest_pose_to_group, longest_group[1]]
 
     if nearest_pose_to_group:
         z_offsets = calculate_z_offsets(links_from_shelf)
@@ -197,16 +198,13 @@ def find_pose_in_shelf(group, object, groups_in_shelf):
         pose_in_shelf = lt.transform_pose(nearest_pose_to_group, kitchen.get_link_tf_frame(link))
         pose_in_shelf.pose.position.x = -0.10
         if z_height_to_next:
-            pose_in_shelf.pose.position.z = (z_height_to_next/2)-0.01
+            pose_in_shelf.pose.position.z = (z_height_to_next / 2) - 0.01
         else:
             pose_in_shelf.pose.position.z += 0.03
         adjusted_pose_in_map = lt.transform_pose(pose_in_shelf, "map")
         world.current_bullet_world.add_vis_axis(adjusted_pose_in_map)
 
         return adjusted_pose_in_map, link
-
-
-
 
 
 groups_in_shelf = {}
@@ -220,8 +218,6 @@ def demo(step):
     cereal.set_pose(place_pose)
     place_pose, link = find_pose_in_shelf("Kitchen Utensils and Tools", bowl, groups_in_shelf)
     bowl.set_pose(place_pose)
-
-
 
 
 demo(0)

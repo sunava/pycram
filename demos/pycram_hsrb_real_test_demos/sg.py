@@ -9,7 +9,7 @@ from pycram.language import Code
 
 from pycram.ros.robot_state_updater import RobotStateUpdater, KitchenStateUpdater
 from pycram.designators.action_designator import *
-from pycram.enums import ObjectType
+from pycram.enums import ObjectType, ImageEnum
 from pycram.process_module import real_robot
 import pycram.external_interfaces.giskard_new as giskardpy
 # import pycram.external_interfaces.giskard as giskardpy_old
@@ -27,7 +27,7 @@ import random
 
 world = BulletWorld()
 v = VizMarkerPublisher()
-kitchen = Object("kitchen", ObjectType.ENVIRONMENT, "robocup_vanessa.urdf")
+kitchen = Object("kitchen", ObjectType.ENVIRONMENT, "robocup123.urdf")
 kitchen_desig = ObjectDesignatorDescription(names=["kitchen"])
 grasp_listener = GraspListener()
 talk = TextToSpeechPublisher()
@@ -44,14 +44,20 @@ KitchenStateUpdater("/tf", "/iai_kitchen/joint_states")
 
 giskardpy.init_giskard_interface()
 giskardpy.clear()
-table_pose = Pose([6.6, 4.9, 0.0], [0.0, 0.0, 0, 1])
-long_table_1 = Pose([6.65, 4.6, 0],[0, 0, 0, 1])
-long_table_pick = Pose([6.60, 4.6, 0],[0, 0, 0, 1])
+img = ImageSwitchPublisher()
 
-long_table_1_rotated = Pose([6.65, 4.6, 0],[0, 0, 1, 0])
-shelf_1 = Pose([6.2, 5.6, 0],[0, 0, 1, 0])
-shelf_1_rotated1 = Pose([6.2, 5.6, 0],[0, 0, -0.7, 0.7])
-shelf_1_rotated = Pose([6.2, 5.6, 0],[0, 0, 0, 1])
+# 'shelf:shelf:shelf_floor_0',
+links_from_shelf = ['shelf_hohc:kitchen_cabinet:shelf_floor_1', 'shelf_hohc:kitchen_cabinet:shelf_floor_2', 'shelf_hohc:kitchen_cabinet:shelf_floor_3']
+
+
+
+
+
+table_pose = Pose([6.6, 4.9, 0.0], [0.0, 0.0, 0, 1])
+table_pose_rotate = Pose([6.6, 4.9, 0.0], [0.0, 0.0, 0.7, 0.7])
+
+shelf_1 = Pose([6.2, 5.8, 0],[0, 0, 1, 0])
+shelf_1_rotated1 = Pose([6.2, 5.8, 0],[0, 0, -0.7, 0.7])
 
 
 def multiply_quaternions(q1, q2):
@@ -78,29 +84,33 @@ def multiply_quaternions(q1, q2):
 
 # List of objects
 objects = ["Fork", "Pitcher", "Bleachcleanserbottle", "Crackerbox", "Minisoccerball", "Baseball", "Mustardbottle",
-           "Jellochocolatepuddingbox", "Wineglass", "Orange", "Coffeepack", "Softball", "Metalplate",
-           "Pringleschipscan", "Strawberry", "Glasscleanerspraybottle", "Tennisball", "Spoon", "Metalmug",
-           "Abrasivesponge", "Jellobox", "Dishwashertab", "Knife", "Cerealbox", "Metalbowl", "Sugarbox", "Coffeecan",
-           "Milkpackja", "Apple", "Tomatosoupcan", "Tunafishcan", "Gelatinebox", "Pear", "Lemon", "Banana",
-           "Pottedmeatcan", "Peach", "Plum", "Rubikscube", "Mueslibox", "Cupblue", "Cupgreen", "Largemarker",
-           "Masterchefcan", "Scissors", "Scrubcleaner", "Grapes", "Cup_small", "screwdriver", "clamp", "hammer",
-           "wooden_block", "Cornybox*"]
+           "Jellochocolatepuddingbox", "Wineglass", "Orange", "Coffeepack", "Softball", "Metalplate", "Pringleschipscan",
+           "Strawberry", "Glasscleanerspraybottle", "Tennisball", "Spoon", "Metalmug", "Abrasivesponge", "Jellobox",
+           "Dishwashertab", "Knife", "Cerealbox", "Metalbowl", "Sugarbox", "Coffeecan", "Milkpackja", "Apple",
+           "Tomatosoupcan", "Tunafishcan", "Gelatinebox", "Pear", "Lemon", "Banana", "Pottedmeatcan", "Peach", "Plum",
+           "Rubikscube", "Mueslibox", "Cupblue", "Cupgreen", "Largemarker", "Masterchefcan", "Scissors", "Scrubcleaner",
+           "Grapes", "Cup_small", "screwdriver", "clamp", "hammer", "wooden_block", "Cornybox", "Sponge", "Washcloth",
+           "Soap", "Fantacan", "IceTeaCan", "Dubbelfris", "Waterbottle", "Colabottle", "Peasoupcan", "Cornflakes",
+           "Curry", "Mayonaise", "Hagelslag", "Sausages", "Pancakemix", "Crispsbag", "Candy", "Stroopwafels",
+           "Liquorice", "Tictac", "Candle", "Grocerybag", "Vase"]
 
 # Group objects by similarity
-groups = {"Kitchen Utensils and Tools": ["Fork", "Spoon", "Knife"],
-          "Containers and Drinkware": ["Pitcher", "Metalplate", "Metalbowl", "Metalmug", "Wineglass", "Cupblue",
-                                       "Cupgreen", "Cup_small"],
-          "Cleaning Supplies": ["Bleachcleanserbottle", "Glasscleanerspraybottle", "Abrasivesponge", "Scrubcleaner"],
-          "Packaged Food and Beverages": ["Crackerbox", "Mustardbottle", "Jellochocolatepuddingbox", "Coffeepack",
-                                          "Pringleschipscan", "Jellobox", "Dishwashertab", "Cerealbox", "Sugarbox",
-                                          "Coffeecan", "Milkpackja", "Tomatosoupcan", "Tunafishcan", "Gelatinebox",
-                                          "Mueslibox", "Cornybox*", "Masterchefcan", "Pottedmeatcan"],
-          "Fruits": ["Orange", "Strawberry", "Apple", "Pear", "Lemon", "Banana", "Peach", "Plum", "Grapes"],
-          "Sports Equipment": ["Minisoccerball", "Baseball", "Softball", "Tennisball"],
-          "Miscellaneous": ["Rubikscube", "Largemarker", "Scissors", "screwdriver", "clamp", "hammer", "wooden_block"],
-          "Unknown": ["Unknown"]}
+groups = {
+    "Kitchen Utensils and Tools": ["Fork", "Spoon", "Knife", "Scissors", "screwdriver", "clamp", "hammer"],
+    "Containers and Drinkware": ["Pitcher", "Metalplate", "Metalbowl", "Metalmug", "Wineglass", "Cupblue", "Cupgreen", "Cup_small", "Vase"],
+    "Cleaning Supplies": ["Bleachcleanserbottle", "Glasscleanerspraybottle", "Abrasivesponge", "Scrubcleaner", "Sponge", "Washcloth", "Soap"],
+    "Packaged Food and Beverages": ["Crackerbox", "Mustardbottle", "Jellochocolatepuddingbox", "Coffeepack", "Pringleschipscan", "Jellobox",
+                                    "Dishwashertab", "Cerealbox", "Sugarbox", "Coffeecan", "Milkpackja", "Tomatosoupcan", "Tunafishcan",
+                                    "Gelatinebox", "Mueslibox", "Cornybox", "Masterchefcan", "Pottedmeatcan", "Fantacan", "IceTeaCan",
+                                    "Dubbelfris", "Waterbottle", "Colabottle", "Peasoupcan", "Cornflakes", "Curry", "Mayonaise", "Hagelslag",
+                                    "Sausages", "Pancakemix", "Crispsbag", "Candy", "Stroopwafels", "Liquorice", "Tictac"],
+    "Fruits": ["Orange", "Strawberry", "Apple", "Pear", "Lemon", "Banana", "Peach", "Plum", "Grapes"],
+    "Sports Equipment": ["Minisoccerball", "Baseball", "Softball", "Tennisball"],
+    "Miscellaneous": ["Rubikscube", "Largemarker", "wooden_block", "Candle", "Grocerybag"]
+}
+
+
 # 'shelf:shelf:shelf_floor_0',
-links_from_shelf = ['dinner_table:dinner_table:table_center']
 popcorn_frame = "dinner_table:dinner_table:table_front_edge_center"
 
 
@@ -297,10 +307,7 @@ def placeorpark(object_name, object, grasp, talk_bool, target_location, link, pi
 # noteme this is with driving! return grasped_bool, grasp, group, object, obj_id, groups_on_table
 def process_pick_up_objects(talk_bool):
     # drive
-    talk.pub_now("driving", True)
-    move.pub_now(table_pose)
-    # look
-    #locationtoplace = Pose([2.6868790796016738, 5.717920690528091, 0.715])
+
     look_pose = kitchen.get_link_pose("dinner_table:dinner_table:table_front_edge_center")
     # park
     perceive_conf = {'arm_lift_joint': 0.3, 'wrist_flex_joint': 1.8, 'arm_roll_joint': -1, }
@@ -310,6 +317,7 @@ def process_pick_up_objects(talk_bool):
     giskardpy.move_head_to_pose(look_pose)
 
     talk.pub_now("perceiving", True)
+    img.pub_now(ImageEnum.SEARCH.value)
     groups_on_table = {}
 
     # noteme detect on table
@@ -331,6 +339,8 @@ def process_pick_up_objects(talk_bool):
     # noteme if groups were found
     if groups_on_table:
         groups_on_table_w_table_frame = {}
+        img.pub_now(ImageEnum.PICKING.value)
+
         for key, obj in groups_on_table.items():
             obj_pose = obj[0].bullet_world_object.pose
             object_raw = obj[0]
@@ -370,83 +380,119 @@ def process_pick_up_objects(talk_bool):
         object_dim = object.get_object_dimensions()
         print(f"obj dim von {object_name} {object_dim}")
 
-        if grasp_set:
-            grasp = "top"
+        if oTb.pose.position.x >= 0.30:
+            talk.pub_now("Pointing to the object:", talk_bool, False)
+
+            gripper.pub_now("close")
+            pose_guest = PointStamped()
+            pose_guest.header.frame_id = "map"
+            pose_guest.point.x = oTb.pose.position.x
+            pose_guest.point.y = oTb.pose.position.y
+            pose_guest.point.z = 0.85
+            print(pose_guest)
+
+            giskardpy.move_arm_to_point(pose_guest)
+
+            try:
+                str_ = f"I am not able to grasp the: {object_name} please help me!"
+                talk.pub_now(str_, talk_bool)
+                gripper.pub_now("open")
+                talk.pub_now("Push down my Gripper, when you are Ready.", talk_bool, False)
+                img.pub_now(ImageEnum.PUSHBUTTONS.value)
+
+                plan = Code(lambda: rospy.sleep(1)) * 999999 >> Monitor(monitor_func)
+                plan.perform()
+            except SensorMonitoringCondition:
+                img.pub_now(ImageEnum.HI.value)  # hi im toya
+                gripper.pub_now("close")
+                giskardpy.achieve_attached(object)
+                tip_link = 'hand_gripper_tool_frame'
+                BulletWorld.robot.attach(object=object, link=tip_link)
+                return True, "front", group, object, obj_id, object_raw, groups_on_table
+
         else:
-            if object_dim[2] < 0.055:
-                rospy.logwarn(f"{object_name} grasp is set to top, angle: {angle}")
-                rospy.logwarn(f"{object_name} and height {object_dim[2]}")
-                rospy.logwarn(f"{object_name} and width {object_dim[0]}")
-                grasp = "top"
-            elif object_dim[2] < 0.065 or angle > 40 and (object_dim[0] > 0.08 and object_dim[1] > 0.08):
-                rospy.logwarn(f"{object_name} grasp is set to top, angle: {angle}")
-                rospy.logwarn(f"{object_name} and height {object_dim[2]}")
-                rospy.logwarn(f"{object_name} and width {object_dim[0]}")
+            if grasp_set:
                 grasp = "top"
             else:
-                rospy.logwarn(f"{object_name} grasp is set to front, angle: {angle}")
-                rospy.logwarn(f"{object_name} and height {object_dim[2]}")
-                rospy.logwarn(f"{object_name} and width {object_dim[0]}")
-                grasp = "front"
+                if object_dim[2] < 0.055:
+                    rospy.logwarn(f"{object_name} grasp is set to top, angle: {angle}")
+                    rospy.logwarn(f"{object_name} and height {object_dim[2]}")
+                    rospy.logwarn(f"{object_name} and width {object_dim[0]}")
+                    grasp = "top"
+                elif object_dim[2] < 0.060 or angle > 40 and (object_dim[0] > 0.08 and object_dim[1] > 0.08):
+                    rospy.logwarn(f"{object_name} grasp is set to top, angle: {angle}")
+                    rospy.logwarn(f"{object_name} and height {object_dim[2]}")
+                    rospy.logwarn(f"{object_name} and width {object_dim[0]}")
+                    grasp = "top"
+                else:
+                    rospy.logwarn(f"{object_name} grasp is set to front, angle: {angle}")
+                    rospy.logwarn(f"{object_name} and height {object_dim[2]}")
+                    rospy.logwarn(f"{object_name} and width {object_dim[0]}")
+                    grasp = "front"
 
+                if grasp == "top":
+                    print("pose adjusted with z")
+                    oTb.pose.position.z += (object_dim[2] / 10)
+                    if object_dim[2] < 0.02:
+                        #rospy.logwarn(f"I am not able to grasp the object: {object_name} please help me!")
+                        oTb.pose.position.z = 0.011
+                else:
+                    oTb.pose.position.x += 0.03
+
+            grasp_rotation = robot_description.grasps.get_orientation_for_grasp(grasp)
             if grasp == "top":
-                print("pose adjusted with z")
-                oTb.pose.position.z += (object_dim[2] / 10)
-                if object_dim[2] < 0.02:
-                    rospy.logwarn(f"I am not able to grasp the object: {object_name} please help me!")
-                    oTb.pose.position.z = 0.011
+                grasp_q = Quaternion(grasp_rotation[0], grasp_rotation[1], grasp_rotation[2], grasp_rotation[3])
+                oTb.orientation = multiply_quaternions(oTb.pose.orientation, grasp_q)
             else:
-                oTb.pose.position.x += 0.03
+                oTb.orientation = grasp_rotation
 
-        grasp_rotation = robot_description.grasps.get_orientation_for_grasp(grasp)
-        if grasp == "top":
-            grasp_q = Quaternion(grasp_rotation[0], grasp_rotation[1], grasp_rotation[2], grasp_rotation[3])
-            oTb.orientation = multiply_quaternions(oTb.pose.orientation, grasp_q)
-        else:
-            oTb.orientation = grasp_rotation
+            oTmG = lt.transform_pose(oTb, "map")
+            after_pose = oTmG.copy()
+            after_pose.pose.position.z += 0.02
 
-        oTmG = lt.transform_pose(oTb, "map")
-        after_pose = oTmG.copy()
-        after_pose.pose.position.z += 0.02
+            z_color = [1, 0, 1, 1]
+            BulletWorld.current_bullet_world.add_vis_axis(after_pose, z_color=z_color)
+            BulletWorld.current_bullet_world.add_vis_axis(oTmG)
 
-        z_color = [1, 0, 1, 1]
-        BulletWorld.current_bullet_world.add_vis_axis(after_pose, z_color=z_color)
-        BulletWorld.current_bullet_world.add_vis_axis(oTmG)
-        #move.pub_now(table_pose)
+            #testme this is not tested yet
+            move_pre_pose_object = robot.get_pose()
+            move_pre_pose_object.pose.position.y = oTmG.pose.position.y
+            move.pub_now(move_pre_pose_object)
 
-        if grasp == "front":
-            config_for_placing = {'arm_lift_joint': -1, 'arm_flex_joint': -0.16, 'arm_roll_joint': -0.0145,
-                                  'wrist_flex_joint': -1.417, 'wrist_roll_joint': 0.0}
-        else:
-            config_for_placing = {'arm_flex_joint': -1.1, 'arm_lift_joint': 1.15, 'arm_roll_joint': 0,
-                                  'wrist_flex_joint': -1.6, 'wrist_roll_joint': 0, }
 
-        pakerino(config=config_for_placing)
+            if grasp == "front":
+                config_for_placing = {'arm_lift_joint': -1, 'arm_flex_joint': -0.16, 'arm_roll_joint': -0.0145,
+                                      'wrist_flex_joint': -1.417, 'wrist_roll_joint': 0.0}
+            else:
+                config_for_placing = {'arm_flex_joint': -1.1, 'arm_lift_joint': 1.15, 'arm_roll_joint': 0,
+                                      'wrist_flex_joint': -1.6, 'wrist_roll_joint': 0, }
 
-        gripper.pub_now("open")
-        talk.pub_now(f"Pick Up now! {object_name.split('_')[0]} from: {grasp}")
-        giskard_return = giskardpy.achieve_sequence_pick_up(oTmG)
-        while not giskard_return:
-            rospy.sleep(0.1)
+            pakerino(config=config_for_placing)
 
-        giskardpy.achieve_attached(object)
-        tip_link = 'hand_gripper_tool_frame'
-        BulletWorld.robot.attach(object=object, link=tip_link)
-        gripper.pub_now("close")
-        giskardpy.avoid_all_collisions()
-        park = pakerino()
-        while not park:
-            print("waiting for park")
-            rospy.sleep(0.1)
-        grasped_bool = None
-        if grasp_listener.check_grasp():
-            talk.pub_now("Grasped a object")
-            grasped_bool = True
-        else:
-            talk.pub_now("I was not able to grasped a object")
-            grasped_bool = False
+            gripper.pub_now("open")
+            talk.pub_now(f"Pick Up now! {object_name.split('_')[0]} from: {grasp}")
+            giskard_return = giskardpy.achieve_sequence_pick_up(oTmG)
+            while not giskard_return:
+                rospy.sleep(0.1)
 
-        return grasped_bool, grasp, group, object, obj_id, object_raw, groups_on_table
+            giskardpy.achieve_attached(object)
+            tip_link = 'hand_gripper_tool_frame'
+            BulletWorld.robot.attach(object=object, link=tip_link)
+            gripper.pub_now("close")
+            giskardpy.avoid_all_collisions()
+            park = pakerino()
+            while not park:
+                print("waiting for park")
+                rospy.sleep(0.1)
+            grasped_bool = None
+            if grasp_listener.check_grasp():
+                talk.pub_now("Grasped a object", False)
+                grasped_bool = True
+            else:
+                talk.pub_now("I was not able to grasped a object", False)
+                grasped_bool = False
+
+            return grasped_bool, grasp, group, object, obj_id, object_raw, groups_on_table
 
 
 # noteme  with look  return groups in shelf
@@ -463,11 +509,11 @@ def process_objects_in_shelf(talk_bool):
         "Unknown": None
     }
     #todome fix this again to shelf
-    look_pose = kitchen.get_link_pose(popcorn_frame)
+    look_pose = kitchen.get_link_pose('shelf_hohc:kitchen_cabinet:shelf_floor_1')
     perceive_conf = {'arm_lift_joint': 0.30, 'wrist_flex_joint': 1.8, 'arm_roll_joint': -1, }
     pakerino(config=perceive_conf)
     # look
-    look_pose.pose.position.z -= 0.05
+    look_pose.pose.position.z -= 0.0
     giskardpy.move_head_to_pose(look_pose)
 
     talk.pub_now("perceiving", True)
@@ -505,15 +551,20 @@ def demo(step):
 
         if step <= 1:
             talk.pub_now("driving", True)
-            #move.pub_now(shelf_1, interrupt_bool=False)
-            move.pub_now(table_pose, interrupt_bool=False)
+            img.pub_now(ImageEnum.DRIVINGBACK.value)
+
+            move.pub_now(shelf_1, interrupt_bool=False)
+            img.pub_now(ImageEnum.SEARCH.value)
             groups_in_shelf = process_objects_in_shelf(talk_bool)
-            #move.pub_now(shelf_1_rotated1, interrupt_bool=False)
-            #move.pub_now(shelf_1_rotated, interrupt_bool=False)
 
 
         if step <= 2:
             try:
+                talk.pub_now("driving", True)
+                img.pub_now(ImageEnum.DRIVINGBACK.value)
+                move.pub_now(shelf_1_rotated1)
+                move.pub_now(table_pose)
+
                 grasped_bool, grasp, group, object, obj_id, object_raw, groups_on_table = process_pick_up_objects(
                     talk_bool)
                 print(grasped_bool, grasp, group, object, obj_id, object_raw, groups_on_table)
@@ -521,11 +572,15 @@ def demo(step):
                 print("done")
                 return
         if step <= 3:
-            #move.pub_now(shelf_1, interrupt_bool=False)
-            #move.pub_now(table_pose, interrupt_bool=False)
+            talk.pub_now("driving", True)
+            img.pub_now(ImageEnum.DRIVINGBACK.value)
+            move.pub_now(table_pose_rotate, interrupt_bool=False)
+            move.pub_now(shelf_1, interrupt_bool=False)
             place_pose, link = find_pose_in_shelf(group, object_raw, groups_in_shelf)
+
+            img.pub_now(ImageEnum.PLACING.value)
             placeorpark(object.name, object, "front", talk_bool, place_pose, link, False)
-            #demo(2)
+            demo(2)
 
 
 # previous_value = fts.get_last_value()
