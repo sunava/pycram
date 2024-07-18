@@ -456,7 +456,7 @@ pr = True
 def monitor_func():
     der: WrenchStamped() = fts.get_last_value()
     print(abs(der.wrench.force.y))
-    if abs(der.wrench.force.y) > 0.45:
+    if abs(der.wrench.force.y) > 1.4:
         print(abs(der.wrench.force.y))
         print(abs(der.wrench.torque.y))
         return SensorMonitoringCondition

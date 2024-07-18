@@ -20,7 +20,6 @@ from pycram.utilities.robocup_utils import TextToSpeechPublisher, ImageSwitchPub
 from dynamic_reconfigure.msg import Config, BoolParameter, IntParameter, StrParameter, DoubleParameter, GroupState
 from dynamic_reconfigure.srv import Reconfigure, ReconfigureRequest
 
-
 import pycram.external_interfaces.robokudo as robokudo
 from pycram.external_interfaces.navigate import PoseNavigator
 from pycram.ros.robot_state_updater import RobotStateUpdater
@@ -54,17 +53,13 @@ giskardpy.clear()
 img = ImageSwitchPublisher()
 
 # 'shelf:shelf:shelf_floor_0',
-links_from_shelf = ['shelf_hohc:kitchen_cabinet:shelf_floor_1', 'shelf_hohc:kitchen_cabinet:shelf_floor_2', ]
-
-
-
-
+links_from_shelf = ["dinner_table:dinner_table:table_front_edge_center"]
 
 table_pose = Pose([6.6, 4.9, 0.0], [0.0, 0.0, 0, 1])
 table_pose_rotate = Pose([6.6, 4.9, 0.0], [0.0, 0.0, 0.7, 0.7])
 
-shelf_1 = Pose([6.35, 5.8, 0],[0, 0, 1, 0])
-shelf_1_rotated1 = Pose([6.35, 5.8, 0],[0, 0, -0.7, 0.7])
+shelf_1 = Pose([6.35, 5.8, 0], [0, 0, 1, 0])
+shelf_1_rotated1 = Pose([6.35, 5.8, 0], [0, 0, -0.7, 0.7])
 
 
 def multiply_quaternions(q1, q2):
@@ -87,6 +82,7 @@ def multiply_quaternions(q1, q2):
     y = w1 * y2 - x1 * z2 + y1 * w2 + z1 * x2
     z = w1 * z2 + x1 * y2 - y1 * x2 + z1 * w2
     return (x, y, z, w)
+
 
 def set_parameters(new_parameters):
     rospy.wait_for_service('/tmc_map_merger/inputs/base_scan/obstacle_circle/set_parameters')
@@ -136,7 +132,6 @@ def move_vel(speed, distance, isForward, angle=0):
     vel_msg.angular.x = 0
     vel_msg.angular.y = 0
 
-
     # Setting the current time for distance calculation
     t0 = rospy.Time.now().to_sec()
     current_distance = 0
@@ -154,36 +149,37 @@ def move_vel(speed, distance, isForward, angle=0):
     vel_msg.linear.x = 0
     # Force the robot to stop
     velocity_publisher.publish(vel_msg)
-# List of objects
-objects = ["Fork", "Pitcher", "Bleachcleanserbottle", "Crackerbox", "Minisoccerball", "Baseball", "Mustardbottle",
-           "Jellochocolatepuddingbox", "Wineglass", "Orange", "Coffeepack", "Softball", "Metalplate", "Pringleschipscan",
-           "Strawberry", "Glasscleanerspraybottle", "Tennisball", "Spoon", "Metalmug", "Abrasivesponge", "Jellobox",
-           "Dishwashertab", "Knife", "Cerealbox", "Metalbowl", "Sugarbox", "Coffeecan", "Milkpackja", "Apple",
-           "Tomatosoupcan", "Tunafishcan", "Gelatinebox", "Pear", "Lemon", "Banana", "Pottedmeatcan", "Peach", "Plum",
-           "Rubikscube", "Mueslibox", "Cupblue", "Cupgreen", "Largemarker", "Masterchefcan", "Scissors", "Scrubcleaner",
-           "Grapes", "Cup_small", "screwdriver", "clamp", "hammer", "wooden_block", "Cornybox", "Sponge", "Washcloth",
-           "Soap", "Fantacan", "IceTeaCan", "Dubbelfris", "Waterbottle", "Colabottle", "Peasoupcan", "Cornflakes",
-           "Curry", "Mayonaise", "Hagelslag", "Sausages", "Pancakemix", "Crispsbag", "Candy", "Stroopwafels",
-           "Liquorice", "Tictac", "Candle", "Grocerybag", "Vase"]
-no_go_objects =["Vase", "Strawberry", "Wineglass", "Scissors", "screwdriver", "hammer", "Washcloth", "Candle", "wooden_block",
-                "Peach", "Plum"]
 
+
+# List of objects
+objects_we_want = ["Fork", "Spoon", "Knife", "Cerealbox", "Metalbowl", "Milkpackja", "Mueslibox", "Cornflakes"]
+
+
+no_go_objects = ["Vase", "Strawberry", "Wineglass", "Scissors", "screwdriver", "hammer", "Washcloth", "Candle",
+                 "wooden_block",
+                 "Peach", "Plum"]
 
 # Group objects by similarity
 groups = {
     "Kitchen Utensils and Tools": ["Fork", "Spoon", "Knife", "Scissors", "screwdriver", "clamp", "hammer"],
-    "Containers and Drinkware": ["Pitcher", "Metalplate", "Metalbowl", "Metalmug", "Wineglass", "Cupblue", "Cupgreen", "Cup_small", "Vase"],
-    "Cleaning Supplies": ["Bleachcleanserbottle", "Glasscleanerspraybottle", "Abrasivesponge", "Scrubcleaner", "Sponge", "Washcloth", "Soap"],
-    "Packaged Food and Beverages": ["Crackerbox", "Mustardbottle", "Jellochocolatepuddingbox", "Coffeepack", "Pringleschipscan", "Jellobox",
-                                    "Dishwashertab", "Cerealbox", "Sugarbox", "Coffeecan", "Milkpackja", "Tomatosoupcan", "Tunafishcan",
-                                    "Gelatinebox", "Mueslibox", "Cornybox", "Masterchefcan", "Pottedmeatcan", "Fantacan", "IceTeaCan",
-                                    "Dubbelfris", "Waterbottle", "Colabottle", "Peasoupcan", "Cornflakes", "Curry", "Mayonaise", "Hagelslag",
-                                    "Sausages", "Pancakemix", "Crispsbag", "Candy", "Stroopwafels", "Liquorice", "Tictac"],
+    "Containers and Drinkware": ["Pitcher", "Metalplate", "Metalbowl", "Metalmug", "Wineglass", "Cupblue", "Cupgreen",
+                                 "Cup_small", "Vase"],
+    "Cleaning Supplies": ["Bleachcleanserbottle", "Glasscleanerspraybottle", "Abrasivesponge", "Scrubcleaner", "Sponge",
+                          "Washcloth", "Soap"],
+    "Packaged Food and Beverages": ["Crackerbox", "Mustardbottle", "Jellochocolatepuddingbox", "Coffeepack",
+                                    "Pringleschipscan", "Jellobox",
+                                    "Dishwashertab", "Cerealbox", "Sugarbox", "Coffeecan", "Milkpackja",
+                                    "Tomatosoupcan", "Tunafishcan",
+                                    "Gelatinebox", "Mueslibox", "Cornybox", "Masterchefcan", "Pottedmeatcan",
+                                    "Fantacan", "IceTeaCan",
+                                    "Dubbelfris", "Waterbottle", "Colabottle", "Peasoupcan", "Cornflakes", "Curry",
+                                    "Mayonaise", "Hagelslag",
+                                    "Sausages", "Pancakemix", "Crispsbag", "Candy", "Stroopwafels", "Liquorice",
+                                    "Tictac"],
     "Fruits": ["Orange", "Strawberry", "Apple", "Pear", "Lemon", "Banana", "Peach", "Plum", "Grapes"],
     "Sports Equipment": ["Minisoccerball", "Baseball", "Softball", "Tennisball"],
     "Miscellaneous": ["Rubikscube", "Largemarker", "wooden_block", "Candle", "Grocerybag"]
 }
-
 
 # 'shelf:shelf:shelf_floor_0',
 popcorn_frame = "dinner_table:dinner_table:table_front_edge_center"
@@ -255,7 +251,7 @@ def get_z_height_to_next_link(link, z_offsets):
     return z_offsets.get(link, None)
 
 
-#noteme if you want to be able to run this in simulation you will have to do get.aabb without bullet world obj
+# noteme if you want to be able to run this in simulation you will have to do get.aabb without bullet world obj
 def find_pose_in_shelf(group, object, groups_in_shelf):
     link = None
     nearest_pose_to_group = None
@@ -380,7 +376,44 @@ def placeorpark(object_name, object, grasp, talk_bool, target_location, link, pi
     while not park:
         print("waiting for park")
         rospy.sleep(0.1)
+def sort_objects(obj_dict: dict, wished_sorted_obj_list: list):
+    """
+    keeps only wished objects of the seen objects and sorts the returned list of objects
+    according to the order of the given wished_sorted_obj_list.
 
+    :param obj_dict: tupel of State and dictionary of founded objects in the FOV
+    :param wished_sorted_obj_list: list of object types we like to keep with the wished order
+    :return: sorted list of seen and wished to keep objects in the same order of the given list
+    """
+    tuples_list = []
+    sorted_objects = []
+
+    if len(obj_dict) == 0:
+        return sorted_objects
+
+    # cut of the given State and keep the dictionary
+    first, *remaining = obj_dict
+    for dictionary in remaining:
+        for value in dictionary.values():
+            object_type = value.type
+            if value.type in ["Mueslibox", "Cornybox", "Cerealbox", "Crackerbox"]:
+                object_type = "Cerealbox"
+
+            if value.type in ["Spoon", "Fork", "Knife", "Plasticknife"]:
+                object_type = "Spoon"
+
+            if object_type in wished_sorted_obj_list:
+                tuples_list.append((value, wished_sorted_obj_list.index(object_type)))
+
+    sorted_objects = [x[0] for x in sorted(tuples_list, key=lambda index: index[1])]
+
+    # print which objects are in the final list
+    test_list = []
+    for test_object in sorted_objects:
+        test_list.append(test_object.type)
+    print(test_list)
+
+    return sorted_objects
 
 # noteme this is with driving! return grasped_bool, grasp, group, object, obj_id, groups_on_table
 def process_pick_up_objects(talk_bool):
@@ -401,17 +434,16 @@ def process_pick_up_objects(talk_bool):
     # noteme detect on table
     try:
         table_obj = DetectAction(technique='all').resolve().perform()
-        first, *remaining = table_obj
+        sorted_table = sort_objects(table_obj,  ["Metalbowl", "Spoon", "Knife",  "Cornflakes", "Milkpackja", "Mueslibox", "Fork", "Cerealbox"])
+        first, *remaining = sorted_table
         for dictionary in remaining:
             for value in dictionary.values():
                 try:
                     if value.name in no_go_objects:
                         continue
                     else:
-
-                        group = find_group(value.type)
-
-                        groups_on_table[value.name] = [value, group]
+                        if value.type in objects_we_want:
+                          groups_on_table[value.name] = [value, "Unkown"]
                 except AttributeError:
                     pass
         giskardpy.sync_worlds()
@@ -427,7 +459,8 @@ def process_pick_up_objects(talk_bool):
         for key, obj in groups_on_table.items():
             obj_pose = obj[0].bullet_world_object.pose
             object_raw = obj[0]
-            tf_link = kitchen.get_link_tf_frame(popcorn_frame)
+            link_tmp = get_closet_link_to_pose(obj_pose)
+            tf_link = kitchen.get_link_tf_frame(link_tmp)
             oTb = lt.transform_pose(obj_pose, tf_link)
 
             grasp_set = None
@@ -444,8 +477,7 @@ def process_pick_up_objects(talk_bool):
             groups_on_table_w_table_frame[key] = (obj[0], oTb, grasp_set, obj[1])
 
         # noteme sorts objects on the table with x so i can pick up the "most nearest"
-        sorted_groups = sorted(groups_on_table_w_table_frame.items(), key=lambda item: item[1][1].pose.position.x)
-        sorted_dict = dict(sorted_groups)
+        sorted_dict = groups_on_table
 
         # noteme get first items since we sorted it already
         first_key, first_value = next(iter(sorted_dict.items()))
@@ -487,7 +519,7 @@ def process_pick_up_objects(talk_bool):
         print(f"obj dim von {object_name} {object_dim}")
 
         if oTb.pose.position.x >= 0.30:
-            #talk.pub_now("Pointing to the object:", talk_bool, False)
+            # talk.pub_now("Pointing to the object:", talk_bool, False)
 
             gripper.pub_now("close")
             # pose_guest = PointStamped()
@@ -543,7 +575,7 @@ def process_pick_up_objects(talk_bool):
                     print("pose adjusted with z")
                     oTb.pose.position.z += (object_dim[2] / 10)
                     if object_dim[2] < 0.02:
-                        #rospy.logwarn(f"I am not able to grasp the object: {object_name} please help me!")
+                        # rospy.logwarn(f"I am not able to grasp the object: {object_name} please help me!")
                         oTb.pose.position.z = 0.011
                 else:
                     oTb.pose.position.x += 0.03
@@ -563,11 +595,10 @@ def process_pick_up_objects(talk_bool):
             BulletWorld.current_bullet_world.add_vis_axis(after_pose, z_color=z_color)
             BulletWorld.current_bullet_world.add_vis_axis(oTmG)
 
-            #testme this is not tested yet
+            # testme this is not tested yet
             move_pre_pose_object = robot.get_pose()
             move_pre_pose_object.pose.position.y = oTmG.pose.position.y
             move.pub_now(move_pre_pose_object)
-
 
             if grasp == "front":
                 config_for_placing = {'arm_lift_joint': -1, 'arm_flex_joint': -0.16, 'arm_roll_joint': -0.0145,
@@ -617,7 +648,7 @@ def process_objects_in_shelf(talk_bool):
         "Miscellaneous": None,
         "Unknown": None
     }
-    #todome fix this again to shelf
+    # todome fix this again to shelf
     look_pose = kitchen.get_link_pose('shelf_hohc:kitchen_cabinet:shelf_floor_1')
     perceive_conf = {'arm_lift_joint': 0.30, 'wrist_flex_joint': 1.8, 'arm_roll_joint': -1, }
     pakerino(config=perceive_conf)
@@ -659,13 +690,12 @@ def demo(step):
         pakerino()
 
         if step <= 1:
-            #talk.pub_now("driving", True)
+            # talk.pub_now("driving", True)
             img.pub_now(ImageEnum.DRIVINGBACK.value)
 
             move.pub_now(shelf_1, interrupt_bool=False)
             img.pub_now(ImageEnum.SEARCH.value)
-            #groups_in_shelf = process_objects_in_shelf(talk_bool)
-
+            # groups_in_shelf = process_objects_in_shelf(talk_bool)
 
         if step <= 2:
             try:
@@ -680,58 +710,51 @@ def demo(step):
         if step <= 3:
             talk.pub_now("driving", True)
             img.pub_now(ImageEnum.DRIVINGBACK.value)
-            move.pub_now(table_pose_rotate, interrupt_bool=False)
-            move.pub_now(shelf_1, interrupt_bool=False)
+            move.pub_now(shelf_1_rotated1, interrupt_bool=False)
+            move.pub_now(table_pose, interrupt_bool=False)
 
             img.pub_now(ImageEnum.PLACING.value)
             placeorpark(object.name, object, "front", talk_bool, place_pose, link_new, False)
             demo(2)
 
-
-
-
-
-
-
-
-try:
-
-    img.pub_now(ImageEnum.HI.value)  # hi im toya
-    talk.pub_now("Push down my Hand, when you are Ready.")
-    img.pub_now(ImageEnum.PUSHBUTTONS.value)
-    plan = Code(lambda: rospy.sleep(1)) * 999999 >> Monitor(monitor_func)
-    plan.perform()
-except SensorMonitoringCondition:
-    talk.pub_now("Starting Storing Grocery.")
-    # load everfyhing world giskard robokudo....
-    # Wait for the start signal
-
-    img.pub_now(ImageEnum.HI.value)
-    start_signal_waiter.wait_for_startsignal()
-
-    # Once the start signal is received, continue with the rest of the script
-    rospy.loginfo("Start signal received, now proceeding with tasks.")
-    move_vel(speed=2, distance=4, isForward=True)
-    rospy.sleep(2)
-    new_parameters = {
-        'forbid_radius': 0.2,
-        'obstacle_occupancy': 5,
-        'obstacle_radius': 0.2
-    }
-
-    set_parameters(new_parameters)    # Once the start signal is received, continue with the rest of the script
-
-    rospy.sleep(1)
-
-    fake_pose_2 = Pose([3, 0.3, 0])
-    move.pub_fake_pose(fake_pose_2)
-    move_vel(0.2, 2, False, 0.06)
-    talk.pub_now("Lets Go, Driving to Shelf.")
-    move_123 = Pose([4, -0.2, 0], [0, 0 , 0.7, 0.7])
-    move.pub_now(move_123)
-    move_145 = Pose([4.8, 0.8, 0], [0, 0, 0.7, 0.7])
-    move.pub_now(move_145)
-
+#
+# try:
+#
+#     img.pub_now(ImageEnum.HI.value)  # hi im toya
+#     talk.pub_now("Push down my Hand, when you are Ready.")
+#     img.pub_now(ImageEnum.PUSHBUTTONS.value)
+#     plan = Code(lambda: rospy.sleep(1)) * 999999 >> Monitor(monitor_func)
+#     plan.perform()
+# except SensorMonitoringCondition:
+#     talk.pub_now("Starting Storing Grocery.")
+#     # load everfyhing world giskard robokudo....
+#     # Wait for the start signal
+#
+#     img.pub_now(ImageEnum.HI.value)
+#     start_signal_waiter.wait_for_startsignal()
+#
+#     # Once the start signal is received, continue with the rest of the script
+#     rospy.loginfo("Start signal received, now proceeding with tasks.")
+#     #move_vel(speed=2, distance=4, isForward=True)
+#     rospy.sleep(2)
+#     new_parameters = {
+#         'forbid_radius': 0.2,
+#         'obstacle_occupancy': 5,
+#         'obstacle_radius': 0.2
+#     }
+#
+#     set_parameters(new_parameters)  # Once the start signal is received, continue with the rest of the script
+#
+#     rospy.sleep(1)
+#
+#     #fake_pose_2 = Pose([3, 0.3, 0])
+#     #move.pub_fake_pose(fake_pose_2)
+#     #move_vel(0.2, 2, False, 0.06)
+#     talk.pub_now("Lets Go, Driving to Shelf.")
+#     #move_123 = Pose([4, -0.2, 0], [0, 0, 0.7, 0.7])
+#     #move.pub_now(move_123)
+#     #move_145 = Pose([4.8, 0.8, 0], [0, 0, 0.7, 0.7])
+#     #move.pub_now(move_145)
 
 pakerino()
 demo(0)

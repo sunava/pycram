@@ -1272,7 +1272,7 @@
   <link name="shelf_hohc:kitchen_cabinet:shelf_center"/>
   <link name="shelf_hohc:kitchen_cabinet:shelf_base_center"/>
   <joint name="shelf_hohc:kitchen_cabinet:shelf_origin_joint" type="fixed">
-    <origin xyz="5.6 6.2 0.0" rpy="0.0 0.0 3.23"/>
+    <origin xyz="5.45 6.2 0.0" rpy="0.0 0.0 3.23"/>
     <parent link="urdf_offset"/>
     <child link="shelf_hohc:kitchen_cabinet:shelf_origin"/>
   </joint>

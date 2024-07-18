@@ -143,16 +143,20 @@ def first_part(talk_bool):
 
         gripper.pub_now("open")
         rospy.sleep(1)
-        talk.pub_now("I am not able to pick up the bag. Please hand it in", talk_bool,False)
+        perceive_conf = {'arm_lift_joint': 0.16, 'wrist_flex_joint': 1.8, 'arm_roll_joint': -1, }
+        pakerino(config=perceive_conf)
+        talk.pub_now("I am not able to pick up the bag.", talk_bool)
         rospy.sleep(1)
 
-        talk.pub_now("Push down my Hand, when you are Ready.", talk_bool,False)
+        talk.pub_now(" Please hand it in and Push down my Hand.", talk_bool,False)
         img.pub_now(ImageEnum.PUSHBUTTONS.value)
         try:
             plan = Code(lambda: rospy.sleep(1)) * 99999999 >> Monitor(monitor_func)
             plan.perform()
         except SensorMonitoringCondition:
             talk.pub_now("Closing my Gripper.", talk_bool)
+            talk.pub_now("Closing, be care. NOW", talk_bool)
+
             img.pub_now(ImageEnum.HI.value)
             gripper.pub_now("close")
 
@@ -178,6 +182,7 @@ def cml(step="default"):  # worksme
         talk.pub_now("Following you.", talk_bool,False)
         img.pub_now(ImageEnum.FOLLOWSTOP.value)
         talk.pub_now("Push down my Hand, when we arrived.", talk_bool,False)
+        talk.pub_now("Following you.", talk_bool,False)
 
         try:
             plan = Code(lambda: giskardpy.cml(False)) >> Monitor(monitor_func_human)
@@ -186,26 +191,25 @@ def cml(step="default"):  # worksme
             print(f"Exception type: {type(e).__name__}")
 
             if isinstance(e, SensorMonitoringCondition):
+                talk.pub_now("I will open my Gripper, to give you the bag. In 3, 2, 1", talk_bool)
+                gripper.pub_now("open")
+                rospy.sleep(3)
+                pakerino()
+                talk.pub_now("Driving Back.", talk_bool, False)
+                img.pub_now(ImageEnum.DRIVINGBACK.value)
+                rospy.sleep(3)
+                gripper.pub_now("close")
+                talk.pub_now("Driving Back.", talk_bool, False)
 
-                talk.pub_now("We have arrived.", talk_bool,False)
-                talk.pub_now("I will open my Gripper, to give you the bag.", talk_bool,False)
-                talk.pub_now("Push down my Hand, when you are Ready.", talk_bool,False)
-                img.pub_now(ImageEnum.PUSHBUTTONS.value)
-                try:
-                    plan = Code(lambda: rospy.sleep(1)) * 99999999 >> Monitor(monitor_func)
-                    plan.perform()
-                except SensorMonitoringCondition:
-                    gripper.pub_now("open")
-                    talk.pub_now("Driving Back.", talk_bool,False)
-                    img.pub_now(ImageEnum.DRIVINGBACK.value)
-                    giskardpy.cml(True)
-                    talk.pub_now("done.", talk_bool,False)
+                giskardpy.cml(True)
+                talk.pub_now("done.", talk_bool, False)
+
             elif isinstance(e, HumanNotFoundCondition):
                 cml("lost_human")
             # fixme i dont know what to do here
             else:
                 print("idk what happned")
 
-
+pakerino()
 cml("default")
 

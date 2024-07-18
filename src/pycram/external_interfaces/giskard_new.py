@@ -306,8 +306,8 @@ def achieve_sequence_pick_up(pose1):
 
     giskard_wrapper.monitors.add_end_motion(start_condition=end_monitor)
     #giskard_wrapper.motion_goals.avoid_all_collisions()
-    #giskard_wrapper.motion_goals.allow_collision(group1='gripper', group2=CollisionEntry.ALL)
-    giskard_wrapper.motion_goals.allow_all_collisions()
+    giskard_wrapper.motion_goals.allow_collision(group1='gripper', group2=CollisionEntry.ALL)
+    # giskard_wrapper.motion_goals.allow_collision(g)
     return giskard_wrapper.execute()
 
 def test(config):

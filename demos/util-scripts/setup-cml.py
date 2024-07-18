@@ -35,7 +35,7 @@ run_command(f'gnome-terminal -- bash -c "tmux new-session -d -s {session_name}; 
             f'tmux send-keys -t {session_name}:0.0 \'hsr;roslaunch suturo_bringup cml.launch\' C-m; '
             f'tmux send-keys -t {session_name}:0.1 \'hsr;roslaunch giskardpy giskardpy_hsr_real_vel.launch\' C-m; '
             f'tmux send-keys -t {session_name}:0.2 \'hsr;workonrobokudo; hsr;workonrobokudo; rosrun robokudo main.py _ae=query_human_tracking_hsr _ros_pkg=robokudo_robocup_cml\' C-m; '
-            f'tmux send-keys -t {session_name}:0.3 \'sshpass -p hsrhmi ssh -t hsr-hmi@192.168.0.102\' C-m; '
+            f'tmux send-keys -t {session_name}:0.3 \'sshpass -p hsrhmi ssh -t hsr-hmi@169.254.6.219\' C-m; '
             f'tmux send-keys -t {session_name}:0.3 \'wait && ./launch_display.sh\' C-m; '
 
 

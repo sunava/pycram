@@ -54,10 +54,7 @@ giskardpy.clear()
 img = ImageSwitchPublisher()
 
 # 'shelf:shelf:shelf_floor_0',
-links_from_shelf = ['shelf_hohc:kitchen_cabinet:shelf_floor_1', 'shelf_hohc:kitchen_cabinet:shelf_floor_2', ]
-
-
-
+links_from_shelf = ['shelf_hohc:kitchen_cabinet:shelf_floor_1', 'shelf_hohc:kitchen_cabinet:shelf_floor_2']
 
 
 table_pose = Pose([6.6, 4.9, 0.0], [0.0, 0.0, 0, 1])
@@ -65,6 +62,14 @@ table_pose_rotate = Pose([6.6, 4.9, 0.0], [0.0, 0.0, 0.7, 0.7])
 
 shelf_1 = Pose([6.35, 5.8, 0],[0, 0, 1, 0])
 shelf_1_rotated1 = Pose([6.35, 5.8, 0],[0, 0, -0.7, 0.7])
+
+
+pose_dishwasher = Pose([9.56, 5.78, 0])
+pose_dishwasher_rotate = Pose([9.56, 5.78, 0], [0, 0, 1, 0])
+
+table_new_pose = Pose([8.77, 4.222, 0], [0, 0, 1, 0])
+table_new_pose_rotated = Pose([8.77, 4.222, 0], [0, 0, 1, 0])
+
 
 
 def multiply_quaternions(q1, q2):
@@ -125,7 +130,7 @@ def move_vel(speed, distance, isForward, angle=0):
     if isForward:
         vel_msg.linear.x = abs(speed)
     else:
-        vel_msg.linear.x = 0
+        vel_msg.linear.x = -(abs(speed))
     if angle > 0:
         vel_msg.angular.z = angle
     else:
@@ -155,16 +160,8 @@ def move_vel(speed, distance, isForward, angle=0):
     # Force the robot to stop
     velocity_publisher.publish(vel_msg)
 # List of objects
-objects = ["Fork", "Pitcher", "Bleachcleanserbottle", "Crackerbox", "Minisoccerball", "Baseball", "Mustardbottle",
-           "Jellochocolatepuddingbox", "Wineglass", "Orange", "Coffeepack", "Softball", "Metalplate", "Pringleschipscan",
-           "Strawberry", "Glasscleanerspraybottle", "Tennisball", "Spoon", "Metalmug", "Abrasivesponge", "Jellobox",
-           "Dishwashertab", "Knife", "Cerealbox", "Metalbowl", "Sugarbox", "Coffeecan", "Milkpackja", "Apple",
-           "Tomatosoupcan", "Tunafishcan", "Gelatinebox", "Pear", "Lemon", "Banana", "Pottedmeatcan", "Peach", "Plum",
-           "Rubikscube", "Mueslibox", "Cupblue", "Cupgreen", "Largemarker", "Masterchefcan", "Scissors", "Scrubcleaner",
-           "Grapes", "Cup_small", "screwdriver", "clamp", "hammer", "wooden_block", "Cornybox", "Sponge", "Washcloth",
-           "Soap", "Fantacan", "IceTeaCan", "Dubbelfris", "Waterbottle", "Colabottle", "Peasoupcan", "Cornflakes",
-           "Curry", "Mayonaise", "Hagelslag", "Sausages", "Pancakemix", "Crispsbag", "Candy", "Stroopwafels",
-           "Liquorice", "Tictac", "Candle", "Grocerybag", "Vase"]
+objects = ["Fork", "Spoon", "Knife", "Cerealbox", "Metalbowl", "Milkpackja", "Mueslibox", "Cornflakes"]
+
 no_go_objects =["Vase", "Strawberry", "Wineglass", "Scissors", "screwdriver", "hammer", "Washcloth", "Candle", "wooden_block",
                 "Peach", "Plum"]
 
@@ -405,12 +402,14 @@ def process_pick_up_objects(talk_bool):
         for dictionary in remaining:
             for value in dictionary.values():
                 try:
-                    if value.name in no_go_objects:
+
+                    tmp_name = value.name.split('_')[0]
+                    print(tmp_name)
+                    if tmp_name not in objects:
                         continue
+
                     else:
-
                         group = find_group(value.type)
-
                         groups_on_table[value.name] = [value, group]
                 except AttributeError:
                     pass
@@ -427,7 +426,8 @@ def process_pick_up_objects(talk_bool):
         for key, obj in groups_on_table.items():
             obj_pose = obj[0].bullet_world_object.pose
             object_raw = obj[0]
-            tf_link = kitchen.get_link_tf_frame(popcorn_frame)
+            nearest_link = get_closet_link_to_pose(obj_pose)
+            tf_link = kitchen.get_link_tf_frame(nearest_link)
             oTb = lt.transform_pose(obj_pose, tf_link)
 
             grasp_set = None
@@ -457,151 +457,97 @@ def process_pick_up_objects(talk_bool):
         obj_id = first_object.bullet_world_object.id
         object_name = first_object.bullet_world_object.name
         object = first_object.bullet_world_object
-
-        try:
-            place_pose, link = find_pose_in_shelf(group, object_raw, groups_in_shelf)
-        except:
-            rospy.logwarn("i was not able to find a place pose skipping obj")
-            first_key, first_value = next(islice(sorted_dict.items(), 1, 2))
-            first_object = first_value[0]
-            oTb = first_value[1]
-            grasp_set = first_value[2]
-            group = first_value[3]
-            obj_id = first_object.bullet_world_object.id
-            object_name = first_object.bullet_world_object.name
-            object = first_object.bullet_world_object
-        if place_pose == None:
-            rospy.logwarn("i was not able to find a place pose skipping obj")
-            first_key, first_value = next(islice(sorted_dict.items(), 1, 2))
-            first_object = first_value[0]
-            oTb = first_value[1]
-            grasp_set = first_value[2]
-            group = first_value[3]
-            obj_id = first_object.bullet_world_object.id
-            object_name = first_object.bullet_world_object.name
-            object = first_object.bullet_world_object
-
         angle = helper.quaternion_to_angle(
             (oTb.pose.orientation.x, oTb.pose.orientation.y, oTb.pose.orientation.z, oTb.pose.orientation.w))
         object_dim = object.get_object_dimensions()
         print(f"obj dim von {object_name} {object_dim}")
-
-        if oTb.pose.position.x >= 0.30:
-            #talk.pub_now("Pointing to the object:", talk_bool, False)
-
-            gripper.pub_now("close")
-            # pose_guest = PointStamped()
-            # pose_guest.header.frame_id = "map"
-            # pose_guest.point.x = oTb.pose.position.x
-            # pose_guest.point.y = oTb.pose.position.y
-            # pose_guest.point.z = 0.85
-            # print(pose_guest)
-            #
-            # giskardpy.move_arm_to_point(pose_guest)
-
-            try:
-                str_ = f"I am not able to grasp the: {object_name} please help me!"
-                talk.pub_now(str_, talk_bool)
-                gripper.pub_now("open")
-                talk.pub_now("Push down my Gripper, when you are Ready.", talk_bool, False)
-                img.pub_now(ImageEnum.PUSHBUTTONS.value)
-
-                plan = Code(lambda: rospy.sleep(1)) * 999999 >> Monitor(monitor_func)
-                plan.perform()
-            except SensorMonitoringCondition:
-                img.pub_now(ImageEnum.HI.value)  # hi im toya
-                gripper.pub_now("close")
-                rospy.sleep(2)
-                giskardpy.achieve_attached(object)
-                tip_link = 'hand_gripper_tool_frame'
-                BulletWorld.robot.attach(object=object, link=tip_link)
-                talk.pub_now("driving.", talk_bool, False)
-
-                return True, "front", group, object, obj_id, object_raw, groups_on_table
-
+        grasp_set = True
+        if grasp_set:
+            grasp = "front"
         else:
-            if grasp_set:
+            if object_dim[2] < 0.055:
+                rospy.logwarn(f"{object_name} grasp is set to top, angle: {angle}")
+                rospy.logwarn(f"{object_name} and height {object_dim[2]}")
+                rospy.logwarn(f"{object_name} and width {object_dim[0]}")
+                grasp = "top"
+            elif object_dim[2] < 0.060 or angle > 40 and (object_dim[0] > 0.08 and object_dim[1] > 0.08):
+                rospy.logwarn(f"{object_name} grasp is set to top, angle: {angle}")
+                rospy.logwarn(f"{object_name} and height {object_dim[2]}")
+                rospy.logwarn(f"{object_name} and width {object_dim[0]}")
                 grasp = "top"
             else:
-                if object_dim[2] < 0.055:
-                    rospy.logwarn(f"{object_name} grasp is set to top, angle: {angle}")
-                    rospy.logwarn(f"{object_name} and height {object_dim[2]}")
-                    rospy.logwarn(f"{object_name} and width {object_dim[0]}")
-                    grasp = "top"
-                elif object_dim[2] < 0.060 or angle > 40 and (object_dim[0] > 0.08 and object_dim[1] > 0.08):
-                    rospy.logwarn(f"{object_name} grasp is set to top, angle: {angle}")
-                    rospy.logwarn(f"{object_name} and height {object_dim[2]}")
-                    rospy.logwarn(f"{object_name} and width {object_dim[0]}")
-                    grasp = "top"
-                else:
-                    rospy.logwarn(f"{object_name} grasp is set to front, angle: {angle}")
-                    rospy.logwarn(f"{object_name} and height {object_dim[2]}")
-                    rospy.logwarn(f"{object_name} and width {object_dim[0]}")
-                    grasp = "front"
+                rospy.logwarn(f"{object_name} grasp is set to front, angle: {angle}")
+                rospy.logwarn(f"{object_name} and height {object_dim[2]}")
+                rospy.logwarn(f"{object_name} and width {object_dim[0]}")
+                grasp = "front"
 
-                if grasp == "top":
-                    print("pose adjusted with z")
-                    oTb.pose.position.z += (object_dim[2] / 10)
-                    if object_dim[2] < 0.02:
-                        #rospy.logwarn(f"I am not able to grasp the object: {object_name} please help me!")
-                        oTb.pose.position.z = 0.011
-                else:
-                    oTb.pose.position.x += 0.03
-
-            grasp_rotation = robot_description.grasps.get_orientation_for_grasp(grasp)
             if grasp == "top":
-                grasp_q = Quaternion(grasp_rotation[0], grasp_rotation[1], grasp_rotation[2], grasp_rotation[3])
-                oTb.orientation = multiply_quaternions(oTb.pose.orientation, grasp_q)
+                print("pose adjusted with z")
+                oTb.pose.position.z += (object_dim[2] / 10)
+                if object_dim[2] < 0.02:
+                    # rospy.logwarn(f"I am not able to grasp the object: {object_name} please help me!")
+                    oTb.pose.position.z = 0.011
             else:
-                oTb.orientation = grasp_rotation
+                oTb.pose.position.x += 0.03
 
-            oTmG = lt.transform_pose(oTb, "map")
-            after_pose = oTmG.copy()
-            after_pose.pose.position.z += 0.02
+        grasp_rotation = robot_description.grasps.get_orientation_for_grasp(grasp)
+        if grasp == "top":
+            grasp_q = Quaternion(grasp_rotation[0], grasp_rotation[1], grasp_rotation[2], grasp_rotation[3])
+            oTb.orientation = multiply_quaternions(oTb.pose.orientation, grasp_q)
+        else:
+            oTb.orientation = grasp_rotation
 
-            z_color = [1, 0, 1, 1]
-            BulletWorld.current_bullet_world.add_vis_axis(after_pose, z_color=z_color)
-            BulletWorld.current_bullet_world.add_vis_axis(oTmG)
+        oTmG = lt.transform_pose(oTb, "map")
+        after_pose = oTmG.copy()
+        after_pose.pose.position.z += 0.02
 
-            #testme this is not tested yet
-            move_pre_pose_object = robot.get_pose()
-            move_pre_pose_object.pose.position.y = oTmG.pose.position.y
-            move.pub_now(move_pre_pose_object)
+        z_color = [1, 0, 1, 1]
+        BulletWorld.current_bullet_world.add_vis_axis(after_pose, z_color=z_color)
+        BulletWorld.current_bullet_world.add_vis_axis(oTmG)
 
+        # testme this is not tested yet
+        move_pre_pose_object = robot.get_pose()
+        move_pre_pose_object.pose.position.y = oTmG.pose.position.y
+        move.pub_now(move_pre_pose_object)
 
-            if grasp == "front":
-                config_for_placing = {'arm_lift_joint': -1, 'arm_flex_joint': -0.16, 'arm_roll_joint': -0.0145,
-                                      'wrist_flex_joint': -1.417, 'wrist_roll_joint': 0.0}
-            else:
-                config_for_placing = {'arm_flex_joint': -1.1, 'arm_lift_joint': 1.15, 'arm_roll_joint': 0,
-                                      'wrist_flex_joint': -1.6, 'wrist_roll_joint': 0, }
+        if grasp == "front":
+            config_for_placing = {'arm_lift_joint': -1, 'arm_flex_joint': -0.16, 'arm_roll_joint': -0.0145,
+                                  'wrist_flex_joint': -1.417, 'wrist_roll_joint': 0.0}
+        else:
+            config_for_placing = {'arm_flex_joint': -1.1, 'arm_lift_joint': 1.15, 'arm_roll_joint': 0,
+                                  'wrist_flex_joint': -1.6, 'wrist_roll_joint': 0, }
 
-            pakerino(config=config_for_placing)
+        pakerino(config=config_for_placing)
 
-            gripper.pub_now("open")
-            talk.pub_now(f"Pick Up now! {object_name.split('_')[0]} from: {grasp}")
-            giskard_return = giskardpy.achieve_sequence_pick_up(oTmG)
-            while not giskard_return:
-                rospy.sleep(0.1)
+        gripper.pub_now("open")
+        talk.pub_now(f"Pick Up now! {object_name.split('_')[0]} from: {grasp}")
+        giskard_return = giskardpy.achieve_sequence_pick_up(oTmG)
+        while not giskard_return:
+            rospy.sleep(0.1)
 
-            giskardpy.achieve_attached(object)
-            tip_link = 'hand_gripper_tool_frame'
-            BulletWorld.robot.attach(object=object, link=tip_link)
-            gripper.pub_now("close")
-            giskardpy.avoid_all_collisions()
-            park = pakerino()
-            while not park:
-                print("waiting for park")
-                rospy.sleep(0.1)
-            grasped_bool = None
-            if grasp_listener.check_grasp():
-                talk.pub_now("Grasped a object", False)
-                grasped_bool = True
-            else:
-                talk.pub_now("I was not able to grasped a object", False)
-                grasped_bool = False
+        giskardpy.achieve_attached(object)
+        tip_link = 'hand_gripper_tool_frame'
+        BulletWorld.robot.attach(object=object, link=tip_link)
+        rospy.sleep(2)
+        #move_vel(speed=0.5, distance=1, isForward=False)
+        gripper.pub_now("close")
+        rospy.sleep(2)
+        move_vel(speed=0.3, distance=0.6, isForward=False)
+        rospy.sleep(2)
+        giskardpy.avoid_all_collisions()
+        park = pakerino()
+        while not park:
+            print("waiting for park")
+            rospy.sleep(0.1)
+        grasped_bool = None
+        if grasp_listener.check_grasp():
+            talk.pub_now("Grasped a object", False)
+            grasped_bool = True
+        else:
+            talk.pub_now("I was not able to grasped a object", False)
+            grasped_bool = False
 
-            return grasped_bool, grasp, group, object, obj_id, object_raw, groups_on_table, place_pose, link
+        return grasped_bool, grasp, group, object, obj_id, object_raw, groups_on_table
 
 
 # noteme  with look  return groups in shelf
@@ -668,11 +614,12 @@ def demo(step):
 
 
         if step <= 2:
+            grasped_bool, grasp, group, object, obj_id, object_raw, groups_on_table = process_pick_up_objects(talk_bool)
             try:
                 talk.pub_now("driving", True)
                 img.pub_now(ImageEnum.DRIVINGBACK.value)
 
-                grasped_bool, grasp, group, object, obj_id, object_raw, groups_on_table, place_pose, link_new = process_pick_up_objects(
+                grasped_bool, grasp, group, object, obj_id, object_raw, groups_on_table = process_pick_up_objects(
                     talk_bool)
             except TypeError:
                 print("done")
@@ -691,47 +638,48 @@ def demo(step):
 
 
 
+#
+#
+#
+# try:
+#
+#     img.pub_now(ImageEnum.HI.value)  # hi im toya
+#     talk.pub_now("Push down my Hand, when you are Ready.")
+#     img.pub_now(ImageEnum.PUSHBUTTONS.value)
+#     plan = Code(lambda: rospy.sleep(1)) * 999999 >> Monitor(monitor_func)
+#     plan.perform()
+# except SensorMonitoringCondition:
+#     talk.pub_now("Starting Storing Grocery.")
+#     # load everfyhing world giskard robokudo....
+#     # Wait for the start signal
+#
+#     img.pub_now(ImageEnum.HI.value)
+#     start_signal_waiter.wait_for_startsignal()
+#
+#     # Once the start signal is received, continue with the rest of the script
+#     rospy.loginfo("Start signal received, now proceeding with tasks.")
+#     move_vel(speed=2, distance=4, isForward=True)
+#     rospy.sleep(2)
+#     new_parameters = {
+#         'forbid_radius': 0.2,
+#         'obstacle_occupancy': 5,
+#         'obstacle_radius': 0.2
+#     }
+#
+#     set_parameters(new_parameters)    # Once the start signal is received, continue with the rest of the script
+#
+#     rospy.sleep(1)
+#
+#     fake_pose_2 = Pose([3, 0.3, 0])
+#     move.pub_fake_pose(fake_pose_2)
+#     move_vel(0.2, 2, False, 0.06)
+#     talk.pub_now("Lets Go, Driving to Shelf.")
+#     move_123 = Pose([4, -0.2, 0], [0, 0 , 0.7, 0.7])
+#     move.pub_now(move_123)
+#     move_145 = Pose([4.8, 0.8, 0], [0, 0, 0.7, 0.7])
+#     move.pub_now(move_145)
 
-
-
-try:
-
-    img.pub_now(ImageEnum.HI.value)  # hi im toya
-    talk.pub_now("Push down my Hand, when you are Ready.")
-    img.pub_now(ImageEnum.PUSHBUTTONS.value)
-    plan = Code(lambda: rospy.sleep(1)) * 999999 >> Monitor(monitor_func)
-    plan.perform()
-except SensorMonitoringCondition:
-    talk.pub_now("Starting Storing Grocery.")
-    # load everfyhing world giskard robokudo....
-    # Wait for the start signal
-
-    img.pub_now(ImageEnum.HI.value)
-    start_signal_waiter.wait_for_startsignal()
-
-    # Once the start signal is received, continue with the rest of the script
-    rospy.loginfo("Start signal received, now proceeding with tasks.")
-    move_vel(speed=2, distance=4, isForward=True)
-    rospy.sleep(2)
-    new_parameters = {
-        'forbid_radius': 0.2,
-        'obstacle_occupancy': 5,
-        'obstacle_radius': 0.2
-    }
-
-    set_parameters(new_parameters)    # Once the start signal is received, continue with the rest of the script
-
-    rospy.sleep(1)
-
-    fake_pose_2 = Pose([3, 0.3, 0])
-    move.pub_fake_pose(fake_pose_2)
-    move_vel(0.2, 2, False, 0.06)
-    talk.pub_now("Lets Go, Driving to Shelf.")
-    move_123 = Pose([4, -0.2, 0], [0, 0 , 0.7, 0.7])
-    move.pub_now(move_123)
-    move_145 = Pose([4.8, 0.8, 0], [0, 0, 0.7, 0.7])
-    move.pub_now(move_145)
-
-
-pakerino()
+#rospy.sleep(2)
+#move_vel(speed=0.1, distance=1, isForward=True)
+#pakerino()
 demo(0)

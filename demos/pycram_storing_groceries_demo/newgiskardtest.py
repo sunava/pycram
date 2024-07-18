@@ -316,6 +316,6 @@ def demo(step):
                 giskardpy.clear()
                 demo(0)
 
-print(robot.get_pose())
+
 
 demo(0)

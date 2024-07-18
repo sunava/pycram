@@ -12,7 +12,7 @@ from pycram.designators.object_designator import *
 
 def pakerino(torso_z=0.15, config=None):
     if not config:
-        config = {'arm_lift_joint': torso_z, 'arm_flex_joint': 0, 'arm_roll_joint': -1.2, 'wrist_flex_joint': -1.5,
+        config = {'arm_lift_joint': torso_z, 'arm_flex_joint': 1, 'arm_roll_joint': -1.2, 'wrist_flex_joint': -1.5,
                   'wrist_roll_joint': 0}
     giskardpy.avoid_all_collisions()
     return giskardpy.achieve_joint_goal(config)
