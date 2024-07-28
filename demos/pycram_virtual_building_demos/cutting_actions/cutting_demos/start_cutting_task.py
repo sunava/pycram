@@ -19,7 +19,7 @@ objects = [(None, None), ('apple', "obo:FOODON_03301710"), ('avocado', "obo:FOOD
     ('orange', "obo:FOODON_03309832"),  ('tomato', "obo:FOODON_03309927")]
 
 # all available parameters
-tasks = [(None, None), ('Quartering', "cut:Quartering"),
+tasks = [(None, None),
     ('Halving', "cut:Halving"), ('Cutting', "soma:Cutting"), ('Slicing', "soma:Slicing")]
 task = ""
 obj = ""
