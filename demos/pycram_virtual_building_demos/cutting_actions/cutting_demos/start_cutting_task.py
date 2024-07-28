@@ -20,8 +20,7 @@ objects = [(None, None), ('apple', "obo:FOODON_03301710"), ('avocado', "obo:FOOD
 
 # all available parameters
 tasks = [(None, None), ('Quartering', "cut:Quartering"),
-    ('Halving', "cut:Halving"), ('Cutting', "soma:Cutting"), ('Slicing', "soma:Slicing"), ('Snipping', "cut:Snipping"),
-    ('Slivering', "cut:Slivering"), ('Sawing', "cut:Sawing"), ('Paring', "cut:Paring"), ('Carving', "cut:Carving")]
+    ('Halving', "cut:Halving"), ('Cutting', "soma:Cutting"), ('Slicing', "soma:Slicing")]
 task = ""
 obj = ""
 
