@@ -9,10 +9,8 @@ import actionlib
 import rosnode
 
 from ..designator import ObjectDesignatorDescription
-from pycram.datastructures.pose import Pose
-from pycram.local_transformer import LocalTransformer
-from pycram.world import World
-from pycram.datastructures.enums import ObjectType, PerceiveTechnique
+from ..datastructures.pose import  Pose
+from ..datastructures.enums import ObjectType, PerceiveTechnique
 from ..plan_failures import PerceptionLowLevelFailure
 
 try:

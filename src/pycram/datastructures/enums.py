@@ -86,3 +86,12 @@ class WorldMode(Enum):
     """
     GUI = "GUI"
     DIRECT = "DIRECT"
+
+
+class PerceiveTechnique:
+    """
+    ENUM for the different perceive techniques
+    """
+    ALL = "ALL"
+    START = "START"
+    STOP = "STOP"
