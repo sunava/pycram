@@ -94,3 +94,4 @@ class ImageEnum(Enum):
     JREPEAT = 16
     SOFA = 17
     INSPECT = 18
+    CHAIR = 37

@@ -14,18 +14,7 @@ from pycram.utilities.robocup_utils import TextToSpeechPublisher, ImageSwitchPub
 
 world = BulletWorld()
 v = VizMarkerPublisher()
-kitchen = Object("kitchen", ObjectType.ENVIRONMENT, "suturo_lab_version_15.urdf")
-kitchen_desig = ObjectDesignatorDescription(names=["kitchen"])
+robot = Object(name="hsrb", type=ObjectType.ROBOT, path="hsrb.urdf", pose=Pose([1, 2, 0]))
 
-talk = TextToSpeechPublisher()
-img_swap = ImageSwitchPublisher()
-start_signal_waiter = StartSignalWaiter()
-move = PoseNavigator()
+kitchen = Object(name="kitchen", type=ObjectType.ENVIRONMENT, path="isr-testbed.urdf")
 
-robot = Object("hsrb", "robot", "../../resources/" + "hsrb" + ".urdf", pose=Pose([1, 1, 0]))
-robot.set_color([0.5, 0.5, 0.9, 1])
-robot_desig = ObjectDesignatorDescription(names=["hsrb"])
-RobotStateUpdater("/tf", "/hsrb/robot_state/joint_states")
-KitchenStateUpdater("/tf", "/iai_kitchen/joint_states")
-
-giskardpy.init_giskard_interface()

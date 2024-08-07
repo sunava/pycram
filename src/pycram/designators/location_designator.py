@@ -366,6 +366,7 @@ def find_placeable_pose(enviroment_link, enviroment_desig, robot_desig, arm, wor
 
     # rospy.loginfo("Iterate through the locations in the location designator")
     empty_loc = []
+
     for location in location_desig:
 
         # Check if the location is clear of objects

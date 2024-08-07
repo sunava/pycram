@@ -9,9 +9,9 @@ from geometry_msgs.msg import PointStamped, Twist
 from demos.pycram_storing_groceries_demo.utils.misc import *
 from pycram.designators.location_designator import find_placeable_pose
 from pycram.language import Code
+from pycram.plan_failures import NoPlacePoseFoundCondition
 
 from pycram.ros.robot_state_updater import RobotStateUpdater, KitchenStateUpdater
-from pycram.designators.action_designator import *
 from pycram.enums import ObjectType, ImageEnum
 from pycram.process_module import real_robot
 import pycram.external_interfaces.giskard_new as giskardpy
@@ -19,7 +19,6 @@ import pycram.external_interfaces.giskard_new as giskardpy
 from pycram.utilities.robocup_utils import TextToSpeechPublisher, ImageSwitchPublisher, HSRBMoveGripperReal, pakerino
 from dynamic_reconfigure.msg import Config, BoolParameter, IntParameter, StrParameter, DoubleParameter, GroupState
 from dynamic_reconfigure.srv import Reconfigure, ReconfigureRequest
-
 
 import pycram.external_interfaces.robokudo as robokudo
 from pycram.external_interfaces.navigate import PoseNavigator
@@ -32,9 +31,9 @@ from pycram.utilities.robocup_utils import TextToSpeechPublisher, ImageSwitchPub
 from pycram.designator import LocationDesignatorDescription
 import random
 
-world = BulletWorld()
+world = BulletWorld("DIRECT")
 v = VizMarkerPublisher()
-kitchen = Object("kitchen", ObjectType.ENVIRONMENT, "robocup123.urdf")
+kitchen = Object("kitchen", ObjectType.ENVIRONMENT, "robocup1234.urdf")
 kitchen_desig = ObjectDesignatorDescription(names=["kitchen"])
 grasp_listener = GraspListener()
 talk = TextToSpeechPublisher()
@@ -56,19 +55,21 @@ img = ImageSwitchPublisher()
 # 'shelf:shelf:shelf_floor_0',
 links_from_shelf = ['shelf_hohc:kitchen_cabinet:shelf_floor_1', 'shelf_hohc:kitchen_cabinet:shelf_floor_2']
 
-
 table_pose = Pose([6.6, 4.9, 0.0], [0.0, 0.0, 0, 1])
+#todome this maybe -0.7
 table_pose_rotate = Pose([6.6, 4.9, 0.0], [0.0, 0.0, 0.7, 0.7])
 
-shelf_1 = Pose([6.35, 5.8, 0],[0, 0, 1, 0])
-shelf_1_rotated1 = Pose([6.35, 5.8, 0],[0, 0, -0.7, 0.7])
+shelf_1 = Pose([6.35, 5.8, 0], [0, 0, 1, 0])
+shelf_1_rotated1 = Pose([6.35, 5.8, 0], [0, 0, -0.7, 0.7])
 
-
-pose_dishwasher = Pose([9.56, 5.78, 0])
-pose_dishwasher_rotate = Pose([9.56, 5.78, 0], [0, 0, 1, 0])
+pose_dishwasher = Pose([9.56, 4.78, 0])
+pose_dishwasher_rotate = Pose([9.56, 4.78, 0], [0, 0, 1, 0])
 
 table_new_pose = Pose([8.77, 4.222, 0], [0, 0, 1, 0])
 table_new_pose_rotated = Pose([8.77, 4.222, 0], [0, 0, 1, 0])
+
+counter_new_pose = Pose([9.34, 5.87, 0], [0, 0, 0, 1])
+counter_new_pose_rotated = Pose([9.34, 5.87, 0], [0, 0, 0, 1])
 
 
 
@@ -92,6 +93,7 @@ def multiply_quaternions(q1, q2):
     y = w1 * y2 - x1 * z2 + y1 * w2 + z1 * x2
     z = w1 * z2 + x1 * y2 - y1 * x2 + z1 * w2
     return (x, y, z, w)
+
 
 def set_parameters(new_parameters):
     rospy.wait_for_service('/tmc_map_merger/inputs/base_scan/obstacle_circle/set_parameters')
@@ -141,7 +143,6 @@ def move_vel(speed, distance, isForward, angle=0):
     vel_msg.angular.x = 0
     vel_msg.angular.y = 0
 
-
     # Setting the current time for distance calculation
     t0 = rospy.Time.now().to_sec()
     current_distance = 0
@@ -159,28 +160,34 @@ def move_vel(speed, distance, isForward, angle=0):
     vel_msg.linear.x = 0
     # Force the robot to stop
     velocity_publisher.publish(vel_msg)
+
+
 # List of objects
 objects = ["Fork", "Spoon", "Knife", "Cerealbox", "Metalbowl", "Milkpackja", "Mueslibox", "Cornflakes"]
 
-no_go_objects =["Vase", "Strawberry", "Wineglass", "Scissors", "screwdriver", "hammer", "Washcloth", "Candle", "wooden_block",
-                "Peach", "Plum"]
-
+no_go_objects = ["Vase", "Strawberry", "Wineglass", "Scissors", "screwdriver", "hammer", "Washcloth", "Candle",
+                 "wooden_block", "Peach", "Plum"]
 
 # Group objects by similarity
-groups = {
-    "Kitchen Utensils and Tools": ["Fork", "Spoon", "Knife", "Scissors", "screwdriver", "clamp", "hammer"],
-    "Containers and Drinkware": ["Pitcher", "Metalplate", "Metalbowl", "Metalmug", "Wineglass", "Cupblue", "Cupgreen", "Cup_small", "Vase"],
-    "Cleaning Supplies": ["Bleachcleanserbottle", "Glasscleanerspraybottle", "Abrasivesponge", "Scrubcleaner", "Sponge", "Washcloth", "Soap"],
-    "Packaged Food and Beverages": ["Crackerbox", "Mustardbottle", "Jellochocolatepuddingbox", "Coffeepack", "Pringleschipscan", "Jellobox",
-                                    "Dishwashertab", "Cerealbox", "Sugarbox", "Coffeecan", "Milkpackja", "Tomatosoupcan", "Tunafishcan",
-                                    "Gelatinebox", "Mueslibox", "Cornybox", "Masterchefcan", "Pottedmeatcan", "Fantacan", "IceTeaCan",
-                                    "Dubbelfris", "Waterbottle", "Colabottle", "Peasoupcan", "Cornflakes", "Curry", "Mayonaise", "Hagelslag",
-                                    "Sausages", "Pancakemix", "Crispsbag", "Candy", "Stroopwafels", "Liquorice", "Tictac"],
-    "Fruits": ["Orange", "Strawberry", "Apple", "Pear", "Lemon", "Banana", "Peach", "Plum", "Grapes"],
-    "Sports Equipment": ["Minisoccerball", "Baseball", "Softball", "Tennisball"],
-    "Miscellaneous": ["Rubikscube", "Largemarker", "wooden_block", "Candle", "Grocerybag"]
-}
-
+groups = {"Kitchen Utensils and Tools": ["Fork", "Spoon", "Knife", "Scissors", "screwdriver", "clamp", "hammer"],
+          "Containers and Drinkware": ["Pitcher", "Metalplate", "Metalbowl", "Metalmug", "Wineglass", "Cupblue",
+                                       "Cupgreen",
+                                       "Cup_small", "Vase"],
+          "Cleaning Supplies": ["Bleachcleanserbottle", "Glasscleanerspraybottle", "Abrasivesponge", "Scrubcleaner",
+                                "Sponge",
+                                "Washcloth", "Soap"],
+          "Packaged Food and Beverages": ["Crackerbox", "Mustardbottle", "Jellochocolatepuddingbox", "Coffeepack",
+                                          "Pringleschipscan", "Jellobox", "Dishwashertab", "Cerealbox", "Sugarbox",
+                                          "Coffeecan", "Milkpackja", "Tomatosoupcan", "Tunafishcan", "Gelatinebox",
+                                          "Mueslibox", "Cornybox", "Masterchefcan", "Pottedmeatcan", "Fantacan",
+                                          "IceTeaCan",
+                                          "Dubbelfris", "Waterbottle", "Colabottle", "Peasoupcan", "Cornflakes",
+                                          "Curry",
+                                          "Mayonaise", "Hagelslag", "Sausages", "Pancakemix", "Crispsbag", "Candy",
+                                          "Stroopwafels", "Liquorice", "Tictac"],
+          "Fruits": ["Orange", "Strawberry", "Apple", "Pear", "Lemon", "Banana", "Peach", "Plum", "Grapes"],
+          "Sports Equipment": ["Minisoccerball", "Baseball", "Softball", "Tennisball"],
+          "Miscellaneous": ["Rubikscube", "Largemarker", "wooden_block", "Candle", "Grocerybag"]}
 
 # 'shelf:shelf:shelf_floor_0',
 popcorn_frame = "dinner_table:dinner_table:table_front_edge_center"
@@ -252,9 +259,9 @@ def get_z_height_to_next_link(link, z_offsets):
     return z_offsets.get(link, None)
 
 
-#noteme if you want to be able to run this in simulation you will have to do get.aabb without bullet world obj
+# noteme if you want to be able to run this in simulation you will have to do get.aabb without bullet world obj
 def find_pose_in_shelf(group, object, groups_in_shelf):
-    link = None
+    link = "dinner_table:dinner_table:table_front_edge_center"
     nearest_pose_to_group = None
     try:
         link = groups_in_shelf[group][1]
@@ -266,18 +273,16 @@ def find_pose_in_shelf(group, object, groups_in_shelf):
     except (TypeError, KeyError):
         try:
             place_poses = []
-            for link in links_from_shelf:
-                place_poses.append(
-                    (find_placeable_pose(link, kitchen_desig.resolve(), robot_desig.resolve(), "left", world, 0.1,
-                                         object_desig=object), link)
-                )
+            place_poses.append((
+                find_placeable_pose(link, kitchen_desig.resolve(), robot_desig.resolve(), "left", world, 0.1,
+                                    object_desig=object), link))
 
             # in this case it's the biggest group since why not? i assume most poses are then free
-            longest_group = max(place_poses, key=lambda x: len(x[0]))
-            nearest_pose_to_group = longest_group[0][0]
-            link = longest_group[1]
+            #longest_group = max(place_poses, key=lambda x: len(x[0]))
+            nearest_pose_to_group = find_placeable_pose[0][0]
+            link = place_poses[1]
             if group not in groups_in_shelf:
-                groups_in_shelf[group] = [nearest_pose_to_group, longest_group[1]]
+                groups_in_shelf[group] = [nearest_pose_to_group, place_poses[1]]
 
         except (TypeError, KeyError):
             return False, False
@@ -331,11 +336,7 @@ def placeorpark(object_name, object, grasp, talk_bool, target_location, link, pi
     grasp_rotation = robot_description.grasps.get_orientation_for_grasp(grasp)
     oTb = lt.transform_pose(oTm, kitchen.get_link_tf_frame(link))
 
-    if grasp == "top":
-        grasp_q = Quaternion(grasp_rotation[0], grasp_rotation[1], grasp_rotation[2], grasp_rotation[3])
-        oTb.orientation = multiply_quaternions(oTb.pose.orientation, grasp_q)
-    else:
-        oTb.orientation = grasp_rotation
+    oTb.orientation = grasp_rotation
 
     oTmG = lt.transform_pose(oTb, "map")
 
@@ -347,7 +348,7 @@ def placeorpark(object_name, object, grasp, talk_bool, target_location, link, pi
         config_for_placing = {'arm_lift_joint': 0.20, 'arm_flex_joint': -0.16, 'arm_roll_joint': -0.0145,
                               'wrist_flex_joint': -1.417, 'wrist_roll_joint': 0.0}
     else:
-        config_for_placing = {'arm_lift_joint': 0.20, 'arm_flex_joint': 1.15, 'arm_roll_joint': 0,
+        config_for_placing = {'arm_lift_joint': 0.30, 'arm_flex_joint': 1.15, 'arm_roll_joint': 0,
                               'wrist_flex_joint': -1.6, 'wrist_roll_joint': 0, }
 
     pakerino(config=config_for_placing)
@@ -367,10 +368,10 @@ def placeorpark(object_name, object, grasp, talk_bool, target_location, link, pi
 
     except Exception as e:
         print(f"Exception type: {type(e).__name__}")
-
-    giskardpy.achieve_attached(object, tip_link="map")
-    BulletWorld.robot.detach(object)
     gripper.pub_now("open")
+
+    #giskardpy.achieve_attached(object.bullet_world_object, tip_link="map")
+    #BulletWorld.robot.detach(object.bullet_world_object)
 
     giskardpy.avoid_all_collisions()
     park = pakerino()
@@ -380,15 +381,15 @@ def placeorpark(object_name, object, grasp, talk_bool, target_location, link, pi
 
 
 # noteme this is with driving! return grasped_bool, grasp, group, object, obj_id, groups_on_table
-def process_pick_up_objects(talk_bool):
+def process_pick_up_objects(talk_bool, look_link, search_for_objects, force_grasp):
     # drive
 
-    look_pose = kitchen.get_link_pose("shelf_hohc:kitchen_cabinet:shelf_floor_1")
+    look_pose = kitchen.get_link_pose(look_link)
     # park
     perceive_conf = {'arm_lift_joint': 0.3, 'wrist_flex_joint': 1.8, 'arm_roll_joint': -1, }
     pakerino(config=perceive_conf)
     # look
-    look_pose.pose.position.z -= 0.03
+    look_pose.pose.position.z -= 0.01
     giskardpy.move_head_to_pose(look_pose)
 
     talk.pub_now("perceiving", True)
@@ -402,21 +403,17 @@ def process_pick_up_objects(talk_bool):
         for dictionary in remaining:
             for value in dictionary.values():
                 try:
-
                     tmp_name = value.name.split('_')[0]
-                    print(tmp_name)
-                    if tmp_name not in objects:
+                    rospy.logerr("I perceived, " + tmp_name)
+                    if tmp_name not in search_for_objects:
                         continue
-
                     else:
-                        group = find_group(value.type)
-                        groups_on_table[value.name] = [value, group]
+                        groups_on_table[value.name] = [value, "cml"]
                 except AttributeError:
                     pass
         giskardpy.sync_worlds()
     except PerceptionObjectNotFound:
-        talk.pub_now("I am Done, I hope I did good!")
-        return
+        return False, False, False, False, False, False, False
 
     # noteme if groups were found
     if groups_on_table:
@@ -432,7 +429,8 @@ def process_pick_up_objects(talk_bool):
 
             grasp_set = None
             # if to far behind the front face were robots look on the table
-            if oTb.pose.position.x >= 0.20:
+            tmp_name = object_raw.bullet_world_object.name.split('_')[0]
+            if tmp_name == "Metalbowl" or "Spoon":
                 grasp_set = "top"
 
             # noteme this saves the group
@@ -461,9 +459,11 @@ def process_pick_up_objects(talk_bool):
             (oTb.pose.orientation.x, oTb.pose.orientation.y, oTb.pose.orientation.z, oTb.pose.orientation.w))
         object_dim = object.get_object_dimensions()
         print(f"obj dim von {object_name} {object_dim}")
-        grasp_set = True
+
         if grasp_set:
             grasp = "front"
+        if force_grasp:
+            grasp = force_grasp
         else:
             if object_dim[2] < 0.055:
                 rospy.logwarn(f"{object_name} grasp is set to top, angle: {angle}")
@@ -529,7 +529,7 @@ def process_pick_up_objects(talk_bool):
         tip_link = 'hand_gripper_tool_frame'
         BulletWorld.robot.attach(object=object, link=tip_link)
         rospy.sleep(2)
-        #move_vel(speed=0.5, distance=1, isForward=False)
+        # move_vel(speed=0.5, distance=1, isForward=False)
         gripper.pub_now("close")
         rospy.sleep(2)
         move_vel(speed=0.3, distance=0.6, isForward=False)
@@ -548,24 +548,19 @@ def process_pick_up_objects(talk_bool):
             grasped_bool = False
 
         return grasped_bool, grasp, group, object, obj_id, object_raw, groups_on_table
+    return False, False, False, False, False, False, False
 
 
 # noteme  with look  return groups in shelf
 def process_objects_in_shelf(talk_bool):
     # perceive shelf
-    groups_in_shelf = {
-        "Kitchen Utensils and Tools": None,
-        "Containers and Drinkware": None,
-        "Cleaning Supplies": None,
-        "Packaged Food and Beverages": None,
-        "Fruits": None,
-        "Sports Equipment": None,
-        "Miscellaneous": None,
-        "Unknown": None
-    }
-    #todome fix this again to shelf
-    look_pose = kitchen.get_link_pose('shelf_hohc:kitchen_cabinet:shelf_floor_1')
-    perceive_conf = {'arm_lift_joint': 0.30, 'wrist_flex_joint': 1.8, 'arm_roll_joint': -1, }
+    groups_in_shelf = {"Kitchen Utensils and Tools": None, "Containers and Drinkware": None, "Cleaning Supplies": None,
+                       "Packaged Food and Beverages": None, "Fruits": None, "Sports Equipment": None,
+                       "Miscellaneous": None,
+                       "Unknown": None}
+    # todome fix this again to shelf
+    look_pose = kitchen.get_link_pose(popcorn_frame)
+    perceive_conf = {'arm_lift_joint': 0.30, 'wrist_flex_joint': 1.8, 'arm_roll_joint': -1}
     pakerino(config=perceive_conf)
     # look
     look_pose.pose.position.z -= 0.0
@@ -590,10 +585,29 @@ def process_objects_in_shelf(talk_bool):
 
 groups_in_shelf = {}
 
+def get_place_poses_for_surface(link, object_to_place):
+    place_poses = find_placeable_pose(link, kitchen_desig.resolve(), robot_desig.resolve(), "left",
+                                      world, 0.1,
+                                      object_desig=object_to_place)
+    print(place_poses)
+    if place_poses:
+        nearest_pose = place_poses[0]
 
+        pose_in_shelf = lt.transform_pose(nearest_pose, kitchen.get_link_tf_frame(link))
+
+        pose_in_shelf.pose.position.x = -0.10
+        pose_in_shelf.pose.position.z += 0.03
+        adjusted_pose_in_map = lt.transform_pose(pose_in_shelf, "map")
+
+        world.current_bullet_world.add_vis_axis(adjusted_pose_in_map)
+
+        return adjusted_pose_in_map
+
+    else:
+        return NoPlacePoseFoundCondition
 def demo(step):
     global groups_in_shelf
-    with ((((real_robot)))):
+    with ((((((real_robot)))))):
         object_name = None,
         object = None,
         grasp = None,
@@ -603,83 +617,110 @@ def demo(step):
         talk_bool = True
         gripper.pub_now("close")
         pakerino()
+        groups_on_the_table = {}
 
         if step <= 1:
-            #talk.pub_now("driving", True)
-            img.pub_now(ImageEnum.DRIVINGBACK.value)
+            move.pub_now(pose_dishwasher)
+            objects_to_search = ["Metalbowl"]
 
-            move.pub_now(shelf_1, interrupt_bool=False)
-            img.pub_now(ImageEnum.SEARCH.value)
-            #groups_in_shelf = process_objects_in_shelf(talk_bool)
-
-
-        if step <= 2:
-            grasped_bool, grasp, group, object, obj_id, object_raw, groups_on_table = process_pick_up_objects(talk_bool)
-            try:
+            grasped_bool, grasp, group,bowl_object, obj_id, bowl_object_raw, groups_on_table = process_pick_up_objects(talk_bool,
+                                                                                                              "dishwasher_table:d_table:table_front_edge_center",
+                                                                                                              objects_to_search, force_grasp="top")
+            if bowl_object:
                 talk.pub_now("driving", True)
                 img.pub_now(ImageEnum.DRIVINGBACK.value)
+                talk.pub_now("Human pleas remove all chairs out of the kitchen area")
+                img.pub_now(ImageEnum.CHAIR.value)
 
-                grasped_bool, grasp, group, object, obj_id, object_raw, groups_on_table = process_pick_up_objects(
-                    talk_bool)
-            except TypeError:
-                print("done")
-                return
-        if step <= 3:
-            talk.pub_now("driving", True)
-            img.pub_now(ImageEnum.DRIVINGBACK.value)
-            move.pub_now(table_pose_rotate, interrupt_bool=False)
-            move.pub_now(shelf_1, interrupt_bool=False)
+                rospy.sleep(3)
+                move.pub_now(pose_dishwasher_rotate, interrupt_bool=False)
+                move.pub_now(table_new_pose, interrupt_bool=False)
+                #groups_on_the_table = process_objects_in_shelf(True
+                #)
 
-            img.pub_now(ImageEnum.PLACING.value)
-            placeorpark(object.name, object, "front", talk_bool, place_pose, link_new, False)
-            demo(2)
+                #adjusted_pose_in_map = get_place_poses_for_surface(popcorn_frame,bowl_object_raw)
+                adjusted_pose_in_map = Pose([8.08,4, 0.92], [0, 0, 0, 1])
+
+                placeorpark(bowl_object_raw.bullet_world_object.name, object, "top", talk_bool, adjusted_pose_in_map, popcorn_frame, False)
+                groups_on_the_table["cml"] = [object, "cml"]
+
+            else:
+                rospy.logerr("Did not find the object")
+
+        if step <= 2:
+            move.pub_now(table_new_pose_rotated)
+            move.pub_now(counter_new_pose)
+            objects_to_search = ["Cornflakes"]
+            grasped_bool, grasp, group, object, obj_id, object_raw, groups_on_table = process_pick_up_objects(talk_bool,
+                                                                                                              "kitchen_counter:kitchen_counter:table_front_edge_center",
+                                                                                                              objects_to_search)
+            if object_raw:
+                talk.pub_now("driving", True)
+                img.pub_now(ImageEnum.DRIVINGBACK.value)
+                move.pub_now(table_new_pose_rotated, interrupt_bool=False)
+                move.pub_now(counter_new_pose, interrupt_bool=False)
+                #groups_on_the_table = process_objects_in_shelf(True)
+                #adjusted_pose_in_map, link_new = find_pose_in_shelf(group, object, groups_on_the_table)
+                #fixmetest
+                adjusted_pose_in_map = Pose([8.08,4.3, 0.92], [0, 0, 0, 1])
+
+                PouringAction([bowl_object_raw.pose], ["left"], ["left"], [115]).resolve().perform()
+
+                placeorpark(object.name, object, "front", talk_bool, adjusted_pose_in_map, popcorn_frame, False)
+
+            else:
+                rospy.logerr("Did not find the object")
 
 
+def monitor_func():
+    der = fts.get_last_value()
+    if abs(der.wrench.force.x) > 10.30:
+        return SensorMonitoringCondition
+    return False
 
 
+try:
 
-#
-#
-#
-# try:
-#
-#     img.pub_now(ImageEnum.HI.value)  # hi im toya
-#     talk.pub_now("Push down my Hand, when you are Ready.")
-#     img.pub_now(ImageEnum.PUSHBUTTONS.value)
-#     plan = Code(lambda: rospy.sleep(1)) * 999999 >> Monitor(monitor_func)
-#     plan.perform()
-# except SensorMonitoringCondition:
-#     talk.pub_now("Starting Storing Grocery.")
+    img.pub_now(ImageEnum.HI.value)  # hi im toya
+    talk.pub_now("Push down my Hand, when you are Ready.")
+    img.pub_now(ImageEnum.PUSHBUTTONS.value)
+    plan = Code(lambda: rospy.sleep(1)) * 999999 >> Monitor(monitor_func)
+    plan.perform()
+except SensorMonitoringCondition:
+    talk.pub_now("Starting Serve Breakfast.")
 #     # load everfyhing world giskard robokudo....
 #     # Wait for the start signal
-#
-#     img.pub_now(ImageEnum.HI.value)
-#     start_signal_waiter.wait_for_startsignal()
-#
-#     # Once the start signal is received, continue with the rest of the script
-#     rospy.loginfo("Start signal received, now proceeding with tasks.")
-#     move_vel(speed=2, distance=4, isForward=True)
-#     rospy.sleep(2)
-#     new_parameters = {
-#         'forbid_radius': 0.2,
-#         'obstacle_occupancy': 5,
-#         'obstacle_radius': 0.2
-#     }
-#
-#     set_parameters(new_parameters)    # Once the start signal is received, continue with the rest of the script
-#
-#     rospy.sleep(1)
-#
-#     fake_pose_2 = Pose([3, 0.3, 0])
-#     move.pub_fake_pose(fake_pose_2)
-#     move_vel(0.2, 2, False, 0.06)
-#     talk.pub_now("Lets Go, Driving to Shelf.")
-#     move_123 = Pose([4, -0.2, 0], [0, 0 , 0.7, 0.7])
-#     move.pub_now(move_123)
-#     move_145 = Pose([4.8, 0.8, 0], [0, 0, 0.7, 0.7])
-#     move.pub_now(move_145)
 
-#rospy.sleep(2)
-#move_vel(speed=0.1, distance=1, isForward=True)
-#pakerino()
+    img.pub_now(ImageEnum.HI.value)
+    start_signal_waiter.wait_for_startsignal()
+
+    # Once the start signal is received, continue with the rest of the script
+    rospy.loginfo("Start signal received, now proceeding with tasks.")
+    move_vel(speed=2, distance=4, isForward=True)
+    rospy.sleep(2)
+    new_parameters = {'forbid_radius': 0.2, 'obstacle_occupancy': 5, 'obstacle_radius': 0.2}
+
+    set_parameters(new_parameters)  # Once the start signal is received, continue with the rest of the script
+
+    rospy.sleep(1)
+
+    fake_pose_2 = Pose([3, 0.3, 0])
+    move.pub_fake_pose(fake_pose_2)
+    move_vel(0.2, 2, False, 0.06)
+    talk.pub_now("Lets Go, Driving to Shelf. Mister Human pls remove all chairs out of the kitchen area")
+    img.pub_now(ImageEnum.CHAIR.value)
+    move_123 = Pose([4, -0.2, 0], [0, 0, 0.7, 0.7])
+    move.pub_now(move_123)
+    move_145 = Pose([4.8, 0.8, 0], [0, 0, 0.7, 0.7])
+    move.pub_now(move_145)
+
+# rospy.sleep(2)
+# move_vel(speed=0.1, distance=1, isForward=True)
+# pakerino()
 demo(0)
+#print(kitchen.get_link_pose(popcorn_frame))
+
+#put chairs away
+#dunno about pouring
+#dunno about names
+###dunn was ich +bergebe

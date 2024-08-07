@@ -664,7 +664,7 @@ def demo(step):
 
             move.pub_now(shelf_1, interrupt_bool=False)
             img.pub_now(ImageEnum.SEARCH.value)
-            #groups_in_shelf = process_objects_in_shelf(talk_bool)
+            groups_in_shelf = process_objects_in_shelf(talk_bool)
 
 
         if step <= 2:
