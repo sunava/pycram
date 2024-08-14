@@ -1,10 +1,16 @@
 from threading import Lock
 from threading import Lock
 from typing import Any
-
+from gtts import gTTS
+import playsound
+import io
+import os
+from tempfile import NamedTemporaryFile
 import numpy as np
 import rospy
 from geometry_msgs.msg import PointStamped
+from pydub import AudioSegment
+from pydub.playback import play
 # from robokudo_msgs.msg import QueryGoal, QueryResult
 from tmc_control_msgs.msg import GripperApplyEffortActionGoal
 from tmc_msgs.msg import Voice
@@ -23,117 +29,6 @@ from ..local_transformer import LocalTransformer
 from ..process_module import ProcessModule
 
 
-def _park_arms(arm):
-    """
-    Defines the joint poses for the parking positions of the arms of HSRB and applies them to the
-    in the BulletWorld defined robot.
-    :return: None
-    """
-
-    robot = BulletWorld.robot
-    if arm == "left":
-        for joint, pose in robot_description.get_static_joint_chain("left", "park").items():
-            robot.set_joint_state(joint, pose)
-
-
-class HSRBNavigation(ProcessModule):
-    """
-    The process module to move the robot from one position to another.
-    """
-
-    def _execute(self, desig: MoveMotion.Motion):
-        robot = BulletWorld.robot
-        robot.set_pose(desig.target)
-
-
-class HSRBPickUp(ProcessModule):
-    """
-    This process module is for picking up a given object.
-    The object has to be reachable for this process module to succeed.
-    """
-
-    def _execute(self, desig: PickUpMotion.Motion):
-        object = desig.object_desig.bullet_world_object
-        robot = BulletWorld.robot
-        grasp = robot_description.grasps.get_orientation_for_grasp(desig.grasp)
-        target = object.get_pose()
-        target.orientation.x = grasp[0]
-        target.orientation.y = grasp[1]
-        target.orientation.z = grasp[2]
-        target.orientation.w = grasp[3]
-
-        arm = desig.arm
-        arm_short = "r" if arm == "right" else "l"
-
-        _move_arm_tcp(target, robot, arm)
-        tool_frame = robot_description.get_tool_frame(arm)
-        robot.attach(object, tool_frame)
-
-
-class HSRBPlace(ProcessModule):
-    """
-    This process module places an object at the given position in world coordinate frame.
-    """
-
-    def _execute(self, desig: PlaceMotion.Motion):
-        """
-
-        :param desig: A PlaceMotion
-        :return:
-        """
-        object = desig.object.bullet_world_object
-        robot = BulletWorld.robot
-        arm = desig.arm
-
-        # Transformations such that the target position is the position of the object and not the tcp
-        object_pose = object.get_pose()
-        local_tf = LocalTransformer()
-        tcp_to_object = local_tf.transform_pose(object_pose,
-                                                robot.get_link_tf_frame(robot_description.get_tool_frame(arm)))
-        target_diff = desig.target.to_transform("target").inverse_times(tcp_to_object.to_transform("object")).to_pose()
-
-        _move_arm_tcp(target_diff, robot, arm)
-        robot.detach(object)
-
-
-class HSRBMoveHead(ProcessModule):
-    """
-    This process module moves the head to look at a specific point in the world coordinate frame.
-    This point can either be a position or an object.
-    """
-
-    def _execute(self, desig: LookingMotion.Motion):
-        target = desig.target
-        robot = BulletWorld.robot
-
-        local_transformer = LocalTransformer()
-        pose_in_pan = local_transformer.transform_pose(target, robot.get_link_tf_frame("head_pan_link"))
-        pose_in_tilt = local_transformer.transform_pose(target, robot.get_link_tf_frame("head_tilt_link"))
-
-        new_pan = np.arctan2(pose_in_pan.position.y, pose_in_pan.position.x)
-        new_tilt = np.arctan2(pose_in_tilt.position.z, pose_in_tilt.position.x ** 2 + pose_in_tilt.position.y ** 2) * -1
-
-        current_pan = robot.get_joint_state("head_pan_joint")
-        current_tilt = robot.get_joint_state("head_tilt_joint")
-
-        robot.set_joint_state("head_pan_joint", new_pan + current_pan)
-        robot.set_joint_state("head_tilt_joint", new_tilt + current_tilt)
-
-
-class HSRBMoveGripper(ProcessModule):
-    """
-    This process module controls the gripper of the robot. They can either be opened or closed.
-    Furthermore, it can only moved one gripper at a time.
-    """
-
-    def _execute(self, desig: MoveGripperMotion.Motion):
-        robot = BulletWorld.robot
-        gripper = desig.gripper
-        motion = desig.motion
-        for joint, state in robot_description.get_static_gripper_chain(gripper, motion).items():
-            robot.set_joint_state(joint, state)
-
-
 class HSRBDetecting(ProcessModule):
     """
     This process module tries to detect an object with the given type. To be detected the object has to be in
@@ -149,12 +44,15 @@ class HSRBDetecting(ProcessModule):
         # should be [0, 0, 1]
         front_facing_axis = robot_description.front_facing_axis
         if desig.technique == 'all':
-            rospy.loginfo("Fake detecting all generic objects")
+            rospy.loginfo("detecting all generic objects")
             objects = BulletWorld.current_bullet_world.get_all_objets_not_robot()
         elif desig.technique == 'human':
-            rospy.loginfo("Fake detecting human -> spawn 0,0,0")
+            rospy.loginfo("detecting human")
             human = []
-            human.append(Object("human", ObjectType.HUMAN, "human_male.stl", pose=Pose([0, 0, 0])))
+            objects = BulletWorld.current_bullet_world.get_all_objets_not_robot()
+            for obj in objects:
+                if obj.type == ObjectType.HUMAN:
+                    human.append(obj)
             object_dict = {}
 
             # Iterate over the list of objects and store each one in the dictionary
@@ -163,7 +61,7 @@ class HSRBDetecting(ProcessModule):
             return object_dict
 
         else:
-            rospy.loginfo("Fake -> Detecting specific object type")
+            rospy.loginfo("Detecting specific object type")
             objects = BulletWorld.current_bullet_world.get_objects_by_type(object_type)
 
         object_dict = {}
@@ -180,105 +78,13 @@ class HSRBDetecting(ProcessModule):
         return object_dict
 
 
-class HSRBMoveTCP(ProcessModule):
-    """
-    This process moves the tool center point of either the right or the left arm.
-    """
-
-    def _execute(self, desig: MoveTCPMotion.Motion):
-        target = desig.target
-        robot = BulletWorld.robot
-
-        _move_arm_tcp(target, robot, desig.arm)
-
-
-class HSRBMoveArmJoints(ProcessModule):
-    """
-    This process modules moves the joints of either the right or the left arm. The joint states can be given as
-    list that should be applied or a pre-defined position can be used, such as "parking"
-    """
-
-    def _execute(self, desig: MoveArmJointsMotion.Motion):
-
-        robot = BulletWorld.robot
-        if desig.right_arm_poses:
-            robot.set_joint_states(desig.right_arm_poses)
-        if desig.left_arm_poses:
-            robot.set_joint_states(desig.left_arm_poses)
-
-
-class HSRBMoveJoints(ProcessModule):
-    """
-    Process Module for generic joint movements, is not confined to the arms but can move any joint of the robot
-    """
-
-    def _execute(self, desig: MoveJointsMotion.Motion):
-        robot = BulletWorld.robot
-        robot.set_joint_states(dict(zip(desig.names, desig.positions)))
-
-
-class HSRBWorldStateDetecting(ProcessModule):
-    """
-    This process module detectes an object even if it is not in the field of view of the robot.
-    """
-
-    def _execute(self, desig: WorldStateDetectingMotion.Motion):
-        obj_type = desig.object_type
-        return list(filter(lambda obj: obj.type == obj_type, BulletWorld.current_bullet_world.objects))[0]
-
-
-class HSRBOpen(ProcessModule):
-    """
-    Low-level implementation of opening a container in the simulation. Assumes the handle is already grasped.
-    """
-
-    def _execute(self, desig: OpeningMotion.Motion):
-        part_of_object = desig.object_part.bullet_world_object
-
-        container_joint = part_of_object.find_joint_above(desig.object_part.name, JointType.PRISMATIC)
-
-        goal_pose = btr.link_pose_for_joint_config(part_of_object, {
-            container_joint: part_of_object.get_joint_limits(container_joint)[1] - 0.05}, desig.object_part.name)
-
-        # _move_arm_tcp(goal_pose, BulletWorld.robot, desig.arm)
-
-        desig.object_part.bullet_world_object.set_joint_state(container_joint,
-                                                              part_of_object.get_joint_limits(container_joint)[1])
-
-
-class HSRBClose(ProcessModule):
-    """
-    Low-level implementation that lets the robot close a grasped container, in simulation
-    """
-
-    def _execute(self, desig: ClosingMotion.Motion):
-        part_of_object = desig.object_part.bullet_world_object
-
-        container_joint = part_of_object.find_joint_above(desig.object_part.name, JointType.PRISMATIC)
-
-        goal_pose = btr.link_pose_for_joint_config(part_of_object, {
-            container_joint: part_of_object.get_joint_limits(container_joint)[0]}, desig.object_part.name)
-
-        _move_arm_tcp(goal_pose, BulletWorld.robot, desig.arm)
-
-        desig.object_part.bullet_world_object.set_joint_state(container_joint,
-                                                              part_of_object.get_joint_limits(container_joint)[0])
-
-
-def _move_arm_tcp(target: Pose, robot: Object, arm: str) -> None:
-    gripper = robot_description.get_tool_frame(arm)
-
-    joints = robot_description.chains[arm].joints
-
-    inv = request_ik(target, robot, joints, gripper)
-    _apply_ik(robot, inv, joints)
 
 
 ###########################################################
 ########## Process Modules for the Real HSRB ###############
 ###########################################################
 
-
+#todome: we have to fix this
 class HSRBNavigationReal(ProcessModule):
     """
     Process module for the real HSRB that sends a cartesian goal to giskard to move the robot base
@@ -297,8 +103,7 @@ class HSRBNavigationSemiReal(ProcessModule):
 
     def _execute(self, designator: MoveMotion.Motion) -> Any:
         rospy.logdebug(f"Sending goal to giskard to Move the robot")
-        giskard.achieve_cartesian_goal(designator.target, robot_description.base_link, "map")
-        # queryPoseNav(designator.target)
+        giskard.teleport_robot(designator.target)
 
 
 class HSRBPickUpReal(ProcessModule):
@@ -674,6 +479,37 @@ class HSRBTalkReal(ProcessModule):
         rospy.sleep(1)
         pub.publish(texttospeech)
 
+class HSRBTalkSemiReal(ProcessModule):
+    """
+    Tries to close an already grasped container
+    """
+
+    def _execute(self, designator: TalkingMotion.Motion) -> Any:
+        """
+        Convert text to speech using gTTS, modify the pitch and play it without saving to disk.
+
+        :param text: The text to convert to speech
+        :param lang: The language to use (default is English)
+        :param slow: Boolean to slow down the speech speed
+        """
+        sentence = designator.cmd
+        # Create a gTTS object
+        tts = gTTS(text=sentence, lang='en', slow=False)
+
+        # Save the speech to an in-memory file
+        mp3_fp = io.BytesIO()
+        tts.write_to_fp(mp3_fp)
+        mp3_fp.seek(0)
+
+        # Load the audio into pydub from the in-memory file
+        audio = AudioSegment.from_file(mp3_fp, format="mp3")
+
+        # Speed up the audio slightly
+        faster_audio = audio.speedup(playback_speed=1.2)
+
+        # Play the modified audio
+        play(faster_audio)
+
 
 class HSRBPourReal(ProcessModule):
     """
@@ -785,6 +621,7 @@ class HSRBManager(ProcessModuleManager):
         self._pointing_lock = Lock()
         self._open_door_lock = Lock()
         self._grasp_handle_lock = Lock()
+
 
     def navigate(self):
         if ProcessModuleManager.execution_type == "simulated":
@@ -908,13 +745,7 @@ class HSRBManager(ProcessModuleManager):
         if ProcessModuleManager.execution_type == "real":
             return HSRBTalkReal(self._talk_lock)
         elif ProcessModuleManager.execution_type == "semi_real":
-            return HSRBTalkReal(self._talk_lock)
-
-    def pour(self):
-        if ProcessModuleManager.execution_type == "real":
-            return HSRBPourReal(self._pour_lock)
-        elif ProcessModuleManager.execution_type == "semi_real":
-            return HSRBPourReal(self._pour_lock)
+            return HSRBTalkSemiReal(self._talk_lock)
 
     def head_follow(self):
         if ProcessModuleManager.execution_type == "real":

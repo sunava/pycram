@@ -226,7 +226,7 @@ def with_simulated_robot(func: Callable) -> Callable:
 # These are imported, so they don't have to be initialized when executing with
 simulated_robot = SimulatedRobot()
 real_robot = RealRobot()
-semi_real_robot = SemiRealRobot()
+_real_robot = SemiRealRobot()
 
 class ProcessModuleManager(ABC):
     """

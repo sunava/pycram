@@ -101,8 +101,8 @@ class BulletWorld:
 
         # Some default settings
         self.set_gravity([0, 0, -9.8])
-        #if not is_shadow_world:
-            #plane = Object("floor", ObjectType.ENVIRONMENT, "plane.urdf", world=self)
+        if not is_shadow_world:
+            plane = Object("floor", ObjectType.ENVIRONMENT, "plane.urdf", world=self)
         # atexit.register(self.exit)
 
     def get_objects_by_name(self, name: str) -> List[Object]:

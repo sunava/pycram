@@ -163,6 +163,14 @@ def spawn_box(name: str, size: tuple, pose: Pose) -> 'UpdateWorldResponse':
     return giskard_wrapper.world.add_box(name, size, pose)
 
 
+def teleport_robot(base_pose):
+    """
+      This is only for giskard_standalone NOT real robot.
+    """
+    giskard_wrapper.monitors.add_set_seed_odometry(_pose_to_pose_stamped(base_pose))
+    giskard_wrapper.add_default_end_motion_conditions()
+
+    giskard_wrapper.execute()
 #
 # # Sending Goals to Giskard
 # def drive_brum(goal_poses: List[PoseStamped]) -> 'MoveResult':
