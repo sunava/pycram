@@ -102,9 +102,9 @@ class PouringAction(ActionDesignatorDescription):
         :param ontology_concept_holders: A list of ontology concepts that the action is categorized as
                                          or associated with
         """
-        super().__init__(resolver)
+        super().__init__(resolver, ontology_concept_holders)
         self.target_locations: List[Pose] = target_locations
-        self.arms: List[str] = arms
+        self.arms: List[Arms] = arms
         self.directions: List[str] = directions
         self.angels: List[float] = angles
 
@@ -202,7 +202,7 @@ class MixingAction(ActionDesignatorDescription):
     Designator to let the robot perform a mixing action.
     """
     def __init__(self, object_designator_description: ObjectDesignatorDescription,
-                 object_tool_designator_description: ObjectDesignatorDescription, arms: List[str], grasps: List[str],
+                 object_tool_designator_description: ObjectDesignatorDescription, arms: List[Arms], grasps: List[str],
                  object_at_execution: Optional[ObjectDesignatorDescription.Object], resolver=None,
                  ontology_concept_holders: Optional[List[Thing]] = None):
         """
@@ -220,7 +220,7 @@ class MixingAction(ActionDesignatorDescription):
         super(MixingAction, self).__init__(resolver, ontology_concept_holders)
         self.object_designator_description: ObjectDesignatorDescription = object_designator_description
         self.object_tool_designator_description: ObjectDesignatorDescription = object_tool_designator_description
-        self.arms: List[str] = arms
+        self.arms: List[Arms] = arms
         self.grasps: List[str] = grasps
 
         if self.soma:
@@ -251,7 +251,7 @@ class MixingActionPerformable(ActionAbstract):
     Object designator describing the mixing tool.
     """
 
-    arm: str
+    arm: Arms
     """
     The arm that should be used for mixing.
     """
@@ -434,7 +434,7 @@ class CuttingAction(ActionDesignatorDescription):
     Designator to let the robot perform a cutting action.
     """
 
-    def __init__(self, object_designator_description: ObjectDesignatorDescription, arms: List[str], grasps: List[str],
+    def __init__(self, object_designator_description: ObjectDesignatorDescription, arms: List[Arms], grasps: List[str],
                  resolver=None, ontology_concept_holders: Optional[List[Thing]] = None):
         """
         Initialize the CuttingAction with object designators, arms, and grasps.
@@ -445,9 +445,9 @@ class CuttingAction(ActionDesignatorDescription):
         :param resolver: An optional resolver for dynamic parameter selection.
         :param ontology_concept_holders: A list of ontology concepts that the action is categorized as or associated with
         """
-        super(CuttingAction, self).__init__(resolver)
+        super(CuttingAction, self).__init__(resolver, ontology_concept_holders)
         self.object_designator_description: ObjectDesignatorDescription = object_designator_description
-        self.arms: List[str] = arms
+        self.arms: List[Arms] = arms
         self.grasps: List[str] = grasps
 
         if self.soma:
@@ -478,7 +478,7 @@ class CuttingActionPerformable(ActionAbstract):
     Object designator describing the object that should be cut.
     """
 
-    arm: str
+    arm: Arms
     """
     The arm that should be used for cutting.
     """
@@ -594,7 +594,7 @@ class OpenDishwasherAction(ActionDesignatorDescription):
     """
 
     def __init__(self, handle_name: str, door_name: str, goal_state_half_open: float, goal_state_full_open: float,
-                 arms: List[str], resolver=None, ontology_concept_holders: Optional[List[Thing]] = None):
+                 arms: List[Arms], resolver=None, ontology_concept_holders: Optional[List[Thing]] = None):
         """
         Moves the arm of the robot to open a container.
 
@@ -606,12 +606,12 @@ class OpenDishwasherAction(ActionDesignatorDescription):
         :param resolver: A alternative resolver that returns a performable designator for the lists of possible parameter
         :param ontology_concept_holders: A list of ontology concepts that the action is categorized as or associated with
         """
-        super().__init__(resolver)
+        super().__init__(resolver, ontology_concept_holders)
         self.handle_name = handle_name
         self.door_name = door_name
         self.goal_state_half_open = goal_state_half_open
         self.goal_state_full_open = goal_state_full_open
-        self.arms: List[str] = arms
+        self.arms: List[Arms] = arms
 
         if self.soma:
             self.init_ontology_concepts({"open_dishwasher": self.soma.OpenDishwasher})
@@ -647,7 +647,7 @@ class OpenDishwasherActionPerformable(ActionAbstract):
     """
     goal state for opening the door fully
     """
-    arm: str
+    arm: Arms
     """
     Arm that should be used for opening the container
     """
@@ -695,7 +695,7 @@ class DetectAction(ActionDesignatorDescription):
         :param resolver: An alternative resolver
         :param ontology_concept_holders: A list of ontology concepts that the action is categorized as or associated with
         """
-        super().__init__(resolver)
+        super().__init__(resolver, ontology_concept_holders)
         self.technique: str = technique
         self.object_designator: Optional[ObjectDesignatorDescription] = object_designator
         self.state: Optional[str] = state
@@ -756,7 +756,7 @@ class PlaceGivenObjAction(ActionDesignatorDescription):
     """
 
     def __init__(self,
-                 object_types: List[str], arms: List[str], target_locations: List[Pose], grasps: List[str],
+                 object_types: List[str], arms: List[Arms], target_locations: List[Pose], grasps: List[str],
                  on_table: Optional[bool] = True, resolver=None,
                  ontology_concept_holders: Optional[List[Thing]] = None):
         """
@@ -772,9 +772,9 @@ class PlaceGivenObjAction(ActionDesignatorDescription):
                          possible paramter
         :param ontology_concept_holders: A list of ontology concepts that the action is categorized as or associated with
         """
-        super().__init__(resolver)
+        super().__init__(resolver, ontology_concept_holders)
         self.object_types: List[str] = object_types
-        self.arms: List[str] = arms
+        self.arms: List[Arms] = arms
         self.grasps: List[str] = grasps
         self.target_locations: List[Pose] = target_locations
         self.on_table: bool = on_table
@@ -803,7 +803,7 @@ class PlaceGivenObjActionPerformable(ActionAbstract):
     Object type describing the object that should be placed
     """
 
-    arm: str
+    arm: Arms
     """
     Arm that is currently holding the object
     """
