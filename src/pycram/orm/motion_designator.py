@@ -5,14 +5,14 @@ Each motion designator class has its own table in the database with columns repr
 The MotionDesignator class is the base class that defines the polymorphic behavior of all other motion designator
 classes.
 """
-from typing import Optional
+from typing_extensions import Optional
 
 from .base import MapperArgsMixin, Designator, PoseMixin
-from .object_designator import Object, ObjectMixin
+from .object_designator import Object
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy import ForeignKey
 
-from ..enums import ObjectType
+from ..datastructures.enums import ObjectType, Arms, GripperState
 
 
 class Motion(MapperArgsMixin, Designator):
@@ -48,7 +48,7 @@ class AccessingMotion(Motion):
     id: Mapped[int] = mapped_column(ForeignKey(f'{Motion.__tablename__}.id'), primary_key=True, init=False)
     part_of: Mapped[int] = mapped_column(ForeignKey(f'{Object.__tablename__}.id'), init=False)
     object: Mapped[Object] = relationship(init=False)
-    arm: Mapped[str] = mapped_column(init=False)
+    arm: Mapped[Arms] = mapped_column(init=False)
     gripper: Mapped[str] = mapped_column(init=False)
     distance: Mapped[float] = mapped_column(init=False)
     drawer_joint: Mapped[str] = mapped_column(init=False)
@@ -63,7 +63,7 @@ class MoveTCPMotion(PoseMixin, Motion):
     """
 
     id: Mapped[int] = mapped_column(ForeignKey(f'{Motion.__tablename__}.id'), primary_key=True, init=False)
-    arm: Mapped[str]
+    arm: Mapped[Arms]
     allow_gripper_collision: Mapped[Optional[bool]]
 
 
@@ -81,8 +81,8 @@ class MoveGripperMotion(Motion):
     """
 
     id: Mapped[int] = mapped_column(ForeignKey(f'{Motion.__tablename__}.id'), primary_key=True, init=False)
-    motion: Mapped[str]
-    gripper: Mapped[str]
+    motion: Mapped[GripperState]
+    gripper: Mapped[Arms]
     allow_gripper_collision: Mapped[Optional[bool]]
 
 
@@ -110,7 +110,7 @@ class OpeningMotion(Motion):
     """
 
     id: Mapped[int] = mapped_column(ForeignKey(f'{Motion.__tablename__}.id'), primary_key=True, init=False)
-    arm: Mapped[str]
+    arm: Mapped[Arms]
 
 
 class ClosingMotion(Motion):
@@ -119,4 +119,4 @@ class ClosingMotion(Motion):
     """
 
     id: Mapped[int] = mapped_column(ForeignKey(f'{Motion.__tablename__}.id'), primary_key=True, init=False)
-    arm: Mapped[str]
+    arm: Mapped[Arms]

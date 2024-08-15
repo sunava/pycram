@@ -1,22 +1,18 @@
 import dataclasses
 import time
-from typing import List, Tuple, Union, Iterable, Optional, Callable
 
-import rospy
+from typing_extensions import List, Union, Iterable, Optional, Callable
 
 from .object_designator import ObjectDesignatorDescription, ObjectPart
-from ..bullet_world import Object, BulletWorld, Use_shadow_world
-from ..bullet_world_reasoning import link_pose_for_joint_config
-from ..designator import Designator, DesignatorError, LocationDesignatorDescription
+from ..datastructures.world import World, UseProspectionWorld
+from ..local_transformer import LocalTransformer
+from ..world_reasoning import link_pose_for_joint_config
+from ..designator import DesignatorError, LocationDesignatorDescription
 from ..costmaps import OccupancyCostmap, VisibilityCostmap, SemanticCostmap, GaussianCostmap
-from ..robot_descriptions import robot_description
-from ..enums import JointType, ObjectType
-from ..helper import transform
-from ..plan_failures import EnvironmentManipulationImpossible
-from ..pose_generator_and_validator import pose_generator, visibility_validator, reachability_validator, \
-    generate_orientation
-from ..robot_description import ManipulatorDescription
-from ..pose import Pose
+from ..datastructures.enums import JointType, Arms
+from ..pose_generator_and_validator import PoseGenerator, visibility_validator, reachability_validator
+from ..robot_description import RobotDescription
+from ..datastructures.pose import Pose
 
 
 class Location(LocationDesignatorDescription):
@@ -33,14 +29,14 @@ class Location(LocationDesignatorDescription):
         Basic location designator that represents a single pose.
 
         :param pose: The pose that should be represented by this location designator
-        :param resolver: An alternative resolver that returns a resolved location
+        :param resolver: An alternative specialized_designators that returns a resolved location
         """
         super().__init__(resolver)
         self.pose: Pose = pose
 
     def ground(self) -> Location:
         """
-        Default resolver which returns a resolved designator which contains the pose given in init.
+        Default specialized_designators which returns a resolved designator which contains the pose given in init.
 
         :return: A resolved designator
         """
@@ -71,7 +67,7 @@ class ObjectRelativeLocation(LocationDesignatorDescription):
 
         :param relative_pose: Pose that should be relative, in world coordinate frame
         :param reference_object: Object to which the pose should be relative
-        :param resolver: An alternative resolver that returns a resolved location for the input parameter
+        :param resolver: An alternative specialized_designators that returns a resolved location for the input parameter
         """
         super().__init__(resolver)
         self.relative_pose: Pose = relative_pose
@@ -79,7 +75,7 @@ class ObjectRelativeLocation(LocationDesignatorDescription):
 
     def ground(self) -> Location:
         """
-        Default resolver which returns a resolved location for description input. Resolved location is the first result
+        Default specialized_designators which returns a resolved location for description input. Resolved location is the first result
         of the iteration of this instance.
 
         :return: A resolved location
@@ -97,10 +93,9 @@ class ObjectRelativeLocation(LocationDesignatorDescription):
                 "Could not ground ObjectRelativeLocation: (Relative) pose and reference object must be given")
         # Fetch the object pose and yield the grounded description
         obj_grounded = self.reference_object.resolve()
-        obj_pose_world = obj_grounded.get_position_and_location()
-        obj_pose_world_flat = [i for sublist in obj_pose_world for i in sublist]
-        relative_pose_flat = [i for sublist in self.relative_pose for i in sublist]
-        pose = transform(obj_pose_world_flat, relative_pose_flat, local_coords=False)
+
+        lt = LocalTransformer()
+        pose = lt.transform_to_object_frame(self.relative_pose, obj_grounded)
 
         yield self.Location(self.relative_pose, pose, self.reference_object)
 
@@ -112,7 +107,7 @@ class CostmapLocation(LocationDesignatorDescription):
 
     @dataclasses.dataclass
     class Location(LocationDesignatorDescription.Location):
-        reachable_arms: List[str]
+        reachable_arms: List[Arms]
         """
         List of arms with which the pose can be reached, is only used when the 'rechable_for' parameter is used
         """
@@ -120,7 +115,7 @@ class CostmapLocation(LocationDesignatorDescription):
     def __init__(self, target: Union[Pose, ObjectDesignatorDescription.Object],
                  reachable_for: Optional[ObjectDesignatorDescription.Object] = None,
                  visible_for: Optional[ObjectDesignatorDescription.Object] = None,
-                 reachable_arm: Optional[str] = None, resolver: Optional[Callable] = None):
+                 reachable_arm: Optional[Arms] = None, resolver: Optional[Callable] = None):
         """
         Location designator that uses costmaps as base to calculate locations for complex constrains like reachable or
         visible. In case of reachable the resolved location contains a list of arms with which the location is reachable.
@@ -129,17 +124,17 @@ class CostmapLocation(LocationDesignatorDescription):
         :param reachable_for: Object for which the reachability should be calculated, usually a robot
         :param visible_for: Object for which the visibility should be calculated, usually a robot
         :param reachable_arm: An optional arm with which the target should be reached
-        :param resolver: An alternative resolver that returns a resolved location for the given input of this description
+        :param resolver: An alternative specialized_designators that returns a resolved location for the given input of this description
         """
         super().__init__(resolver)
         self.target: Union[Pose, ObjectDesignatorDescription.Object] = target
         self.reachable_for: ObjectDesignatorDescription.Object = reachable_for
         self.visible_for: ObjectDesignatorDescription.Object = visible_for
-        self.reachable_arm: Optional[str] = reachable_arm
+        self.reachable_arm: Optional[Arms] = reachable_arm
 
     def ground(self) -> Location:
         """
-        Default resolver which returns the first result from the iterator of this instance.
+        Default specialized_designators which returns the first result from the iterator of this instance.
 
         :return: A resolved location
         """
@@ -158,11 +153,11 @@ class CostmapLocation(LocationDesignatorDescription):
 
            :yield: An instance of CostmapLocation.Location with a valid position that satisfies the given constraints
            """
-        min_height = list(robot_description.cameras.values())[0].min_height
-        max_height = list(robot_description.cameras.values())[0].max_height
+        min_height = RobotDescription.current_robot_description.get_default_camera().minimal_height
+        max_height = RobotDescription.current_robot_description.get_default_camera().maximal_height
         # This ensures that the costmaps always get a position as their origin.
         if isinstance(self.target, ObjectDesignatorDescription.Object):
-            target_pose = self.target.bullet_world_object.get_pose()
+            target_pose = self.target.world_object.get_pose()
         else:
             target_pose = self.target.copy()
 
@@ -170,7 +165,7 @@ class CostmapLocation(LocationDesignatorDescription):
         ground_pose = Pose(target_pose.position_as_list())
         ground_pose.position.z = 0
 
-        occupancy = OccupancyCostmap(0.4, False, 200, 0.02, ground_pose)
+        occupancy = OccupancyCostmap(0.32, False, 200, 0.02, ground_pose)
         final_map = occupancy
 
         if self.reachable_for:
@@ -181,29 +176,25 @@ class CostmapLocation(LocationDesignatorDescription):
             final_map += visible
 
         if self.visible_for or self.reachable_for:
-            robot_object = self.visible_for.bullet_world_object if self.visible_for else self.reachable_for.bullet_world_object
-            test_robot = BulletWorld.current_bullet_world.get_shadow_object(robot_object)
-
-        with Use_shadow_world():
-
-            for maybe_pose in pose_generator(final_map, number_of_samples=600):
+            robot_object = self.visible_for.world_object if self.visible_for else self.reachable_for.world_object
+            test_robot = World.current_world.get_prospection_object_for_object(robot_object)
+        with UseProspectionWorld():
+            for maybe_pose in PoseGenerator(final_map, number_of_samples=600):
                 res = True
                 arms = None
                 if self.visible_for:
                     res = res and visibility_validator(maybe_pose, test_robot, target_pose,
-                                                       BulletWorld.current_bullet_world)
+                                                       World.current_world)
                 if self.reachable_for:
                     hand_links = []
-                    for name, chain in robot_description.chains.items():
-                        if isinstance(chain, ManipulatorDescription):
-                            hand_links += chain.gripper.links
+                    for description in RobotDescription.current_robot_description.get_manipulator_chains():
+                        hand_links += description.end_effector.links
                     valid, arms = reachability_validator(maybe_pose, test_robot, target_pose,
                                                          allowed_collision={test_robot: hand_links})
                     if self.reachable_arm:
                         res = res and valid and self.reachable_arm in arms
                     else:
                         res = res and valid
-
                 if res:
                     yield self.Location(maybe_pose, arms)
 
@@ -215,7 +206,7 @@ class AccessingLocation(LocationDesignatorDescription):
 
     @dataclasses.dataclass
     class Location(LocationDesignatorDescription.Location):
-        arms: List[str]
+        arms: List[Arms]
         """
         List of arms that can be used to for accessing from this pose
         """
@@ -227,15 +218,15 @@ class AccessingLocation(LocationDesignatorDescription):
 
         :param handle_desig: ObjectPart designator for handle of the drawer
         :param robot: Object designator for the robot which should open the drawer
-        :param resolver: An alternative resolver to create the location
+        :param resolver: An alternative specialized_designators to create the location
         """
         super().__init__(resolver)
         self.handle: ObjectPart.Object = handle_desig
-        self.robot: ObjectDesignatorDescription.Object = robot_desig.bullet_world_object
+        self.robot: ObjectDesignatorDescription.Object = robot_desig.world_object
 
     def ground(self) -> Location:
         """
-        Default resolver for this location designator, just returns the first element from the iteration
+        Default specialized_designators for this location designator, just returns the first element from the iteration
 
         :return: A location designator for a pose from which the drawer can be opened
         """
@@ -258,33 +249,33 @@ class AccessingLocation(LocationDesignatorDescription):
 
         final_map = occupancy + gaussian
 
-        test_robot = BulletWorld.current_bullet_world.get_shadow_object(self.robot)
+
+        test_robot = World.current_world.get_prospection_object_for_object(self.robot)
 
         # Find a Joint of type prismatic which is above the handle in the URDF tree
-        container_joint = self.handle.bullet_world_object.find_joint_above(self.handle.name, JointType.PRISMATIC)
+        container_joint = self.handle.world_object.find_joint_above_link(self.handle.name, JointType.PRISMATIC)
 
-        init_pose = link_pose_for_joint_config(self.handle.bullet_world_object, {
-            container_joint: self.handle.bullet_world_object.get_joint_limits(container_joint)[0]},
+        init_pose = link_pose_for_joint_config(self.handle.world_object, {
+            container_joint: self.handle.world_object.get_joint_limits(container_joint)[0]},
                                                self.handle.name)
 
         # Calculate the pose the handle would be in if the drawer was to be fully opened
-        goal_pose = link_pose_for_joint_config(self.handle.bullet_world_object, {
-            container_joint: self.handle.bullet_world_object.get_joint_limits(container_joint)[1] - 0.05},
+        goal_pose = link_pose_for_joint_config(self.handle.world_object, {
+            container_joint: self.handle.world_object.get_joint_limits(container_joint)[1] - 0.05},
                                                self.handle.name)
 
         # Handle position for calculating rotation of the final pose
-        half_pose = link_pose_for_joint_config(self.handle.bullet_world_object, {
-            container_joint: self.handle.bullet_world_object.get_joint_limits(container_joint)[1] / 1.5},
+        half_pose = link_pose_for_joint_config(self.handle.world_object, {
+            container_joint: self.handle.world_object.get_joint_limits(container_joint)[1] / 1.5},
                                                self.handle.name)
 
-        with Use_shadow_world():
-            for maybe_pose in pose_generator(final_map, number_of_samples=600,
-                                             orientation_generator=lambda p, o: generate_orientation(p, half_pose)):
+        with UseProspectionWorld():
+            for maybe_pose in PoseGenerator(final_map, number_of_samples=600,
+                                             orientation_generator=lambda p, o: PoseGenerator.generate_orientation(p, half_pose)):
 
                 hand_links = []
-                for name, chain in robot_description.chains.items():
-                    if isinstance(chain, ManipulatorDescription):
-                        hand_links += chain.gripper.links
+                for description in RobotDescription.current_robot_description.get_manipulator_chains():
+                    hand_links += description.links
 
                 valid_init, arms_init = reachability_validator(maybe_pose, test_robot, init_pose,
                                                                allowed_collision={test_robot: hand_links})
@@ -305,7 +296,7 @@ class SemanticCostmapLocation(LocationDesignatorDescription):
     class Location(LocationDesignatorDescription.Location):
         pass
 
-    def __init__(self, urdf_link_name, part_of, for_object=None, resolver=None, margin_cm=0.2, inner_margin_cm=0.1):
+    def __init__(self, urdf_link_name, part_of, for_object=None, resolver=None):
         """
         Creates a distribution over a urdf link to sample poses which are on this link. Can be used, for example, to find
         poses that are on a table. Optionally an object can be given for which poses should be calculated, in that case
@@ -314,18 +305,16 @@ class SemanticCostmapLocation(LocationDesignatorDescription):
         :param urdf_link_name: Name of the urdf link for which a distribution should be calculated
         :param part_of: Object of which the urdf link is a part
         :param for_object: Optional object that should be placed at the found location
-        :param resolver: An alternative resolver that creates a resolved location for the input parameter of this description
+        :param resolver: An alternative specialized_designators that creates a resolved location for the input parameter of this description
         """
         super().__init__(resolver)
         self.urdf_link_name: str = urdf_link_name
         self.part_of: ObjectDesignatorDescription.Object = part_of
         self.for_object: Optional[ObjectDesignatorDescription.Object] = for_object
-        self.margin_cm = margin_cm
-        self.inner_margin_cm = inner_margin_cm
 
     def ground(self) -> Location:
         """
-        Default resolver which returns the first element of the iterator of this instance.
+        Default specialized_designators which returns the first element of the iterator of this instance.
 
         :return: A resolved location
         """
@@ -339,57 +328,11 @@ class SemanticCostmapLocation(LocationDesignatorDescription):
 
         :yield: An instance of SemanticCostmapLocation.Location with the found valid position of the Costmap.
         """
-        sem_costmap = SemanticCostmap(self.part_of.bullet_world_object, self.urdf_link_name, margin_cm=self.margin_cm,
-                                      inner_margin_cm=self.inner_margin_cm)
-        sem_costmap.visualize()
-        # sem_costmap.close_visualization()
-
+        sem_costmap = SemanticCostmap(self.part_of.world_object, self.urdf_link_name)
         height_offset = 0
         if self.for_object:
-            try:
-                min, max = self.for_object.bullet_world_object.get_AABB()
-            except AttributeError:
-                min, max = self.for_object.get_AABB()
-            height_offset = ((max[2] - min[2]) / 2)
-        for maybe_pose in pose_generator(sem_costmap):
+            min_p, max_p = self.for_object.world_object.get_axis_aligned_bounding_box().get_min_max_points()
+            height_offset = (max_p.z - min_p.z) / 2
+        for maybe_pose in PoseGenerator(sem_costmap):
             maybe_pose.position.z += height_offset
             yield self.Location(maybe_pose)
-
-
-def find_placeable_pose(enviroment_link, enviroment_desig, robot_desig, arm, world,
-                        margin_cm=0.2, inner_margin_cm=0.2, object_desig=None):
-    # rospy.loginfo("Create a SemanticCostmapLocation instance")
-    location_desig = SemanticCostmapLocation(urdf_link_name=enviroment_link,
-                                             part_of=enviroment_desig,
-                                             for_object=object_desig, margin_cm=margin_cm,
-                                             inner_margin_cm=inner_margin_cm)
-
-    # rospy.loginfo("Iterate through the locations in the location designator")
-    empty_loc = []
-
-    for location in location_desig:
-
-        # Check if the location is clear of objects
-        if not is_location_clear(location.pose, world):
-            continue  # Skip this location if it's not clear
-
-        empty_loc.append(location.pose)
-
-    return empty_loc
-
-
-def is_location_clear(location_pose, world, clearance_radius=0.25):
-    """
-    Check if the specified location is clear of objects within the given clearance radius.
-    Implement the logic to check for nearby objects in the environment.
-    """
-    for obj in world.current_bullet_world.objects:
-        if obj.type != ObjectType.ENVIRONMENT and obj.type != ObjectType.ROBOT:
-            # Calculate the Euclidean distance between the object and the location
-            obj_position = obj.pose.position  # Assuming 'pose' attribute with 'position'
-            distance = ((obj_position.x - location_pose.position.x) ** 2 +
-                        (obj_position.y - location_pose.position.y) ** 2 +
-                        (obj_position.z - location_pose.position.z) ** 2) ** 0.6
-            if distance < clearance_radius:
-                return False  # An object is within the clearance radius
-    return True  # No objects are within the clearance radius

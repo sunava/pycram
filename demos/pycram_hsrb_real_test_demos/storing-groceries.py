@@ -1,14 +1,10 @@
-import numpy as np
-import rospy
 from pycram.designators.location_designator import find_placeable_pose
 
-from pycram.ros.robot_state_updater import RobotStateUpdater, KitchenStateUpdater
 from pycram.designators.action_designator import *
-from pycram.enums import ObjectType
-from pycram.process_module import real_robot, semi_real_robot
+from pycram.datastructures.enums import ObjectType
+from pycram.process_module import semi_real_robot
 import pycram.external_interfaces.giskard_new as giskardpy
 from pycram.external_interfaces.navigate import PoseNavigator
-from pycram.ros.robot_state_updater import RobotStateUpdater
 from pycram.ros.viz_marker_publisher import VizMarkerPublisher
 from pycram.designators.object_designator import *
 from pycram.bullet_world import BulletWorld, Object

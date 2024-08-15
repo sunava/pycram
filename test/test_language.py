@@ -1,16 +1,19 @@
 import threading
+import time
 import unittest
 from pycram.designators.action_designator import *
-from pycram.enums import ObjectType, State
+from pycram.designators.object_designator import BelieveObject
+from pycram.datastructures.enums import ObjectType, State
 from pycram.fluent import Fluent
 from pycram.plan_failures import PlanFailure
-from pycram.pose import Pose
-from pycram.language import Sequential, Language, Parallel, TryAll, TryInOrder, Monitor, Repeat, Code, RenderTree
+from pycram.datastructures.pose import Pose
+from pycram.language import Sequential, Language, Parallel, TryAll, TryInOrder, Monitor, Code
 from pycram.process_module import simulated_robot
-import test_bullet_world
+from bullet_world_testcase import BulletWorldTestCase
+from pycram.robot_description import RobotDescription
 
 
-class LanguageTestCase(test_bullet_world.BulletWorldTest):
+class LanguageTestCase(BulletWorldTestCase):
 
     def test_inheritance(self):
         act = NavigateAction([Pose()])
@@ -144,11 +147,11 @@ class LanguageTestCase(test_bullet_world.BulletWorldTest):
         with simulated_robot:
             plan.perform()
         self.assertEqual(self.robot.get_pose(), Pose([1, 1, 0]))
-        self.assertEqual(self.robot.get_joint_state("torso_lift_joint"), 0.3)
-        for joint, pose in robot_description.get_static_joint_chain("right", "park").items():
-            self.assertEqual(self.world.robot.get_joint_state(joint), pose)
-        for joint, pose in robot_description.get_static_joint_chain("left", "park").items():
-            self.assertEqual(self.world.robot.get_joint_state(joint), pose)
+        self.assertEqual(self.robot.get_joint_position("torso_lift_joint"), 0.3)
+        for joint, pose in RobotDescription.current_robot_description.get_static_joint_chain("right", "park").items():
+            self.assertEqual(self.world.robot.get_joint_position(joint), pose)
+        for joint, pose in RobotDescription.current_robot_description.get_static_joint_chain("left", "park").items():
+            self.assertEqual(self.world.robot.get_joint_position(joint), pose)
 
     def test_perform_code(self):
         def test_set(param):
@@ -166,7 +169,7 @@ class LanguageTestCase(test_bullet_world.BulletWorldTest):
     def test_perform_parallel(self):
 
         def check_thread_id(main_id):
-            self.assertNotEquals(main_id, threading.get_ident())
+            self.assertNotEqual(main_id, threading.get_ident())
         act = Code(check_thread_id, {"main_id": threading.get_ident()})
         act2 = Code(check_thread_id, {"main_id": threading.get_ident()})
         act3 = Code(check_thread_id, {"main_id": threading.get_ident()})

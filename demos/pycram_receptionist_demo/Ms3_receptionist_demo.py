@@ -1,7 +1,7 @@
 import rospy
 from pycram.designators.action_designator import *
 from demos.pycram_receptionist_demo.utils.new_misc import *
-from pycram.enums import ObjectType
+from pycram.datastructures.enums import ObjectType
 from pycram.process_module import real_robot
 import pycram.external_interfaces.giskard as giskardpy
 from pycram.ros.robot_state_updater import RobotStateUpdater
@@ -10,7 +10,7 @@ from pycram.designators.location_designator import *
 from pycram.designators.object_designator import *
 from pycram.bullet_world import BulletWorld, Object
 from std_msgs.msg import String, Bool
-from pycram.enums import ImageEnum as ImageEnum
+from pycram.datastructures.enums import ImageEnum as ImageEnum
 from pycram.utilities.robocup_utils import TextToSpeechPublisher, ImageSwitchPublisher, SoundRequestPublisher
 
 world = BulletWorld("DIRECT")

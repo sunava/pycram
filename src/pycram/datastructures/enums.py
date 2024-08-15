@@ -29,6 +29,9 @@ class JointType(Enum):
     SPHERICAL = 2
     PLANAR = 3
     FIXED = 4
+    UNKNOWN = 5
+    CONTINUOUS = 6
+    FLOATING = 7
 
 
 class Grasp(Enum):
@@ -67,12 +70,55 @@ class State(Enum):
     RUNNING = 2
     INTERRUPTED = 3
 
-class FilterConfig(Enum):
+
+class Shape(Enum):
     """
-    Declare existing filter methods.
-    Currently supported: Butterworth
+    Enum for visual shapes of objects
     """
-    butterworth = 1
+    SPHERE = 2
+    BOX = 3
+    CYLINDER = 4
+    MESH = 5
+    PLANE = 6
+    CAPSULE = 7
+
+
+class WorldMode(Enum):
+    """
+    Enum for the different modes of the world.
+    """
+    GUI = "GUI"
+    DIRECT = "DIRECT"
+
+
+class AxisIdentifier(Enum):
+    """
+    Enum for translating the axis name to a vector along that axis.
+    """
+    X = (1, 0, 0)
+    Y = (0, 1, 0)
+    Z = (0, 0, 1)
+
+
+class GripperState(Enum):
+    """
+    Enum for the different motions of the gripper.
+    """
+    OPEN = auto()
+    CLOSE = auto()
+
+
+class GripperType(Enum):
+    """
+    Enum for the different types of grippers.
+    """
+    PARALLEL = auto()
+    SUCTION = auto()
+    FINGER = auto()
+    HYDRAULIC = auto()
+    PNEUMATIC = auto()
+    CUSTOM = auto()
+
 
 class ImageEnum(Enum):
     HI = 0

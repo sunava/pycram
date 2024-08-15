@@ -139,9 +139,8 @@ class ManipulationGoalNotReached(ManipulationLowLevelFailure):
 
 class IKError(PlanFailure):
     """Thrown when no inverse kinematics solution could be found"""
-
-    def __init__(self, pose, base_frame):
-        self.message = "Position {} in frame '{}' is not reachable for end effector".format(pose, base_frame)
+    def __init__(self, pose, base_frame, tip_frame):
+        self.message = "Position {} in frame '{}' is not reachable for end effector: '{}'".format(pose, base_frame, tip_frame)
         super(IKError, self).__init__(self.message)
 
 
@@ -397,4 +396,14 @@ class SustainedFailure(PlanFailure):
     """"""
 
     def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+
+class ReasoningError(PlanFailure):
+    def __init__(*args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+
+class CollisionError(PlanFailure):
+    def __init__(*args, **kwargs):
         super().__init__(*args, **kwargs)

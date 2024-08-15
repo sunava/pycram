@@ -3,7 +3,7 @@ import rospy
 from geometry_msgs.msg import PointStamped
 
 from pycram.designators.object_designator import Pose, PoseStamped, HumanDescription
-from pycram.enums import ImageEnum
+from pycram.datastructures.enums import ImageEnum
 from pycram.helper import axis_angle_to_quaternion
 from std_msgs.msg import String, UInt16
 

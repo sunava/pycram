@@ -1,35 +1,43 @@
 # used for delayed evaluation of typing until python 3.11 becomes mainstream
 from __future__ import annotations
 
-import dataclasses
+from dataclasses import dataclass, field, fields
 from abc import ABC, abstractmethod
-from copy import copy
 from inspect import isgenerator, isgeneratorfunction
 
-from sqlalchemy.orm.session import Session
 import rospy
+try:
+    import owlready2
+except ImportError:
+    owlready2 = None
+    rospy.logwarn("owlready2 is not installed!")
 
-from .bullet_world import (Object as BulletWorldObject, BulletWorld)
-from .helper import GeneratorList, bcolors
+from sqlalchemy.orm.session import Session
+
+from .datastructures.world import World
+from .world_concepts.world_object import Object as WorldObject
+from .utils import GeneratorList, bcolors
 from threading import Lock
 from time import time
-from typing import List, Dict, Any, Type, Optional, Union, get_type_hints, Callable, Tuple, Iterable
+from typing_extensions import Type, List, Dict, Any, Optional, Union, get_type_hints, Callable, Iterable, TYPE_CHECKING, get_args, get_origin
 
 from .local_transformer import LocalTransformer
 from .language import Language
-from .pose import Pose
-from .robot_descriptions import robot_description
+from .datastructures.pose import Pose
+from .robot_description import RobotDescription
+from .datastructures.enums import ObjectType
 
 import logging
 
 from .orm.action_designator import (Action as ORMAction)
 from .orm.object_designator import (Object as ORMObjectDesignator)
-from .orm.motion_designator import (Motion as ORMMotionDesignator)
+from .orm.motion_designator import Motion as ORMMotionDesignator
 
-from .orm.base import Quaternion, Position, Base, RobotState, ProcessMetaData
-from .task import with_tree
+from .orm.base import RobotState, ProcessMetaData
+from .tasktree import with_tree
 
-from .external_interfaces import giskard
+if TYPE_CHECKING:
+    from .ontology.ontology_common import OntologyConceptHolder
 
 
 class DesignatorError(Exception):
@@ -63,7 +71,7 @@ class Designator(ABC):
     Implementation of designators. DEPRECTAED SINCE DESIGNATOR DESCRIPTIONS ARE USED AS BASE CLASS
 
     Designators are objects containing sequences of key-value pairs. They can be resolved which means to generate real
-    parameters for executing actions from these pairs of key and value.
+    parameters for executing performables from these pairs of key and value.
 
     :ivar timestamp: The timestamp of creation of reference or None if still not referencing an object.
     """
@@ -75,11 +83,11 @@ class Designator(ABC):
     argument and return a list of solutions. A solution can also be a generator. 
     """
 
-    def __init__(self, description: Type[DesignatorDescription], parent: Optional[Designator] = None):
+    def __init__(self, description: DesignatorDescription, parent: Optional[Designator] = None):
         """Create a new desginator.
 
         Arguments:
-        :param properties: A list of tuples (key-value pairs) describing this designator.
+        :param description: A list of tuples (key-value pairs) describing this designator.
         :param parent: The parent to equate with (default is None).
         """
         self._mutex: Lock = Lock()
@@ -90,7 +98,7 @@ class Designator(ABC):
         self._solutions = None
         self._index: int = 0
         self.timestamp = None
-        self._description: Type[DesignatorDescription] = description
+        self._description: DesignatorDescription = description
 
         if parent is not None:
             self.equate(parent)
@@ -318,18 +326,20 @@ class Designator(ABC):
 
 class DesignatorDescription(ABC):
     """
-    :ivar resolve: The resolver function to use for this designator, defaults to self.ground
+    :ivar resolve: The specialized_designators function to use for this designator, defaults to self.ground
     """
 
-    def __init__(self, resolver: Optional[Callable] = None):
+    def __init__(self, resolver: Optional[Callable] = None, ontology_concept_holders: Optional[List[OntologyConceptHolder]] = None):
         """
         Create a Designator description.
 
         :param resolver: The grounding method used for the description. The grounding method creates a location instance that matches the description.
+        :param ontology_concept_holders: A list of holders of ontology concepts that the designator is categorized as or associated with
         """
 
         if resolver is None:
             self.resolve = self.ground
+        self.ontology_concept_holders = [] if ontology_concept_holders is None else ontology_concept_holders
 
     def make_dictionary(self, properties: List[str]):
         """
@@ -361,110 +371,14 @@ class DesignatorDescription(ABC):
         """
         return list(self.__dict__.keys())
 
-    def copy(self) -> Type[DesignatorDescription]:
+    def copy(self) -> DesignatorDescription:
         return self
 
-
-class MotionDesignatorDescription(DesignatorDescription, Language):
-    """
-    Parent class of motion designator descriptions.
-    """
-
-    @dataclasses.dataclass
-    class Motion:
+    def get_default_ontology_concept(self) -> owlready2.Thing | None:
         """
-        Resolved motion designator which can be performed
+        Returns the first element of ontology_concept_holders if there is, else None
         """
-        cmd: str
-        """
-        Command of this motion designator, is used to match process modules to motion designator. Cmd is inherited by 
-        every motion designator.
-        """
-
-        @with_tree
-        def perform(self):
-            """
-            Passes this designator to the process module for execution.
-
-            :return: The return value of the process module if there is any.
-            """
-            raise NotImplementedError()
-            # return ProcessModule.perform(self)
-
-        def to_sql(self) -> ORMMotionDesignator:
-            """
-            Create an ORM object that corresponds to this description.
-
-            :return: The created ORM object.
-            """
-            return ORMMotionDesignator()
-
-        def insert(self, session: Session, *args, **kwargs) -> ORMMotionDesignator:
-            """
-            Add and commit this and all related objects to the session.
-            Auto-Incrementing primary keys and foreign keys have to be filled by this method.
-
-            :param session: Session with a database that is used to add and commit the objects
-            :return: The completely instanced ORM motion.
-            """
-            metadata = ProcessMetaData().insert(session)
-
-            motion = self.to_sql()
-            motion.process_metadata_id = metadata.id
-
-            return motion
-
-    def interrupt(self):
-        if giskard.giskard_wrapper:
-            giskard.giskard_wrapper.interrupt()
-
-    def ground(self) -> Motion:
-        """Fill all missing parameters and pass the designator to the process module. """
-        raise NotImplementedError(f"{type(self)}.ground() is not implemented.")
-
-    def __init__(self, resolver=None):
-        """
-        Creates a new motion designator description
-
-        :param resolver: An alternative resolver which overrides self.resolve()
-        """
-        super().__init__(resolver)
-
-    def get_slots(self):
-        """
-        Returns a list of all slots of this description. Can be used for inspecting
-        different descriptions and debugging.
-
-        :return: A list of all slots.
-        """
-        return list(self.__dict__.keys()).remove('cmd')
-
-    def _check_properties(self, desig: str, exclude: List[str] = []) -> None:
-        """
-        Checks the properties of this description. It will be checked if any attribute is
-        None and if any attribute has to wrong type according to the type hints in
-        the description class.
-        It is possible to provide a list of attributes which should not be checked.
-
-        :param desig: The current type of designator, will be used when raising an
-                        Exception as output.
-        :param exclude: A list of properties which should not be checked.
-        """
-        right_types = get_type_hints(self.Motion)
-        attributes = self.__dict__.copy()
-        del attributes["resolve"]
-        missing = []
-        wrong_type = {}
-        current_type = {}
-        for k in attributes.keys():
-            if attributes[k] == None and not attributes[k] in exclude:
-                missing.append(k)
-            elif type(attributes[k]) != right_types[k] and not attributes[k] in exclude:
-                wrong_type[k] = right_types[k]
-                current_type[k] = type(attributes[k])
-        if missing != [] or wrong_type != {}:
-            raise ResolutionError(missing, wrong_type, current_type, desig)
-
+        return self.ontology_concept_holders[0].ontology_concept if self.ontology_concept_holders else None
 
 class ActionDesignatorDescription(DesignatorDescription, Language):
     """
@@ -472,29 +386,29 @@ class ActionDesignatorDescription(DesignatorDescription, Language):
     Descriptions hold possible parameter ranges for action designators.
     """
 
-    @dataclasses.dataclass
+    @dataclass
     class Action:
         """
         The performable designator with a single element for each list of possible parameter.
         """
-        robot_position: Pose = dataclasses.field(init=False)
+        robot_position: Pose = field(init=False)
         """
         The position of the robot at the start of the action.
         """
-        robot_torso_height: float = dataclasses.field(init=False)
+        robot_torso_height: float = field(init=False)
         """
         The torso height of the robot at the start of the action.
         """
 
-        robot_type: str = dataclasses.field(init=False)
+        robot_type: ObjectType = field(init=False)
         """
         The type of the robot at the start of the action.
         """
 
         def __post_init__(self):
-            self.robot_position = BulletWorld.robot.get_pose()
-            self.robot_torso_height = BulletWorld.robot.get_joint_state(robot_description.torso_joint)
-            self.robot_type = BulletWorld.robot.type
+            self.robot_position = World.robot.get_pose()
+            self.robot_torso_height = World.robot.get_joint_position(RobotDescription.current_robot_description.torso_joint)
+            self.robot_type = World.robot.obj_type
 
         @with_tree
         def perform(self) -> Any:
@@ -528,29 +442,52 @@ class ActionDesignatorDescription(DesignatorDescription, Language):
             metadata = ProcessMetaData().insert(session)
 
             # create robot-state object
-            robot_state = RobotState(self.robot_torso_height, self.robot_type, pose.id)
-            robot_state.process_metadata_id = metadata.id
+            robot_state = RobotState(self.robot_torso_height, self.robot_type)
+            robot_state.pose = pose
+            robot_state.process_metadata = metadata
             session.add(robot_state)
-            session.commit()
 
             # create action
             action = self.to_sql()
-            action.process_metadata_id = metadata.id
-            action.robot_state_id = robot_state.id
+            action.process_metadata = metadata
+            action.robot_state = robot_state
 
             return action
 
-    def __init__(self, resolver=None):
-        super().__init__(resolver)
+    def __init__(self, resolver=None, ontology_concept_holders: Optional[List[OntologyConceptHolder]] = None):
+        """
+        Base of all action designator descriptions.
+
+        :param resolver: An alternative resolver that returns an action designator
+        :param ontology_concept_holders: A list of ontology concepts that the action is categorized as or associated with
+        """
+        super().__init__(resolver, ontology_concept_holders)
         Language.__init__(self)
+        from .ontology.ontology import OntologyManager
+        self.soma = OntologyManager().soma
 
     def ground(self) -> Action:
         """Fill all missing parameters and chose plan to execute. """
         raise NotImplementedError(f"{type(self)}.ground() is not implemented.")
 
+    def init_ontology_concepts(self, ontology_concept_classes: Dict[str, Type[owlready2.Thing]]):
+        """
+        Initialize the ontology concept holders for this action designator
+
+        :param ontology_concept_classes: The ontology concept classes that the action is categorized as or associated with
+        :param ontology_concept_name: The name of the ontology concept instance to be created
+        """
+        from .ontology.ontology_common import OntologyConceptHolderStore, OntologyConceptHolder
+        if not self.ontology_concept_holders:
+            for concept_name, concept_class in ontology_concept_classes.items():
+                if concept_class:
+                    existing_holders = OntologyConceptHolderStore().get_ontology_concept_holders_by_class(concept_class)
+                    self.ontology_concept_holders.extend(existing_holders if existing_holders \
+                                                         else [OntologyConceptHolder(concept_class(concept_name))])
+
     def __iter__(self):
         """
-        Iterate through all possible actions fitting this description
+        Iterate through all possible performables fitting this description
 
         :yield: A resolved action designator
         """
@@ -562,7 +499,7 @@ class LocationDesignatorDescription(DesignatorDescription):
     Parent class of location designator descriptions.
     """
 
-    @dataclasses.dataclass
+    @dataclass
     class Location:
         """
         Resolved location that represents a specific point in the world which satisfies the constraints of the location
@@ -573,8 +510,8 @@ class LocationDesignatorDescription(DesignatorDescription):
         The resolved pose of the location designator. Pose is inherited by all location designator.
         """
 
-    def __init__(self, resolver=None):
-        super().__init__(resolver)
+    def __init__(self, resolver=None, ontology_concept_holders: Optional[List[owlready2.Thing]] = None):
+        super().__init__(resolver, ontology_concept_holders)
 
     def ground(self) -> Location:
         """
@@ -589,10 +526,9 @@ SPECIAL_KNOWLEDGE = {
         [("top", [-0.08, 0, 0])],
     'whisk':
         [("top", [-0.08, 0, 0])],
-    'cereal':
-        [("top", [0, 0, 0.08])],
     'bowl':
-        [("top", [0, 0.04, 0])]
+        [("front", [1.0, 2.0, 3.0]),
+         ("key2", [4.0, 5.0, 6.0])]
 }
 
 
@@ -602,7 +538,7 @@ class ObjectDesignatorDescription(DesignatorDescription):
     Descriptions hold possible parameter ranges for object designators.
     """
 
-    @dataclasses.dataclass
+    @dataclass
     class Object:
         """
         A single element that fits the description.
@@ -613,25 +549,25 @@ class ObjectDesignatorDescription(DesignatorDescription):
         Name of the object
         """
 
-        type: str
+        obj_type: ObjectType
         """
         Type of the object
         """
 
-        bullet_world_object: Optional[BulletWorldObject]
+        world_object: Optional[WorldObject]
         """
-        Reference to the BulletWorld object
+        Reference to the World object
         """
 
-        _pose: Optional[Callable] = dataclasses.field(init=False)
+        _pose: Optional[Callable] = field(init=False)
         """
         A callable returning the pose of this object. The _pose member is used overwritten for data copies
-        which will not update when the original bullet_world_object is moved.
+        which will not update when the original world_object is moved.
         """
 
         def __post_init__(self):
-            if self.bullet_world_object:
-                self._pose = self.bullet_world_object.get_pose
+            if self.world_object:
+                self._pose = self.world_object.get_pose
 
         def to_sql(self) -> ORMObjectDesignator:
             """
@@ -639,7 +575,7 @@ class ObjectDesignatorDescription(DesignatorDescription):
 
             :return: The created ORM object.
             """
-            return ORMObjectDesignator(self.type, self.name)
+            return ORMObjectDesignator(self.obj_type, self.name)
 
         def insert(self, session: Session) -> ORMObjectDesignator:
             """
@@ -650,25 +586,22 @@ class ObjectDesignatorDescription(DesignatorDescription):
             :return: The completely instanced ORM object
             """
             metadata = ProcessMetaData().insert(session)
+            pose = self.pose.insert(session)
 
             # create object orm designator
             obj = self.to_sql()
-            obj.process_metadata_id = metadata.id
-
-            pose = self.pose.insert(session)
-            obj.pose_id = pose.id
-
+            obj.process_metadata = metadata
+            obj.pose = pose
             session.add(obj)
-            session.commit()
             return obj
 
-        def data_copy(self) -> 'ObjectDesignatorDescription.Object':
+        def frozen_copy(self) -> 'ObjectDesignatorDescription.Object':
             """
-            :return: A copy containing only the fields of this class. The BulletWorldObject attached to this pycram
-            object is not copied. The _pose gets set to a method that statically returns the pose of the object when
-            this method was called.
+            Returns a copy of this designator containing only the fields.
+
+            :return: A copy containing only the fields of this class. The WorldObject attached to this pycram object is not copied. The _pose gets set to a method that statically returns the pose of the object when this method was called.
             """
-            result = ObjectDesignatorDescription.Object(self.name, self.type, None)
+            result = ObjectDesignatorDescription.Object(self.name, self.obj_type, None)
             # get current object pose and set resulting pose to always be that
             pose = self.pose
             result.pose = lambda: pose
@@ -695,7 +628,7 @@ class ObjectDesignatorDescription(DesignatorDescription):
 
         def __repr__(self):
             return self.__class__.__qualname__ + f"(" + ', '.join(
-                [f"{f.name}={self.__getattribute__(f.name)}" for f in dataclasses.fields(self)] + [
+                [f"{f.name}={self.__getattribute__(f.name)}" for f in fields(self)] + [
                     f"pose={self.pose}"]) + ')'
 
         def special_knowledge_adjustment_pose(self, grasp: str, pose: Pose) -> Pose:
@@ -707,11 +640,11 @@ class ObjectDesignatorDescription(DesignatorDescription):
             :return: The adjusted grasp pose
             """
             lt = LocalTransformer()
-            pose_in_object = lt.transform_to_object_frame(pose, self.bullet_world_object)
+            pose_in_object = lt.transform_pose(pose, self.world_object.tf_frame)
 
             special_knowledge = []  # Initialize as an empty list
-            if self.type in SPECIAL_KNOWLEDGE:
-                special_knowledge = SPECIAL_KNOWLEDGE[self.type]
+            if self.obj_type in SPECIAL_KNOWLEDGE:
+                special_knowledge = SPECIAL_KNOWLEDGE[self.obj_type]
 
             for key, value in special_knowledge:
                 if key == grasp:
@@ -719,26 +652,27 @@ class ObjectDesignatorDescription(DesignatorDescription):
                     pose_in_object.pose.position.x += value[0]
                     pose_in_object.pose.position.y += value[1]
                     pose_in_object.pose.position.z += value[2]
-                    rospy.loginfo("Adjusted target pose based on special knowledge for grasp: " + grasp)
+                    rospy.loginfo("Adjusted target pose based on special knowledge for grasp: %s", grasp)
                     return pose_in_object
             return pose
 
-    def __init__(self, names: Optional[List[str]] = None, types: Optional[List[str]] = None,
-                 resolver: Optional[Callable] = None):
+    def __init__(self, names: Optional[List[str]] = None, types: Optional[List[ObjectType]] = None,
+                 resolver: Optional[Callable] = None, ontology_concept_holders: Optional[List[owlready2.Thing]] = None):
         """
         Base of all object designator descriptions. Every object designator has the name and type of the object.
 
         :param names: A list of names that could describe the object
         :param types: A list of types that could represent the object
-        :param resolver: An alternative resolver that returns an object designator for the list of names and types
+        :param resolver: An alternative specialized_designators that returns an object designator for the list of names and types
+        :param ontology_concept_holders: A list of ontology concepts that the object is categorized as or associated with
         """
-        super().__init__(resolver)
-        self.types: Optional[List[str]] = types
+        super().__init__(resolver, ontology_concept_holders)
+        self.types: Optional[List[ObjectType]] = types
         self.names: Optional[List[str]] = names
 
     def ground(self) -> Union[Object, bool]:
         """
-        Return the first object from the bullet world that fits the description.
+        Return the first object from the world that fits the description.
 
         :return: A resolved object designator
         """
@@ -750,15 +684,81 @@ class ObjectDesignatorDescription(DesignatorDescription):
 
         :yield: A resolved object designator
         """
-        # for every bullet world object
-        for obj in BulletWorld.current_bullet_world.objects:
+        # for every world object
+        for obj in World.current_world.objects:
 
             # skip if name does not match specification
             if self.names and obj.name not in self.names:
                 continue
 
             # skip if type does not match specification
-            if self.types and obj.type not in self.types:
+            if self.types and obj.obj_type not in self.types:
                 continue
 
-            yield self.Object(obj.name, obj.type, obj)
+            yield self.Object(obj.name, obj.obj_type, obj)
+
+@dataclass
+class BaseMotion(ABC):
+
+    @abstractmethod
+    def perform(self):
+        """
+        Passes this designator to the process module for execution. Will be overwritten by each motion.
+        """
+        pass
+        # return ProcessModule.perform(self)
+
+    @abstractmethod
+    def to_sql(self) -> ORMMotionDesignator:
+        """
+        Create an ORM object that corresponds to this description. Will be overwritten by each motion.
+
+        :return: The created ORM object.
+        """
+        return ORMMotionDesignator()
+
+    @abstractmethod
+    def insert(self, session: Session, *args, **kwargs) -> ORMMotionDesignator:
+        """
+        Add and commit this and all related objects to the session.
+        Auto-Incrementing primary keys and foreign keys have to be filled by this method.
+
+        :param session: Session with a database that is used to add and commit the objects
+        :param args: Possible extra arguments
+        :param kwargs: Possible extra keyword arguments
+        :return: The completely instanced ORM motion.
+        """
+        metadata = ProcessMetaData().insert(session)
+
+        motion = self.to_sql()
+        motion.process_metadata = metadata
+
+        return motion
+
+    def __post_init__(self):
+        """
+        Checks if types are missing or wrong
+        """
+        right_types = get_type_hints(self)
+        attributes = self.__dict__.copy()
+
+        missing = []
+        wrong_type = {}
+        current_type = {}
+
+        for k in attributes.keys():
+            attribute = attributes[k]
+            attribute_type = type(attributes[k])
+            right_type = right_types[k]
+            types = get_args(right_type)
+            if attribute is None:
+                if not any([x is type(None) for x in get_args(right_type)]):
+                    missing.append(k)
+            elif attribute_type is not right_type:
+                if attribute_type not in types:
+                    if attribute_type not in [get_origin(x) for x in types if x is not type(None)]:
+                        wrong_type[k] = right_types[k]
+                        current_type[k] = attribute_type
+        if missing != [] or wrong_type != {}:
+            raise ResolutionError(missing, wrong_type, current_type, self.__class__)
+

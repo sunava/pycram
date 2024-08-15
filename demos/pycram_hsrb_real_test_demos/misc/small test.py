@@ -1,11 +1,7 @@
-import time
-
-import geometry_msgs.msg
-
 from pycram.designators.object_designator import *
-from pycram.pose import Pose
+from pycram.datastructures.pose import Pose
 from pycram.bullet_world import BulletWorld, Object
-from pycram.process_module import simulated_robot, with_simulated_robot, real_robot
+from pycram.process_module import real_robot
 from pycram.ros.viz_marker_publisher import VizMarkerPublisher
 from pycram.external_interfaces import giskard_new as giskard
 world = BulletWorld()

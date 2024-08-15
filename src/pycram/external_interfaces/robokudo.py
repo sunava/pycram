@@ -1,14 +1,11 @@
 import rospy
 import actionlib
-from tmc_msgs.msg import Voice
 
 from ..designator import ObjectDesignatorDescription
-from ..pose import Pose
-from ..local_transformer import LocalTransformer
-from ..bullet_world import BulletWorld
-from ..enums import ObjectType
+from pycram.datastructures.pose import Pose
+from pycram.datastructures.enums import ObjectType
 from typing import Any
-from geometry_msgs.msg import PoseStamped, PointStamped
+from geometry_msgs.msg import PointStamped
 
 is_init = False
 
@@ -47,7 +44,7 @@ def make_query_goal_msg(obj_desc: ObjectDesignatorDescription) -> 'QueryGoal':
     :param obj_desc: The PyCRAM object designator description that should be converted
     :return: The RoboKudo QueryGoal for the given object designator description
     """
-    from robokudo_msgs.msg import QueryAction, QueryGoal, QueryResult
+    from robokudo_msgs.msg import QueryGoal
 
     goal_msg = QueryGoal()
     goal_msg.obj.uid = str(id(obj_desc))
@@ -69,7 +66,7 @@ def query(object_desc: ObjectDesignatorDescription) -> ObjectDesignatorDescripti
     :return: An object designator for the found object, if there was an object that fitted the description.
     """
     init_robokudo_interface()
-    from robokudo_msgs.msg import QueryAction, QueryGoal, QueryResult
+    from robokudo_msgs.msg import QueryAction
 
     global query_result
 
@@ -117,7 +114,7 @@ def queryEmpty(object_desc: ObjectDesignatorDescription) -> ObjectDesignatorDesc
     :return: An object designator for the found object, if there was an object that fitted the description.
     """
     init_robokudo_interface()
-    from robokudo_msgs.msg import QueryAction, QueryGoal, QueryResult
+    from robokudo_msgs.msg import QueryAction, QueryGoal
 
     global query_result
 
@@ -154,7 +151,7 @@ def queryRegion(region: str) -> ObjectDesignatorDescription.Object:
     :return: An object designator for the found object, if there was an object that fitted the description.
     """
     init_robokudo_interface()
-    from robokudo_msgs.msg import QueryAction, QueryGoal, QueryResult
+    from robokudo_msgs.msg import QueryAction, QueryGoal
 
     global query_result
 
@@ -187,7 +184,7 @@ def queryHuman() -> Any:
     topic /human_pose
     """
     init_robokudo_interface()
-    from robokudo_msgs.msg import QueryAction, QueryGoal, QueryResult
+    from robokudo_msgs.msg import QueryAction, QueryGoal
 
     global human_bool
     global query_result
@@ -348,7 +345,7 @@ def query_waving_human() -> ObjectDesignatorDescription.Object:
     :return: An object designator for the found object, if there was an object that fitted the description.
     """
     #init_robokudo_interface()
-    from robokudo_msgs.msg import QueryAction, QueryGoal, QueryResult
+    from robokudo_msgs.msg import QueryAction, QueryGoal
 
     global query_result
 

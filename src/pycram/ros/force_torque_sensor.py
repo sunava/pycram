@@ -11,7 +11,7 @@ from std_msgs.msg import Header
 
 from .custom_filter import Butterworth
 from ..bullet_world import BulletWorld
-from ..enums import FilterConfig
+from pycram.datastructures.enums import FilterConfig
 
 
 class ForceTorqueSensorSimulated:

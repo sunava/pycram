@@ -6,11 +6,7 @@ from knowledge_msgs.srv import IsKnown, ObjectPose
 import rospy
 import rosservice
 
-
-from typing import Dict, List, Union
-
-interf = None
-is_init = False
+from typing_extensions import Dict, List, Union
 
 SCRIPT_DIR = os.path.abspath(os.path.dirname(__file__))
 sys.path.append(os.path.join(SCRIPT_DIR, os.pardir, os.pardir, "neem-interface", "src"))

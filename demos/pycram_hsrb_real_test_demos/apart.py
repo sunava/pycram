@@ -11,7 +11,7 @@ from pycram.designators.location_designator import find_placeable_pose
 from pycram.language import Code
 
 from pycram.ros.robot_state_updater import RobotStateUpdater, KitchenStateUpdater
-from pycram.enums import ObjectType, ImageEnum
+from pycram.datastructures.enums import ObjectType, ImageEnum
 from pycram.process_module import real_robot
 import pycram.external_interfaces.giskard_new as giskardpy
 # import pycram.external_interfaces.giskard as giskardpy_old

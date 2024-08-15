@@ -1,6 +1,5 @@
 import dataclasses
-import time
-from typing import Optional, List, Tuple
+from typing import Optional, List
 
 import jpt
 import numpy as np
@@ -9,10 +8,9 @@ import tf
 
 import pycram.designators.location_designator
 import pycram.task
-from ...costmaps import OccupancyCostmap, plot_grid
-from ...plan_failures import PlanFailure
-from ...pose import Pose
-from pycram.bullet_world import BulletWorld, Object
+from ...costmaps import OccupancyCostmap
+from pycram.datastructures.pose import Pose
+from pycram.bullet_world import Object
 
 
 class JPTCostmapLocation(pycram.designators.location_designator.CostmapLocation):

@@ -1,23 +1,14 @@
-import numpy as np
-import rospy
-
-from demos.pycram_storing_groceries_demo.utils.misc import *
-from pycram.designators.location_designator import find_placeable_pose
-
-from pycram.ros.robot_state_updater import RobotStateUpdater, KitchenStateUpdater
+from pycram.ros.robot_state_updater import KitchenStateUpdater
 from pycram.designators.action_designator import *
-from pycram.enums import ObjectType
+from pycram.datastructures.enums import ObjectType
 from pycram.process_module import real_robot
 import pycram.external_interfaces.giskard as giskardpy
-import pycram.external_interfaces.robokudo as robokudo
 from pycram.external_interfaces.navigate import PoseNavigator
 from pycram.ros.robot_state_updater import RobotStateUpdater
 from pycram.ros.viz_marker_publisher import VizMarkerPublisher
 from pycram.designators.object_designator import *
 from pycram.bullet_world import BulletWorld, Object
 from pycram.utilities.robocup_utils import TextToSpeechPublisher, ImageSwitchPublisher, StartSignalWaiter
-from pycram.designator import LocationDesignatorDescription
-import random
 
 world = BulletWorld()
 v = VizMarkerPublisher()

@@ -1,6 +1,6 @@
 from pycram.process_module import simulated_robot, with_simulated_robot
 from pycram.designators.action_designator import *
-from pycram.enums import Arms
+from pycram.datastructures.enums import Arms
 from pycram.designators.object_designator import *
 from pycram.designators.object_designator import BelieveObject
 import pycram.helper as helper

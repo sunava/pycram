@@ -1,13 +1,13 @@
 from pycram.process_module import simulated_robot, with_simulated_robot, real_robot, with_real_robot
 from pycram.designators.action_designator import *
-from pycram.enums import Arms
+from pycram.datastructures.enums import Arms
 from pycram.designators.object_designator import *
 from pycram.designators.object_designator import BelieveObject
 import pycram.helper as helper
 import pycram.external_interfaces.giskard as giskardpy
 
 from pycram.ros.viz_marker_publisher import VizMarkerPublisher
-from pycram.enums import ObjectType
+from pycram.datastructures.enums import ObjectType
 from pycram.language import macros, par
 import sys
 world = BulletWorld("DIRECT")

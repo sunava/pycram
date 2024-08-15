@@ -1,24 +1,16 @@
-import giskardpy
-import rospy
-
 from pycram.external_interfaces.navigate import PoseNavigator
-from pycram.pose import Pose
+from pycram.datastructures.pose import Pose
 from pycram.utilities.robocup_utils import StartSignalWaiter
-import time
 
-import actionlib
 import rospy
-from geometry_msgs.msg import PointStamped, Twist
-from robokudo_msgs.msg import QueryAction, QueryGoal
+from geometry_msgs.msg import Twist
 
 import pycram.external_interfaces.giskard_new as giskardpy
 from pycram.designators.action_designator import fts
-from pycram.enums import ImageEnum
-from pycram.fluent import Fluent
+from pycram.datastructures.enums import ImageEnum
 from pycram.language import Monitor, Code
-from pycram.plan_failures import SensorMonitoringCondition, HumanNotFoundCondition
-from pycram.process_module import real_robot
-from pycram.utilities.robocup_utils import TextToSpeechPublisher, ImageSwitchPublisher, HSRBMoveGripperReal, pakerino
+from pycram.plan_failures import SensorMonitoringCondition
+from pycram.utilities.robocup_utils import TextToSpeechPublisher, ImageSwitchPublisher, HSRBMoveGripperReal
 from dynamic_reconfigure.msg import Config, BoolParameter, IntParameter, StrParameter, DoubleParameter, GroupState
 from dynamic_reconfigure.srv import Reconfigure, ReconfigureRequest
 

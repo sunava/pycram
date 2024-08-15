@@ -2,7 +2,7 @@
 from pycram.bullet_world import BulletWorld, Object
 from pycram.designator import ObjectDesignatorDescription
 from pycram.local_transformer import LocalTransformer
-from pycram.pose import Pose
+from pycram.datastructures.pose import Pose
 import pycram.external_interfaces.giskard_new as giskardpy
 import pycram.external_interfaces.navigate as navi
 from pycram.ros.robot_state_updater import RobotStateUpdater

@@ -7,7 +7,7 @@ from pycram.designators.action_designator import *
 import pycram.external_interfaces.giskard as giskardpy
 from pycram.ros.viz_marker_publisher import VizMarkerPublisher
 from pycram.designators.object_designator import *
-from pycram.enums import ObjectType
+from pycram.datastructures.enums import ObjectType
 from pycram.ros.robot_state_updater import RobotStateUpdater
 
 # worked on 27.12

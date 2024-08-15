@@ -8,10 +8,11 @@ import pycram.orm.utils
 from pycram.designators.action_designator import *
 from pycram.designators.location_designator import *
 from pycram.process_module import simulated_robot
-from pycram.enums import Arms, ObjectType
-from pycram.task import with_tree
-import pycram.task
-from pycram.bullet_world import Object
+from pycram.datastructures.enums import Arms, ObjectType, WorldMode
+from pycram.tasktree import with_tree
+import pycram.tasktree
+from pycram.worlds.bullet_world import BulletWorld
+from pycram.world_concepts.world_object import Object
 from pycram.designators.object_designator import *
 from dataclasses import dataclass, field
 
@@ -27,7 +28,7 @@ class Configuration:
 
 class ExamplePlans:
     def __init__(self):
-        self.world = BulletWorld("DIRECT")
+        self.world = BulletWorld(WorldMode.DIRECT)
         self.pr2 = Object("pr2", ObjectType.ROBOT, "pr2.urdf")
         self.kitchen = Object("kitchen", ObjectType.ENVIRONMENT, "kitchen.urdf")
         self.milk = Object("milk", ObjectType.MILK, "milk.stl", pose=Pose([1.3, 1, 0.9]))
@@ -40,7 +41,7 @@ class ExamplePlans:
     @with_tree
     def pick_and_place_plan(self):
         with simulated_robot:
-            ParkArmsAction.Action(Arms.BOTH).perform()
+            ParkArmsActionPerformable(Arms.BOTH).perform()
             MoveTorsoAction([0.3]).resolve().perform()
             pickup_pose = CostmapLocation(target=self.cereal_desig.resolve(), reachable_for=self.robot_desig).resolve()
             pickup_arm = pickup_pose.reachable_arms[0]
@@ -59,7 +60,7 @@ class ExamplePlans:
 
             PlaceAction(self.cereal_desig, target_locations=[place_island.pose], arms=[pickup_arm]).resolve().perform()
 
-            ParkArmsAction.Action(Arms.BOTH).perform()
+            ParkArmsActionPerformable(Arms.BOTH).perform()
 
 
 class MergerTestCaseBase(unittest.TestCase):
@@ -68,7 +69,7 @@ class MergerTestCaseBase(unittest.TestCase):
             raise AssertionError("Config File not found:{}".format(in_path))
 
 
-# Note: Can't pp.py full functionality
+# Note: Can't test full functionality
 
 class MergeDatabaseTest(unittest.TestCase):
     source_engine: sqlalchemy.engine.Engine
@@ -92,19 +93,17 @@ class MergeDatabaseTest(unittest.TestCase):
         cls.source_engine = sqlalchemy.create_engine("sqlite+pysqlite:///:memory:", echo=False)
         cls.source_session_maker = sqlalchemy.orm.sessionmaker(bind=cls.source_engine)
         cls.destination_session_maker = sqlalchemy.orm.sessionmaker(bind=cls.destination_engine)
-        source_session = cls.source_session_maker()
         destination_session = cls.destination_session_maker()
-        pycram.orm.base.Base.metadata.create_all(cls.source_engine)
         pycram.orm.base.Base.metadata.create_all(cls.destination_engine)
-        source_session.commit()
         destination_session.commit()
-        source_session.close()
         destination_session.close()
         cls.numbers_of_example_runs = 3
 
     def setUp(self) -> None:
         super().setUp()
         source_session = self.source_session_maker()
+        # If there is no session (connection to the memory database) it resets thus we need to define this here
+        pycram.orm.base.Base.metadata.create_all(self.source_engine)
         example_plans = ExamplePlans()
         for i in range(self.numbers_of_example_runs):
             try:
@@ -151,7 +150,7 @@ class MergeDatabaseTest(unittest.TestCase):
             self.assertEqual(destination_content[key], destination_content[key].union(source_content[key]))
 
     def test_migrate_neems(self):
-        pycram.orm.utils.migrate_neems(self.source_session_maker,self.destination_session_maker)
+        pycram.orm.utils.migrate_neems(self.source_session_maker, self.destination_session_maker)
         destination_content = dict()
         source_content = dict()
         with self.destination_session_maker() as session:

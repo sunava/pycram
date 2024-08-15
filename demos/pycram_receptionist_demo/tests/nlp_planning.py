@@ -2,7 +2,7 @@ import rospy
 
 from pycram.designators.action_designator import *
 from demos.pycram_receptionist_demo.utils.new_misc import *
-from pycram.enums import ObjectType
+from pycram.datastructures.enums import ObjectType
 from pycram.process_module import real_robot
 import pycram.external_interfaces.giskard as giskardpy
 from pycram.ros.robot_state_updater import RobotStateUpdater

@@ -1,7 +1,7 @@
 
 from pycram.ros.robot_state_updater import RobotStateUpdater, KitchenStateUpdater
 
-from pycram.enums import ObjectType
+from pycram.datastructures.enums import ObjectType
 
 from pycram.external_interfaces.navigate import PoseNavigator
 from pycram.ros.robot_state_updater import RobotStateUpdater

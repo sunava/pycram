@@ -1,20 +1,20 @@
 import rospy
-import threading
 import atexit
 import tf
 import time 
 
 from geometry_msgs.msg import TransformStamped
 from sensor_msgs.msg import JointState
-from pycram.bullet_world import BulletWorld
-from pycram.robot_descriptions import robot_description
-from pycram.pose import Transform, Pose
+from ..datastructures.world import World
+from ..robot_descriptions import robot_description
+from ..datastructures.pose import Pose
 
 
 class RobotStateUpdater:
     """
-    Updates the robot in the Bullet World with information of the real robot published to ROS topics.
+    Updates the robot in the World with information of the real robot published to ROS topics.
     Infos used to update the robot are:
+
         * The current pose of the robot
         * The current joint state of the robot
     """
@@ -31,10 +31,8 @@ class RobotStateUpdater:
         self.tf_topic = tf_topic
         self.joint_state_topic = joint_state_topic
 
-        self.tf_timer = rospy.Timer(rospy.Duration(0.1), self._subscribe_tf)
-        self.joint_state_timer = rospy.Timer(rospy.Duration(0.1), self._subscribe_joint_state)
-
-        
+        self.tf_timer = rospy.Timer(rospy.Duration.from_sec(0.1), self._subscribe_tf)
+        self.joint_state_timer = rospy.Timer(rospy.Duration.from_sec(0.1), self._subscribe_joint_state)
 
         atexit.register(self._stop_subscription)
 
@@ -44,17 +42,14 @@ class RobotStateUpdater:
 
         :param msg: TransformStamped message published to the topic
         """
-        #robot_description.name + "/"
-        trans, rot = self.tf_listener.lookupTransform("/map",
-                                                      robot_description.base_frame,
-                                                        rospy.Time(0))
-        BulletWorld.robot.set_pose(Pose(trans, rot))
+        trans, rot = self.tf_listener.lookupTransform("/map", robot_description.base_frame, rospy.Time(0))
+        World.robot.set_pose(Pose(trans, rot))
 
     def _subscribe_joint_state(self, msg: JointState) -> None:
         """
-        Sets the current joint configuration of the robot in the bullet world to the configuration published on the topic.
-        Since this uses rospy.wait_for_message which can have errors when used with threads there might be an attribute error 
-        in the rospy implementation. 
+        Sets the current joint configuration of the robot in the world to the configuration published on the
+        topic. Since this uses rospy.wait_for_message which can have errors when used with threads there might be an
+        attribute error in the rospy implementation.
 
         :param msg: JointState message published to the topic.
         """
@@ -63,10 +58,10 @@ class RobotStateUpdater:
             for name, position in zip(msg.name, msg.position):
                 try:
                     # Attempt to get the joint state. This might throw a KeyError if the joint name doesn't exist
-                    if BulletWorld.robot.get_joint_state(name) is None:
+                    if World.robot.get_joint_state(name) is None:
                         continue
                     # Set the joint state if the joint exists
-                    BulletWorld.robot.set_joint_state(name, position)
+                    World.robot.set_joint_position(name, position)
                 except KeyError:
                     # Handle the case where the joint name does not exist
                     pass
@@ -76,7 +71,7 @@ class RobotStateUpdater:
 
     def _stop_subscription(self) -> None:
         """
-        Stops the Timer for TF and joint states and therefore the updating of the robot in the bullet world.
+        Stops the Timer for TF and joint states and therefore the updating of the robot in the world.
         """
         self.tf_timer.shutdown()
         self.joint_state_timer.shutdown()
@@ -120,10 +115,10 @@ class KitchenStateUpdater:
             for name, position in zip(msg.name, msg.position):
                 try:
                     # Attempt to get the joint state. This might throw a KeyError if the joint name doesn't exist
-                    if BulletWorld.environment.get_joint_state(name) is None:
+                    if World.environment.get_joint_state(name) is None:
                         continue
                     # Set the joint state if the joint exists
-                    BulletWorld.environment.set_joint_state(name, position)
+                    World.environment.set_joint_state(name, position)
                 except KeyError:
                     # Handle the case where the joint name does not exist
                     pass

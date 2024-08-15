@@ -6,7 +6,7 @@ from .language import Language, Monitor
 from .plan_failures import PlanFailure
 
 
-class FailureHandling(Language):
+class FailureHandling:
     """
     Base class for failure handling mechanisms in automated systems or workflows.
 
@@ -21,13 +21,11 @@ class FailureHandling(Language):
         perform(): Abstract method
     """
 
-    def __init__(self, designator_description: Union[DesignatorDescription, Monitor]):
+    def __init__(self, designator_description: DesignatorDescription):
         """
         Initializes a new instance of the FailureHandling class.
 
-        Args:
-            designator_description (DesignatorDescription): The description or context
-            of the task or process for which the failure handling is being set up.
+        :param designator_description: The description or context of the task or process for which the failure handling is being set up.
         """
         self.designator_description = designator_description
 
@@ -38,8 +36,7 @@ class FailureHandling(Language):
         This method should be overridden in subclasses to implement the specific
         behavior for handling failures.
 
-        Raises:
-            NotImplementedError: If the method is not implemented in a subclass.
+        :raises NotImplementedError: If the method is not implemented in a subclass.
         """
         raise NotImplementedError()
 
@@ -65,10 +62,8 @@ class Retry(FailureHandling):
         """
         Initializes a new instance of the Retry class.
 
-        Args:
-            designator_description (DesignatorDescription): The description or context
-            of the task or process for which the retry mechanism is being set up.
-            max_tries (int, optional): The maximum number of attempts to retry. Defaults to 3.
+        :param designator_description: The description or context of the task or process for which the retry mechanism is being set up.
+        :param max_tries: The maximum number of attempts to retry. Defaults to 3.
         """
         super().__init__(designator_description)
         self.max_tries = max_tries
@@ -81,8 +76,7 @@ class Retry(FailureHandling):
         If the action fails, it is retried up to max_tries times. If all attempts fail,
         the last exception is raised.
 
-        Raises:
-            PlanFailure: If all retry attempts fail.
+        :raises PlanFailure: If all retry attempts fail.
         """
         tries = 0
         for action in iter(self.designator_description):

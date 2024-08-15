@@ -1,19 +1,19 @@
+from __future__ import annotations
+
 import dataclasses
-from typing import List, Union, Optional, Callable, Tuple, Iterable
-
-import rospy
+from typing_extensions import List, Optional, Callable, TYPE_CHECKING
 import sqlalchemy.orm
-from geometry_msgs.msg import PoseStamped
-
-from ..bullet_world import BulletWorld, Object as BulletWorldObject
-from ..designator import DesignatorDescription, ObjectDesignatorDescription
+from ..datastructures.world import World
+from ..world_concepts.world_object import Object as WorldObject
+from ..designator import ObjectDesignatorDescription
 from ..orm.base import ProcessMetaData
 from ..orm.object_designator import (BelieveObject as ORMBelieveObject, ObjectPart as ORMObjectPart)
-from ..pose import Pose
-from pycram.fluent import Fluent
+from ..datastructures.pose import Pose
 from std_msgs.msg import String
 from ..external_interfaces.robokudo import query
 
+if TYPE_CHECKING:
+    import owlready2
 
 class BelieveObject(ObjectDesignatorDescription):
     """
@@ -27,14 +27,14 @@ class BelieveObject(ObjectDesignatorDescription):
         """
 
         def to_sql(self) -> ORMBelieveObject:
-            return ORMBelieveObject(self.type, self.name)
+            return ORMBelieveObject(self.obj_type, self.name)
 
         def insert(self, session: sqlalchemy.orm.session.Session) -> ORMBelieveObject:
-            self_ = self.to_sql()
-            session.add(self_)
-            session.commit()
             metadata = ProcessMetaData().insert(session)
-            self_.process_metadata_id = metadata.id
+            self_ = self.to_sql()
+            self_.process_metadata = metadata
+            session.add(self_)
+
             return self_
 
 
@@ -50,17 +50,15 @@ class ObjectPart(ObjectDesignatorDescription):
         part_pose: Pose
 
         def to_sql(self) -> ORMObjectPart:
-            return ORMObjectPart(self.type, self.name)
+            return ORMObjectPart(self.obj_type, self.name)
 
         def insert(self, session: sqlalchemy.orm.session.Session) -> ORMObjectPart:
-            obj = self.to_sql()
             metadata = ProcessMetaData().insert(session)
-            obj.process_metadata_id = metadata.id
             pose = self.part_pose.insert(session)
-            obj.pose_id = pose.id
-
+            obj = self.to_sql()
+            obj.process_metadata = metadata
+            obj.pose = pose
             session.add(obj)
-            session.commit()
 
             return obj
 
@@ -74,7 +72,8 @@ class ObjectPart(ObjectDesignatorDescription):
         :param names: Possible names for the part
         :param part_of: Parent object of which the part should be described
         :param type: Type of the part
-        :param resolver: An alternative resolver to resolve the input parameter to an object designator
+        :param resolver: An alternative specialized_designators to resolve the input parameter to an object designator
+        :param ontology_concept_holders: A list of ontology concepts that the object part is categorized as or associated with
         """
         super().__init__(names, type, resolver)
 
@@ -87,7 +86,7 @@ class ObjectPart(ObjectDesignatorDescription):
 
     def ground(self) -> Object:
         """
-        Default resolver, returns the first result of the iterator of this instance.
+        Default specialized_designators, returns the first result of the iterator of this instance.
 
         :return: A resolved object designator
         """
@@ -100,15 +99,15 @@ class ObjectPart(ObjectDesignatorDescription):
         :yield: A resolved Object designator
         """
         for name in self.names:
-            if name in self.part_of.bullet_world_object.links.keys():
-                yield self.Object(name, self.type, self.part_of.bullet_world_object,
-                                  self.part_of.bullet_world_object.get_link_pose(name))
+            if name in self.part_of.world_object.link_name_to_id.keys():
+                yield self.Object(name, self.type, self.part_of.world_object,
+                                  self.part_of.world_object.get_link_pose(name))
 
 
 class LocatedObject(ObjectDesignatorDescription):
     """
     Description for KnowRob located objects.
-    **Currently has no resolver**
+    **Currently has no specialized_designators**
     """
 
     @dataclasses.dataclass
@@ -123,7 +122,8 @@ class LocatedObject(ObjectDesignatorDescription):
         """
 
     def __init__(self, names: List[str], types: List[str],
-                 reference_frames: List[str], timestamps: List[float], resolver: Optional[Callable] = None):
+                 reference_frames: List[str], timestamps: List[float], resolver: Optional[Callable] = None,
+                 ontology_concept_holders: Optional[List[owlready2.Thing]] = None):
         """
         Describing an object resolved through knowrob.
 
@@ -131,9 +131,10 @@ class LocatedObject(ObjectDesignatorDescription):
         :param types: List of possible types describing the object
         :param reference_frames: Frame of reference in which the object position should be
         :param timestamps: Timestamps for which positions should be returned
-        :param resolver: An alternative resolver that resolves the input parameter to an object designator.
+        :param resolver: An alternative specialized_designators that resolves the input parameter to an object designator.
+        :param ontology_concept_holders: A list of ontology concepts that the object is categorized as
         """
-        super(LocatedObject, self).__init__(names, types, resolver)
+        super(LocatedObject, self).__init__(names, types, resolver, ontology_concept_holders)
         self.reference_frames: List[str] = reference_frames
         self.timestamps: List[float] = timestamps
 
@@ -141,8 +142,8 @@ class LocatedObject(ObjectDesignatorDescription):
 class RealObject(ObjectDesignatorDescription):
     """
     Object designator representing an object in the real world, when resolving this object designator description ]
-    RoboKudo is queried to perceive an object fitting the given criteria. Afterward the resolver tries to match
-    the found object to an Object in the BulletWorld.
+    RoboKudo is queried to perceive an object fitting the given criteria. Afterward the specialized_designators tries to match
+    the found object to an Object in the World.
     """
 
     @dataclasses.dataclass
@@ -153,34 +154,31 @@ class RealObject(ObjectDesignatorDescription):
         """
 
     def __init__(self, names: Optional[List[str]] = None, types: Optional[List[str]] = None,
-                 bullet_world_object: BulletWorldObject = None, resolver: Optional[Callable] = None):
+                 world_object: WorldObject = None, resolver: Optional[Callable] = None):
         """
         
         :param names: 
         :param types: 
-        :param bullet_world_object: 
+        :param world_object:
         :param resolver: 
         """
         super().__init__(resolver)
         self.types: Optional[List[str]] = types
         self.names: Optional[List[str]] = names
-        self.bullet_world_object: BulletWorldObject = bullet_world_object
+        self.world_object: WorldObject = world_object
 
     def __iter__(self):
         """
-        Queries RoboKudo for objects that fit the description and then iterates over all BulletWorld objects that have
-        the same type to match a BulletWorld object to the real object.
+        Queries RoboKudo for objects that fit the description and then iterates over all World objects that have
+        the same type to match a World object to the real object.
 
-        :yield: A resolved object designator with reference bullet world object
+        :yield: A resolved object designator with reference world object
         """
         object_candidates = query(self)
         for obj_desig in object_candidates:
-            for bullet_obj in BulletWorld.get_objects_by_type(obj_desig.type):
-                obj_desig.bullet_world_object = bullet_obj
+            for world_obj in World.get_object_by_type(obj_desig.obj_type):
+                obj_desig.world_object = world_obj
                 yield obj_desig
-                # if bullet_obj.get_pose().dist(obj_deisg.pose) < 0.05:
-                #     obj_deisg.bullet_world_object = bullet_obj
-                #     yield obj_deisg
 
 
 class HumanDescription:

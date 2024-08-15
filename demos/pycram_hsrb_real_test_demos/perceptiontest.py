@@ -8,7 +8,7 @@ from robokudo_msgs.msg import QueryAction, QueryGoal
 
 import pycram.external_interfaces.giskard_new as giskardpy
 from pycram.designators.action_designator import fts
-from pycram.enums import ImageEnum
+from pycram.datastructures.enums import ImageEnum
 from pycram.fluent import Fluent
 from pycram.language import Monitor, Code
 from pycram.plan_failures import SensorMonitoringCondition, HumanNotFoundCondition
