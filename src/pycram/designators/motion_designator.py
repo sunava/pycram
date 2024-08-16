@@ -2,7 +2,7 @@ from abc import ABC, abstractmethod
 from dataclasses import dataclass
 
 from sqlalchemy.orm import Session
-from .object_designator import ObjectDesignatorDescription, ObjectPart, RealObject
+from .object_designator import ObjectDesignatorDescription, ObjectPart
 from ..designator import ResolutionError
 from ..orm.base import ProcessMetaData
 from ..plan_failures import PerceptionObjectNotFound

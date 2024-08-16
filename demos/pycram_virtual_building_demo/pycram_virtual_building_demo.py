@@ -1,4 +1,4 @@
-from pycram.designators.motion_designator import TalkingMotion
+# from pycram.designators.motion_designator import TalkingMotion
 from pycram.ros.viz_marker_publisher import VizMarkerPublisher
 from pycram.worlds.bullet_world import BulletWorld
 from pycram.designators.action_designator import *
@@ -15,14 +15,14 @@ extension = ObjectDescription.get_file_extension()
 world = BulletWorld(WorldMode.GUI)
 
 v = VizMarkerPublisher()
-kitchen = Object("kitchen", ObjectType.ENVIRONMENT, "robocup_vanessa.urdf")
+kitchen = Object("kitchen", ObjectType.ENVIRONMENT, "apartment.urdf")
 kitchen_desig = ObjectDesignatorDescription(names=["kitchen"])
 extension = ObjectDescription.get_file_extension()
 
 
 robot = Object("hsrb", ObjectType.ROBOT, f"hsrb{extension}", pose=Pose([1, 2, 0]))
 
-# robot.set_color([0.5, 0.5, 0.9, 1])
+# robot.set_color(0.5, 0.5, 0.9, 1)
 robot_desig = ObjectDesignatorDescription(names=["hsrb"])
 table_pose = Pose([6.6, 4.9, 0.0], [0.0, 0.0, 0, 1])
 long_table_1 = Pose([6.65, 4.6, 0],[0, 0, 0, 1])
@@ -69,6 +69,11 @@ human_female = Object("human_female", ObjectType.HUMAN, "female_standing.stl", p
 #                 print(value)
 
 
-def test_talk():
-    with semi_real_robot:
-        TalkingMotion("Hello, i am Toya and my favorite drink is oil. What about you, talk to me?").perform()
+# def test_talk():
+#     with semi_real_robot:
+#         TalkingMotion("Hello, i am Toya and my favorite drink is oil. What about you, talk to me?").perform()
+#
+
+def test_costmap():
+    sem = SemanticCostmap(kitchen_desig.resolve().world_object, "island_countertop")
+    sem.visualize()

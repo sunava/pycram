@@ -3,14 +3,11 @@ from __future__ import annotations
 import dataclasses
 from typing_extensions import List, Optional, Callable, TYPE_CHECKING
 import sqlalchemy.orm
-from ..datastructures.world import World
-from ..world_concepts.world_object import Object as WorldObject
 from ..designator import ObjectDesignatorDescription
 from ..orm.base import ProcessMetaData
 from ..orm.object_designator import (BelieveObject as ORMBelieveObject, ObjectPart as ORMObjectPart)
 from ..datastructures.pose import Pose
 from std_msgs.msg import String
-from ..external_interfaces.robokudo import query
 
 if TYPE_CHECKING:
     import owlready2
@@ -139,46 +136,46 @@ class LocatedObject(ObjectDesignatorDescription):
         self.timestamps: List[float] = timestamps
 
 
-class RealObject(ObjectDesignatorDescription):
-    """
-    Object designator representing an object in the real world, when resolving this object designator description ]
-    RoboKudo is queried to perceive an object fitting the given criteria. Afterward the specialized_designators tries to match
-    the found object to an Object in the World.
-    """
-
-    @dataclasses.dataclass
-    class Object(ObjectDesignatorDescription.Object):
-        pose: Pose
-        """
-        Pose of the perceived object
-        """
-
-    def __init__(self, names: Optional[List[str]] = None, types: Optional[List[str]] = None,
-                 world_object: WorldObject = None, resolver: Optional[Callable] = None):
-        """
-        
-        :param names: 
-        :param types: 
-        :param world_object:
-        :param resolver: 
-        """
-        super().__init__(resolver)
-        self.types: Optional[List[str]] = types
-        self.names: Optional[List[str]] = names
-        self.world_object: WorldObject = world_object
-
-    def __iter__(self):
-        """
-        Queries RoboKudo for objects that fit the description and then iterates over all World objects that have
-        the same type to match a World object to the real object.
-
-        :yield: A resolved object designator with reference world object
-        """
-        object_candidates = query(self)
-        for obj_desig in object_candidates:
-            for world_obj in World.get_object_by_type(obj_desig.obj_type):
-                obj_desig.world_object = world_obj
-                yield obj_desig
+# class RealObject(ObjectDesignatorDescription):
+#     """
+#     Object designator representing an object in the real world, when resolving this object designator description ]
+#     RoboKudo is queried to perceive an object fitting the given criteria. Afterward the specialized_designators tries to match
+#     the found object to an Object in the World.
+#     """
+#
+#     @dataclasses.dataclass
+#     class Object(ObjectDesignatorDescription.Object):
+#         pose: Pose
+#         """
+#         Pose of the perceived object
+#         """
+#
+#     def __init__(self, names: Optional[List[str]] = None, types: Optional[List[str]] = None,
+#                  world_object: WorldObject = None, resolver: Optional[Callable] = None):
+#         """
+#
+#         :param names:
+#         :param types:
+#         :param world_object:
+#         :param resolver:
+#         """
+#         super().__init__(resolver)
+#         self.types: Optional[List[str]] = types
+#         self.names: Optional[List[str]] = names
+#         self.world_object: WorldObject = world_object
+#
+#     def __iter__(self):
+#         """
+#         Queries RoboKudo for objects that fit the description and then iterates over all World objects that have
+#         the same type to match a World object to the real object.
+#
+#         :yield: A resolved object designator with reference world object
+#         """
+#         object_candidates = query(self)
+#         for obj_desig in object_candidates:
+#             for world_obj in World.get_object_by_type(obj_desig.obj_type):
+#                 obj_desig.world_object = world_obj
+#                 yield obj_desig
 
 
 class HumanDescription:

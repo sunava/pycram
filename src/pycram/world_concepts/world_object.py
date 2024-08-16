@@ -99,18 +99,6 @@ class Object(WorldEntity):
             rdm.load_description(self.description.name)
             World.robot = self
 
-    @classmethod
-    def from_custom_geom(cls, name: str, obj_type: ObjectType,
-                 description: Optional[Type[ObjectDescription]] = URDFObject,
-                 pose: Optional[Pose] = None,
-                 world: Optional[World] = None,
-                 color: Optional[Color] = Color(),
-                 ignore_cached_files: Optional[bool] = False,
-                 id: Optional[int] = None,
-                 customGeom: Optional[Dict[str, List[float]]] = None):
-        result = cls(name, obj_type, None,
-                     description, pose, world, color, ignore_cached_files, id, customGeom)
-
 
     @property
     def pose(self):

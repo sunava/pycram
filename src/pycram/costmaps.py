@@ -753,7 +753,7 @@ class SemanticCostmap(Costmap):
     table surface.
     """
 
-    def __init__(self, object, urdf_link_name, size=100, resolution=0.02, world=None):
+    def __init__(self, object, urdf_link_name, size=100, resolution=0.02, world=None, margin=0.2):
         """
         Creates a semantic costmap for the given parameter. The semantic costmap will be on top of the link of the given
         Object.
@@ -771,6 +771,7 @@ class SemanticCostmap(Costmap):
         self.height: int = 0
         self.width: int = 0
         self.map: np.ndarray = []
+        self.margin = margin
         self.generate_map()
 
         Costmap.__init__(self, resolution, self.height, self.width, self.origin, self.map)
@@ -780,10 +781,35 @@ class SemanticCostmap(Costmap):
         Generates the semantic costmap according to the provided parameters. To do this the axis aligned bounding box (AABB)
         for the link name will be used. Height and width of the final Costmap will be the x and y sizes of the AABB.
         """
-        min_p, max_p = self.get_aabb_for_link().get_min_max_points()
-        self.height = int((max_p.x - min_p.x) // self.resolution)
-        self.width = int((max_p.y - min_p.y) // self.resolution)
+        aabb_min, aabb_max = self.get_aabb_for_link().get_min_max()  # Get the axis-aligned bounding box for the link
+        margin = int(self.margin / self.resolution)  # Convert 20 cm margin to pixels based on the resolution
+
+        # Calculate height and width considering the resolution
+        self.height = int((aabb_max[0] - aabb_min[0]) // self.resolution)
+        self.width = int((aabb_max[1] - aabb_min[1]) // self.resolution)
+
+        # Initialize the map with ones
         self.map = np.ones((self.height, self.width))
+
+        # Apply margin from one side (e.g., only the top)
+        if margin < self.height:
+            self.map[:margin, :] = 0  # Top margin
+
+        # Apply margin from one side (e.g., only the left)
+        if margin < self.width:
+            self.map[:, :margin] = 1
+            # # Right margin
+            self.map[:, -margin:] = 1
+
+        # Invert the map values: 0s become 1s, and everything else becomes 0
+        self.map = 1 - self.map
+
+        # Trim the left and right sides, only keep points before the 0s
+        non_zero_cols = np.where(self.map.any(axis=0))[0]
+        if len(non_zero_cols) > 0:
+            left_trim = 2000  # Adjust this value to trim more from the left
+            right_trim = 20  # Adjust this value to trim more from the right
+            self.map = self.map[:, max(0, non_zero_cols[0] - left_trim):non_zero_cols[-1] + 1 + right_trim]
 
     def get_aabb_for_link(self) -> AxisAlignedBoundingBox:
         """

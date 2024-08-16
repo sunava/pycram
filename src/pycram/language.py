@@ -2,9 +2,8 @@
 from __future__ import annotations
 
 import queue
-from typing import Iterable, Optional, Callable, Dict, Any, List, Union, Tuple
-
 import rospy
+from typing_extensions import Iterable, Optional, Callable, Dict, Any, List, Union, Tuple
 from anytree import NodeMixin, Node, PreOrderIter
 
 from pycram.datastructures.enums import State
@@ -12,15 +11,16 @@ import threading
 
 from .fluent import Fluent
 from .plan_failures import PlanFailure, NotALanguageExpression
-from .external_interfaces import giskard_new as giskardpy
-from .external_interfaces import navigate as move
+from .external_interfaces import giskard
+
 
 class Language(NodeMixin):
     """
     Parent class for language expressions. Implements the operators as well as methods to reduce the resulting language
     tree.
     """
-    parallel_blocklist = []
+    parallel_blocklist = ["PickUpAction", "PlaceAction", "OpenAction", "CloseAction", "TransportAction",
+                          "GraspingAction"]
     do_not_use_giskard = ["SetGripperAction", "MoveGripperMotion", "DetectAction", "DetectingMotion"]
     block_list: List[int] = []
     """List of thread ids which should be blocked from execution."""
@@ -206,6 +206,7 @@ class Repeat(Language):
     """
     Executes all children a given number of times.
     """
+
     def perform(self):
         """
         Behaviour of repeat, executes all children in a loop as often as stated on initialization.
@@ -215,7 +216,7 @@ class Repeat(Language):
         for i in range(self.repeat):
             for child in self.children:
                 if self.interrupted:
-                    return State.INTERRUPTED, None
+                    return
                 try:
                     child.resolve().perform()
                 except PlanFailure as e:
@@ -253,6 +254,7 @@ class Monitor(Language):
         thread which continuously checks if the condition is True. When the condition is True the interrupt function of
         the child will be called.
     """
+
     def __init__(self, condition: Union[Callable, Fluent] = None):
         """
         When initializing a Monitor a condition must be provided. The condition is a callable or a Fluent which returns \
@@ -262,6 +264,7 @@ class Monitor(Language):
         """
         super().__init__(None, None)
         self.kill_event = threading.Event()
+        self.exception_queue = queue.Queue()
         if callable(condition):
             self.condition = Fluent(condition)
         elif isinstance(condition, Fluent):
@@ -272,7 +275,7 @@ class Monitor(Language):
     def perform(self) -> Tuple[State, Any]:
         """
         Behavior of the Monitor, starts a new Thread which checks the condition and then performs the attached language
-        expression.
+        expression
 
         :return: The state of the attached language expression, as well as a list of the results of the children
         """
@@ -283,19 +286,12 @@ class Monitor(Language):
                     cond = self.condition.get_value()
                     if cond:
                         for child in self.children:
-                            print("the child killer")
-                            if giskardpy.giskard_wrapper:
-                                print("Interrupting Monitor Giskard")
-                                giskardpy.cancel_all_called_goals()
-                            #move.interrupt()
                             if hasattr(child, 'interrupt'):
                                 child.interrupt()
-
                         if isinstance(cond, type) and issubclass(cond, Exception):
                             self.exception_queue.put(cond)
                         else:
                             self.exception_queue.put(PlanFailure("Condition met in Monitor"))
-
                         return
                 except Exception as e:
                     self.exception_queue.put(e)
@@ -305,10 +301,7 @@ class Monitor(Language):
         t = threading.Thread(target=check_condition)
         t.start()
         try:
-            try:
-                state, result = self.children[0].perform()
-            except NotImplementedError:
-                state, result = self.children[0].resolve().perform()
+            state, result = self.children[0].perform()
             if not self.exception_queue.empty():
                 print("Raising PlanFailure")
                 raise self.exception_queue.get()
@@ -321,12 +314,8 @@ class Monitor(Language):
         """
         Calls interrupt for each child
         """
-        print("Interrupting Monitor")
         for child in self.children:
             child.interrupt()
-        if giskardpy.giskard_wrapper:
-            giskardpy.cancel_all_called_goals()
-        move.interrupt()
 
 
 class Sequential(Language):
@@ -338,7 +327,6 @@ class Sequential(Language):
         Returns a tuple containing the final state of execution (SUCCEEDED, FAILED) and a list of results from each
         child's perform() method. The state is :py:attr:`~State.SUCCEEDED` *iff* all children are executed without
         exception. In any other case the State :py:attr:`~State.FAILED` will be returned.
-
     """
 
     def perform(self) -> Tuple[State, List[Any]]:
@@ -373,8 +361,8 @@ class Sequential(Language):
         """
         self.interrupted = True
         self.block_list.append(threading.get_ident())
-        # if giskard.giskard_wrapper:
-        #     giskard.giskard_wrapper.interrupt()
+        if giskard.giskard_wrapper:
+            giskard.giskard_wrapper.interrupt()
 
 
 class TryInOrder(Language):
@@ -425,8 +413,8 @@ class TryInOrder(Language):
         """
         self.interrupted = True
         self.block_list.append(threading.get_ident())
-        # if giskard.giskard_wrapper:
-        #     giskard.giskard_wrapper.interrupt()
+        if giskard.giskard_wrapper:
+            giskard.giskard_wrapper.interrupt()
 
 
 class Parallel(Language):
@@ -434,9 +422,10 @@ class Parallel(Language):
     Executes all children in parallel by creating a thread per children and executing them in the respective thread. All
     exceptions during execution will be caught, saved to a list and returned upon end.
 
-    Behaviour: Returns a tuple containing the final state of execution (SUCCEEDED, FAILED) and a list of results from
-    each child's perform() method. The state is :py:attr:`~State.SUCCEEDED` *iff* all children could be executed without
-    an exception. In any other case the State :py:attr:`~State.FAILED` will be returned.
+    Behaviour:
+        Returns a tuple containing the final state of execution (SUCCEEDED, FAILED) and a list of results from
+        each child's perform() method. The state is :py:attr:`~State.SUCCEEDED` *iff* all children could be executed without
+        an exception. In any other case the State :py:attr:`~State.FAILED` will be returned.
 
     """
 
@@ -455,12 +444,12 @@ class Parallel(Language):
 
         def lang_call(child_node, index):
             nonlocal state
-            # if ("DesignatorDescription" in [cls.__name__ for cls in child_node.__class__.__mro__]
-            #         and self.__class__.__name__ not in self.do_not_use_giskard):
-                # if self not in giskard.par_threads.keys():
-                #     giskard.par_threads[self] = [threading.get_ident()]
-                # else:
-                #     giskard.par_threads[self].append(threading.get_ident())
+            if ("DesignatorDescription" in [cls.__name__ for cls in child_node.__class__.__mro__]
+                    and self.__class__.__name__ not in self.do_not_use_giskard):
+                if self not in giskard.par_threads.keys():
+                    giskard.par_threads[self] = [threading.get_ident()]
+                else:
+                    giskard.par_threads[self].append(threading.get_ident())
             try:
                 self.root.executing_thread[child] = threading.get_ident()
                 result = child_node.resolve().perform()
@@ -505,8 +494,8 @@ class Parallel(Language):
         """
         self.interrupted = True
         self.block_list += [t.ident for t in self.threads]
-        # if giskard.giskard_wrapper:
-        #     giskard.giskard_wrapper.interrupt()
+        if giskard.giskard_wrapper:
+            giskard.giskard_wrapper.interrupt()
 
 
 class TryAll(Language):
@@ -623,6 +612,5 @@ class Code(Language):
         return child_state, child_result
 
     def interrupt(self) -> None:
-        print("Code Expression Interrupt")
-        #raise NotImplementedError
-        pass
+        raise NotImplementedError
+
