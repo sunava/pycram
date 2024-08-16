@@ -19,6 +19,7 @@ from ..datastructures.pose import Pose
 from ..tasktree import with_tree
 from ..designator import BaseMotion
 
+
 @dataclass
 class MoveMotion(BaseMotion):
     """
@@ -162,7 +163,7 @@ class DetectingMotion(BaseMotion):
                 f"Could not find an object with the type {self.object_type} in the FOV of the robot")
         if ProcessModuleManager.execution_type == "real":
             return RealObject.Object(world_object.name, world_object.obj_type,
-                                                  world_object, world_object.get_pose())
+                                     world_object, world_object.get_pose())
 
         return ObjectDesignatorDescription.Object(world_object.name, world_object.obj_type,
                                                   world_object)
@@ -313,3 +314,24 @@ class ClosingMotion(BaseMotion):
         session.add(motion)
 
         return motion
+
+@dataclass
+class TalkingMotion(BaseMotion):
+    """
+    Talking
+    """
+    cmd: str
+    """
+    Sentence what the robot should say
+    """
+
+    @with_tree
+    def perform(self):
+        pm_manager = ProcessModuleManager.get_manager()
+        return pm_manager.talk().execute(self)
+
+    def to_sql(self) -> ORMMotionDesignator:
+        pass
+
+    def insert(self, session: Session, *args, **kwargs) -> ORMMotionDesignator:
+        pass

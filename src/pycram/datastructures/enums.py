@@ -120,6 +120,15 @@ class GripperType(Enum):
     CUSTOM = auto()
 
 
+class PerceptionTechniques(Enum):
+    """
+    Enum for techniques for perception tasks.
+    """
+    ALL = auto()
+    HUMAN = auto()
+    TYPES = auto()
+
+
 class ImageEnum(Enum):
     HI = 0
     TALK = 1
