@@ -159,14 +159,13 @@ class Language(NodeMixin):
         """
         Simplifies the language tree by merging which have a parent-child relation and are of the same type.
 
-        .. code-block:: python
+        .. code-block::
 
             <pycram.new_language.Parallel>
             ├── <pycram.new_language.Parallel>
             │   ├── <pycram.designators.action_designator.NavigateAction>
             │   └── <pycram.designators.action_designator.MoveTorsoAction>
             └── <pycram.designators.action_designator.DetectAction>
-
 
             would be simplified to:
 
@@ -207,7 +206,6 @@ class Repeat(Language):
     """
     Executes all children a given number of times.
     """
-
     def perform(self):
         """
         Behaviour of repeat, executes all children in a loop as often as stated on initialization.
@@ -242,8 +240,8 @@ class Repeat(Language):
         """
         self.interrupted = True
         self.block_list.append(threading.get_ident())
-        # if giskardpy.giskard_wrapper:
-        #     giskardpy.giskard_wrapper.interrupt()
+        if giskard.giskard_wrapper:
+            giskard.giskard_wrapper.interrupt()
 
 
 class Monitor(Language):
@@ -255,7 +253,6 @@ class Monitor(Language):
         thread which continuously checks if the condition is True. When the condition is True the interrupt function of
         the child will be called.
     """
-
     def __init__(self, condition: Union[Callable, Fluent] = None):
         """
         When initializing a Monitor a condition must be provided. The condition is a callable or a Fluent which returns \
@@ -265,8 +262,6 @@ class Monitor(Language):
         """
         super().__init__(None, None)
         self.kill_event = threading.Event()
-        self.exception_queue = queue.Queue()
-
         if callable(condition):
             self.condition = Fluent(condition)
         elif isinstance(condition, Fluent):
@@ -329,7 +324,7 @@ class Monitor(Language):
         print("Interrupting Monitor")
         for child in self.children:
             child.interrupt()
-        if (giskardpy.giskard_wrapper):
+        if giskardpy.giskard_wrapper:
             giskardpy.cancel_all_called_goals()
         move.interrupt()
 
