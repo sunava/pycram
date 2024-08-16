@@ -1,38 +1,87 @@
-import rospy
-import actionlib
-from tmc_msgs.msg import Voice
-from ..designator import ObjectDesignatorDescription
-from ..pose import Pose
-from ..local_transformer import LocalTransformer
-from ..bullet_world import BulletWorld
-from ..enums import ObjectType
-from geometry_msgs.msg import PoseStamped, PointStamped
-from typing import Any, Optional, List
+import sys
+from threading import Lock, RLock
+from typing import Any
 
-# Global initialization flag
+import actionlib
+import rosnode
+import rospy
+from geometry_msgs.msg import PointStamped
+from typing_extensions import List, Callable, Optional
+
+from ..datastructures.pose import Pose
+from ..designator import ObjectDesignatorDescription
+
 is_initialized = False
 
+try:
+    from robokudo_msgs.msg import ObjectDesignator as robokudo_ObjectDesignator
+    from robokudo_msgs.msg import QueryAction, QueryGoal, QueryResult
+except ModuleNotFoundError as e:
+    rospy.logwarn("Failed to import Robokudo messages, the real robot will not be available")
 
-def init_robokudo_interface():
-    global is_initialized
-    if is_initialized:
-        return
-    try:
-        from robokudo_msgs.msg import ObjectDesignator as robokudo_ObjectDesignator
-        from robokudo_msgs.msg import QueryAction, QueryGoal, QueryResult
-        is_initialized = True
-        rospy.loginfo("Successfully initialized robokudo interface")
-    except ModuleNotFoundError:
-        rospy.logwarn("Could not import RoboKudo messages, RoboKudo interface could not be initialized")
+is_init = False
+
+number_of_par_goals = 0
+robokudo_lock = Lock()
+robokudo_rlock = RLock()
+with robokudo_rlock:
+    par_threads = {}
+    par_motion_goal = {}
 
 
+def thread_safe(func: Callable) -> Callable:
+    """
+    Adds thread safety to a function via a decorator. This uses the robokudo_lock
+
+    :param func: Function that should be thread safe
+    :return: A function with thread safety
+    """
+
+    def wrapper(*args, **kwargs):
+        with robokudo_rlock:
+            return func(*args, **kwargs)
+
+    return wrapper
+
+
+def init_robokudo_interface(func: Callable) -> Callable:
+    """
+    Checks if the ROS messages are available and if Robokudo is running, if that is the case the interface will be
+    initialized.
+
+    :param func: Function this decorator should be wrapping
+    :return: A callable function which initializes the interface and then calls the wrapped function
+    """
+
+    def wrapper(*args, **kwargs):
+        global is_init
+        if is_init and "/robokudo" in rosnode.get_node_names():
+            return func(*args, **kwargs)
+        elif is_init and "/robokudo" not in rosnode.get_node_names():
+            rospy.logwarn("Robokudo node is not available anymore, could not initialize robokudo interface")
+            is_init = False
+            giskard_wrapper = None
+            return
+
+        if "robokudo_msgs" not in sys.modules:
+            rospy.logwarn("Could not initialize the Robokudo interface since the robokudo_msgs are not imported")
+            return
+
+        if "/robokudo" in rosnode.get_node_names():
+            rospy.loginfo_once("Successfully initialized Robokudo interface")
+            is_init = True
+        else:
+            rospy.logwarn("Robokudo is not running, could not initialize Robokudo interface")
+            return
+        return func(*args, **kwargs)
+
+    return wrapper
+
+
+@init_robokudo_interface
 def send_query(obj_type: Optional[str] = None, region: Optional[str] = None,
                attributes: Optional[List[str]] = None) -> Any:
     """Generic function to send a query to RoboKudo."""
-    init_robokudo_interface()
-
-    from robokudo_msgs.msg import QueryAction, QueryGoal
-
     goal = QueryGoal()
 
     if obj_type:
@@ -58,6 +107,7 @@ def send_query(obj_type: Optional[str] = None, region: Optional[str] = None,
     return query_result
 
 
+@init_robokudo_interface
 def query_object(obj_desc: ObjectDesignatorDescription) -> dict:
     """Query RoboKudo for an object that fits the description."""
     goal = QueryGoal()
@@ -75,6 +125,7 @@ def query_object(obj_desc: ObjectDesignatorDescription) -> dict:
     return pose_candidates
 
 
+@init_robokudo_interface
 def query_human() -> PointStamped:
     """Query RoboKudo for human detection and return the detected human's pose."""
     result = send_query(obj_type='human')
@@ -83,6 +134,7 @@ def query_human() -> PointStamped:
     return None
 
 
+@init_robokudo_interface
 def stop_query():
     """Stop any ongoing query to RoboKudo."""
     init_robokudo_interface()
@@ -92,16 +144,19 @@ def stop_query():
     rospy.loginfo("Cancelled current RoboKudo query goal")
 
 
+@init_robokudo_interface
 def query_specific_region(region: str) -> Any:
     """Query RoboKudo to scan a specific region."""
     return send_query(region=region)
 
 
+@init_robokudo_interface
 def query_human_attributes() -> Any:
     """Query RoboKudo for human attributes like brightness of clothes, headgear, and gender."""
     return send_query(obj_type='human', attributes=["attributes"])
 
 
+@init_robokudo_interface
 def query_waving_human() -> Pose:
     """Query RoboKudo for detecting a waving human."""
     result = send_query(obj_type='human')
