@@ -5,8 +5,6 @@ import time
 import rospy
 import sys
 import rosnode
-from giskard_msgs.msg import CollisionEntry
-from giskard_msgs.srv import UpdateWorldResponse
 
 from ..datastructures.enums import JointType, ObjectType
 from ..datastructures.pose import Pose
@@ -53,7 +51,7 @@ def thread_safe(func: Callable) -> Callable:
     return wrapper
 
 
-def init_giskard_interface():
+def init_giskard_interface(func: Callable):
     """
     Checks if the ROS messages are available and if giskard is running, if that is the case the interface will be
     initialized.
@@ -61,32 +59,48 @@ def init_giskard_interface():
     :return: A callable function which initializes the interface and then calls the wrapped function
     """
 
-    global giskard_wrapper
-    global giskard_update_service
-    global is_init
-    if is_init:
-        return
-    topics = list(map(lambda x: x[0], rospy.get_published_topics()))
-    try:
-        from giskardpy.python_interface.python_interface import GiskardWrapper
-        from giskard_msgs.msg import WorldBody, MoveResult, CollisionEntry, Weights
+    def wrapper(*args, **kwargs):
+        global giskard_wrapper
+        global giskard_update_service
+        global is_init
 
-        # from giskard_msgs.srv import UpdateWorldRequest, UpdateWorld, UpdateWorldResponse, RegisterGroupResponse
+        topics = list(map(lambda x: x[0], rospy.get_published_topics()))
+        try:
+            from giskardpy.python_interface.python_interface import GiskardWrapper
+            from giskard_msgs.msg import WorldBody, MoveResult, CollisionEntry, Weights
+            from giskard_msgs.srv import UpdateWorldResponse, UpdateWorld
 
-        if "/giskard/command/goal" in topics:
-            giskard_wrapper = GiskardWrapper()
-            # giskard_update_service = rospy.ServiceProxy("/giskard/update_world", UpdateWorld)
-            is_init = True
-            rospy.loginfo("Successfully initialized Giskard interface")
-        else:
-            rospy.logwarn("Giskard is not running, could not initialize Giskard interface")
-    except ModuleNotFoundError as e:
-        rospy.logwarn("Failed to import Giskard messages, giskard interface could not be initialized")
+            if is_init and "/giskard" in rosnode.get_node_names():
+                return func(*args, **kwargs)
+            elif is_init and "/giskard" not in rosnode.get_node_names():
+                rospy.logwarn("Giskard node is not available anymore, could not initialize giskard interface")
+                is_init = False
+                giskard_wrapper = None
+                return
+
+            if "giskard_msgs" not in sys.modules:
+                rospy.logwarn("Could not initialize the Giskard interface since the giskard_msgs are not imported")
+                return
+
+            if "/giskard" in rosnode.get_node_names():
+                giskard_wrapper = GiskardWrapper()
+                giskard_update_service = rospy.ServiceProxy("/giskard/update_world", UpdateWorld)
+                rospy.loginfo_once("Successfully initialized Giskard interface")
+                is_init = True
+            else:
+                rospy.logwarn("Giskard is not running, could not initialize Giskard interface")
+                return
+            return func(*args, **kwargs)
+
+        except ModuleNotFoundError as e:
+            rospy.logwarn("Failed to import Giskard messages, giskard interface could not be initialized")
+
+    return wrapper
 
 
 # Believe state management between pycram and giskard
 
-
+@init_giskard_interface
 def initial_adding_objects() -> None:
     """
     Adds object that are loaded in the World to the Giskard belief state, if they are not present at the moment.
@@ -100,6 +114,7 @@ def initial_adding_objects() -> None:
             spawn_object(obj)
 
 
+@init_giskard_interface
 def removing_of_objects() -> None:
     """
     Removes objects that are present in the Giskard belief state but not in the World from the Giskard belief state.
@@ -113,13 +128,13 @@ def removing_of_objects() -> None:
             giskard_wrapper.world.remove_group(grp)
 
 
+@init_giskard_interface
 def sync_worlds() -> None:
     """
     Synchronizes the World and the Giskard belief state, this includes adding and removing objects to the Giskard
     belief state such that it matches the objects present in the World and moving the robot to the position it is
     currently at in the World.
     """
-    init_giskard_interface()
     add_gripper_groups()
     world_object_names = set()
     for obj in World.current_world.objects:
@@ -131,10 +146,10 @@ def sync_worlds() -> None:
             non_fixed_joints = list(filter(lambda joint: joint.type != JointType.FIXED, obj.joints.values()))
             joint_config_filtered = {joint.name: joint_config[joint.name] for joint in non_fixed_joints}
 
-            giskard_wrapper.monitors.set_seed_configuration(joint_config_filtered,
-                                                            RobotDescription.current_robot_description.name)
-            giskard_wrapper.monitors.set_seed_odometry(_pose_to_pose_stamped(obj.get_pose()),
-                                                       RobotDescription.current_robot_description.name)
+            giskard_wrapper.monitors.add_set_seed_configuration(joint_config_filtered,
+                                                                RobotDescription.current_robot_description.name)
+            giskard_wrapper.monitors.add_set_seed_odometry(_pose_to_pose_stamped(obj.get_pose()),
+                                                           RobotDescription.current_robot_description.name)
     giskard_object_names = set(giskard_wrapper.world.get_group_names())
     robot_name = {RobotDescription.current_robot_description.name}
     if not world_object_names.union(robot_name).issubset(giskard_object_names):
@@ -146,6 +161,7 @@ def clear() -> None:
     giskard_wrapper.world.clear()
 
 
+@init_giskard_interface
 def update_pose(object: Object) -> 'UpdateWorldResponse':
     """
     Sends an update message to giskard to update the object position. Might not work when working on the real robot just
@@ -157,6 +173,7 @@ def update_pose(object: Object) -> 'UpdateWorldResponse':
     return giskard_wrapper.world.update_group_pose(object.name)
 
 
+@init_giskard_interface
 def spawn_object(object: Object) -> None:
     """
     Spawns a World Object in the giskard belief state.
@@ -172,6 +189,7 @@ def spawn_object(object: Object) -> None:
         spawn_urdf(object.name, object.path, object.get_pose())
 
 
+@init_giskard_interface
 def remove_object(object: Object) -> 'UpdateWorldResponse':
     """
     Removes an object from the giskard belief state.
@@ -181,6 +199,7 @@ def remove_object(object: Object) -> 'UpdateWorldResponse':
     return giskard_wrapper.world.remove_group(object.name)
 
 
+@init_giskard_interface
 def spawn_urdf(name: str, urdf_path: str, pose: Pose) -> 'UpdateWorldResponse':
     """
     Spawns an URDF in giskard's belief state.
@@ -197,6 +216,7 @@ def spawn_urdf(name: str, urdf_path: str, pose: Pose) -> 'UpdateWorldResponse':
     return giskard_wrapper.world.add_urdf(name, urdf_string, pose)
 
 
+@init_giskard_interface
 def spawn_mesh(name: str, path: str, pose: Pose) -> 'UpdateWorldResponse':
     """
     Spawns a mesh into giskard's belief state
@@ -209,6 +229,7 @@ def spawn_mesh(name: str, path: str, pose: Pose) -> 'UpdateWorldResponse':
     return giskard_wrapper.world.add_mesh(name, path, pose)
 
 
+@init_giskard_interface
 def spawn_box(name: str, size: tuple, pose: Pose) -> 'UpdateWorldResponse':
     """
     Spawns a mesh into giskard's belief state
@@ -333,6 +354,7 @@ def _manage_par_motion_goals(goal_func, *args) -> Optional['MoveResult']:
                 return True
 
 
+@init_giskard_interface
 @thread_safe
 def achieve_joint_goal(goal_poses: Dict[str, float]) -> 'MoveResult':
     """
@@ -352,6 +374,8 @@ def achieve_joint_goal(goal_poses: Dict[str, float]) -> 'MoveResult':
     return giskard_wrapper.execute()
 
 
+@init_giskard_interface
+@thread_safe
 def achieve_placing_without_prepose(pose1, obj_desig, kitchen_obj):
     w = Weights()
     sync_worlds()
@@ -377,6 +401,8 @@ def achieve_placing_without_prepose(pose1, obj_desig, kitchen_obj):
     return giskard_wrapper.execute()
 
 
+@init_giskard_interface
+@thread_safe
 def achieve_sequence_te(pose1, obj_desig):
     root_link = 'map'
     tip_link = "hand_gripper_tool_frame"
@@ -396,6 +422,8 @@ def achieve_sequence_te(pose1, obj_desig):
     return giskard_wrapper.execute()
 
 
+@init_giskard_interface
+@thread_safe
 def achieve_sequence_pick_up(pose1):
     root_link = 'map'
     tip_link = 'hand_gripper_tool_frame'
@@ -459,6 +487,7 @@ def achieve_sequence_pick_up(pose1):
     return giskard_wrapper.execute()
 
 
+@init_giskard_interface
 def test(config):
     giskard_wrapper.motion_goals.add_joint_position(config)
     # js_reached = giskard.monitors.add_joint_position(js1, threshold=0.03)
@@ -469,6 +498,7 @@ def test(config):
     giskard_wrapper.execute()
 
 
+@init_giskard_interface
 def achieve_attached(obj_desig, tip_link='hand_gripper_tool_frame'):
     root_link = 'map'
     sync_worlds()
@@ -476,6 +506,8 @@ def achieve_attached(obj_desig, tip_link='hand_gripper_tool_frame'):
         name=obj_desig.name + "_" + str(obj_desig.id), parent_link=tip_link)
 
 
+@init_giskard_interface
+@thread_safe
 def achieve_sequence_place(pose1, pose2):
     root_link = 'map'
     tip_link = 'hand_gripper_tool_frame'
@@ -509,6 +541,7 @@ def achieve_sequence_place(pose1, pose2):
     return giskard_wrapper.execute()
 
 
+@init_giskard_interface
 def cml(drive_back):
     try:
         print("in cml")
@@ -522,6 +555,7 @@ def cml(drive_back):
             print("cml error")
 
 
+@init_giskard_interface
 @thread_safe
 def achieve_cartesian_goal(goal_pose: Pose, tip_link: str, root_link: str) -> 'MoveResult':
     """
@@ -545,6 +579,7 @@ def achieve_cartesian_goal(goal_pose: Pose, tip_link: str, root_link: str) -> 'M
     return giskard_wrapper.execute()
 
 
+@init_giskard_interface
 @thread_safe
 def achieve_straight_cartesian_goal(goal_pose: Pose, tip_link: str,
                                     root_link: str) -> 'MoveResult':
@@ -568,6 +603,7 @@ def achieve_straight_cartesian_goal(goal_pose: Pose, tip_link: str,
     return giskard_wrapper.execute()
 
 
+@init_giskard_interface
 @thread_safe
 def achieve_translation_goal(goal_point: List[float], tip_link: str, root_link: str) -> 'MoveResult':
     """
@@ -590,6 +626,7 @@ def achieve_translation_goal(goal_point: List[float], tip_link: str, root_link: 
     return giskard_wrapper.execute()
 
 
+@init_giskard_interface
 @thread_safe
 def achieve_straight_translation_goal(goal_point: List[float], tip_link: str, root_link: str) -> 'MoveResult':
     """
@@ -613,6 +650,7 @@ def achieve_straight_translation_goal(goal_point: List[float], tip_link: str, ro
     return giskard_wrapper.execute()
 
 
+@init_giskard_interface
 @thread_safe
 def achieve_rotation_goal(quat: List[float], tip_link: str, root_link: str) -> 'MoveResult':
     """
@@ -635,6 +673,7 @@ def achieve_rotation_goal(quat: List[float], tip_link: str, root_link: str) -> '
     return giskard_wrapper.execute()
 
 
+@init_giskard_interface
 @thread_safe
 def achieve_align_planes_goal(goal_normal: List[float], tip_link: str, tip_normal: List[float],
                               root_link: str) -> 'MoveResult':
@@ -662,6 +701,7 @@ def achieve_align_planes_goal(goal_normal: List[float], tip_link: str, tip_norma
     return giskard_wrapper.execute()
 
 
+@init_giskard_interface
 @thread_safe
 def achieve_open_container_goal(tip_link: str, environment_link: str, goal_state: Optional[float] = None,
                                 special_door: Optional[bool] = False) -> 'MoveResult':
@@ -682,6 +722,7 @@ def achieve_open_container_goal(tip_link: str, environment_link: str, goal_state
     return giskard_wrapper.execute()
 
 
+@init_giskard_interface
 @thread_safe
 def achieve_close_container_goal(tip_link: str, environment_link: str) -> 'MoveResult':
     """
@@ -702,6 +743,7 @@ def achieve_close_container_goal(tip_link: str, environment_link: str) -> 'MoveR
     return giskard_wrapper.execute()
 
 
+@init_giskard_interface
 def set_hsrb_dishwasher_door_around(handle_name: str) -> 'MoveResult':
     """
     Moves the arm around the dishwasher door after the first opening action. Dishwasher is in this state half open.
@@ -713,6 +755,7 @@ def set_hsrb_dishwasher_door_around(handle_name: str) -> 'MoveResult':
     giskard_wrapper.execute()
 
 
+@init_giskard_interface
 def fully_open_dishwasher_door(handle_name: str, door_name: str) -> 'MoveResult':
     """
     After the first opening part, the dishwasher is half open.
@@ -731,6 +774,7 @@ def fully_open_dishwasher_door(handle_name: str, door_name: str) -> 'MoveResult'
     giskard_wrapper.execute()
 
 
+@init_giskard_interface
 def achieve_tilting_goal(direction: str, angle: float):
     """
     tilts the gripper to the given angle
@@ -744,20 +788,9 @@ def achieve_tilting_goal(direction: str, angle: float):
     return giskard_wrapper.execute()
 
 
-# Managing collisions
-def achieve_gripper_motion_goal(motion: str):
-    """
-    Opens or closes the gripper
-    """
-    rospy.loginfo("giskard change_gripper_state: " + motion)
-    giskard_wrapper.motion_goals.change_gripper_state(motion)
-
-    # return giskard_wrapper.execute()
-
-
 # Projection Goals
 
-
+@init_giskard_interface
 def projection_cartesian_goal(goal_pose: Pose, tip_link: str, root_link: str) -> 'MoveResult':
     """
     Tries to move the tip_link to the position defined by goal_pose using the chain defined by tip_link and root_link.
@@ -773,6 +806,7 @@ def projection_cartesian_goal(goal_pose: Pose, tip_link: str, root_link: str) ->
     return giskard_wrapper.projection()
 
 
+@init_giskard_interface
 def projection_cartesian_goal_with_approach(approach_pose: Pose, goal_pose: Pose, tip_link: str, root_link: str,
                                             robot_base_link: str) -> 'MoveResult':
     """
@@ -795,6 +829,7 @@ def projection_cartesian_goal_with_approach(approach_pose: Pose, goal_pose: Pose
     return giskard_wrapper.projection()
 
 
+@init_giskard_interface
 def projection_joint_goal(goal_poses: Dict[str, float], allow_collisions: bool = False) -> 'MoveResult':
     """
     Tries to achieve the joint goal defined by goal_poses, the goal_poses are projected to the closest point on the
@@ -812,7 +847,18 @@ def projection_joint_goal(goal_poses: Dict[str, float], allow_collisions: bool =
 
 
 # Managing collisions
+@init_giskard_interface
+def achieve_gripper_motion_goal(motion: str):
+    """
+    Opens or closes the gripper
+    """
+    rospy.loginfo("giskard change_gripper_state: " + motion)
+    giskard_wrapper.motion_goals.change_gripper_state(motion)
 
+    # return giskard_wrapper.execute()
+
+
+@init_giskard_interface
 def allow_gripper_collision(gripper: str) -> None:
     """
     Allows the specified gripper to collide with anything.
@@ -825,6 +871,7 @@ def allow_gripper_collision(gripper: str) -> None:
             giskard_wrapper.motion_goals.allow_collision(gripper_group, CollisionEntry.ALL)
 
 
+@init_giskard_interface
 def get_gripper_group_names() -> List[str]:
     """
     Returns a list of groups that are registered in giskard which have 'gripper' in their name.
@@ -835,6 +882,7 @@ def get_gripper_group_names() -> List[str]:
     return list(filter(lambda elem: "gripper" in elem, groups))
 
 
+@init_giskard_interface
 def add_gripper_groups() -> None:
     """
     Adds the gripper links as a group for collision avoidance.
@@ -850,10 +898,12 @@ def add_gripper_groups() -> None:
                                                  RobotDescription.current_robot_description.name)
 
 
+@init_giskard_interface
 def allow_all_collisions():
     giskard_wrapper.motion_goals.allow_all_collisions()
 
 
+@init_giskard_interface
 def avoid_all_collisions() -> None:
     """
     Will avoid all collision for the next goal.
@@ -861,6 +911,7 @@ def avoid_all_collisions() -> None:
     giskard_wrapper.motion_goals.avoid_all_collisions()
 
 
+@init_giskard_interface
 def allow_self_collision() -> None:
     """
     Will allow the robot collision with itself.
@@ -868,6 +919,7 @@ def allow_self_collision() -> None:
     giskard_wrapper.motion_goals.allow_self_collision()
 
 
+@init_giskard_interface
 def avoid_collisions(object1: Object, object2: Object) -> None:
     """
     Will avoid collision between the two objects for the next goal.
@@ -879,13 +931,14 @@ def avoid_collisions(object1: Object, object2: Object) -> None:
                                                  object2.name + "_" + str(object2.id))
 
 
+@init_giskard_interface
 def cancel_all_called_goals():
     giskard_wrapper.cancel_all_goals()
     rospy.loginfo("Canceling all goals towards Giskard")
 
 
 # Creating ROS messages
-
+@init_giskard_interface
 def make_world_body(object: Object) -> 'WorldBody':
     """
     Creates a WorldBody message for a World Object. The WorldBody will contain the URDF of the World Object
