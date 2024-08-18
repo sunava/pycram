@@ -314,185 +314,118 @@ class ClosingMotion(BaseMotion):
 
         return motion
 
-#
-# class GraspingDishwasherHandleMotion(MotionDesignatorDescription):
-#     """
-#     Designator for grasping the dishwasher handle
-#     """
-#
-#     @dataclasses.dataclass
-#     class Motion(MotionDesignatorDescription.Motion):
-#
-#         handle_name: str
-#         """
-#         Name of the handle to grasp
-#         """
-#         arm: str
-#         """
-#         Arm that should be used
-#         """
-#
-#         @with_tree
-#         def perform(self):
-#             pm_manager = ProcessModuleManager.get_manager()
-#             return pm_manager.grasp_dishwasher_handle().execute(self)
-#
-#     def __init__(self, handle_name: str, arm: str, resolver: Optional[Callable] = None):
-#         """
-#         Lets the robot grasp the dishwasher handle specified by the given parameter.
-#         :param handle_name: name of the handle that should be grasped
-#         :param arm: Arm that should be used
-#         :param resolver: An alternative resolver
-#         """
-#         super().__init__(resolver)
-#         self.cmd: str = 'open'
-#         self.handle_name = handle_name
-#         self.arm: str = arm
-#
-#     def ground(self) -> Motion:
-#         """
-#         Default resolver for grasping motion designator, returns a resolved motion designator for the input parameters.
-#         :return: A resolved motion designator
-#         """
-#         return self.Motion(self.cmd, self.handle_name, self.arm)
-#
-#
-# class HalfOpeningDishwasherMotion(MotionDesignatorDescription):
-#     """
-#     Designator for half opening the dishwasher door to a given degree.
-#     """
-#
-#     @dataclasses.dataclass
-#     class Motion(MotionDesignatorDescription.Motion):
-#         handle_name: str
-#         """
-#         Name of the dishwasher handle which is grasped
-#         """
-#         goal_state_half_open: float
-#         """
-#         Goal state of the door, defining the degree to open the door
-#         """
-#         arm: str
-#         """
-#         Arm that should be used
-#         """
-#
-#         @with_tree
-#         def perform(self):
-#             pm_manager = ProcessModuleManager.get_manager()
-#             return pm_manager.half_open_dishwasher().execute(self)
-#
-#     def __init__(self, handle_name: str, goal_state_half_open: float, arm: str, resolver: Optional[Callable] = None):
-#         """
-#         Lets the robot open the dishwasher to a given degree. This motion designator assumes that the handle
-#         is already grasped.
-#         :param handle_name: Name of the handle which is grasped
-#         :param goal_state_half_open: degree to which the dishwasher door should be opened
-#         :param arm: Arm that should be used
-#         :param resolver: An alternative resolver
-#         """
-#         super().__init__(resolver)
-#         self.cmd: str = 'open'
-#         self.handle_name = handle_name
-#         self.goal_state_half_open = goal_state_half_open
-#         self.arm: str = arm
-#
-#     def ground(self) -> Motion:
-#         """
-#         Default resolver for opening motion designator, returns a resolved motion designator for the input parameters.
-#         :return: A resolved motion designator
-#         """
-#         return self.Motion(self.cmd, self.handle_name, self.goal_state_half_open, self.arm)
-#
-# class MoveArmAroundMotion(MotionDesignatorDescription):
-#     """
-#     Designator for moving the arm around the dishwasher to further open the door.
-#     """
-#
-#     @dataclasses.dataclass
-#     class Motion(MotionDesignatorDescription.Motion):
-#         handle_name: str
-#         """
-#         Name of the dishwasher handle which was grasped
-#         """
-#         arm: str
-#         """
-#         Arm that should be used
-#         """
-#
-#         @with_tree
-#         def perform(self):
-#             pm_manager = ProcessModuleManager.get_manager()
-#             return pm_manager.move_arm_around_dishwasher().execute(self)
-#
-#     def __init__(self, handle_name: str, arm: str, resolver: Optional[Callable] = None):
-#         """
-#         Lets the robot move its arm around the dishwasher door for the next opening action. This motion designator assumes that the handle
-#         is not grasped anymore.
-#         :param handle_name: Name of the handle which was grasped
-#         :param arm: Arm that should be used
-#         :param resolver: An alternative resolver
-#         """
-#         super().__init__(resolver)
-#         self.cmd: str = 'open'
-#         self.handle_name = handle_name
-#         self.arm: str = arm
-#
-#     def ground(self) -> Motion:
-#         """
-#         Default resolver for moving arm around motion designator, returns a resolved motion designator for the input parameters.
-#         :return: A resolved motion designator
-#         """
-#         return self.Motion(self.cmd, self.handle_name, self.arm)
-#
-# class FullOpeningDishwasherMotion(MotionDesignatorDescription):
-#     """
-#     Designator for fully opening the dishwasher. Assumes that the door is already half opened and the arm is in the right position.
-#     """
-#
-#     @dataclasses.dataclass
-#     class Motion(MotionDesignatorDescription.Motion):
-#         handle_name: str
-#         """
-#         Name of the dishwasher handle which was grasped
-#         """
-#         door_name: str
-#         """
-#         Name of the dishwasher door which should be opened
-#         """
-#         goal_state_full_open: float
-#         """
-#         Goal state of the door, defining the degree to open the door
-#         """
-#         arm: str
-#         """
-#         Arm that should be used
-#         """
-#
-#         @with_tree
-#         def perform(self):
-#             pm_manager = ProcessModuleManager.get_manager()
-#             return pm_manager.full_open_dishwasher().execute(self)
-#
-#     def __init__(self, handle_name: str, door_name: str, goal_state_full_open: float, arm: str, resolver: Optional[Callable] = None):
-#         """
-#         Lets the robot fully open the dishwasher door. This motion designator assumes that the dishwasher is already half open and the arm is in the right position.
-#         :param handle_name: Name of the handle, which was grasped
-#         :param door_name: Name of the door, which should be opened
-#         :param goal_state_full_open: degree to which the dishwasher door should be opened
-#         :param arm: Arm that should be used
-#         :param resolver: An alternative resolver
-#         """
-#         super().__init__(resolver)
-#         self.cmd: str = 'open'
-#         self.handle_name = handle_name
-#         self.door_name = door_name
-#         self.goal_state_full_open = goal_state_full_open
-#         self.arm: str = arm
-#
-#     def ground(self) -> Motion:
-#         """
-#         Default resolver for opening motion designator, returns a resolved motion designator for the input parameters.
-#         :return: A resolved motion designator
-#         """
-#         return self.Motion(self.cmd, self.handle_name, self.door_name, self.goal_state_full_open, self.arm)
+
+class GraspingDishwasherHandleMotion(BaseMotion):
+    """
+    Designator for grasping the dishwasher handle
+    """
+
+    handle_name: str
+    """
+    Name of the handle to grasp
+    """
+    arm: Arms
+    """
+    Arm that should be used
+    """
+
+    @with_tree
+    def perform(self):
+        pm_manager = ProcessModuleManager.get_manager()
+        return pm_manager.grasp_dishwasher_handle().execute(self)
+
+    def to_sql(self) -> ORMMotionDesignator:
+        pass
+
+    def insert(self, session: Session, *args, **kwargs) -> ORMMotionDesignator:
+        pass
+
+
+class HalfOpeningDishwasherMotion(BaseMotion):
+    """
+    Designator for half opening the dishwasher door to a given degree.
+    """
+
+    handle_name: str
+    """
+    Name of the dishwasher handle which is grasped
+    """
+    goal_state_half_open: float
+    """
+    Goal state of the door, defining the degree to open the door
+    """
+    arm: Arms
+    """
+    Arm that should be used
+    """
+
+    @with_tree
+    def perform(self):
+        pm_manager = ProcessModuleManager.get_manager()
+        return pm_manager.half_open_dishwasher().execute(self)
+
+    def to_sql(self) -> ORMMotionDesignator:
+        pass
+
+    def insert(self, session: Session, *args, **kwargs) -> ORMMotionDesignator:
+        pass
+
+
+class MoveArmAroundMotion(BaseMotion):
+    """
+    Designator for moving the arm around the dishwasher to further open the door.
+    """
+
+    handle_name: str
+    """
+    Name of the dishwasher handle which was grasped
+    """
+    arm: Arms
+    """
+    Arm that should be used
+    """
+
+    @with_tree
+    def perform(self):
+        pm_manager = ProcessModuleManager.get_manager()
+        return pm_manager.move_arm_around_dishwasher().execute(self)
+
+    def to_sql(self) -> ORMMotionDesignator:
+        pass
+
+    def insert(self, session: Session, *args, **kwargs) -> ORMMotionDesignator:
+        pass
+
+
+class FullOpeningDishwasherMotion(BaseMotion):
+    """
+    Designator for fully opening the dishwasher. Assumes that the door is already half opened and the arm is in the right position.
+    """
+
+    handle_name: str
+    """
+    Name of the dishwasher handle which was grasped
+    """
+    door_name: str
+    """
+    Name of the dishwasher door which should be opened
+    """
+    goal_state_full_open: float
+    """
+    Goal state of the door, defining the degree to open the door
+    """
+    arm: Arms
+    """
+    Arm that should be used
+    """
+
+    @with_tree
+    def perform(self):
+        pm_manager = ProcessModuleManager.get_manager()
+        return pm_manager.full_open_dishwasher().execute(self)
+
+    def to_sql(self) -> ORMMotionDesignator:
+        pass
+
+    def insert(self, session: Session, *args, **kwargs) -> ORMMotionDesignator:
+        pass
