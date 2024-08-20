@@ -1,6 +1,7 @@
 import json
 import threading
 import time
+from typing import TYPE_CHECKING
 
 import rospy
 import sys
@@ -19,10 +20,10 @@ from typing_extensions import List, Dict, Callable, Optional
 from geometry_msgs.msg import PoseStamped, PointStamped, QuaternionStamped, Vector3Stamped
 from threading import Lock, RLock
 
-#
-# if TYPE_CHECKING:
-#     from giskardpy.python_interface.python_interface import GiskardWrapper
-#     from giskard_msgs.msg import MoveResult, UpdateWorldResponse
+
+if TYPE_CHECKING:
+    from giskardpy.python_interface.python_interface import GiskardWrapper
+    from giskard_msgs.msg import MoveResult, UpdateWorldResponse, WorldBody
 giskard_wrapper = None
 # giskard_wrapper: GiskardWrapper = None
 giskard_update_service = None
@@ -68,7 +69,7 @@ def init_giskard_interface(func: Callable):
         try:
             from giskardpy.python_interface.python_interface import GiskardWrapper
             from giskard_msgs.msg import WorldBody, MoveResult, CollisionEntry, Weights
-            from giskard_msgs.srv import UpdateWorldResponse, UpdateWorld
+            #from giskard_msgs.srv import UpdateWorldResponse, UpdateWorld
 
             if is_init and "/giskard" in rosnode.get_node_names():
                 return func(*args, **kwargs)
@@ -84,7 +85,7 @@ def init_giskard_interface(func: Callable):
 
             if "/giskard" in rosnode.get_node_names():
                 giskard_wrapper = GiskardWrapper()
-                giskard_update_service = rospy.ServiceProxy("/giskard/update_world", UpdateWorld)
+                # giskard_update_service = rospy.ServiceProxy("/giskard/update_world", UpdateWorldResponse)
                 rospy.loginfo_once("Successfully initialized Giskard interface")
                 is_init = True
             else:
@@ -356,6 +357,7 @@ def _manage_par_motion_goals(goal_func, *args) -> Optional['MoveResult']:
 
 @init_giskard_interface
 @thread_safe
+# CHANGE: function from Suturo Robocup
 def achieve_joint_goal(goal_poses: Dict[str, float]) -> 'MoveResult':
     """
     Takes a dictionary of joint position that should be achieved, the keys in the dictionary are the joint names and
@@ -364,13 +366,10 @@ def achieve_joint_goal(goal_poses: Dict[str, float]) -> 'MoveResult':
     :param goal_poses: Dictionary with joint names and position goals
     :return: MoveResult message for this goal
     """
-    # sync_worlds()
-    par_return = _manage_par_motion_goals(giskard_wrapper.set_joint_goal, goal_poses)
-    if par_return:
-        return par_return
 
-    giskard_wrapper.set_joint_goal(goal_poses)
-    # giskard_wrapper.add_default_end_motion_conditions()
+    giskard_wrapper.motion_goals.add_joint_position(goal_poses)
+    giskard_wrapper.add_default_end_motion_conditions()
+    giskard_wrapper.motion_goals.avoid_all_collisions()
     return giskard_wrapper.execute()
 
 
@@ -567,7 +566,7 @@ def achieve_cartesian_goal(goal_pose: Pose, tip_link: str, root_link: str) -> 'M
     :param root_link: The starting link of the chain which should be used to achieve this goal
     :return: MoveResult message for this goal
     """
-    sync_worlds()
+    #sync_worlds()
     par_return = _manage_par_motion_goals(giskard_wrapper.set_cart_goal, _pose_to_pose_stamped(goal_pose),
                                           tip_link, root_link)
     if par_return:
@@ -1025,13 +1024,14 @@ def _pose_to_pose_stamped(pose: Pose) -> PoseStamped:
 
     return ps
 
-
-def move_head_to_pose(pose1: PoseStamped):
+@init_giskard_interface
+@thread_safe
+def move_head_to_pose(pose: PoseStamped):
     """
     moves head to given position
     :param pose: pose that head will rotate to
     """
-    print("we are in new giskard")
+
     p_axis = Vector3Stamped()
     p_axis.header.frame_id = 'head_center_camera_frame'
     p_axis.vector.x = 0
@@ -1039,8 +1039,8 @@ def move_head_to_pose(pose1: PoseStamped):
     p_axis.vector.z = 1
 
     pointSt = PointStamped()
-    pointSt.header = pose1.header
-    pointSt.point = pose1.pose.position
+    pointSt.header = pose.header
+    pointSt.point = pose.pose.position
     # sync_worlds()
     print(pointSt)
     giskard_wrapper.motion_goals.add_pointing(goal_point=pointSt,
@@ -1053,6 +1053,8 @@ def move_head_to_pose(pose1: PoseStamped):
     giskard_wrapper.execute()
 
 
+@init_giskard_interface
+@thread_safe
 def spawn_kitchen():
     env_urdf = rospy.get_param('/iai_kitchen')
     kitchen_pose = tf.lookup_pose('map', 'iai_kitchen/urdf_main')
@@ -1062,7 +1064,8 @@ def spawn_kitchen():
                              pose=kitchen_pose)
 
 
-#
+@init_giskard_interface
+@thread_safe
 def grasp_doorhandle(handle_name: str):
     print("grasp handle")
 
@@ -1084,6 +1087,10 @@ def grasp_doorhandle(handle_name: str):
 #     giskard_wrapper.execute()
 #
 #
+
+
+@init_giskard_interface
+@thread_safe
 def open_doorhandle(handle_name: str):
     giskard_wrapper.motion_goals.hsrb_open_door_goal(door_handle_link=handle_name)
     giskard_wrapper.motion_goals.allow_all_collisions()
@@ -1091,6 +1098,8 @@ def open_doorhandle(handle_name: str):
     return giskard_wrapper.execute()
 
 
+@init_giskard_interface
+@thread_safe
 def move_arm_to_point(point: PointStamped):
     """
     moves arm to given position
@@ -1110,6 +1119,8 @@ def move_arm_to_point(point: PointStamped):
     giskard_wrapper.execute()
 
 
+@init_giskard_interface
+@thread_safe
 def move_head_to_human():
     """
     continously moves head in direction of perceived human

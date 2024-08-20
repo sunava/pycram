@@ -3,7 +3,11 @@ import rospy
 from threading import Lock
 from typing import Any
 
+from geometry_msgs.msg import PoseStamped, PointStamped
+
 from ..datastructures.enums import JointType, PerceptionTechniques
+from ..external_interfaces.robokudo import query_human, faces_query, stop_query, query_specific_region, \
+    query_human_attributes, send_query
 from ..external_interfaces.tmc import tmc_gripper_control, tmc_talk
 from ..robot_description import RobotDescription
 from ..process_module import ProcessModule
@@ -17,6 +21,7 @@ from ..designators.motion_designator import *
 from ..external_interfaces import giskard
 from ..world_concepts.world_object import Object
 from ..datastructures.world import World
+from pycram.worlds.bullet_world import BulletWorld
 from pydub import AudioSegment
 from pydub.playback import play
 from gtts import gTTS
@@ -34,9 +39,9 @@ class HSRBNavigationReal(ProcessModule):
     """
 
     def _execute(self, designator: MoveMotion) -> Any:
-        rospy.logdebug(f"Sending goal to giskard to Move the robot")
+        rospy.loginfo(f"Sending goal to giskard to Move the robot")
         # giskard.achieve_cartesian_goal(designator.target, robot_description.base_link, "map")
-        # todome fix this
+        # todo: me fix this
         # queryPoseNav(designator.target)
 
 
@@ -47,7 +52,38 @@ class HSRBMoveHeadReal(ProcessModule):
 
     def _execute(self, desig: LookingMotion):
         target = desig.target
-        giskard.move_head_to_pose(target)
+        pose = PoseStamped()
+        pose.pose.position.x = target.pose.position.x
+        pose.pose.position.y = target.pose.position.y
+        pose.pose.position.z = target.pose.position.z
+        print(pose)
+        giskard.move_head_to_pose(pose)
+
+
+class HSRBHeadFollowReal(ProcessModule):
+    """
+    HSR will move head to pose that is published on topic /human_pose
+    """
+
+    def _execute(self, designator: HeadFollowMotion) -> Any:
+        if designator.state == 'stop':
+            giskard.cancel_all_called_goals()
+        else:
+            giskard.move_head_to_human()
+
+
+class HSRBPointingReal(ProcessModule):
+    """
+    HSR will move head to pose that is published on topic /human_pose
+    """
+
+    def _execute(self, designator: PointingMotion) -> Any:
+        pointing_pose = PointStamped()
+        pointing_pose.header.frame_id = "map"
+        pointing_pose.point.x = designator.x_coordinate
+        pointing_pose.point.y = designator.y_coordinate
+        pointing_pose.point.z = designator.z_coordinate
+        giskard.move_arm_to_point(pointing_pose)
 
 
 class HSRBDetectingReal(ProcessModule):
@@ -57,94 +93,212 @@ class HSRBDetectingReal(ProcessModule):
     """
 
     def _execute(self, desig: DetectingMotion) -> Any:
-        pass
         # todo at the moment perception ignores searching for a specific object type so we do as well on real
-        # if desig.technique == 'human' and (desig.state == "start" or desig.state == None):
-        #     human_pose = queryHuman()
-        #     pose = Pose.from_pose_stamped(human_pose)
-        #     pose.position.z = 0
-        #     human = []
-        #     human.append(Object("human", ObjectType.HUMAN, "human_male.stl", pose=pose))
-        #     object_dict = {}
-        #
-        #     # Iterate over the list of objects and store each one in the dictionary
-        #     for i, obj in enumerate(human):
-        #         object_dict[obj.name] = obj
-        #     return object_dict
-        #
-        #     return human_pose
-        # elif desig.technique == 'human' and desig.state == "stop":
-        #     stop_queryHuman()
-        #     return "stopped"
-        #
-        # query_result = queryEmpty(ObjectDesignatorDescription(types=[desig.object_type]))
-        # perceived_objects = []
-        # for i in range(0, len(query_result.res)):
-        #     # this has to be pose from pose stamped since we spawn the object with given header
-        #     obj_pose = Pose.from_pose_stamped(query_result.res[i].pose[0])
-        #     # obj_pose.orientation = [0, 0, 0, 1]
-        #     # obj_pose_tmp = query_result.res[i].pose[0]
-        #     obj_type = query_result.res[i].type
-        #     obj_size = query_result.res[i].shape_size
-        #     obj_color = query_result.res[i].color[0]
-        #     color_switch = {
-        #         "red": [1, 0, 0, 1],
-        #         "green": [0, 1, 0, 1],
-        #         "blue": [0, 0, 1, 1],
-        #         "black": [0, 0, 0, 1],
-        #         "white": [1, 1, 1, 1],
-        #         # add more colors if needed
-        #     }
-        #     color = color_switch.get(obj_color)
-        #     if color is None:
-        #         color = [0, 0, 0, 1]
-        #
-        #     # atm this is the string size that describes the object but it is not the shape size thats why string
-        #     def extract_xyz_values(input_string):
-        #         # Split the input string by commas and colon to separate key-value pairs
-        #         # key_value_pairs = input_string.split(', ')
-        #
-        #         # Initialize variables to store the X, Y, and Z values
-        #         x_value = None
-        #         y_value = None
-        #         z_value = None
-        #
-        #         for key in input_string:
-        #             x_value = key.dimensions.x
-        #             y_value = key.dimensions.y
-        #             z_value = key.dimensions.z
-        #
-        #         #
-        #         # # Iterate through the key-value pairs to extract the values
-        #         # for pair in key_value_pairs:
-        #         #     key, value = pair.split(': ')
-        #         #     if key == 'x':
-        #         #         x_value = float(value)
-        #         #     elif key == 'y':
-        #         #         y_value = float(value)
-        #         #     elif key == 'z':
-        #         #         z_value = float(value)
-        #
-        #         return x_value, y_value, z_value
-        #
-        #     x, y, z = extract_xyz_values(obj_size)
-        #     size = (x, z / 2, y)
-        #     size_box = (x / 2, z / 2, y / 2)
-        #     hard_size = (0.02, 0.02, 0.03)
-        #     id = World.current_world.add_rigid_box(obj_pose, hard_size, color)
-        #     box_object = Object(obj_type + "_" + str(rospy.get_time()), obj_type, pose=obj_pose, color=color, id=id,
-        #                         customGeom={"size": [hard_size[0], hard_size[1], hard_size[2]]})
-        #     box_object.set_pose(obj_pose)
-        #     box_desig = ObjectDesignatorDescription.Object(box_object.name, box_object.type, box_object)
-        #
-        #     perceived_objects.append(box_desig)
-        #
-        # object_dict = {}
-        #
-        # # Iterate over the list of objects and store each one in the dictionary
-        # for i, obj in enumerate(perceived_objects):
-        #     object_dict[obj.name] = obj
-        # return object_dict
+        if desig.technique == 'human' and (desig.state == 'start' or desig.state == None):
+            human_pose = query_human()
+            return human_pose
+        elif desig.state == "face":
+
+            res = faces_query()
+            id_dict = {}
+            keys = []
+            if res.res:
+                for ele in res.res:
+                    id_dict[int(ele.type)] = ele.pose[0]
+                    keys.append(int(ele.type))
+                id_dict["keys"] = keys
+                return id_dict
+            else:
+                return []
+
+        elif desig.state == "stop":
+            stop_query()
+            return "stopped"
+
+        elif desig.technique == 'location':
+            seat = desig.state
+            seat_human_pose = query_specific_region(seat)
+
+            if seat == "long_table" or seat == "popcorn_table":
+                loc_list = []
+                for loc in seat_human_pose[0].attribute:
+                    print(f"location: {loc}, type: {type(loc)}")
+                    loc_list.append(loc)
+                print(loc_list)
+                return loc_list
+                # return seat_human_pose[0].attribute
+            # if only one seat is checked
+            if seat != "sofa":
+                return seat_human_pose[0].attribute[0][9:].split(',')
+            # when whole sofa gets checked, a list of lists is returned
+            res = []
+            for i in seat_human_pose[0].attribute:
+                res.append(i.split(','))
+
+            print(res)
+            return res
+
+        elif desig.technique == 'attributes':
+            human_pose_attr = query_human_attributes()
+            counter = 0
+            # wait for human to come
+            while not human_pose_attr.res and counter < 6:
+                human_pose_attr = query_human_attributes()
+                counter += 1
+                if counter > 3:
+                    TalkingMotion("please step in front of me").resolve().perform()
+                    rospy.sleep(2)
+
+            if counter >= 3:
+                return "False"
+
+            # extract information from query
+            gender = human_pose_attr.res[0].attribute[3][13:19]
+            if gender[0] != 'f':
+                gender = gender[:4]
+            clothes = human_pose_attr.res[0].attribute[1][20:]
+            brightness_clothes = human_pose_attr.res[0].attribute[0][5:]
+            hat = human_pose_attr.res[0].attribute[2][20:]
+            attr_list = [gender, hat, clothes, brightness_clothes]
+            return attr_list
+
+        # used when region-filter of robokudo should be used
+        elif desig.technique == 'region':
+            region = desig.state  # name of the region where should be perceived
+            query_result = query_specific_region("region", region)
+            perceived_objects = []
+
+            for obj in query_result:
+                # this has to be pose from pose stamped since we spawn the object with given header
+                list = obj.pose
+                if len(list) == 0:
+                    continue
+                obj_pose = Pose.from_pose_stamped(list[0])
+                # obj_pose.orientation = [0, 0, 0, 1]
+                # obj_pose_tmp = query_result.res[i].pose[0]
+                obj_type = obj.type
+                obj_size = obj.size
+                # obj_color = query_result.res[i].color[0]
+                color_switch = {
+                    "red": [1, 0, 0, 1],
+                    "green": [0, 1, 0, 1],
+                    "blue": [0, 0, 1, 1],
+                    "black": [0, 0, 0, 1],
+                    "white": [1, 1, 1, 1],
+                    # add more colors if needed
+                }
+
+                # color = color_switch.get(obj_color)
+                # if color is None:
+                # color = [0, 0, 0, 1]
+
+                # atm this is the string size that describes the object but it is not the shape size thats why string
+                def extract_xyz_values(input_string):
+                    # Split the input string by commas and colon to separate key-value pairs
+                    # key_value_pairs = input_string.split(', ')
+
+                    # Initialize variables to store the X, Y, and Z values
+                    x_value = None
+                    y_value = None
+                    z_value = None
+
+                    # todo: for now it is a string again, might be changed back. In this case we need the lower commented out code
+                    xvalue = input_string[(input_string.find("x") + 2): input_string.find("y")]
+                    y_value = input_string[(input_string.find("y") + 2): input_string.find("z")]
+                    z_value = input_string[(input_string.find("z") + 2):]
+
+                    # Iterate through the key-value pairs to extract the values
+                    # for pair in key_value_pairs:
+                    #     key, value = pair.split(': ')
+                    #     if key == 'x':
+                    #         x_value = float(value)
+                    #     elif key == 'y':
+                    #         y_value = float(value)
+                    #     elif key == 'z':
+                    #         z_value = float(value)
+
+                    return x_value, y_value, z_value
+
+                x, y, z = extract_xyz_values(obj_size)
+                # size = (x, z / 2, y)
+                # size_box = (x / 2, z / 2, y / 2)
+                hard_size = (0.02, 0.02, 0.03)
+                id = BulletWorld.current_bullet_world.add_rigid_box(obj_pose, hard_size, [0, 0, 0, 1])
+                box_object = Object(obj_type + "" + str(rospy.get_time()), obj_type, pose=obj_pose, color=[0, 0, 0, 1],
+                                    id=id,
+                                    customGeom={"size": [hard_size[0], hard_size[1], hard_size[2]]})
+                box_object.set_pose(obj_pose)
+                box_desig = ObjectDesignatorDescription.Object(box_object.name, box_object.type, box_object)
+
+                perceived_objects.append(box_desig)
+
+            object_dict = {}
+
+            # Iterate over the list of objects and store each one in the dictionary
+            for i, obj in enumerate(perceived_objects):
+                object_dict[obj.name] = obj
+            return object_dict
+
+        else:
+            query_result = send_query(ObjectDesignatorDescription(types=[ObjectType.MILK]))
+            perceived_objects = []
+            for i in range(0, len(query_result.res)):
+                print("#######################################################")
+                print(query_result.res[i])
+                try:
+                    obj_pose = Pose.from_pose_stamped(query_result.res[i].pose[0])
+                except IndexError:
+                    obj_pose = Pose.from_pose_stamped(query_result.res[i].pose)
+                    pass
+                obj_type = query_result.res[i].type
+                obj_size = None
+                try:
+                     obj_size = query_result.res[i].shape_size[0].dimensions
+                except IndexError:
+                    pass
+                obj_color = None
+                try:
+                    obj_color = query_result.res[i].color[0]
+                except IndexError:
+                    pass
+
+                if desig.object_type:
+                    if not desig.object_type.lower() in obj_type.lower():
+                        pass
+                color_switch = {
+                    "red": [1, 0, 0, 1],
+                    "yellow": [1, 1, 0, 1],
+                    "green": [0, 1, 0, 1],
+                    "cyan": [0, 1, 1, 1],
+                    "blue": [0, 0, 1, 1],
+                    "magenta": [1, 0, 1, 1],
+                    "white": [1, 1, 1, 1],
+                    "black": [0, 0, 0, 1],
+                    "grey": [0.5, 0.5, 0.5, 1],
+                    # add more colors if needed
+                }
+
+                color = color_switch.get(obj_color)
+                if color is None:
+                    color = [0, 0, 0, 1]
+
+
+                hsize = [obj_size.x / 2, obj_size.y / 2, obj_size.z / 2]
+                osize = [obj_size.x, obj_size.y, obj_size.z]
+                id = BulletWorld.current_bullet_world.add_rigid_box(obj_pose, hsize, color)
+
+                box_object = Object(obj_type + "_" + str(rospy.get_time()), obj_type, pose=obj_pose, color=color, id=id,
+                                    customGeom={"size": osize})
+                box_object.set_pose(obj_pose)
+                box_desig = ObjectDesignatorDescription.Object(box_object.name, box_object.type, box_object)
+
+                perceived_objects.append(box_desig)
+
+            object_dict = {}
+
+            for i, obj in enumerate(perceived_objects):
+                object_dict[obj.name] = obj
+            return object_dict
 
 
 class HSRBMoveTCPReal(ProcessModule):
@@ -287,6 +441,8 @@ class HSRBManager(ProcessModuleManager):
         self._open_lock = Lock()
         self._close_lock = Lock()
         self._talk_lock = Lock()
+        self._head_follow_lock = Lock()
+        self._pointing_lock = Lock()
 
     def navigate(self):
         if ProcessModuleManager.execution_type == "simulated":
@@ -371,3 +527,15 @@ class HSRBManager(ProcessModuleManager):
             return HSRBTalkReal(self._talk_lock)
         elif ProcessModuleManager.execution_type == "semi_real":
             return HSRBTalkSemiReal(self._talk_lock)
+
+    def head_follow(self):
+        if ProcessModuleManager.execution_type == "real":
+            return HSRBHeadFollowReal(self._head_follow_lock)
+        elif ProcessModuleManager.execution_type == "semi_real":
+            return HSRBHeadFollowReal(self._head_follow_lock)
+
+    def pointing(self):
+        if ProcessModuleManager.execution_type == "real":
+            return HSRBPointingReal(self._pointing_lock)
+        elif ProcessModuleManager.execution_type == "semi_real":
+            return HSRBPointingReal(self._pointing_lock)

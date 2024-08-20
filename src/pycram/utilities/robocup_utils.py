@@ -8,6 +8,7 @@ from tmc_control_msgs.msg import GripperApplyEffortActionGoal
 from tmc_msgs.msg import Voice, TalkRequestAction, TalkRequestActionGoal
 import pycram.external_interfaces.giskard_new as giskardpy
 from pycram.designators.object_designator import *
+from pycram.fluent import Fluent
 
 
 def pakerino(torso_z=0.15, config=None):

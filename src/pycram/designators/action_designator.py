@@ -13,8 +13,7 @@ from typing_extensions import Any, List, Union, Callable, Optional, Type
 import rospy
 
 from .location_designator import CostmapLocation
-from .motion_designator import MoveJointsMotion, MoveGripperMotion, MoveArmJointsMotion, MoveTCPMotion, MoveMotion, \
-    LookingMotion, DetectingMotion, OpeningMotion, ClosingMotion
+from .motion_designator import *
 from .object_designator import ObjectDesignatorDescription, BelieveObject, ObjectPart
 from ..local_transformer import LocalTransformer
 from ..plan_failures import ObjectUnfetchable, ReachabilityFailure
@@ -97,8 +96,8 @@ class SetGripperAction(ActionDesignatorDescription):
         :param ontology_concept_holders: A list of ontology concepts that the action is categorized as or associated with
         """
         super().__init__(resolver, ontology_concept_holders)
-        self.grippers: List[GripperState] = grippers
-        self.motions: List[Arms] = motions
+        self.grippers: List[Arms] = grippers
+        self.motions: List[GripperState] = motions
 
         if self.soma:
             self.init_ontology_concepts({"setting_gripper": self.soma.SettingGripper})
@@ -380,17 +379,21 @@ class DetectAction(ActionDesignatorDescription):
     Detects an object that fits the object description and returns an object designator describing the object.
     """
 
-    def __init__(self, object_designator_description: ObjectDesignatorDescription, resolver=None,
-                 ontology_concept_holders: Optional[List[Thing]] = None):
+    def __init__(self, object_designator_description: Optional[ObjectDesignatorDescription] = None, resolver=None,
+                 ontology_concept_holders: Optional[List[Thing]] = None, state: Optional[str] = None, technique: Optional[str] = None):
         """
         Tries to detect an object in the field of view (FOV) of the robot.
 
         :param object_designator_description: Object designator describing the object
         :param resolver: An alternative specialized_designators
         :param ontology_concept_holders: A list of ontology concepts that the action is categorized as or associated with
+        :param state: for special instructions e.g. "stop" for stop detecting
+        :param technique: what should be detected e.g. "human", "bowl", "object"
         """
         super().__init__(resolver, ontology_concept_holders)
-        self.object_designator_description: ObjectDesignatorDescription = object_designator_description
+        self.object_designator_description: Optional[ObjectDesignatorDescription] = object_designator_description
+        self.state: Optional[str] = state
+        self.technique: Optional[str] = technique
 
         if self.soma:
             self.init_ontology_concepts({"looking_for": self.soma.LookingFor,
@@ -402,7 +405,14 @@ class DetectAction(ActionDesignatorDescription):
 
         :return: A performable designator
         """
-        return DetectActionPerformable(self.object_designator_description.resolve())
+        if self.object_designator_description:
+            return DetectActionPerformable(object_designator=self.object_designator_description.resolve(),
+                                           state=self.state, technique=self.technique)
+        else:
+            place_holder = ObjectDesignatorDescription()
+            self.object_designator_description = place_holder
+            return DetectActionPerformable(object_designator=self.object_designator_description.resolve(),
+                                           state=self.state, technique=self.technique)
 
 
 class OpenAction(ActionDesignatorDescription):
@@ -504,6 +514,63 @@ class GraspingAction(ActionDesignatorDescription):
         :return: A performable action designator that contains specific arguments
         """
         return GraspingActionPerformable(self.arms[0], self.object_description.resolve())
+
+
+class HeadFollowAction(ActionDesignatorDescription):
+        """
+        Continuously move head to human closest to robot
+        """
+
+        def __init__(self, state: Optional[str], resolver=None, ontology_concept_holders: Optional[List[Thing]] = None):
+            """
+            :param state: defines if the robot should start/stop looking at human
+            :param resolver: An optional resolver that returns a performable designator from the designator description
+            :param ontology_concept_holders: A list of ontology concepts that the action is categorized as or associated with
+            """
+            super().__init__(resolver, ontology_concept_holders)
+            self.state: Optional[str] = state
+
+            if self.soma:
+                self.init_ontology_concepts({"headfollow": self.soma.Headfollow})
+
+        def ground(self) -> HeadFollowActionPerformable:
+            """
+            Default specialized_designators that returns a performable designator with the first entry
+            in the list of possible targets
+
+            :return: A performable designator
+            """
+            return HeadFollowActionPerformable(self.state)
+
+
+class PointingAction(ActionDesignatorDescription):
+    """
+    Point to Pose
+    """
+    def __init__(self, x_coordinate: float, y_coordinate: float, z_coordinate: float, resolver=None, ontology_concept_holders: Optional[List[Thing]] = None):
+        """
+        Lets the robot pour based on the given parameter.
+        :param x_coordinate: x coordinate where the robot points to (in map frame)
+        :param y_coordinate: y coordinate where the robot points to (in map frame)
+        :param z_coordinate: z coordinate where the robot points to (in map frame)
+        :param resolver: An alternative resolver
+        """
+        super().__init__(resolver, ontology_concept_holders)
+        self.x_coordinate = x_coordinate
+        self.y_coordinate = y_coordinate
+        self.z_coordinate = z_coordinate
+
+        if self.soma:
+            self.init_ontology_concepts({"pointing": self.soma.Headfollow})
+
+    def ground(self) -> PointingActionPerformable:
+        """
+        Default specialized_designators that returns a performable designator with the first entry
+        in the list of possible targets
+
+        :return: A performable designator
+        """
+        return PointingActionPerformable(self.x_coordinate, self.y_coordinate, self.z_coordinate)
 
 
 # ----------------------------------------------------------------------------
@@ -620,6 +687,9 @@ class SetGripperActionPerformable(ActionAbstract):
 
     @with_tree
     def perform(self) -> None:
+        print(self.gripper)
+        print(self.motion)
+        print("performable")
         MoveGripperMotion(gripper=self.gripper, motion=self.motion).perform()
 
 
@@ -628,7 +698,7 @@ class ReleaseActionPerformable(ActionAbstract):
     """
     Releases an Object from the robot.
 
-    Note: This action can not ve used yet.
+    Note: This action can not be used yet.
     """
 
     gripper: Arms
@@ -825,7 +895,7 @@ class NavigateActionPerformable(ActionAbstract):
 
     target_location: Pose
     """
-    Location to which the robot should be navigated
+    Location to which the robot should navigate
     """
     orm_class: Type[ActionAbstract] = field(init=False, default=ORMNavigateAction)
 
@@ -907,15 +977,26 @@ class DetectActionPerformable(ActionAbstract):
     Detects an object that fits the object description and returns an object designator describing the object.
     """
 
+    technique: str
+    """
+    Technique means how the object should be detected, e.g. 'color', 'shape', 'region', etc. 
+    Or 'all' if all objects should be detected
+    """
     object_designator: ObjectDesignatorDescription.Object
     """
     Object designator loosely describing the object, e.g. only type. 
+    """
+    state: Optional[str] = None
+    """
+    The state instructs our perception system to either start or stop the search for an object or human.
+    Can also be used to describe the region or location where objects are perceived.
     """
     orm_class: Type[ActionAbstract] = field(init=False, default=ORMDetectAction)
 
     @with_tree
     def perform(self) -> None:
-        return DetectingMotion(object_type=self.object_designator.obj_type).perform()
+        return DetectingMotion(object_type=self.object_designator.obj_type,
+                               technique=self.technique, state=self.state).perform()
 
 
 @dataclass
@@ -1066,3 +1147,40 @@ class MoveAndPickUpPerformable(ActionAbstract):
         NavigateActionPerformable(self.standing_position).perform()
         FaceAtPerformable(self.object_designator.pose).perform()
         PickUpActionPerformable(self.object_designator, self.arm, self.grasp).perform()
+
+@dataclass
+class HeadFollowActionPerformable(ActionAbstract):
+    """
+    Continuously move head to human closest to robot
+    """
+
+    state: Optional[str]
+    """
+    defines if the robot should start/stop looking at human
+    """
+
+    orm_class: Type[ActionAbstract] = field(init=False, default=ORMLookAtAction)
+
+    @with_tree
+    def perform(self) -> None:
+        HeadFollowMotion(self.state).perform()
+
+
+@dataclass
+class PointingActionPerformable(ActionAbstract):
+    x_coordinate: float
+    """
+    x coordinate where the robot points to (in map frame)
+    """
+    y_coordinate: float
+    """
+    y coordinate where the robot points to (in map frame)
+    """
+    z_coordinate: float
+    """
+    z coordinate where the robot points to (in map frame)
+    """
+
+    @with_tree
+    def perform(self) -> None:
+        PointingMotion(self.x_coordinate, self.y_coordinate, self.z_coordinate).perform()
