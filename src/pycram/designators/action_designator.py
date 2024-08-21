@@ -517,30 +517,30 @@ class GraspingAction(ActionDesignatorDescription):
 
 
 class HeadFollowAction(ActionDesignatorDescription):
+    """
+    Continuously move head to human closest to robot
+    """
+
+    def __init__(self, state: Optional[str], resolver=None, ontology_concept_holders: Optional[List[Thing]] = None):
         """
-        Continuously move head to human closest to robot
+        :param state: defines if the robot should start/stop looking at human
+        :param resolver: An optional resolver that returns a performable designator from the designator description
+        :param ontology_concept_holders: A list of ontology concepts that the action is categorized as or associated with
         """
+        super().__init__(resolver, ontology_concept_holders)
+        self.state: Optional[str] = state
 
-        def __init__(self, state: Optional[str], resolver=None, ontology_concept_holders: Optional[List[Thing]] = None):
-            """
-            :param state: defines if the robot should start/stop looking at human
-            :param resolver: An optional resolver that returns a performable designator from the designator description
-            :param ontology_concept_holders: A list of ontology concepts that the action is categorized as or associated with
-            """
-            super().__init__(resolver, ontology_concept_holders)
-            self.state: Optional[str] = state
+        if self.soma:
+            self.init_ontology_concepts({"headfollow": self.soma.Headfollow})
 
-            if self.soma:
-                self.init_ontology_concepts({"headfollow": self.soma.Headfollow})
+    def ground(self) -> HeadFollowActionPerformable:
+        """
+        Default specialized_designators that returns a performable designator with the first entry
+        in the list of possible targets
 
-        def ground(self) -> HeadFollowActionPerformable:
-            """
-            Default specialized_designators that returns a performable designator with the first entry
-            in the list of possible targets
-
-            :return: A performable designator
-            """
-            return HeadFollowActionPerformable(self.state)
+        :return: A performable designator
+        """
+        return HeadFollowActionPerformable(self.state)
 
 
 class PointingAction(ActionDesignatorDescription):
@@ -687,9 +687,6 @@ class SetGripperActionPerformable(ActionAbstract):
 
     @with_tree
     def perform(self) -> None:
-        print(self.gripper)
-        print(self.motion)
-        print("performable")
         MoveGripperMotion(gripper=self.gripper, motion=self.motion).perform()
 
 

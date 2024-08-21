@@ -1041,8 +1041,7 @@ def move_head_to_pose(pose: PoseStamped):
     pointSt = PointStamped()
     pointSt.header = pose.header
     pointSt.point = pose.pose.position
-    # sync_worlds()
-    print(pointSt)
+
     giskard_wrapper.motion_goals.add_pointing(goal_point=pointSt,
                                               name='g1',
                                               root_link="base_footprint",
@@ -1105,7 +1104,7 @@ def move_arm_to_point(point: PointStamped):
     moves arm to given position
     :param point: point
     """
-    print("in move arm")
+
     p_axis = Vector3Stamped()
     p_axis.header.frame_id = "hand_gripper_tool_frame"
     p_axis.vector.x = 0

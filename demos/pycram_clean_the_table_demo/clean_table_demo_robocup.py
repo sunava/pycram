@@ -4,6 +4,7 @@ import rospy.core
 from demos.pycram_clean_the_table_demo.utils.misc import *
 from pycram.external_interfaces.navigate import PoseNavigator
 from pycram.process_module import real_robot, semi_real_robot
+from pycram.ros.force_torque_sensor import ForceTorqueSensor
 from pycram.ros.robot_state_updater import RobotStateUpdater
 from pycram.ros.viz_marker_publisher import VizMarkerPublisher
 # from pycram.external_interfaces.knowrob import get_table_pose

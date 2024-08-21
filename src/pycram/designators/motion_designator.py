@@ -37,7 +37,6 @@ class MoveMotion(BaseMotion):
     @with_tree
     def perform(self):
         pm_manager = ProcessModuleManager.get_manager()
-        print("in Motion")
         return pm_manager.navigate().execute(self)
         # return ProcessModule.perform(self)
 

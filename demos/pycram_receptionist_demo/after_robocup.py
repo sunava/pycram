@@ -1,5 +1,6 @@
 import rospy
 from geometry_msgs.msg import PoseStamped
+from pycram.external_interfaces.navigate import PoseNavigator
 from pycram.datastructures.dataclasses import Color
 from pycram.designators.action_designator import *
 from pycram.designators.motion_designator import TalkingMotion
@@ -34,10 +35,8 @@ robot_desig = ObjectDesignatorDescription(names=["hsrb"]).resolve()
 robot_color = Color(R=0.6, G=0.6, B=0.6, A=1)
 robot.set_color(robot_color)
 
-# TODO: change to right map
 kitchen = Object("kitchen", ObjectType.ENVIRONMENT, "pre_robocup_5.urdf")
 # apartment = Object("apartment", ObjectType.ENVIRONMENT, f"apartment{extension}")
-# giskardpy.init_giskard_interface()
 RobotStateUpdater("/tf", "/hsrb/robot_state/joint_states")
 kitchen_desig = ObjectDesignatorDescription(names=["kitchen"])
 
@@ -46,41 +45,10 @@ move = PoseNavigator()
 talk = TextToSpeechPublisher()
 image_switch_publisher = ImageSwitchPublisher()
 
-# variables for communcation with nlp
-pub_nlp = rospy.Publisher('/startListener', String, queue_size=16)
-pub_bell = rospy.Publisher('/startSoundDetection', String, queue_size=16)
-response = ""
-wait_bool = False
-callback = False
-doorbell = False
-timeout = 15  # 12 seconds timeout
-laser = StartSignalWaiter()
-
 # Declare variables for humans
-# TODO: change to given name before challenge
-host = HumanDescription("John", fav_drink="milk")
-host.set_id(1)
-
 guest1 = HumanDescription("Lisa", fav_drink="water")
 guest1.set_attributes(['male', 'without a hat', 'wearing a t-shirt', ' a dark top'])
 guest1.set_id(0)
-
-guest2 = HumanDescription("Sarah", fav_drink="Juice")
-guest2.set_attributes(['female', 'with a hat', 'wearing a t-shirt', ' a bright top'])
-
-# pose variables
-door_pose = Pose([3, 1.0, 0], [0, 0, 1, 0])
-convo_pose = Pose([4.2, 0.15, 0], [0, 0, 1, 0])
-convo_pose_to_couch = Pose([4.2, 0.15, 0], [0, 0, 0, 1])
-couch_pose = Pose([8.5, 0, 0], [0, 0, 0, 1])
-couch_pose_to_door = Pose([8.6, 0, 0], [0, 0, 1, 0])
-start_pose = Pose([3.7, 0.19, 0], [0, 0, 1, 0])
-
-couch_pose_semantik = PoseStamped()
-couch_pose_semantik.pose.position.x = 10.8
-couch_pose_semantik.pose.position.y = -0.27
-couch_pose_semantik.pose.position.z = 0.8
-
 
 
 def pakerino(torso_z=0.05, config=None):
@@ -105,6 +73,8 @@ def demo(step):
         global guest1
         global guest2
 
+        move = PoseNavigator()
+
 
         # DetectAction(technique='human').resolve().perform()
         # HeadFollowAction("start").resolve().perform()
@@ -122,7 +92,23 @@ def demo(step):
         # rospy.loginfo(attr_list)
 
         #PointingAction(0.8,1.8, 0.8).resolve().perform()
-        TalkingMotion("hello").perform()
+        # print("moving")
+        # # TalkingMotion("moving now").perform()
+        # rospy.sleep(2)
+        # pose1 = Pose()
+        #
+        # pose1.header.frame_id = "map"
+        # pose1.pose.position.x = 2.4
+        # pose1.pose.position.y = 1.2
+        # pose1.pose.position.z = 0
+        # #move.pub_now(pose1)
+        # NavigateAction([pose1]).resolve().perform()
+
+        print("detecting")
+        table_obj = DetectAction(technique='all').resolve().perform()
+        print(table_obj)
+
+
 
         # ParkArmsAction(arms=[Arms.LEFT]).resolve().perform()
         print("end")

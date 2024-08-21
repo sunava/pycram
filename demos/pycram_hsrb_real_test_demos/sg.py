@@ -19,6 +19,7 @@ import pycram.external_interfaces.giskard_new as giskardpy
 from pycram.utilities.robocup_utils import TextToSpeechPublisher, ImageSwitchPublisher, HSRBMoveGripperReal, pakerino
 from dynamic_reconfigure.msg import Config, BoolParameter, IntParameter, StrParameter, DoubleParameter, GroupState
 from dynamic_reconfigure.srv import Reconfigure, ReconfigureRequest
+from pycram.ros.force_torque_sensor import ForceTorqueSensor
 
 
 import pycram.external_interfaces.robokudo as robokudo
@@ -49,8 +50,8 @@ robot_desig = ObjectDesignatorDescription(names=["hsrb"])
 RobotStateUpdater("/tf", "/hsrb/robot_state/joint_states")
 KitchenStateUpdater("/tf", "/iai_kitchen/joint_states")
 
-giskardpy.init_giskard_interface()
-giskardpy.clear()
+fts = ForceTorqueSensor(robot_name='hsrb')
+
 img = ImageSwitchPublisher()
 
 # 'shelf:shelf:shelf_floor_0',
@@ -87,6 +88,7 @@ def multiply_quaternions(q1, q2):
     y = w1 * y2 - x1 * z2 + y1 * w2 + z1 * x2
     z = w1 * z2 + x1 * y2 - y1 * x2 + z1 * w2
     return (x, y, z, w)
+
 
 def set_parameters(new_parameters):
     rospy.wait_for_service('/tmc_map_merger/inputs/base_scan/obstacle_circle/set_parameters')

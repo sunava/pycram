@@ -5,6 +5,7 @@ from typing import Any
 
 from geometry_msgs.msg import PoseStamped, PointStamped
 
+from ..datastructures.dataclasses import Color
 from ..datastructures.enums import JointType, PerceptionTechniques
 from ..external_interfaces.robokudo import query_human, faces_query, stop_query, query_specific_region, \
     query_human_attributes, send_query
@@ -19,9 +20,11 @@ from .. import world_reasoning as btr
 from ..local_transformer import LocalTransformer
 from ..designators.motion_designator import *
 from ..external_interfaces import giskard
+from ..external_interfaces.navigate import PoseNavigator
 from ..world_concepts.world_object import Object
 from ..datastructures.world import World
 from pycram.worlds.bullet_world import BulletWorld
+from ..object_descriptors.generic import ObjectDescription as GenericObjectDescription
 from pydub import AudioSegment
 from pydub.playback import play
 from gtts import gTTS
@@ -32,17 +35,16 @@ import io
 ########## Process Modules for the Real HSRB ###############
 ###########################################################
 
-
 class HSRBNavigationReal(ProcessModule):
     """
     Process module for the real HSRB that sends a cartesian goal to giskard to move the robot base
     """
 
     def _execute(self, designator: MoveMotion) -> Any:
+        move = PoseNavigator()
         rospy.loginfo(f"Sending goal to giskard to Move the robot")
         # giskard.achieve_cartesian_goal(designator.target, robot_description.base_link, "map")
-        # todo: me fix this
-        # queryPoseNav(designator.target)
+        move.pub_now(designator.target)
 
 
 class HSRBMoveHeadReal(ProcessModule):
@@ -128,6 +130,7 @@ class HSRBDetectingReal(ProcessModule):
                 return loc_list
                 # return seat_human_pose[0].attribute
             # if only one seat is checked
+            # TODO check if still needed
             if seat != "sofa":
                 return seat_human_pose[0].attribute[0][9:].split(',')
             # when whole sofa gets checked, a list of lists is returned
@@ -262,37 +265,40 @@ class HSRBDetectingReal(ProcessModule):
                 except IndexError:
                     pass
 
-                if desig.object_type:
-                    if not desig.object_type.lower() in obj_type.lower():
-                        pass
+                # if desig.object_type:
+                #     if not desig.object_type.lower() in obj_type.lower():
+                #         pass
+
                 color_switch = {
-                    "red": [1, 0, 0, 1],
-                    "yellow": [1, 1, 0, 1],
-                    "green": [0, 1, 0, 1],
-                    "cyan": [0, 1, 1, 1],
-                    "blue": [0, 0, 1, 1],
-                    "magenta": [1, 0, 1, 1],
-                    "white": [1, 1, 1, 1],
-                    "black": [0, 0, 0, 1],
-                    "grey": [0.5, 0.5, 0.5, 1],
+                    "red": Color(1, 0, 0, 1),
+                    "yellow": Color(1, 1, 0, 1),
+                    "green": Color(0, 1, 0, 1),
+                    "cyan": Color(0, 1, 1, 1),
+                    "blue": Color(0, 0, 1, 1),
+                    "magenta": Color(1, 0, 1, 1),
+                    "white": Color(1, 1, 1, 1),
+                    "black": Color(0, 0, 0, 1),
+                    "grey": Color(0.5, 0.5, 0.5, 1),
                     # add more colors if needed
                 }
 
                 color = color_switch.get(obj_color)
+
                 if color is None:
-                    color = [0, 0, 0, 1]
+                    color = Color(0, 0, 0, 1)
 
 
                 hsize = [obj_size.x / 2, obj_size.y / 2, obj_size.z / 2]
                 osize = [obj_size.x, obj_size.y, obj_size.z]
-                id = BulletWorld.current_bullet_world.add_rigid_box(obj_pose, hsize, color)
+                # TODO: add Bulletworld obj to fkt
+                # gen_obj_desc = GenericObjectDescription("robokudo_object", [0, 0, 0], [0.1, 0.1, 0.1])
+                # id = BulletWorld.load_generic_object_and_get_id(description=gen_obj_desc)
 
-                box_object = Object(obj_type + "_" + str(rospy.get_time()), obj_type, pose=obj_pose, color=color, id=id,
-                                    customGeom={"size": osize})
+                box_object = Object(obj_type + "_" + str(rospy.get_time()), obj_type, pose=obj_pose, color=color, path="big-bowl.stl")
                 box_object.set_pose(obj_pose)
-                box_desig = ObjectDesignatorDescription.Object(box_object.name, box_object.type, box_object)
+                box_desig = ObjectDesignatorDescription.Object(box_object.name, obj_type, box_object)
 
-                perceived_objects.append(box_desig)
+                perceived_objects.append(box_desig.world_object)
 
             object_dict = {}
 
