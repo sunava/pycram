@@ -2,6 +2,11 @@
 
 from enum import Enum, auto
 
+class ExecutionType(Enum):
+    """Enum for Execution Process Module types."""
+    REAL = auto()
+    SIMULATED = auto()
+    SEMI_REAL = auto()
 
 class Arms(Enum):
     """Enum for Arms."""
@@ -130,6 +135,9 @@ class PerceptionTechniques(Enum):
 
 
 class ImageEnum(Enum):
+    """
+    Enum for image switch view on hsrb display.
+    """
     HI = 0
     TALK = 1
     DISH = 2

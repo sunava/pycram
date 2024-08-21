@@ -68,30 +68,16 @@ def init_giskard_interface(func: Callable):
         try:
             from giskardpy.python_interface.python_interface import GiskardWrapper
             from giskard_msgs.msg import WorldBody, MoveResult, CollisionEntry, Weights
-            from giskard_msgs.srv import UpdateWorldResponse, UpdateWorld
 
-            if is_init and "/giskard" in rosnode.get_node_names():
-                return func(*args, **kwargs)
-            elif is_init and "/giskard" not in rosnode.get_node_names():
-                rospy.logwarn("Giskard node is not available anymore, could not initialize giskard interface")
-                is_init = False
-                giskard_wrapper = None
-                return
+            # from giskard_msgs.srv import UpdateWorldRequest, UpdateWorld, UpdateWorldResponse, RegisterGroupResponse
 
-            if "giskard_msgs" not in sys.modules:
-                rospy.logwarn("Could not initialize the Giskard interface since the giskard_msgs are not imported")
-                return
-
-            if "/giskard" in rosnode.get_node_names():
+            if "/giskard/command/goal" in topics:
                 giskard_wrapper = GiskardWrapper()
-                giskard_update_service = rospy.ServiceProxy("/giskard/update_world", UpdateWorld)
-                rospy.loginfo_once("Successfully initialized Giskard interface")
+                # giskard_update_service = rospy.ServiceProxy("/giskard/update_world", UpdateWorld)
                 is_init = True
+                rospy.loginfo("Successfully initialized Giskard interface")
             else:
                 rospy.logwarn("Giskard is not running, could not initialize Giskard interface")
-                return
-            return func(*args, **kwargs)
-
         except ModuleNotFoundError as e:
             rospy.logwarn("Failed to import Giskard messages, giskard interface could not be initialized")
 
@@ -1084,6 +1070,10 @@ def grasp_doorhandle(handle_name: str):
 #     giskard_wrapper.execute()
 #
 #
+
+
+@init_giskard_interface
+@thread_safe
 def open_doorhandle(handle_name: str):
     giskard_wrapper.motion_goals.hsrb_open_door_goal(door_handle_link=handle_name)
     giskard_wrapper.motion_goals.allow_all_collisions()
@@ -1091,6 +1081,8 @@ def open_doorhandle(handle_name: str):
     return giskard_wrapper.execute()
 
 
+@init_giskard_interface
+@thread_safe
 def move_arm_to_point(point: PointStamped):
     """
     moves arm to given position
@@ -1110,6 +1102,8 @@ def move_arm_to_point(point: PointStamped):
     giskard_wrapper.execute()
 
 
+@init_giskard_interface
+@thread_safe
 def move_head_to_human():
     """
     continously moves head in direction of perceived human

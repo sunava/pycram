@@ -1,10 +1,11 @@
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
 
+from geometry_msgs.msg import PointStamped
+
+from pycram.datastructures.enums import *
 from sqlalchemy.orm import Session
 from .object_designator import ObjectDesignatorDescription, ObjectPart
-from ..designator import ResolutionError
-from ..orm.base import ProcessMetaData
 from ..plan_failures import PerceptionObjectNotFound
 from ..process_module import ProcessModuleManager
 from ..orm.motion_designator import (MoveMotion as ORMMoveMotion,
@@ -148,25 +149,37 @@ class DetectingMotion(BaseMotion):
     """
     Tries to detect an object in the FOV of the robot
     """
-
-    object_type: ObjectType
+    technique: PerceptionTechniques
+    """
+    Technique means how the object should be detected, e.g. 'color', 'shape', 'region', etc. 
+    Or 'all' if all objects should be detected
+    """
+    object_type: Optional[ObjectType] = None
     """
     Type of the object that should be detected
     """
-
+    state: Optional[str] = None
+    """
+    The state instructs our perception system to either start or stop the search for an object or human.
+    Can also be used to describe the region or location where objects are perceived.
+    """
     @with_tree
     def perform(self):
         pm_manager = ProcessModuleManager.get_manager()
         world_object = pm_manager.detecting().execute(self)
+
         if not world_object:
             raise PerceptionObjectNotFound(
                 f"Could not find an object with the type {self.object_type} in the FOV of the robot")
-        if ProcessModuleManager.execution_type == "real":
-            return RealObject.Object(world_object.name, world_object.obj_type,
-                                     world_object, world_object.get_pose())
+        # if ProcessModuleManager.execution_type == "real":
+        #     try:
+        #         return RealObject.Object(world_object.name, world_object.obj_type,
+        #                                 world_object, world_object.get_pose())
+        #     except:
+        #         return world_object
 
-        return ObjectDesignatorDescription.Object(world_object.name, world_object.obj_type,
-                                                  world_object)
+
+        return world_object
 
     def to_sql(self) -> ORMDetectingMotion:
         return ORMDetectingMotion(self.object_type)
@@ -329,6 +342,57 @@ class TalkingMotion(BaseMotion):
     def perform(self):
         pm_manager = ProcessModuleManager.get_manager()
         return pm_manager.talk().execute(self)
+
+    def to_sql(self) -> ORMMotionDesignator:
+        pass
+
+    def insert(self, session: Session, *args, **kwargs) -> ORMMotionDesignator:
+        pass
+
+@dataclass
+class HeadFollowMotion(BaseMotion):
+    """
+    continuously look at human
+    """
+    state: Optional[str]
+    """
+    Whether to start or stop motion
+    """
+
+    @with_tree
+    def perform(self):
+        pm_manager = ProcessModuleManager.get_manager()
+        return pm_manager.head_follow().execute(self)
+
+    def to_sql(self) -> ORMMotionDesignator:
+        pass
+
+    def insert(self, session: Session, *args, **kwargs) -> ORMMotionDesignator:
+        pass
+
+
+@dataclass
+class PointingMotion(BaseMotion):
+    """
+    Point at given Coordinates
+    """
+    x_coordinate: float
+    """
+    x coordinate where the robot points to (in map frame)
+    """
+    y_coordinate: float
+    """
+    y coordinate where the robot points to (in map frame)
+    """
+    z_coordinate: float
+    """
+    z coordinate where the robot points to (in map frame)
+    """
+
+    @with_tree
+    def perform(self):
+        pm_manager = ProcessModuleManager.get_manager()
+        return pm_manager.pointing().execute(self)
 
     def to_sql(self) -> ORMMotionDesignator:
         pass
