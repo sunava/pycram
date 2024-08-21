@@ -1,8 +1,11 @@
 import time
 from enum import Enum
 import rospy.core
+from geometry_msgs.msg import WrenchStamped
+
 from demos.pycram_clean_the_table_demo.utils.misc import *
 from pycram.external_interfaces.navigate import PoseNavigator
+from pycram.plan_failures import SensorMonitoringCondition
 from pycram.process_module import real_robot, semi_real_robot
 from pycram.ros.force_torque_sensor import ForceTorqueSensor
 from pycram.ros.robot_state_updater import RobotStateUpdater

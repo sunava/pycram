@@ -15,6 +15,7 @@ from ..datastructures.dataclasses import MeshVisualShape
 from ..world_concepts.world_object import Object
 # from ..robot_description import ManipulatorDescription
 from ..robot_description import RobotDescription
+from ..datastructures.enums import Arms, Grasp, GripperState
 
 from typing_extensions import List, Dict, Callable, Optional
 from geometry_msgs.msg import PoseStamped, PointStamped, QuaternionStamped, Vector3Stamped
@@ -23,7 +24,7 @@ from threading import Lock, RLock
 
 if TYPE_CHECKING:
     from giskardpy.python_interface.python_interface import GiskardWrapper
-    from giskard_msgs.msg import MoveResult, UpdateWorldResponse, WorldBody
+    from giskard_msgs.msg import MoveResult, UpdateWorldResponse, WorldBody, CollisionEntry
 giskard_wrapper = None
 # giskard_wrapper: GiskardWrapper = None
 giskard_update_service = None
@@ -566,16 +567,31 @@ def achieve_cartesian_goal(goal_pose: Pose, tip_link: str, root_link: str) -> 'M
     :param root_link: The starting link of the chain which should be used to achieve this goal
     :return: MoveResult message for this goal
     """
-    #sync_worlds()
-    par_return = _manage_par_motion_goals(giskard_wrapper.set_cart_goal, _pose_to_pose_stamped(goal_pose),
-                                          tip_link, root_link)
-    if par_return:
-        return par_return
 
-    giskard_wrapper.motion_goals.avoid_all_collisions()
-    giskard_wrapper.motion_goals.add_cartesian_pose(_pose_to_pose_stamped(goal_pose), tip_link, root_link)
-    # giskard_wrapper.add_default_end_motion_conditions()
-    return giskard_wrapper.execute()
+    root_link = 'map'
+    tip_link = 'hand_gripper_tool_frame'
+    sync_worlds()
+    cart_monitor1 = giskard_wrapper.monitors.add_cartesian_pose(root_link=root_link,
+                                                                tip_link=tip_link,
+                                                                goal_pose=_pose_to_pose_stamped(goal_pose),
+                                                                position_threshold=0.02,
+                                                                orientation_threshold=0.02,
+                                                                name='achieve_cartesian_pose1')
+
+    end_monitor = giskard_wrapper.monitors.add_local_minimum_reached(start_condition=cart_monitor1)
+
+    giskard_wrapper.motion_goals.add_cartesian_pose(name='g1-cartesian',
+                                                    root_link=root_link,
+                                                    tip_link=tip_link,
+                                                    goal_pose=_pose_to_pose_stamped(goal_pose),
+                                                    end_condition=cart_monitor1)
+
+    giskard_wrapper.monitors.add_end_motion(start_condition=end_monitor)
+    # giskard_wrapper.motion_goals.avoid_all_collisions()
+    # TODO: group 2 with CollisionEntry.ALL does not work -> not defined
+    giskard_wrapper.motion_goals.allow_collision(group1='gripper', group2=CollisionEntry.ALL)
+
+
 
 
 @init_giskard_interface
@@ -858,16 +874,17 @@ def achieve_gripper_motion_goal(motion: str):
 
 
 @init_giskard_interface
-def allow_gripper_collision(gripper: str) -> None:
+def allow_gripper_collision(gripper: Arms) -> None:
     """
     Allows the specified gripper to collide with anything.
 
     :param gripper: The gripper which can collide, either 'right', 'left' or 'all'
     """
     add_gripper_groups()
-    for gripper_group in get_gripper_group_names():
-        if gripper in gripper_group or gripper == "all":
-            giskard_wrapper.motion_goals.allow_collision(gripper_group, CollisionEntry.ALL)
+    giskard_wrapper.motion_goals.allow_collision(gripper)
+    # for gripper_group in get_gripper_group_names():
+        # if gripper in gripper_group or gripper == Arms.LEFT:
+        #     giskard_wrapper.motion_goals.allow_collision(gripper_group, CollisionEntry.ALL)
 
 
 @init_giskard_interface

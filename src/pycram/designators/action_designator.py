@@ -200,7 +200,7 @@ class PickUpAction(ActionDesignatorDescription):
     """
 
     def __init__(self,
-                 object_designator_description: Union[ObjectDesignatorDescription, ObjectDesignatorDescription.Object],
+                 object_designator_description: List[ObjectDesignatorDescription.Object],
                  arms: List[Arms], grasps: List[Grasp], resolver=None,
                  ontology_concept_holders: Optional[List[Thing]] = None):
         """
@@ -214,8 +214,7 @@ class PickUpAction(ActionDesignatorDescription):
         :param ontology_concept_holders: A list of ontology concepts that the action is categorized as or associated with
         """
         super().__init__(resolver, ontology_concept_holders)
-        self.object_designator_description: Union[
-            ObjectDesignatorDescription, ObjectDesignatorDescription.Object] = object_designator_description
+        self.object_designator_description: List[ObjectDesignatorDescription.Object] = object_designator_description
         self.arms: List[Arms] = arms
         self.grasps: List[Grasp] = grasps
 
@@ -231,9 +230,12 @@ class PickUpAction(ActionDesignatorDescription):
         if isinstance(self.object_designator_description, ObjectDesignatorDescription.Object):
             obj_desig = self.object_designator_description
         else:
-            obj_desig = self.object_designator_description.resolve()
+            print("##############")
+            print(type(self.object_designator_description[0]))
+            print("##############")
+            obj_desig = self.object_designator_description
 
-        return PickUpActionPerformable(obj_desig, self.arms[0], self.grasps[0])
+        return PickUpActionPerformable(obj_desig[0], self.arms[0], self.grasps[0])
 
 
 class PlaceAction(ActionDesignatorDescription):
@@ -785,6 +787,7 @@ class PickUpActionPerformable(ActionAbstract):
 
     @with_tree
     def perform(self) -> None:
+        print("in Performable")
         # Store the object's data copy at execution
         self.object_at_execution = self.object_designator.frozen_copy()
         robot = World.robot

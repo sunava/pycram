@@ -6,11 +6,12 @@ from typing import List
 import rospy
 import pybullet as pb
 
+from pycram.worlds.bullet_world import BulletWorld
 from geometry_msgs.msg import WrenchStamped
 from std_msgs.msg import Header
 
 from .custom_filter import Butterworth
-from ..bullet_world import BulletWorld
+
 from pycram.datastructures.enums import FilterConfig
 
 

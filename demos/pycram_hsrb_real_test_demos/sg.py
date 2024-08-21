@@ -3,12 +3,17 @@ from itertools import islice
 import numpy as np
 import rospy
 import tf
+from betterpybullet import Quaternion
+from botocore.monitoring import Monitor
 from dynamic_reconfigure.srv import ReconfigureRequest
-from geometry_msgs.msg import PointStamped, Twist
+from geometry_msgs.msg import PointStamped, Twist, WrenchStamped
 
 from demos.pycram_storing_groceries_demo.utils.misc import *
+from pycram.object_descriptors.urdf import ObjectDescription
 from pycram.designators.location_designator import find_placeable_pose
 from pycram.language import Code
+from pycram.plan_failures import SensorMonitoringCondition
+from pycram.robot_descriptions import robot_description
 
 from pycram.ros.robot_state_updater import RobotStateUpdater, KitchenStateUpdater
 from pycram.designators.action_designator import *
@@ -27,7 +32,8 @@ from pycram.external_interfaces.navigate import PoseNavigator
 from pycram.ros.robot_state_updater import RobotStateUpdater
 from pycram.ros.viz_marker_publisher import VizMarkerPublisher
 from pycram.designators.object_designator import *
-from pycram.bullet_world import BulletWorld, Object
+from pycram.world_concepts.world_object import Object
+from pycram.worlds.bullet_world import BulletWorld
 from pycram.utilities.robocup_utils import TextToSpeechPublisher, ImageSwitchPublisher, StartSignalWaiter, \
     HSRBMoveGripperReal, pakerino, GraspListener
 from pycram.designator import LocationDesignatorDescription
@@ -35,7 +41,8 @@ import random
 
 world = BulletWorld()
 v = VizMarkerPublisher()
-kitchen = Object("kitchen", ObjectType.ENVIRONMENT, "robocup123.urdf")
+extension = ObjectDescription.get_file_extension()
+kitchen = Object("kitchen", ObjectType.ENVIRONMENT, "pre_robocup_5.urdf")
 kitchen_desig = ObjectDesignatorDescription(names=["kitchen"])
 grasp_listener = GraspListener()
 talk = TextToSpeechPublisher()
@@ -44,8 +51,8 @@ start_signal_waiter = StartSignalWaiter()
 move = PoseNavigator()
 lt = LocalTransformer()
 gripper = HSRBMoveGripperReal()
-robot = Object("hsrb", "robot", "../../resources/" + "hsrb" + ".urdf")
-robot.set_color([0.5, 0.5, 0.9, 1])
+robot = Object("hsrb", ObjectType.ROBOT, f"hsrb{extension}")
+
 robot_desig = ObjectDesignatorDescription(names=["hsrb"])
 RobotStateUpdater("/tf", "/hsrb/robot_state/joint_states")
 KitchenStateUpdater("/tf", "/iai_kitchen/joint_states")
@@ -328,6 +335,16 @@ def monitor_func_place():
     return False
 
 
+def monitor_func():
+    der: WrenchStamped() = fts.get_last_value()
+    print(abs(der.wrench.force.x))
+    if abs(der.wrench.force.x) > 10.30:
+        print(abs(der.wrench.force.x))
+        print(abs(der.wrench.torque.x))
+        return SensorMonitoringCondition
+    return False
+
+
 def placeorpark(object_name, object, grasp, talk_bool, target_location, link, pick_up_bool):
     global previous_value
     oTm = target_location
@@ -483,9 +500,11 @@ def process_pick_up_objects(talk_bool):
             object_name = first_object.bullet_world_object.name
             object = first_object.bullet_world_object
 
-        angle = helper.quaternion_to_angle(
-            (oTb.pose.orientation.x, oTb.pose.orientation.y, oTb.pose.orientation.z, oTb.pose.orientation.w))
+        # TODO: can't find function quaternion to angle
+        # angle = helper.quaternion_to_angle(
+        #     (oTb.pose.orientation.x, oTb.pose.orientation.y, oTb.pose.orientation.z, oTb.pose.orientation.w))
         object_dim = object.get_object_dimensions()
+        angle = 0
         print(f"obj dim von {object_name} {object_dim}")
 
         if oTb.pose.position.x >= 0.30:
@@ -649,7 +668,7 @@ groups_in_shelf = {}
 
 def demo(step):
     global groups_in_shelf
-    with ((((real_robot)))):
+    with (real_robot):
         object_name = None,
         object = None,
         grasp = None,
@@ -664,10 +683,9 @@ def demo(step):
             #talk.pub_now("driving", True)
             img.pub_now(ImageEnum.DRIVINGBACK.value)
 
-            move.pub_now(shelf_1, interrupt_bool=False)
+            # move.pub_now(shelf_1, interrupt_bool=False)
             img.pub_now(ImageEnum.SEARCH.value)
             groups_in_shelf = process_objects_in_shelf(talk_bool)
-
 
         if step <= 2:
             try:
@@ -696,43 +714,43 @@ def demo(step):
 
 
 
-try:
-
-    img.pub_now(ImageEnum.HI.value)  # hi im toya
-    talk.pub_now("Push down my Hand, when you are Ready.")
-    img.pub_now(ImageEnum.PUSHBUTTONS.value)
-    plan = Code(lambda: rospy.sleep(1)) * 999999 >> Monitor(monitor_func)
-    plan.perform()
-except SensorMonitoringCondition:
-    talk.pub_now("Starting Storing Grocery.")
-    # load everfyhing world giskard robokudo....
-    # Wait for the start signal
-
-    img.pub_now(ImageEnum.HI.value)
-    start_signal_waiter.wait_for_startsignal()
-
-    # Once the start signal is received, continue with the rest of the script
-    rospy.loginfo("Start signal received, now proceeding with tasks.")
-    move_vel(speed=2, distance=4, isForward=True)
-    rospy.sleep(2)
-    new_parameters = {
-        'forbid_radius': 0.2,
-        'obstacle_occupancy': 5,
-        'obstacle_radius': 0.2
-    }
-
-    set_parameters(new_parameters)    # Once the start signal is received, continue with the rest of the script
-
-    rospy.sleep(1)
-
-    fake_pose_2 = Pose([3, 0.3, 0])
-    move.pub_fake_pose(fake_pose_2)
-    move_vel(0.2, 2, False, 0.06)
-    talk.pub_now("Lets Go, Driving to Shelf.")
-    move_123 = Pose([4, -0.2, 0], [0, 0 , 0.7, 0.7])
-    move.pub_now(move_123)
-    move_145 = Pose([4.8, 0.8, 0], [0, 0, 0.7, 0.7])
-    move.pub_now(move_145)
+# try:
+#
+#     img.pub_now(ImageEnum.HI.value)  # hi im toya
+#     talk.pub_now("Push down my Hand, when you are Ready.")
+#     img.pub_now(ImageEnum.PUSHBUTTONS.value)
+#     plan = Code(lambda: rospy.sleep(1)) * 999999 >> Monitor(monitor_func, )
+#     plan.perform()
+# except SensorMonitoringCondition:
+#     talk.pub_now("Starting Storing Grocery.")
+#     # load everfyhing world giskard robokudo....
+#     # Wait for the start signal
+#
+#     img.pub_now(ImageEnum.HI.value)
+#     start_signal_waiter.wait_for_startsignal()
+#
+#     # Once the start signal is received, continue with the rest of the script
+#     rospy.loginfo("Start signal received, now proceeding with tasks.")
+#     move_vel(speed=2, distance=4, isForward=True)
+#     rospy.sleep(2)
+#     new_parameters = {
+#         'forbid_radius': 0.2,
+#         'obstacle_occupancy': 5,
+#         'obstacle_radius': 0.2
+#     }
+#
+#     set_parameters(new_parameters)    # Once the start signal is received, continue with the rest of the script
+#
+#     rospy.sleep(1)
+#
+#     fake_pose_2 = Pose([3, 0.3, 0])
+#     move.pub_fake_pose(fake_pose_2)
+#     move_vel(0.2, 2, False, 0.06)
+#     talk.pub_now("Lets Go, Driving to Shelf.")
+#     move_123 = Pose([4, -0.2, 0], [0, 0 , 0.7, 0.7])
+#     move.pub_now(move_123)
+#     move_145 = Pose([4.8, 0.8, 0], [0, 0, 0.7, 0.7])
+#     move.pub_now(move_145)
 
 
 pakerino()

@@ -45,6 +45,7 @@ move = PoseNavigator()
 talk = TextToSpeechPublisher()
 image_switch_publisher = ImageSwitchPublisher()
 
+
 # Declare variables for humans
 guest1 = HumanDescription("Lisa", fav_drink="water")
 guest1.set_attributes(['male', 'without a hat', 'wearing a t-shirt', ' a dark top'])
@@ -83,10 +84,14 @@ def demo(step):
         # SetGripperAction(grippers=[Arms.LEFT], motions=[GripperState.OPEN]).resolve().perform()
 
         # pose1 = Pose()
-        # pose1.pose.position.x = 2.4
-        # pose1.pose.position.y = 1.1
-        # pose1.pose.position.z = 1
+        # pose1.header.frame_id = "map"
+        # pose1.pose.position.x = 1
+        # pose1.pose.position.y = 1.2
+        # pose1.pose.position.z = 0.9
         # LookAtAction([pose1]).resolve().perform()
+        # rospy.sleep(5)
+
+
 
         # attr_list = DetectAction(technique='attributes', state='face').resolve().perform()
         # rospy.loginfo(attr_list)
@@ -103,10 +108,11 @@ def demo(step):
         # pose1.pose.position.z = 0
         # #move.pub_now(pose1)
         # NavigateAction([pose1]).resolve().perform()
-
+        # pakerino()
         print("detecting")
         table_obj = DetectAction(technique='all').resolve().perform()
-        print(table_obj)
+
+        PickUpAction(object_designator_description=table_obj, arms=[Arms.LEFT], grasps=[Grasp.FRONT]).resolve().perform()
 
 
 

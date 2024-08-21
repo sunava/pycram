@@ -58,7 +58,6 @@ class HSRBMoveHeadReal(ProcessModule):
         pose.pose.position.x = target.pose.position.x
         pose.pose.position.y = target.pose.position.y
         pose.pose.position.z = target.pose.position.z
-        print(pose)
         giskard.move_head_to_pose(pose)
 
 
@@ -182,18 +181,6 @@ class HSRBDetectingReal(ProcessModule):
                 obj_type = obj.type
                 obj_size = obj.size
                 # obj_color = query_result.res[i].color[0]
-                color_switch = {
-                    "red": [1, 0, 0, 1],
-                    "green": [0, 1, 0, 1],
-                    "blue": [0, 0, 1, 1],
-                    "black": [0, 0, 0, 1],
-                    "white": [1, 1, 1, 1],
-                    # add more colors if needed
-                }
-
-                # color = color_switch.get(obj_color)
-                # if color is None:
-                # color = [0, 0, 0, 1]
 
                 # atm this is the string size that describes the object but it is not the shape size thats why string
                 def extract_xyz_values(input_string):
@@ -226,10 +213,11 @@ class HSRBDetectingReal(ProcessModule):
                 # size = (x, z / 2, y)
                 # size_box = (x / 2, z / 2, y / 2)
                 hard_size = (0.02, 0.02, 0.03)
-                id = BulletWorld.current_bullet_world.add_rigid_box(obj_pose, hard_size, [0, 0, 0, 1])
-                box_object = Object(obj_type + "" + str(rospy.get_time()), obj_type, pose=obj_pose, color=[0, 0, 0, 1],
-                                    id=id,
-                                    customGeom={"size": [hard_size[0], hard_size[1], hard_size[2]]})
+                # TODO: add Bulletworld obj to fkt, replaced function add_ridig_box
+                # gen_obj_desc = GenericObjectDescription("robokudo_object", [0, 0, 0], [0.1, 0.1, 0.1])
+                # id = BulletWorld.load_generic_object_and_get_id(description=gen_obj_desc)
+                # TODO: adjust right path, hardcoded for now
+                box_object = Object(obj_type + "" + str(rospy.get_time()), obj_type, pose=obj_pose, color=Color(0, 0, 0, 1), path="big-bowl.stl")
                 box_object.set_pose(obj_pose)
                 box_desig = ObjectDesignatorDescription.Object(box_object.name, box_object.type, box_object)
 
@@ -246,8 +234,7 @@ class HSRBDetectingReal(ProcessModule):
             query_result = send_query(ObjectDesignatorDescription(types=[ObjectType.MILK]))
             perceived_objects = []
             for i in range(0, len(query_result.res)):
-                print("#######################################################")
-                print(query_result.res[i])
+
                 try:
                     obj_pose = Pose.from_pose_stamped(query_result.res[i].pose[0])
                 except IndexError:
@@ -290,21 +277,23 @@ class HSRBDetectingReal(ProcessModule):
 
                 hsize = [obj_size.x / 2, obj_size.y / 2, obj_size.z / 2]
                 osize = [obj_size.x, obj_size.y, obj_size.z]
-                # TODO: add Bulletworld obj to fkt
+                # TODO: add Bulletworld obj to fkt, replaced function add_ridig_box
                 # gen_obj_desc = GenericObjectDescription("robokudo_object", [0, 0, 0], [0.1, 0.1, 0.1])
                 # id = BulletWorld.load_generic_object_and_get_id(description=gen_obj_desc)
 
+                # TODO: adjust right path, hardcoded for now
                 box_object = Object(obj_type + "_" + str(rospy.get_time()), obj_type, pose=obj_pose, color=color, path="big-bowl.stl")
                 box_object.set_pose(obj_pose)
                 box_desig = ObjectDesignatorDescription.Object(box_object.name, obj_type, box_object)
 
-                perceived_objects.append(box_desig.world_object)
+                perceived_objects.append(box_desig)
 
-            object_dict = {}
-
-            for i, obj in enumerate(perceived_objects):
-                object_dict[obj.name] = obj
-            return object_dict
+            # object_dict = {}
+            #
+            # for i, obj in enumerate(perceived_objects):
+            #     print(obj.name)
+            #     object_dict[obj.name] = obj
+            return perceived_objects
 
 
 class HSRBMoveTCPReal(ProcessModule):
