@@ -1,5 +1,5 @@
 # from pycram.designators.motion_designator import TalkingMotion
-
+from std_msgs.msg import ColorRGBA
 
 from pycram.ros.viz_marker_publisher import VizMarkerPublisher
 from pycram.worlds.bullet_world import BulletWorld
@@ -15,15 +15,17 @@ from pycram.datastructures.dataclasses import Color
 import pycram.external_interfaces.giskard as giskardpy
 
 extension = ObjectDescription.get_file_extension()
-world = BulletWorld(WorldMode.DIRECT)
+world = BulletWorld(WorldMode.GUI)
 
 v = VizMarkerPublisher()
-kitchen = Object("kitchen", ObjectType.ENVIRONMENT, "apartment.urdf")
+kitchen = Object("kitchen", ObjectType.ENVIRONMENT, "after_robocup.urdf")
 kitchen_desig = ObjectDesignatorDescription(names=["kitchen"])
 extension = ObjectDescription.get_file_extension()
 
 
 robot = Object("hsrb", ObjectType.ROBOT, f"hsrb{extension}", pose=Pose([1, 2, 0]))
+color = Color().from_list([0.9, 0.5, 0.9, 1])
+robot.set_color(rgba_color=color)
 
 # robot.set_color(0.5, 0.5, 0.9, 1)
 robot_desig = ObjectDesignatorDescription(names=["hsrb"])
@@ -37,23 +39,20 @@ shelf_1_rotated1 = Pose([6.2, 5.6, 0],[0, 0, -0.7, 0.7])
 shelf_1_rotated = Pose([6.2, 5.6, 0],[0, 0, 0, 1])
 lt = LocalTransformer()
 
-milk = Object("milk", ObjectType.MILK, "milk.stl", pose=Pose([2.5, 2, 1.02]), color=[1, 0, 0, 1])
-cereal = Object("cereal", ObjectType.BREAKFAST_CEREAL, "breakfast_cereal.stl", pose=Pose([2.5, 2.3, 1.05]),
+milk = Object("milk", ObjectType.MILK, "milk.stl", pose=Pose([2.5, 2, 1.02]), color=[1, 0, 0, 0.95])
+cereal = Object("cereal", ObjectType.BREAKFAST_CEREAL, "breakfast_cereal.stl", pose=Pose([2.5, 2.3, 0.95]),
                 color=[0, 1, 0, 1])
-spoon = Object("spoon", ObjectType.SPOON, "spoon.stl", pose=Pose([2.4, 2.2, 0.85]), color=[0, 0, 1, 1])
-bowl = Object("bowl", ObjectType.BOWL, "bowl.stl", pose=Pose([2.5, 2.2, 1.02]), color=[1, 1, 0, 1])
-human_female = Object("human_female", ObjectType.HUMAN, "female_standing.stl", pose=Pose([3, 3, 0]), color=[1, 1, 0, 1])
+spoon = Object("spoon", ObjectType.SPOON, "spoon.stl", pose=Pose([2.4, 2.2, 0.85]), color=[0, 0, 1, 0.95])
+bowl = Object("bowl", ObjectType.BOWL, "bowl.stl", pose=Pose([2.5, 2.2, 1.02]), color=[1, 1, 0, 0.95])
+human_female = Object("human_female", ObjectType.HUMAN, "female_standing.stl", pose=Pose([3, 3.8, 0]), color=[1, 1, 0, 1.05])
+world.simulate(seconds=1)
 
 
-world.simulate(seconds=1, real_time=True)
-
-@giskardpy.init_giskard_interface
 def test_move():
-    pose1 = Pose([1, 1, 0])
-    giskardpy.teleport_robot(pose1)
-    with semi_real_robot:
+    @giskardpy.init_giskard_interface
+    def move_to_table():
+        pose1 = Pose([3, 3, 0])
         NavigateAction([Pose([2, 2, 0])]).resolve().perform()
-        giskardpy.teleport_robot(pose1)
 
 def test_all_perception():
     with semi_real_robot:
@@ -75,5 +74,6 @@ def test_talk():
 
 
 def test_costmap():
-    sem = SemanticCostmap(kitchen_desig.resolve().world_object, "island_countertop")
+    print(kitchen.links)
+    sem = SemanticCostmap(kitchen_desig.resolve().world_object, "dinner_table:dinner_table:table_center")
     sem.visualize()

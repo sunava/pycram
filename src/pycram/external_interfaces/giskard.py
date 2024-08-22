@@ -69,17 +69,18 @@ def init_giskard_interface(func: Callable):
             from giskardpy.python_interface.python_interface import GiskardWrapper
             from giskard_msgs.msg import WorldBody, MoveResult, CollisionEntry, Weights
 
-            # from giskard_msgs.srv import UpdateWorldRequest, UpdateWorld, UpdateWorldResponse, RegisterGroupResponse
-
             if "/giskard/command/goal" in topics:
                 giskard_wrapper = GiskardWrapper()
-                # giskard_update_service = rospy.ServiceProxy("/giskard/update_world", UpdateWorld)
                 is_init = True
                 rospy.loginfo("Successfully initialized Giskard interface")
             else:
                 rospy.logwarn("Giskard is not running, could not initialize Giskard interface")
         except ModuleNotFoundError as e:
             rospy.logwarn("Failed to import Giskard messages, giskard interface could not be initialized")
+            is_init = False
+
+        # Ensure the original function is called after the initialization attempt
+        return func(*args, **kwargs)
 
     return wrapper
 
