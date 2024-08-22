@@ -9,7 +9,7 @@ import pybullet as p
 import rosgraph
 import rospy
 from geometry_msgs.msg import Point
-from typing_extensions import List, Optional, Dict
+from typing_extensions import List, Optional, Dict, Tuple
 
 from ..datastructures.dataclasses import Color, AxisAlignedBoundingBox, MultiBody, VisualShape, BoxVisualShape
 from ..datastructures.enums import ObjectType, WorldMode, JointType
@@ -61,7 +61,7 @@ class BulletWorld(World):
         self.set_gravity([0, 0, -9.8])
 
         if not is_prospection_world:
-            _ = Object("floor", ObjectType.ENVIRONMENT, "plane" + self.extension, world=self)
+            _ = Object("floor", ObjectType.ENVIRONMENT, "plane" + self.extension, world=self, pose=Pose([0, 0, -0.12]))
 
     def _init_world(self, mode: WorldMode):
         self._gui_thread: Gui = Gui(self, mode)
@@ -91,6 +91,23 @@ class BulletWorld(World):
         if pose is None:
             pose = Pose()
         return self._load_object_and_get_id(path, pose)
+
+    def get_object_dimensions(self, link_name: Optional[str] = None) -> Tuple[float, float, float]:
+        """
+        Return the dimensions of the object.
+        :param link_name: The Optional name of a link of this object.
+        :return: The dimensions of the object, as a Tuple with float values.
+        """
+        # Retrieve AABB based on link_name presence
+        if link_name:
+            aabb = p.getAABB(self.id, self.links[link_name], self.world.client_id)
+        else:
+            aabb = p.getAABB(self.id, physicsClientId=self.world.client_id)
+
+        # Calculate dimensions
+        dimensions = [np.absolute(aabb[0][i] - aabb[1][i]) for i in range(3)]
+
+        return dimensions
 
     def _load_object_and_get_id(self, path: str, pose: Pose) -> int:
         if path is None:

@@ -385,6 +385,7 @@ class Object(WorldEntity):
         if remove_saved_states:
             self.remove_saved_states()
 
+
     def attach(self,
                child_object: Object,
                parent_link: Optional[str] = None,

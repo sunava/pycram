@@ -94,7 +94,7 @@ def initial_adding_objects() -> None:
     """
     groups = giskard_wrapper.world.get_group_names()
     for obj in World.current_world.objects:
-        if obj is World.robot or obj is World.current_world.get_prospection_object_for_object(World.robot):
+        if obj is World.robot or obj.name == "floor" or obj is World.current_world.get_prospection_object_for_object(World.robot):
             continue
         name = obj.name
         if name not in groups:
@@ -233,6 +233,7 @@ def teleport_robot(base_pose):
     """
       This is only for giskard_standalone NOT real robot.
     """
+    print("teleport")
     giskard_wrapper.monitors.add_set_seed_odometry(_pose_to_pose_stamped(base_pose))
     giskard_wrapper.add_default_end_motion_conditions()
 

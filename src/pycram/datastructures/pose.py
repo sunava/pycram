@@ -23,7 +23,7 @@ def get_normalized_quaternion(quaternion: np.ndarray) -> GeoQuaternion:
     :param quaternion: The quaternion that should be normalized
     :return: The normalized quaternion
     """
-    mag = math.sqrt(sum(v**2 for v in quaternion))
+    mag = math.sqrt(sum(v ** 2 for v in quaternion))
     normed_rotation = [f / mag for f in quaternion]
 
     geo_quaternion = GeoQuaternion()
@@ -86,6 +86,20 @@ class Pose(PoseStamped):
         p.header = pose_stamped.header
         p.pose = pose_stamped.pose
         return p
+
+    def quaternion_to_angle(self) -> float:
+        """Convert a quaternion to an angle of rotation in degrees."""
+        # Normalize the quaternion
+        q = get_normalized_quaternion(self.pose.orientation.as_numpy_array())
+
+        # Extract the scalar part (w) of the quaternion
+        w = q[3]
+
+        # Compute the angle in radians and then convert to degrees
+        angle_radians = 2 * math.acos(w)
+        angle_degrees = math.degrees(angle_radians)
+
+        return angle_degrees
 
     @property
     def frame(self) -> str:
@@ -320,6 +334,7 @@ class Transform(TransformStamped):
 
         Rotation: A quaternion representing the conversion of rotation between both frames
     """
+
     def __init__(self, translation: Optional[List[float]] = None, rotation: Optional[List[float]] = None,
                  frame: Optional[str] = "map", child_frame: Optional[str] = "", time: rospy.Time = None):
         """
@@ -444,7 +459,8 @@ class Transform(TransformStamped):
 
         :return: A copy of this pose
         """
-        t = Transform(self.translation_as_list(), self.rotation_as_list(), self.frame, self.child_frame_id, self.header.stamp)
+        t = Transform(self.translation_as_list(), self.rotation_as_list(), self.frame, self.child_frame_id,
+                      self.header.stamp)
         t.header.frame_id = self.header.frame_id
         # t.header.stamp = self.header.stamp
         return t
@@ -485,7 +501,8 @@ class Transform(TransformStamped):
         inverse_transform = transformations.inverse_matrix(transform)
         translation = transformations.translation_from_matrix(inverse_transform)
         quaternion = transformations.quaternion_from_matrix(inverse_transform)
-        return Transform(list(translation), list(quaternion), self.child_frame_id, self.header.frame_id, self.header.stamp)
+        return Transform(list(translation), list(quaternion), self.child_frame_id, self.header.frame_id,
+                         self.header.stamp)
 
     def __mul__(self, other: Transform) -> Union[Transform, None]:
         """
@@ -555,5 +572,3 @@ class Transform(TransformStamped):
         :param new_rotation: The new rotation as a quaternion with xyzw
         """
         self.rotation = new_rotation
-
-

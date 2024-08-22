@@ -3,7 +3,6 @@ from pycram.process_module import real_robot, semi_real_robot
 from pycram.ros.robot_state_updater import RobotStateUpdater
 from pycram.ros.viz_marker_publisher import VizMarkerPublisher
 from demos.pycram_serve_breakfast_demo.utils.misc import *
-
 # from pycram.external_interfaces.knowrob import get_table_pose
 
 # list of cutlery objects
