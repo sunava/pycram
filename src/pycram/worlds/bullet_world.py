@@ -92,17 +92,18 @@ class BulletWorld(World):
             pose = Pose()
         return self._load_object_and_get_id(path, pose)
 
-    def get_object_dimensions(self, link_name: Optional[str] = None) -> Tuple[float, float, float]:
+    def get_object_dimensions(self, obj_id: int, link_name: Optional[str] = None) -> Tuple[float, float, float]:
         """
         Return the dimensions of the object.
+        :param obj_id: The id of the object.
         :param link_name: The Optional name of a link of this object.
         :return: The dimensions of the object, as a Tuple with float values.
         """
         # Retrieve AABB based on link_name presence
         if link_name:
-            aabb = p.getAABB(self.id, self.links[link_name], self.world.client_id)
+            aabb = p.getAABB(obj_id, self.links[link_name], self.id)
         else:
-            aabb = p.getAABB(self.id, physicsClientId=self.world.client_id)
+            aabb = p.getAABB(obj_id, physicsClientId=self.id)
 
         # Calculate dimensions
         dimensions = [np.absolute(aabb[0][i] - aabb[1][i]) for i in range(3)]

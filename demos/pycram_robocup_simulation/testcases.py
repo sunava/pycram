@@ -38,7 +38,6 @@ long_table_1_rotated = Pose([6.65, 4.6, 0], [0, 0, 1, 0])
 shelf_1 = Pose([6.2, 5.6, 0], [0, 0, 1, 0])
 shelf_1_rotated1 = Pose([6.2, 5.6, 0], [0, 0, -0.7, 0.7])
 shelf_1_rotated = Pose([6.2, 5.6, 0], [0, 0, 0, 1])
-lt = LocalTransformer()
 
 milk = Object("milk", ObjectType.MILK, "../../resources/milk.stl", pose=Pose([7.6, 5.2, 0.87]), color=[1, 0, 0, 0.95])
 cereal = Object("cereal", ObjectType.BREAKFAST_CEREAL, "../../resources/breakfast_cereal.stl",
@@ -93,7 +92,9 @@ def test_costmap():
 
 
 def test_pick_up():
-    with semi_real_robot:
+    milk_desig = ObjectDesignatorDescription(names=["milk"])
+    tf_link = kitchen.get_link_tf_frame("dinner_table:dinner_table:table_center")
+    pick_up(milk_desig.resolve(),tf_link )
 
 
 # pick_up(milk, "hand_palm_link")
@@ -103,8 +104,11 @@ def pick_up(obj_desig, tf_link):
     :param tf_link:  environment_raw.get_link_tf_frame(link) -> use this to deliver the link
     :return:
     """
+    lt = LocalTransformer()
+
     obj_pose = obj_desig.pose
     # transforms the object pose to the link frame
+    print(obj_pose)
     oTb = lt.transform_pose(obj_pose, tf_link)
     object_name = obj_desig.name
 
@@ -116,8 +120,50 @@ def pick_up(obj_desig, tf_link):
     if oTb.pose.position.x >= 0.20:
         grasp_set = "top"
 
-    angle = Pose.quaternion_to_angle()
+    angle = Pose.quaternion_to_angle(oTb.pose.orientation)
+    obj_desig.world_object.get_object_dimensions()
+    #print(obj_desig.get_object_dimensions())
     object_dim = obj_desig.world_object.get_object_dimensions()
     print(f"obj dim von {object_name} {object_dim}")
 
-    # if grasp_set:  #     grasp = "top"  # else:  #     if object_dim[2] < 0.055:  #         rospy.logwarn(f"{object_name} grasp is set to top, angle: {angle}")  #         rospy.logwarn(f"{object_name} and height {object_dim[2]}")  #         rospy.logwarn(f"{object_name} and width {object_dim[0]}")  #         grasp = "top"  #     elif object_dim[2] < 0.065 or angle > 40 and (object_dim[0] > 0.075 and object_dim[1] > 0.075):  #         rospy.logwarn(f"{object_name} grasp is set to top, angle: {angle}")  #         rospy.logwarn(f"{object_name} and height {object_dim[2]}")  #         rospy.logwarn(f"{object_name} and width {object_dim[0]}")  #         grasp = "top"  #     else:  #         rospy.logwarn(f"{object_name} grasp is set to front, angle: {angle}")  #         rospy.logwarn(f"{object_name} and height {object_dim[2]}")  #         rospy.logwarn(f"{object_name} and width {object_dim[0]}")  #         grasp = "front"  #  #     if grasp == "top":  #         print("pose adjusted with z")  #         oTb.pose.position.z += (object_dim[2] / 10)  #         if object_dim[2] < 0.02:  #             rospy.logwarn(f"I am not able to grasp the object: {object_name} please help me!")  #             oTb.pose.position.z = 0.011  #     else:  #         oTb.pose.position.x += 0.03  #  # grasp_rotation = RobotDescription.current_robot_description.grasps[grasp]  # if grasp == "top":  #     grasp_q = Quaternion(grasp_rotation[0], grasp_rotation[1], grasp_rotation[2], grasp_rotation[3])  #     oTb.orientation = Pose.multiply_quaternions(oTb.pose.orientation, grasp_q)  # else:  #     oTb.orientation = grasp_rotation  #  # oTmG = lt.transform_pose(oTb, "map")  # after_pose = oTmG.copy()  # after_pose.pose.position.z += 0.02  #  # BulletWorld.current_bullet_world.add_vis_axis(oTmG)  #  # if grasp == "front":  #     config_for_placing = {'arm_lift_joint': -1, 'arm_flex_joint': -0.16, 'arm_roll_joint': -0.0145,  #                           'wrist_flex_joint': -1.417, 'wrist_roll_joint': 0.0}  # else:  #     config_for_placing = {'arm_flex_joint': -1.1, 'arm_lift_joint': 1.15, 'arm_roll_joint': 0,  #                           'wrist_flex_joint': -1.6, 'wrist_roll_joint': 0, }  #  # pakerino(config=config_for_placing)  #  # gripper.pub_now("open")  # talk.pub_now(f"Pick Up now! {object_name.split('_')[0]} from: {grasp}")  # giskard_return = giskardpy.achieve_sequence_pick_up(oTmG)  # while not giskard_return:  #     rospy.sleep(0.1)  #  # giskardpy.achieve_attached(object)  # tip_link = 'hand_gripper_tool_frame'  # BulletWorld.robot.attach(object=object, link=tip_link)  # gripper.pub_now("close")  # giskardpy.avoid_all_collisions()  # park = pakerino()  # while not park:  #     print("waiting for park")  #     rospy.sleep(0.1)  # grasped_bool = None  # if grasp_listener.check_grasp():  #     talk.pub_now("Grasped a object")  #     grasped_bool = True  # else:  #     talk.pub_now("I was not able to grasped a object")  #     grasped_bool = False  #  # return grasped_bool, grasp, found_object
+
+    if grasp_set:
+        grasp = "top"
+    else:
+        if object_dim[2] < 0.055:
+            rospy.logwarn(f"{object_name} grasp is set to top, angle: {angle}")
+            rospy.logwarn(f"{object_name} and height {object_dim[2]}")
+            rospy.logwarn(f"{object_name} and width {object_dim[0]}")
+            grasp = "top"
+        elif object_dim[2] < 0.065 or angle > 40 and (object_dim[0] > 0.075 and object_dim[1] > 0.075):
+            rospy.logwarn(f"{object_name} grasp is set to top, angle: {angle}")
+            rospy.logwarn(f"{object_name} and height {object_dim[2]}")
+            rospy.logwarn(f"{object_name} and width {object_dim[0]}")
+            grasp = "top"
+        else:
+            rospy.logwarn(f"{object_name} grasp is set to front, angle: {angle}")
+            rospy.logwarn(f"{object_name} and height {object_dim[2]}")
+            rospy.logwarn(f"{object_name} and width {object_dim[0]}")
+            grasp = "front"
+
+        if grasp == "top":
+            print("pose adjusted with z")
+            oTb.pose.position.z += (object_dim[2] / 10)
+            if object_dim[2] < 0.02:
+                rospy.logwarn(f"I am not able to grasp the object: {object_name} please help me!")
+                oTb.pose.position.z = 0.011
+        else:
+            oTb.pose.position.x += 0.03
+
+    # grasp_rotation = robot_description.grasps.get_orientation_for_grasp(grasp)
+    # if grasp == "top":
+    #     grasp_q = Quaternion(grasp_rotation[0], grasp_rotation[1], grasp_rotation[2], grasp_rotation[3])
+    #     oTb.orientation = multiply_quaternions(oTb.pose.orientation, grasp_q)
+    # else:
+    #     oTb.orientation = grasp_rotation
+    #
+    # oTmG = lt.transform_pose(oTb, "map")
+    # after_pose = oTmG.copy()
+    # after_pose.pose.position.z += 0.02
+    #
+    # BulletWorld.current_bullet_world.add_vis_axis(oTmG)

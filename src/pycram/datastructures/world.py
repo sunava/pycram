@@ -244,6 +244,15 @@ class World(StateEntity, ABC):
         """
         raise NotImplementedError
 
+    def get_object_dimensions(self, obj_id: int, link_name: Optional[str] = None) -> Tuple[float, float, float]:
+        """
+        Return the dimensions of the object.
+        :param obj_id: The id of the object.
+        :param link_name: The Optional name of a link of this object.
+        :return: The dimensions of the object, as a Tuple with float values.
+        """
+        raise NotImplementedError
+
     def update_cache_dir_with_object(self, path: str, ignore_cached_files: bool,
                                      obj: Object) -> str:
         """

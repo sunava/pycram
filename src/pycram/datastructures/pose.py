@@ -87,13 +87,15 @@ class Pose(PoseStamped):
         p.pose = pose_stamped.pose
         return p
 
-    def quaternion_to_angle(self) -> float:
+    @staticmethod
+    def quaternion_to_angle(q: Quaternion) -> float:
         """Convert a quaternion to an angle of rotation in degrees."""
         # Normalize the quaternion
-        q = get_normalized_quaternion(self.pose.orientation.as_numpy_array())
+        quaternion_as_list = [q.x, q.y, q.z, q.w]
+        q = get_normalized_quaternion(quaternion_as_list)
 
         # Extract the scalar part (w) of the quaternion
-        w = q[3]
+        w = quaternion_as_list[3]
 
         # Compute the angle in radians and then convert to degrees
         angle_radians = 2 * math.acos(w)
