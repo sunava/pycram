@@ -6,7 +6,7 @@ import rospy
 import sys
 import rosnode
 
-from ..datastructures.enums import JointType, ObjectType
+from ..datastructures.enums import JointType, ObjectType, Arms
 from ..datastructures.pose import Pose
 # from ..robot_descriptions import robot_description
 from ..datastructures.world import World
@@ -556,16 +556,25 @@ def achieve_cartesian_goal(goal_pose: Pose, tip_link: str, root_link: str) -> 'M
     :return: MoveResult message for this goal
     """
     sync_worlds()
-    par_return = _manage_par_motion_goals(giskard_wrapper.set_cart_goal, _pose_to_pose_stamped(goal_pose),
-                                          tip_link, root_link)
+    par_return = _manage_par_motion_goals(giskard_wrapper.set_cart_goal, _pose_to_pose_stamped(goal_pose), tip_link,
+                                          root_link)
     if par_return:
         return par_return
 
-    giskard_wrapper.motion_goals.avoid_all_collisions()
-    giskard_wrapper.motion_goals.add_cartesian_pose(_pose_to_pose_stamped(goal_pose), tip_link, root_link)
-    # giskard_wrapper.add_default_end_motion_conditions()
-    return giskard_wrapper.execute()
+    cart_monitor1 = giskard_wrapper.monitors.add_cartesian_pose(root_link=root_link, tip_link=tip_link,
+                                                                goal_pose=_pose_to_pose_stamped(goal_pose),
+                                                                position_threshold=0.02, orientation_threshold=0.02,
+                                                                name='cart goal 1')
+    end_monitor = giskard_wrapper.monitors.add_local_minimum_reached(start_condition=cart_monitor1)
 
+    giskard_wrapper.motion_goals.add_cartesian_pose(name='g1', root_link=root_link, tip_link=tip_link,
+                                                    goal_pose=_pose_to_pose_stamped(goal_pose),
+                                                    end_condition=cart_monitor1)
+
+    giskard_wrapper.monitors.add_end_motion(start_condition=end_monitor)
+    giskard_wrapper.motion_goals.avoid_all_collisions()
+    giskard_wrapper.motion_goals.allow_collision(group1='gripper', group2=CollisionEntry.ALL)
+    return giskard_wrapper.execute()
 
 @init_giskard_interface
 @thread_safe
@@ -847,7 +856,7 @@ def achieve_gripper_motion_goal(motion: str):
 
 
 @init_giskard_interface
-def allow_gripper_collision(gripper: str) -> None:
+def allow_gripper_collision(gripper: Arms) -> None:
     """
     Allows the specified gripper to collide with anything.
 

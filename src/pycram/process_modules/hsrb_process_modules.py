@@ -124,12 +124,10 @@ class HSRBMoveTCPReal(ProcessModule):
     """
 
     def _execute(self, designator: MoveTCPMotion) -> Any:
-        lt = LocalTransformer()
-        pose_in_map = lt.transform_pose(designator.target, "map")
         giskard.avoid_all_collisions()
         if designator.allow_gripper_collision:
             giskard.allow_gripper_collision(designator.arm)
-        giskard.achieve_cartesian_goal(pose_in_map, RobotDescription.current_robot_description.get_arm_chain(
+        giskard.achieve_cartesian_goal(designator.target, RobotDescription.current_robot_description.get_arm_chain(
             designator.arm).get_tool_frame(), "map")
 
 

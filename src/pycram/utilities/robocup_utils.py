@@ -6,7 +6,7 @@ from sound_play.msg import SoundRequestActionGoal, SoundRequest
 from std_msgs.msg import Int32
 from tmc_control_msgs.msg import GripperApplyEffortActionGoal
 from tmc_msgs.msg import Voice, TalkRequestAction, TalkRequestActionGoal
-import pycram.external_interfaces.giskard_new as giskardpy
+import pycram.external_interfaces.giskard as giskardpy
 from pycram.designators.object_designator import *
 
 
