@@ -1,4 +1,8 @@
 import rospy
+from tmc_control_msgs.msg import GripperApplyEffortActionGoal
+from tmc_msgs.msg import Voice
+
+from pycram.datastructures.enums import GripperState
 
 is_init = False
 
@@ -17,7 +21,7 @@ def init_tmc_interface():
 
 
 def tmc_gripper_control(designator):
-    if (designator.motion == "open"):
+    if designator.motion == GripperState.OPEN:
         pub_gripper = rospy.Publisher('/hsrb/gripper_controller/grasp/goal', GripperApplyEffortActionGoal,
                                       queue_size=10)
         rate = rospy.Rate(10)
@@ -26,7 +30,7 @@ def tmc_gripper_control(designator):
         msg.goal.effort = 0.8
         pub_gripper.publish(msg)
 
-    elif (designator.motion == "close"):
+    elif designator.motion == GripperState.CLOSE:
         pub_gripper = rospy.Publisher('/hsrb/gripper_controller/grasp/goal', GripperApplyEffortActionGoal,
                                       queue_size=10)
         rate = rospy.Rate(10)

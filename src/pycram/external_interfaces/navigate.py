@@ -13,7 +13,6 @@ import pycram.external_interfaces.giskard_new as giskardpy
 
 class PoseNavigator():
     def __init__(self):
-        rospy.loginfo("move_base init")
         global move_client
         self.client = actionlib.SimpleActionClient('move_base/move', MoveBaseAction)
         rospy.loginfo("Waiting for move_base ActionServer")
@@ -25,7 +24,6 @@ class PoseNavigator():
         self.toya_pose_pub = rospy.Publisher("/initialpose", PoseWithCovarianceStamped, queue_size=100)
 
         self.toya_pose_sub = rospy.Subscriber("/amcl_pose", PoseWithCovarianceStamped, self.toya_pose_cb)
-        rospy.loginfo("move_base init construct done")
 
     def pub_fake_pose(self, fake_pose: PoseStamped):
         msg = PoseWithCovarianceStamped()

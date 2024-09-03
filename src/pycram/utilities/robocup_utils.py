@@ -6,15 +6,15 @@ from sound_play.msg import SoundRequestActionGoal, SoundRequest
 from std_msgs.msg import Int32
 from tmc_control_msgs.msg import GripperApplyEffortActionGoal
 from tmc_msgs.msg import Voice, TalkRequestAction, TalkRequestActionGoal
-import pycram.external_interfaces.giskard_new as giskardpy
+import pycram.external_interfaces.giskard as giskardpy
 from pycram.designators.object_designator import *
+from pycram.fluent import Fluent
 
 
 def pakerino(torso_z=0.15, config=None):
     if not config:
         config = {'arm_lift_joint': torso_z, 'arm_flex_joint': 1, 'arm_roll_joint': -1.2, 'wrist_flex_joint': -1.5,
                   'wrist_roll_joint': 0}
-    giskardpy.avoid_all_collisions()
     return giskardpy.achieve_joint_goal(config)
 
 

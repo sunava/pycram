@@ -100,6 +100,14 @@ class AxisIdentifier(Enum):
     Z = (0, 0, 1)
 
 
+class FilterConfig(Enum):
+    """
+    Declare existing filter methods.
+    Currently supported: Butterworth
+    """
+    butterworth = 1
+
+
 class GripperState(Enum):
     """
     Enum for the different motions of the gripper.

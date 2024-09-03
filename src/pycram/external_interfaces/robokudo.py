@@ -7,6 +7,7 @@ import rosnode
 import rospy
 from geometry_msgs.msg import PointStamped
 from typing_extensions import List, Callable, Optional
+from pycram.datastructures.enums import ObjectType
 
 from ..datastructures.pose import Pose
 from ..designator import ObjectDesignatorDescription
@@ -78,6 +79,66 @@ def init_robokudo_interface(func: Callable) -> Callable:
     return wrapper
 
 
+def make_query_goal_msg(obj_desc: ObjectDesignatorDescription) -> 'QueryGoal':
+    """
+    Creates a QueryGoal message from a PyCRAM Object designator description for the use of Querying RobotKudo.
+
+    :param obj_desc: The PyCRAM object designator description that should be converted
+    :return: The RoboKudo QueryGoal for the given object designator description
+    """
+    from robokudo_msgs.msg import QueryAction, QueryGoal, QueryResult
+
+    goal_msg = QueryGoal()
+    goal_msg.obj.uid = str(id(obj_desc))
+    goal_msg.obj.type = str(obj_desc.types[0].name)  # For testing purposes
+    if ObjectType.JEROEN_CUP == obj_desc.types[0]:
+        goal_msg.obj.color.append("blue")
+    elif ObjectType.BOWL == obj_desc.types[0]:
+        goal_msg.obj.color.append("red")
+    return goal_msg
+
+
+def query(object_desc: ObjectDesignatorDescription) -> ObjectDesignatorDescription.Object:
+    """
+    Sends a query to RoboKudo to look for an object that fits the description given by the Object designator description.
+    For sending the query to RoboKudo a simple action client will be created and the Object designator description is
+    sent as a goal.
+    """
+    from robokudo_msgs.msg import QueryAction, QueryGoal, QueryResult
+
+    global query_result
+
+    def active_callback():
+        rospy.loginfo("Send query to Robokudo")
+
+    def done_callback(state, result):
+        rospy.loginfo("Finished perceiving")
+        global query_result
+        query_result = result
+
+    def feedback_callback(msg):
+        pass
+
+    object_goal = make_query_goal_msg(object_desc)
+
+    client = actionlib.SimpleActionClient('robokudo/query', QueryAction)
+    rospy.loginfo("Waiting for action server")
+    client.wait_for_server()
+    client.send_goal(object_goal, active_cb=active_callback, done_cb=done_callback, feedback_cb=feedback_callback)
+    wait = client.wait_for_result()
+    pose_candidates = {}
+    # todo check if query is even filled
+    for i in range(0, len(query_result.res[0].pose)):
+        pose = Pose.from_pose_stamped(query_result.res[0].pose[i])
+        # todo check if frame exist and if not in map
+        # pose.frame = BulletWorld.current_bullet_world.robot.get_link_tf_frame(pose.frame)
+        source = query_result.res[0].pose_source[0]
+
+        pose_candidates[source] = pose
+
+    return pose_candidates
+
+
 @init_robokudo_interface
 def send_query(obj_type: Optional[str] = None, region: Optional[str] = None,
                attributes: Optional[List[str]] = None) -> Any:
@@ -85,7 +146,9 @@ def send_query(obj_type: Optional[str] = None, region: Optional[str] = None,
     goal = QueryGoal()
 
     if obj_type:
-        goal.obj.type = obj_type
+        # detects all obj in sight and returns obj-kind and poses
+        # TODO: adjust so that specific things can be detected
+        goal.obj.type = "detect"
     if region:
         goal.obj.location = region
     if attributes:
@@ -127,17 +190,60 @@ def query_object(obj_desc: ObjectDesignatorDescription) -> dict:
 
 @init_robokudo_interface
 def query_human() -> PointStamped:
-    """Query RoboKudo for human detection and return the detected human's pose."""
-    result = send_query(obj_type='human')
-    if result:
-        return result  # Assuming result is of type PointStamped or similar.
-    return None
+    """
+        Sends a query to RoboKudo to look for a Human
+        returns a PointStamped of pose where human is. keeps publishing it onto the
+        topic /human_pose
+    """
+    from robokudo_msgs.msg import QueryAction, QueryGoal, QueryResult
+
+    global human_bool
+    global query_result
+    global human_pose
+
+    def active_callback():
+        rospy.loginfo("Send query to Robokudo to perceive a human")
+
+    def done_callback(state, result):
+        rospy.loginfo("Finished perceiving")
+        global human_bool
+        human_bool = True
+        global query_result
+        query_result = result
+
+    def feedback_callback(msg):
+        # rospy.loginfo("Got feedback")
+        global feedback_result
+        feedback_result = msg
+
+    def callback(pose):
+        global human_bool
+        global human_pose
+        human_bool = True
+        human_pose = pose
+
+    # create client to communicate with perception
+    client = actionlib.SimpleActionClient('robokudo/query', QueryAction)
+    rospy.loginfo("Waiting for action server")
+    client.wait_for_server()
+    object_goal = goal_msg = QueryGoal()
+    object_goal.obj.type = 'human'
+    client.send_goal(object_goal, active_cb=active_callback, done_cb=done_callback, feedback_cb=feedback_callback)
+
+    # if no human is detected
+    human_bool = False
+    waiting_human = False
+    rospy.Subscriber("/human_pose", PointStamped, callback)
+
+    while not human_bool:
+        rospy.sleep(0.5)
+
+    return human_pose
 
 
 @init_robokudo_interface
 def stop_query():
     """Stop any ongoing query to RoboKudo."""
-    init_robokudo_interface()
     client = actionlib.SimpleActionClient('robokudo/query', QueryAction)
     client.wait_for_server()
     client.cancel_all_goals()
@@ -145,15 +251,115 @@ def stop_query():
 
 
 @init_robokudo_interface
-def query_specific_region(region: str) -> Any:
+def query_specific_region(region: str, extra: Optional[Any]) -> Any:
     """Query RoboKudo to scan a specific region."""
-    return send_query(region=region)
+
+    from robokudo_msgs.msg import QueryAction, QueryGoal, QueryResult
+
+    global query_result
+
+    if region == "sofa":
+        def active_callback():
+            rospy.loginfo("Send query to Robokudo to scan for seat and human")
+
+        def done_callback(state, result: QueryResult):
+            rospy.loginfo("Finished perceiving")
+            global query_result
+            query_result = result.res
+
+        # fill Query with information so that perception looks for a seat
+        object_goal = QueryGoal()
+
+        object_goal.obj.location = "sofa"  # aktivate region filter
+
+        client = actionlib.SimpleActionClient('robokudo/query', QueryAction)
+        rospy.loginfo("Waiting for action server")
+        client.wait_for_server()
+        client.send_goal(object_goal, active_cb=active_callback, done_cb=done_callback)
+        # TODO: necessary?
+        client.wait_for_result()
+
+        return query_result
+
+    if region == "region":
+
+        def active_callback():
+            rospy.loginfo("Send query to Robokudo to scan a specific region")
+
+        def done_callback(state, result):
+            rospy.loginfo("Finished perceiving")
+            global query_result
+            # Todo is result.res needed instead?
+            query_result = result.res
+
+        def feedback_callback(msg):
+            pass
+
+        object_goal = QueryGoal()
+        object_goal.obj.location = str(extra)
+        client = actionlib.SimpleActionClient('robokudo/query', QueryAction)
+        rospy.loginfo("Waiting for action server")
+        client.wait_for_server()
+        client.send_goal(object_goal, active_cb=active_callback, done_cb=done_callback, feedback_cb=feedback_callback)
+        client.wait_for_result()
+
+        return query_result
 
 
 @init_robokudo_interface
 def query_human_attributes() -> Any:
     """Query RoboKudo for human attributes like brightness of clothes, headgear, and gender."""
-    return send_query(obj_type='human', attributes=["attributes"])
+    from robokudo_msgs.msg import QueryAction, QueryGoal, QueryResult
+
+    global query_result
+
+    def active_callback():
+        rospy.loginfo("Send query to Robokudo to look for human and attributes")
+
+    def done_callback(state, result: QueryResult):
+        rospy.loginfo("Finished perceiving")
+        global query_result
+        query_result = result
+
+    object_goal = QueryGoal()
+    # Perception will detect brightness of clothes, kind of clothes, headgear and gender
+    object_goal.obj.attribute = ["attributes"]
+
+    client = actionlib.SimpleActionClient('robokudo/query', QueryAction)
+    rospy.loginfo("Waiting for action server")
+    client.wait_for_server()
+    client.send_goal(object_goal, active_cb=active_callback, done_cb=done_callback)
+    client.wait_for_result()
+
+    return query_result
+
+
+def faces_query() -> Any:
+    """
+    Sends a query to RoboKudo to look for a human. returns four attributes of the perceived human.
+    """
+
+    from robokudo_msgs.msg import QueryAction, QueryGoal, QueryResult
+
+    global query_result
+
+    def active_callback():
+        rospy.loginfo("Send query to Robokudo for face recognition")
+
+    def done_callback(state, result: QueryResult):
+        rospy.loginfo("Finished perceiving")
+        global query_result
+        query_result = result
+
+    object_goal = QueryGoal()
+
+    client = actionlib.SimpleActionClient('robokudo/query', QueryAction)
+    rospy.loginfo("Waiting for action server")
+    client.wait_for_server()
+    client.send_goal(object_goal, active_cb=active_callback, done_cb=done_callback)
+    client.wait_for_result()
+
+    return query_result
 
 
 @init_robokudo_interface

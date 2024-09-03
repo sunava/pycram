@@ -12,7 +12,7 @@ from pycram.ros.robot_state_updater import RobotStateUpdater
 from pycram.ros.viz_marker_publisher import VizMarkerPublisher
 from pycram.designators.location_designator import *
 from pycram.designators.object_designator import *
-from pycram.bullet_world import BulletWorld, Object
+from pycram.worlds.bullet_world import BulletWorld, Object
 from std_msgs.msg import String, Bool
 from pycram.datastructures.enums import ImageEnum as ImageEnum
 from pycram.utilities.robocup_utils import TextToSpeechPublisher, ImageSwitchPublisher, SoundRequestPublisher, \
