@@ -104,7 +104,7 @@ class VizMarkerPublisher:
                 #     color = colors[obj.name]
                 # else:
                 #     color = [1, 1, 1, 1] if obj.link_name_to_id[link] == -1 else obj.get_link_color(link).get_rgba()
-
+                color = [1, 1, 1, 1] if obj.link_name_to_id[link] == -1 else obj.get_link_color(link).get_rgba()
                 msg.color = ColorRGBA(*color)
                 msg.lifetime = rospy.Duration(1)
 

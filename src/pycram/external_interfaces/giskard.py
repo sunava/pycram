@@ -18,7 +18,7 @@ from ..robot_description import RobotDescription
 from typing_extensions import List, Dict, Callable, Optional
 from geometry_msgs.msg import PoseStamped, PointStamped, QuaternionStamped, Vector3Stamped
 from threading import Lock, RLock
-
+from giskard_msgs.msg import CollisionEntry, Weights
 #
 # if TYPE_CHECKING:
 #     from giskardpy.python_interface.python_interface import GiskardWrapper
@@ -353,13 +353,17 @@ def achieve_joint_goal(goal_poses: Dict[str, float]) -> 'MoveResult':
     :return: MoveResult message for this goal
     """
     # sync_worlds()
-    par_return = _manage_par_motion_goals(giskard_wrapper.set_joint_goal, goal_poses)
+    par_return = _manage_par_motion_goals(giskard_wrapper.motion_goals.add_joint_position, goal_poses)
     if par_return:
         return par_return
 
-    giskard_wrapper.set_joint_goal(goal_poses)
-    # giskard_wrapper.add_default_end_motion_conditions()
+    giskard_wrapper.motion_goals.add_joint_position(goal_poses)
+    giskard_wrapper.add_default_end_motion_conditions()
+    giskard_wrapper.motion_goals.avoid_all_collisions()
+
     return giskard_wrapper.execute()
+
+
 
 
 @init_giskard_interface
@@ -490,8 +494,9 @@ def test(config):
 def achieve_attached(obj_desig, tip_link='hand_gripper_tool_frame'):
     root_link = 'map'
     sync_worlds()
+    # + "_" + str(obj_desig.world_object.id)
     giskard_wrapper.world.update_parent_link_of_group(
-        name=obj_desig.name + "_" + str(obj_desig.id), parent_link=tip_link)
+        name=obj_desig.name, parent_link=tip_link)
 
 
 @init_giskard_interface
@@ -556,10 +561,10 @@ def achieve_cartesian_goal(goal_pose: Pose, tip_link: str, root_link: str) -> 'M
     :return: MoveResult message for this goal
     """
     sync_worlds()
-    par_return = _manage_par_motion_goals(giskard_wrapper.set_cart_goal, _pose_to_pose_stamped(goal_pose), tip_link,
-                                          root_link)
-    if par_return:
-        return par_return
+    # par_return = _manage_par_motion_goals(giskard_wrapper.add, _pose_to_pose_stamped(goal_pose), tip_link,
+    #                                       root_link)
+    # if par_return:
+    #     return par_return
 
     cart_monitor1 = giskard_wrapper.monitors.add_cartesian_pose(root_link=root_link, tip_link=tip_link,
                                                                 goal_pose=_pose_to_pose_stamped(goal_pose),
@@ -572,8 +577,6 @@ def achieve_cartesian_goal(goal_pose: Pose, tip_link: str, root_link: str) -> 'M
                                                     end_condition=cart_monitor1)
 
     giskard_wrapper.monitors.add_end_motion(start_condition=end_monitor)
-    giskard_wrapper.motion_goals.avoid_all_collisions()
-    giskard_wrapper.motion_goals.allow_collision(group1='gripper', group2=CollisionEntry.ALL)
     return giskard_wrapper.execute()
 
 @init_giskard_interface

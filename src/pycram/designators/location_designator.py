@@ -296,7 +296,7 @@ class SemanticCostmapLocation(LocationDesignatorDescription):
     class Location(LocationDesignatorDescription.Location):
         pass
 
-    def __init__(self, urdf_link_name, part_of, for_object=None, resolver=None):
+    def __init__(self, urdf_link_name, part_of, for_object=None, margin=0.2, resolver=None):
         """
         Creates a distribution over a urdf link to sample poses which are on this link. Can be used, for example, to find
         poses that are on a table. Optionally an object can be given for which poses should be calculated, in that case
@@ -311,6 +311,7 @@ class SemanticCostmapLocation(LocationDesignatorDescription):
         self.urdf_link_name: str = urdf_link_name
         self.part_of: ObjectDesignatorDescription.Object = part_of
         self.for_object: Optional[ObjectDesignatorDescription.Object] = for_object
+        self.margin: float = margin
 
     def ground(self) -> Location:
         """
@@ -328,7 +329,7 @@ class SemanticCostmapLocation(LocationDesignatorDescription):
 
         :yield: An instance of SemanticCostmapLocation.Location with the found valid position of the Costmap.
         """
-        sem_costmap = SemanticCostmap(self.part_of.world_object, self.urdf_link_name)
+        sem_costmap = SemanticCostmap(self.part_of.world_object, self.urdf_link_name, self.margin)
         height_offset = 0
         if self.for_object:
             min_p, max_p = self.for_object.world_object.get_axis_aligned_bounding_box().get_min_max_points()
