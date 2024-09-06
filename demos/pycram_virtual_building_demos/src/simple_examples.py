@@ -6,7 +6,7 @@ from pycram.process_module import simulated_robot
 
 
 def navigate_simple_example():
-    navigate_pose = Pose([2.7, 2.15, 1])
+    navigate_pose = Pose([4, 4, 0])
 
     with simulated_robot:
         MoveTorsoAction([TorsoState.HIGH]).resolve().perform()
