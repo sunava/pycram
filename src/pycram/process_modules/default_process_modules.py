@@ -179,7 +179,7 @@ class DefaultOpen(ProcessModule):
             container_joint = part_of_object.find_joint_above_link(desig.object_part.name, JointType.PRISMATIC)
 
         goal_pose = link_pose_for_joint_config(part_of_object, {
-            container_joint: part_of_object.get_joint_limits(container_joint)[1] - 0.05}, desig.object_part.name)
+            container_joint: part_of_object.get_joint_limits(container_joint)[1] - 0.1}, desig.object_part.name)
 
         grasp = Grasp.FRONT
         adjusted_grasp = adjust_grasp_for_object_rotation(goal_pose, grasp, desig.arm)
@@ -193,7 +193,7 @@ class DefaultOpen(ProcessModule):
 
         desig.object_part.world_object.set_joint_position(container_joint,
                                                           part_of_object.get_joint_limits(
-                                                              container_joint)[1])
+                                                              container_joint)[1] - 0.1)
 
 
 class DefaultClose(ProcessModule):
