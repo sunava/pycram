@@ -806,9 +806,9 @@
   <joint name="cabinet3_joint" type="fixed">
     <origin xyz="-0.273 1.022 1.07"/>
     <parent link="side_A"/>
-    <child link="cabinet3"/>
+    <child link="refrigerator"/>
   </joint>
-  <link name="cabinet3">
+  <link name="refrigerator">
     <visual>
       <geometry>
         <mesh filename="package://iai_apartment/meshes/cabinet03/IAICabinet3W60.dae"/>
@@ -821,22 +821,22 @@
       </geometry>
     </collision>
   </link>
-  <joint name="cabinet3_door_top_out_joint" type="prismatic">
+  <joint name="refrigerator_door_top_out_joint" type="prismatic">
     <origin rpy="0 0 3.14" xyz="0.39 -0.3 0.5"/>
-    <parent link="cabinet3"/>
-    <child link="cabinet3_door_top_out_fancy"/>
+    <parent link="refrigerator"/>
+    <child link="refrigerator_door_top_out_fancy"/>
     <axis xyz="-1 0 0"/>
     <limit effort="1.0" lower="0.0" upper="0.02" velocity="1.5708"/>
-    <mimic joint="cabinet3_door_top_left_joint" multiplier="0.01"/>
+    <mimic joint="refrigerator_door_top_left_joint" multiplier="0.01"/>
   </joint>
-  <link name="cabinet3_door_top_out_fancy"/>
-  <joint name="cabinet3_door_top_left_joint" type="revolute">
-    <parent link="cabinet3_door_top_out_fancy"/>
-    <child link="cabinet3_door_top_left"/>
+  <link name="refrigerator_door_top_out_fancy"/>
+  <joint name="refrigerator_door_top_left_joint" type="revolute">
+    <parent link="refrigerator_door_top_out_fancy"/>
+    <child link="refrigerator_door_top_left"/>
     <axis xyz="0 0 -1"/>
     <limit effort="1000.0" lower="0.0" upper="1.5708" velocity="1.5708"/>
   </joint>
-  <link name="cabinet3_door_top_left">
+  <link name="refrigerator_door_top_left">
     <visual>
       <origin rpy="0 0 3.14" xyz="0.001 -0.3 -0.1"/>
       <geometry>
@@ -851,12 +851,12 @@
       </geometry>
     </collision>
   </link>
-  <joint name="handle_cab3_door_top_joint" type="fixed">
+  <joint name="refrigerator_door_top_handle_joint" type="fixed">
     <origin rpy="1.57 0 0" xyz="-0.036 -0.45 -0.65"/>
-    <parent link="cabinet3_door_top_left"/>
-    <child link="handle_cab3_door_top"/>
+    <parent link="refrigerator_door_top_left"/>
+    <child link="refrigerator_door_top_handle"/>
   </joint>
-  <link name="handle_cab3_door_top">
+  <link name="refrigerator_door_top_handle">
     <visual>
       <geometry>
         <mesh filename="package://iai_apartment/meshes/handles/handle_horizontal.dae"/>
@@ -868,22 +868,22 @@
       </geometry>
     </collision>
   </link>
-  <joint name="cabinet3_door_bottom_out_joint" type="prismatic">
+  <joint name="refrigerator_door_bottom_out_joint" type="prismatic">
     <origin rpy="0 0 3.14" xyz="0.39 -0.3 -0.5"/>
-    <parent link="cabinet3"/>
-    <child link="cabinet3_door_bottom_out_fancy"/>
+    <parent link="refrigerator"/>
+    <child link="refrigerator_door_bottom_out_fancy"/>
     <axis xyz="-1 0 0"/>
     <limit effort="1.0" lower="0.0" upper="0.02" velocity="1.5708"/>
-    <mimic joint="cabinet3_door_bottom_left_joint" multiplier="0.01"/>
+    <mimic joint="refrigerator_door_bottom_left_joint" multiplier="0.01"/>
   </joint>
-  <link name="cabinet3_door_bottom_out_fancy"/>
-  <joint name="cabinet3_door_bottom_left_joint" type="revolute">
-    <parent link="cabinet3_door_bottom_out_fancy"/>
-    <child link="cabinet3_door_bottom_left"/>
+  <link name="refrigerator_door_bottom_out_fancy"/>
+  <joint name="refrigerator_door_bottom_left_joint" type="revolute">
+    <parent link="refrigerator_door_bottom_out_fancy"/>
+    <child link="refrigerator_door_bottom_left"/>
     <axis xyz="0 0 -1"/>
     <limit effort="1000.0" lower="0.0" upper="1.5708" velocity="1.5708"/>
   </joint>
-  <link name="cabinet3_door_bottom_left">
+  <link name="refrigerator_door_bottom_left">
     <visual>
       <origin rpy="0 0 3.14" xyz="0.001 -0.3 -0.165"/>
       <geometry>
@@ -898,12 +898,12 @@
       </geometry>
     </collision>
   </link>
-  <joint name="handle_cab3_door_bottom_joint" type="fixed">
+  <joint name="refrigerator_door_bottom_handle_joint" type="fixed">
     <origin rpy="1.57 0 0" xyz="-0.036 -0.45 0.1"/>
-    <parent link="cabinet3_door_bottom_left"/>
-    <child link="handle_cab3_door_bottom"/>
+    <parent link="refrigerator_door_bottom_left"/>
+    <child link="refrigerator_door_bottom_handle"/>
   </joint>
-  <link name="handle_cab3_door_bottom">
+  <link name="refrigerator_door_bottom_handle">
     <visual>
       <geometry>
         <mesh filename="package://iai_apartment/meshes/handles/handle_horizontal.dae"/>
