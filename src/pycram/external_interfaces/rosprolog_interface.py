@@ -91,9 +91,13 @@ class Prolog:
             return kdc.send_simple_query(query_str)
         with PrologQueryWrapper(query_str, self._simple_query_srv, self._next_solution_srv, self._finish_query_srv) as query:
             try:
-                return next(query.solutions())
+                solution = next(query.solutions())
+                if 0 == len(solution):
+                    return True
+                else:
+                    return solution
             except StopIteration:
-                return None
+                return False
 
     def all_solutions(self, query_str: str) -> List[Dict]:
         """Retrieve all solutions at once."""
@@ -101,4 +105,10 @@ class Prolog:
         if "type=" in query_str:
             return kdc.send_simple_query(query_str)
         with PrologQueryWrapper(query_str, self._simple_query_srv, self._next_solution_srv, self._finish_query_srv, iterative=False) as query:
-            return list(query.solutions())
+            solution = list(query.solutions())
+            if 0 == len(solution):
+                return False
+            elif (1 == len(solution)) and (0 == len(solution[0])):
+                return True
+            else:
+                return solution
