@@ -182,27 +182,29 @@ class CostmapLocation(LocationDesignatorDescription):
         distance_to_obstacle = RobotDescription.current_robot_description.get_costmap_offset()
 
         max_reach = RobotDescription.current_robot_description.get_max_reach()
-        map_size: int = int(max_reach * 100 * 3)
+        map_size: int = int(max_reach * 100 * 2)
         map_resolution = 0.15
 
-        occupancy = OccupancyCostmap(distance_to_obstacle, False, map_size * 2, map_resolution, ground_pose)
+        occupancy = OccupancyCostmap(distance_to_obstacle, False, map_size*1.4, map_resolution, ground_pose)
         final_map = occupancy
         if self.reachable_for:
-            distance = (distance_to_obstacle + max_reach) / 2
-            gaussian = GaussianCostmap(map_size, 1.5, map_resolution, ground_pose, True, distance)
+            distance = (distance_to_obstacle + max_reach) / 1.25
+            gaussian = GaussianCostmap(map_size+50, 1.5, map_resolution, ground_pose, True, distance)
             final_map += gaussian
         if self.visible_for:
             visible = VisibilityCostmap(min_height, max_height, map_size, map_resolution,
                                         Pose(target_pose.position_as_list()))
             final_map += visible
 
-        directional = DirectionalCostmap(map_size * 3, self.used_grasps[0], map_resolution, target_pose,
-                                         self.object_in_hand is not None)
-        final_map *= directional
-
-        if final_map.world.allow_publish_debug_poses:
+        if self.object_in_hand and self.used_grasps and Grasp.TOP not in self.used_grasps:
+            directional = DirectionalCostmap(map_size * 3, self.used_grasps[0], map_resolution, target_pose,
+                                             self.object_in_hand is not None)
+            final_map *= directional
             directional.publish()
             time.sleep(1)
+
+        if final_map.world.allow_publish_debug_poses:
+
             final_map.publish(weighted=True)
 
         if self.visible_for or self.reachable_for:
@@ -338,7 +340,6 @@ class AccessingLocation(LocationDesignatorDescription):
             container_joint: self.handle.world_object.get_joint_limits(container_joint)[1] / 1.5},
                                                self.handle.name)
 
-        grasp = calculate_object_faces(self.handle)[0]
         grasp = Grasp.FRONT
         original_init_pose = init_pose.copy()
         init_pose, half_pose, goal_pose = init_pose.copy(), half_pose.copy(), goal_pose.copy()
@@ -358,7 +359,7 @@ class AccessingLocation(LocationDesignatorDescription):
 
         # TODO: find better strategy for distance_to_obstacle
         occupancy = OccupancyCostmap(distance_to_obstacle, False, map_size * 2, map_resolution, ground_pose)
-        distance = (distance_to_obstacle + max_reach) / 2
+        distance = (distance_to_obstacle + max_reach) / 1.25
         gaussian = GaussianCostmap(map_size, 1.5, map_resolution, ground_pose, True, distance)
         final_map = occupancy + gaussian
 

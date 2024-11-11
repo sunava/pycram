@@ -347,7 +347,7 @@ class ManualMarkerPublisher:
 
 
 class AxisMarkerPublisher:
-    def __init__(self, topic='/pycram/axis_marker', frame_id='pycram/map'):
+    def __init__(self, topic='/pycram/axis_marker', frame_id='map'):
 
         self.marker_pub = rospy.Publisher(topic, MarkerArray, queue_size=10)
 
@@ -624,7 +624,7 @@ class CostmapPublisher:
         :param scale: Scale of the z-axis of the costmap
         """
 
-        frame_id = "pycram/map"
+        frame_id = "map"
         new_marker = Marker()
         new_marker.id = self.current_id
         new_marker.header.frame_id = frame_id

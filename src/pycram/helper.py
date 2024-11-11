@@ -1,6 +1,7 @@
 import numpy as np
 
 from pycram.datastructures.enums import Grasp
+from pycram.designator import ObjectDesignatorDescription
 from pycram.local_transformer import LocalTransformer
 from pycram.robot_description import RobotDescription
 from scipy.spatial.transform import Rotation as R
@@ -69,42 +70,46 @@ def calculate_vector_face(vector: List):
     return AXIS_INDEX_TO_FACE[(axis, max_sign)]
 
 
-def calculate_object_faces(object):
+def calculate_object_faces(obj_desig: ObjectDesignatorDescription.Object):
     """
-    Calculates the faces of an object relative to the robot based on orientation.
+    Calculates the faces of an object relative to the robot based on orientation and position.
 
-    This method determines the face of the object that is directed towards the robot,
-    as well as the bottom face, by calculating vectors aligned with the robot's negative x-axis
-    and negative z-axis in the object's frame.
+    This method determines the faces of the object that are directed towards the robot, by calculating vectors from
+    the object to the robot's base and using the object's orientation to determine the side and top/bottom faces.
+
+    For side_face, only the x and y components are considered.
+    For top_bottom_face, only the z component is considered.
 
     Args:
-        object (Object): The object whose faces are to be calculated, with an accessible pose attribute.
+        object (ObjectDesignatorDescription.Object): The object whose faces are to be calculated, with an accessible pose attribute.
 
     Returns:
         list: A list containing two Grasp Enums, where the first element is the face of the object facing the robot,
               and the second element is the top or bottom face of the object.
     """
-    local_transformer = LocalTransformer()
-    oTm = object.pose
-
+    oTm = obj_desig.pose
     base_link = RobotDescription.current_robot_description.base_link
-    marker = AxisMarkerPublisher()
-    base_link_pose = object.world_object.world.robot.get_link_pose(base_link)
+    base_link_pose = obj_desig.world_object.world.robot.get_link_pose(base_link)
 
-    marker.publish([base_link_pose])
+    object_position = oTm.position_as_list()
+    robot_position = base_link_pose.position_as_list()
+    vector_to_robot_world = [robot_position[i] - object_position[i] for i in range(3)]
 
-    oTb = local_transformer.transform_pose(oTm, object.world_object.world.robot.get_link_tf_frame(base_link))
-    orientation = oTb.orientation_as_list()
+    orientation = oTm.orientation_as_list()
+    rotation_matrix = R.from_quat(orientation).as_matrix()
+    o_R_w = rotation_matrix.T
 
-    rotation_matrix = R.from_quat([orientation[0], orientation[1], orientation[2], orientation[3]]).inv().as_matrix()
+    vector_to_robot_local = o_R_w.dot(vector_to_robot_world)
 
-    robot_negative_x_vector = -rotation_matrix[:, 0]
-    robot_negative_z_vector = -rotation_matrix[:, 2]
+    vector_x, vector_y, vector_z = vector_to_robot_local
 
-    facing_robot_face = calculate_vector_face(robot_negative_x_vector)
-    bottom_face = calculate_vector_face(robot_negative_z_vector)
+    vector_facing = np.array([vector_x, vector_y, 0])
+    side_face = calculate_vector_face(vector_facing)
 
-    return [facing_robot_face, bottom_face]
+    vector_z = np.array([0, 0, vector_z])
+    top_bottom_face = calculate_vector_face(vector_z)
+
+    return [side_face, top_bottom_face]
 
 
 def calculate_grasp_offset(object_dim: List, arm, grasp):
