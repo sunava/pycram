@@ -21,7 +21,7 @@ world.allow_publish_debug_poses = True
 viz = VizMarkerPublisher()
 tf = TFBroadcaster()
 
-robot_name = "pr2"
+robot_name = "fetch"
 robot = Object(robot_name, ObjectType.ROBOT, f"{robot_name}{extension}", pose=Pose([1, 2, 0]))
 
 apartment = Object("apartment", ObjectType.ENVIRONMENT, f"apartment-small{extension}")
@@ -39,7 +39,7 @@ with simulated_robot:
     poseHard = Pose([1.3, 2.7, 0], [0, 0, 1, 0])
     NavigateAction([poseHard]).resolve().perform()
 
-    ParkArmsAction([Arms.BOTH]).resolve().perform()
+    ParkArmsAction([Arms.LEFT]).resolve().perform()
 
     MoveTorsoAction([TorsoState.HIGH]).resolve().perform()
     handle_desig = ObjectPart(names=["handle_cab3_door_top"], part_of=apartment_desig.resolve())

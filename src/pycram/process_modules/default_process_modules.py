@@ -173,7 +173,7 @@ class DefaultOpen(ProcessModule):
         # TODO: Should probably be a motion, but DefaultOpenReal does not do any of these calculations, so maybe its fine? Need to think about this
         part_of_object = desig.object_part.world_object
 
-        if desig.object_part.name == "handle_cab3_door_top":
+        if desig.object_part.name == "handle_cab3_door_top" or desig.object_part.name == "refrigerator_door_top_handle":
             container_joint = part_of_object.find_joint_above_link(desig.object_part.name, JointType.REVOLUTE)
         else:
             container_joint = part_of_object.find_joint_above_link(desig.object_part.name, JointType.PRISMATIC)
