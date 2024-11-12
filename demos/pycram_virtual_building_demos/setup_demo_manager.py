@@ -26,7 +26,7 @@ from pycram.worlds.bullet_world import BulletWorld
 output = None
 
 
-
+#
 def start_demo():
     # get params
     environment_param = rospy.get_param('/nbparam_environments')

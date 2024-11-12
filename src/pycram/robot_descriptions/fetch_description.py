@@ -15,17 +15,17 @@ fetch_description = RobotDescription("fetch", "base_link", "torso_lift_link", "t
 ################################## Left Arm ##################################
 left_arm = KinematicChainDescription("left", "torso_lift_link", "wrist_roll_link",
                                      fetch_description.urdf_object, arm_type=Arms.LEFT)
-left_arm.add_static_joint_states("park", {'shoulder_pan_joint': 0.0,
-                                          'shoulder_lift_joint': 1.0,
+left_arm.add_static_joint_states("park", {'shoulder_pan_joint': 1.6056,
+                                          'shoulder_lift_joint': 1.518,
                                           'upperarm_roll_joint': 0.0,
-                                          'elbow_flex_joint': 1.5,
+                                          'elbow_flex_joint': 1.625,
                                           'forearm_roll_joint': 0.0,
-                                          'wrist_flex_joint': 1.0,
+                                          'wrist_flex_joint': 1.6,
                                           'wrist_roll_joint': 0.0})
 fetch_description.add_kinematic_chain_description(left_arm)
 
 ################################## Gripper ##################################
-gripper = EndEffectorDescription("gripper", "gripper_link", "gripper_tool_frame",
+gripper = EndEffectorDescription("gripper", "wrist_roll_link", "gripper_link",
                                  fetch_description.urdf_object)
 gripper.add_static_joint_states(GripperState.OPEN, {'l_gripper_finger_joint': 0.04,
                                                     'r_gripper_finger_joint': 0.04})
@@ -38,18 +38,18 @@ left_arm.end_effector = gripper
 ################################## Torso ##################################
 torso = KinematicChainDescription("torso", "base_link", "torso_lift_link",
                                   fetch_description.urdf_object)
-torso.add_static_joint_states(TorsoState.HIGH, {"torso_lift_joint": 0.4})
+torso.add_static_joint_states(TorsoState.HIGH, {"torso_lift_joint": 0.385})
 torso.add_static_joint_states(TorsoState.MID, {"torso_lift_joint": 0.2})
 torso.add_static_joint_states(TorsoState.LOW, {"torso_lift_joint": 0.0})
 fetch_description.add_kinematic_chain_description(torso)
 
 ################################## Camera ##################################
-camera = CameraDescription("head_camera", "head_camera_rgb_frame", 1.2,
-                           1.5, 0.99483, 0.75049)
+camera = CameraDescription("head_camera", "head_camera_rgb_frame", 1.1,
+                           1.49, 0.99483, 0.75049, [1, 0, 0])
 fetch_description.add_camera_description(camera)
 
 ################################## Neck ##################################
-fetch_description.add_kinematic_chain("neck", "torso_lift_link", "head_pan_link")
+fetch_description.add_kinematic_chain("neck", "torso_lift_link", "head_tilt_link")
 fetch_description.set_neck("head_pan_joint", "head_tilt_joint")
 
 
@@ -57,7 +57,7 @@ fetch_description.set_neck("head_pan_joint", "head_tilt_joint")
 gripper.generate_all_grasp_orientations_from_front_grasp([0, 0, 0, 1])
 
 ################################## Additionals ##################################
-fetch_description.set_max_reach("torso_lift_link", "gripper_tool_frame")
+fetch_description.set_max_reach("torso_lift_link", "gripper_link")
 fetch_description.set_palm_axis([1, 0, 0])
 
 # Add to RobotDescriptionManager
