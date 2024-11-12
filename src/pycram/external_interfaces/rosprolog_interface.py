@@ -112,3 +112,81 @@ class Prolog:
                 return True
             else:
                 return solution
+
+# Entity Prototype
+# Examples:
+# _toEntityQuery('entity (an Object (type=Milk, storagePlace =  ?storagePlace))')
+# 'EntityClass = Object, Determiner = an, type(EntityName, Type), Type = Milk, storagePlace(EntityName, StoragePlace).'
+class Entity:
+    def __init__(self, **kwargs):
+        self.__dict__ = kwargs
+    def __repr__(self):
+        def _lowerInitial(s):
+            return s[0].lower() + s[1:] if s else ''
+        retq = ", ".join(["%s: %s" % (_lowerInitial(k), v) for k, v in self.__dict__.items() if k not in ["Determiner", "EntityClass"]])
+        retq = f"({retq})"
+        if "EntityClass" in self.__dict__:
+            retq = self.__dict__["EntityClass"] + retq
+        if "Determiner" in self.__dict__:
+            retq = self.__dict__["Determiner"] + " " + retq
+        if "EntityClass" not in self.__dict__:
+            return f"entity{retq}"
+        return f"entity({retq})"
+
+def _toEntityQuery(query_str):
+    def _upperInitial(s):
+        return s[0].upper() + s[1:] if s else ''
+    query_str = query_str.strip()
+    if (not query_str.startswith("entity")):
+        raise ValueError("Query string must start with 'entity")
+    query_str = query_str[len("entity"):].strip()
+    if (not query_str.startswith("(")) or (not query_str.endswith(")")):
+        raise ValueError("Entity must be enclosed in brackets.")
+    query_str = query_str[1:-1].strip()
+    if (not query_str.startswith("an ")) and (not query_str.startswith("a ")) and (not query_str.startswith("the ")):
+        raise ValueError("Query string must have an article in the beginning")
+    determiner, query_str = query_str.split(" ", 1)
+    query_str = query_str.strip()
+    aux = query_str.split("(", 1)
+    if 0 == len(aux):
+        raise ValueError("Entity Class not found.")
+    entityClass, query_str = aux
+    entityClass = entityClass.strip()
+    query_str = query_str.strip()
+    if not query_str.endswith(")"):
+        raise ValueError("Entity Class does not close its bracket.")
+    query_str=query_str[:-1]
+    query_str = query_str.strip()
+    attributes = query_str.split(",")
+    retq = f"EntityClass = {entityClass}, Determiner = {determiner}"
+    for a in attributes:
+        aux = a.split("=", 1)
+        if 2 != len(aux):
+            raise ValueError("Attribute does not have a value.")
+        key, value = aux
+        key = key.strip()
+        value = value.strip()
+        if value.startswith("?"):
+            value = _upperInitial(value[1:])
+            retq += f", {key}(EntityName, {value})"
+        else:
+            var = _upperInitial(key)
+            retq += f", {key}(EntityName, {var}), {var} = {value}"
+    return retq + "."
+
+def entity_query_once(knowrob, prolog_query):
+    answer = knowrob.once(prolog_query)
+    if answer is False:
+        return None
+    if answer is True:
+        return Entity()
+    return Entity(**answer)
+
+
+def entity_query_all(knowrob, prolog_query):
+    answer = knowrob.all_solutions(prolog_query)
+    if answer is False:
+        return None
+    if answer is True:
+        return [Entity()]
+    return [Entity(**x) for x in answer]
