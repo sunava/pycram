@@ -26,16 +26,16 @@ RUN rosdep update \
 USER ${NB_USER}
 RUN catkin build
 
-# Knowrob: install MongoDB
-USER root
-RUN sudo apt-get install gnupg curl -y
-RUN curl -fsSL https://www.mongodb.org/static/pgp/server-8.0.asc | \
-   sudo gpg -o /usr/share/keyrings/mongodb-server-8.0.gpg \
-   --dearmor
-RUN echo "deb [ arch=amd64,arm64 signed-by=/usr/share/keyrings/mongodb-server-8.0.gpg ] https://repo.mongodb.org/apt/ubuntu focal/mongodb-org/8.0 multiverse" | sudo tee /etc/apt/sources.list.d/mongodb-org-8.0.list
-RUN sudo apt-get update
-RUN sudo apt-get install -y mongodb-org=8.0.0 mongodb-org-database=8.0.0 mongodb-org-server=8.0.0 mongodb-mongosh mongodb-org-mongos=8.0.0 mongodb-org-tools=8.0.0 -y
-
+#Install MongoDB Community Edition
+# Source: https://www.mongodb.com/docs/manual/tutorial/install-mongodb-on-ubuntu/#std-label-install-mdb-community-ubuntu
+ARG MONGODEB_VERSION=4.4
+RUN curl -fsSL https://www.mongodb.org/static/pgp/server-${MONGODEB_VERSION}.asc | \
+    gpg -o /usr/share/keyrings/mongodb-server-${MONGODEB_VERSION}.gpg --dearmor
+RUN echo "deb [ arch=amd64,arm64 signed-by=/usr/share/keyrings/mongodb-server-${MONGODEB_VERSION}.gpg ] https://repo.mongodb.org/apt/ubuntu focal/mongodb-org/${MONGODEB_VERSION} multiverse" | \
+    tee /etc/apt/sources.list.d/mongodb-org-${MONGODEB_VERSION}.list
+RUN apt update && apt install -y mongodb-org
+RUN mkdir -p /data/db && \
+    chown -R ${NB_USER}:users /data/db
 # Knowrob: install SWI prolog
 USER root
 RUN sudo apt-get install -y software-properties-common -y
@@ -66,7 +66,8 @@ RUN pip install netifaces
 RUN catkin build --verbose --no-status
 # Jupyter Config
 COPY --chown=${NB_USER}:users binder/jupyter-config.json /opt/conda/share/jupyter/lab/settings/overrides.json
-
+# Create a symbolic link to the ROS workspace under the working directory
+RUN ln -s ${ROS_WS} ${PWD}/ROS_WS
 WORKDIR ${PYCRAM_WS}/src/pycram
 RUN git config --global --add safe.directory ${PWD}
 COPY --chown=${NB_USER}:root binder/entrypoint.sh /

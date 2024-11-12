@@ -1,7 +1,10 @@
 #!/bin/bash
 
 source ${PYCRAM_WS}/devel/setup.bash
-sudo systemctl start mongod &
+# Start MongoDB and save data on working directory
+MONGODB_URL=mongodb://127.0.0.1:27017
+# Store MongoDB data under directory ${HOME}/data/db
+mongod --fork --logpath ${HOME}/mongod.log
 roscore &
 roslaunch --wait rvizweb rvizweb.launch config_file:=${PYCRAM_WS}/src/pycram/binder/rviz_configs/pr2_config.json &
 roslaunch --wait pycram ik_and_description.launch robot:='pr2'&
