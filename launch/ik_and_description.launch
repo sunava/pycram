@@ -68,6 +68,13 @@
               textfile="$(find pycram)/resources/robots/slr.urdf"/>
   </group>
 
+
+  <!-- ARMAR6 -->
+  <group if="$(eval robot == 'ARMAR6')">
+    <param name="robot_description"
+              textfile="$(find pycram)/resources/armar6.urdf"/>
+  </group>
+
   <!-- Use Knowrob -->
   <group if="$(eval use_knowrob)">
       <include file="$(find knowrob)/launch/knowrob.launch"/>
