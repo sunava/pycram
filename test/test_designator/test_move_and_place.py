@@ -3,7 +3,7 @@ import unittest
 
 import numpy as np
 
-from bullet_world_testcase import BulletWorldTestCase
+from pycram.testing import BulletWorldTestCase
 from pycram.datastructures.enums import ObjectType, Arms, Grasp
 from pycram.datastructures.pose import Pose
 from pycram.designator import ObjectDesignatorDescription
@@ -12,6 +12,7 @@ from pycram.designators.action_designator import MoveTorsoActionPerformable, Nav
 from pycram.designators.specialized_designators.probabilistic.probabilistic_action import (MoveAndPlace)
 from pycram.failures import PlanFailure
 from pycram.process_module import simulated_robot
+from pycrap import Milk
 
 
 class MoveAndPlaceTestCase(BulletWorldTestCase):
@@ -23,14 +24,14 @@ class MoveAndPlaceTestCase(BulletWorldTestCase):
         random.seed(69)
 
     def test_with_mode(self):
-        object_designator = ObjectDesignatorDescription(types=[ObjectType.MILK]).resolve()
+        object_designator = ObjectDesignatorDescription(types=[Milk]).resolve()
         target_location = Pose([1.3, 1, 0.9], [0, 0, 0, 1])
         designator = MoveAndPlace(object_designator, target_location)
 
         with simulated_robot:
-            NavigateActionPerformable(Pose([0.6, 0.4, 0], [0, 0, 0, 1])).perform()
+            NavigateActionPerformable(Pose([0.6, 0.4, 0], [0, 0, 0, 1]), True).perform()
             MoveTorsoActionPerformable(0.3).perform()
-            PickUpActionPerformable(object_designator, Arms.LEFT, Grasp.FRONT).perform()
+            PickUpActionPerformable(object_designator, Arms.LEFT, Grasp.FRONT, 0.03).perform()
             with simulated_robot:
                 for action in designator:
                     try:
