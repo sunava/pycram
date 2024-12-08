@@ -3,6 +3,8 @@ import threading
 
 import sys
 
+import giskard_msgs.msg
+
 from ..ros.data_types import Time
 from ..ros.logging import logwarn, loginfo_once
 from ..ros.ros_tools import get_node_names
@@ -18,12 +20,14 @@ from ..robot_description import RobotDescription
 from typing_extensions import List, Dict, Callable, Optional
 from geometry_msgs.msg import PoseStamped, PointStamped, QuaternionStamped, Vector3Stamped
 from threading import Lock, RLock
+from giskard_msgs.msg import WorldBody, MoveResult, CollisionEntry
 
-try:
-    from giskardpy.python_interface.old_python_interface import OldGiskardWrapper as GiskardWrapper
-    from giskard_msgs.msg import WorldBody, MoveResult, CollisionEntry
-except ModuleNotFoundError as e:
-    logwarn("Failed to import Giskard messages, the real robot will not be available")
+from giskardpy_ros.python_interface.python_interface import GiskardWrapper
+
+# try:
+#
+# except ModuleNotFoundError as e:
+#     logwarn("Failed to import Giskard messages, the real robot will not be available")
 
 giskard_wrapper = None
 giskard_update_service = None
@@ -96,7 +100,7 @@ def initial_adding_objects() -> None:
     """
     Adds object that are loaded in the World to the Giskard belief state, if they are not present at the moment.
     """
-    groups = giskard_wrapper.get_group_names()
+    groups = giskard_wrapper.world.get_group_names()
     for obj in World.current_world.objects:
         if obj is World.robot or obj is World.current_world.get_prospection_object_for_object(World.robot):
             continue
@@ -140,10 +144,10 @@ def sync_worlds() -> None:
                                                                 RobotDescription.current_robot_description.name)
             giskard_wrapper.monitors.add_set_seed_odometry(_pose_to_pose_stamped(obj.get_pose()),
                                                            RobotDescription.current_robot_description.name)
-    giskard_object_names = set(giskard_wrapper.get_group_names())
+    giskard_object_names = set(giskard_wrapper.world.get_group_names())
     robot_name = {RobotDescription.current_robot_description.name}
     if not world_object_names.union(robot_name).issubset(giskard_object_names):
-        giskard_wrapper.clear_world()
+        giskard_wrapper.world.clear()
     initial_adding_objects()
 
 
@@ -199,7 +203,7 @@ def spawn_urdf(name: str, urdf_path: str, pose: Pose) -> 'UpdateWorldResponse':
     with open(urdf_path) as f:
         urdf_string = f.read()
 
-    return giskard_wrapper.add_urdf(name, urdf_string, pose)
+    return giskard_wrapper.world.add_urdf(name, urdf_string, pose)
 
 
 @init_giskard_interface
@@ -212,7 +216,7 @@ def spawn_mesh(name: str, path: str, pose: Pose) -> 'UpdateWorldResponse':
     :param pose: Pose in which the mesh should be spawned
     :return: An UpdateWorldResponse message
     """
-    return giskard_wrapper.add_mesh(name, path, pose)
+    return giskard_wrapper.world.add_mesh(name, path, pose)
 
 
 # Sending Goals to Giskard
@@ -318,11 +322,14 @@ def set_joint_goal(goal_poses: Dict[str, float]) -> None:
     :param goal_poses: Dictionary with joint names and position goals
     """
     sync_worlds()
-    par_return = _manage_par_motion_goals(giskard_wrapper.set_joint_goal, goal_poses)
+    par_return = _manage_par_motion_goals(giskard_wrapper.motion_goals.add_joint_position, goal_poses)
     if par_return:
         return par_return
 
-    giskard_wrapper.set_joint_goal(goal_poses)
+    giskard_wrapper.motion_goals.add_joint_position(goal_poses)
+    giskard_wrapper.add_default_end_motion_conditions()
+    giskard_wrapper.motion_goals.avoid_all_collisions()
+    return giskard_wrapper.execute()
 
 
 @init_giskard_interface
@@ -346,7 +353,7 @@ def achieve_cartesian_goal(goal_pose: Pose, tip_link: str, root_link: str,
     :return: MoveResult message for this goal
     """
     sync_worlds()
-    par_return = _manage_par_motion_goals(giskard_wrapper.set_cart_goal, _pose_to_pose_stamped(goal_pose),
+    par_return = _manage_par_motion_goals(giskard_wrapper.motion_goals.add_cartesian_pose, _pose_to_pose_stamped(goal_pose),
                                           tip_link, root_link)
     if par_return:
         return par_return
@@ -555,7 +562,8 @@ def projection_cartesian_goal(goal_pose: Pose, tip_link: str, root_link: str) ->
     :return: MoveResult message for this goal
     """
     sync_worlds()
-    giskard_wrapper.set_cart_goal(_pose_to_pose_stamped(goal_pose), tip_link, root_link)
+    giskard_wrapper.motion_goals.add_cartesian_pose(_pose_to_pose_stamped(goal_pose), tip_link, root_link)
+    giskard_wrapper.add_default_end_motion_conditions()
     return giskard_wrapper.projection()
 
 
@@ -609,13 +617,16 @@ def allow_gripper_collision(gripper: Arms, at_goal: bool = False) -> None:
     :param gripper: The gripper which can collide, either 'Arms.RIGHT', 'Arms.LEFT' or 'Arms.BOTH'
     :param at_goal: If the collision should be allowed only for this motion goal.
     """
-    add_gripper_groups()
     for gripper_group in get_gripper_group_names():
-        if gripper.name.lower() in gripper_group or gripper == Arms.BOTH:
+        if "l" in gripper:
+            gripperstr = "left"
+        else:
+            gripperstr = "right"
+        if gripperstr.lower() in gripper_group or gripper == Arms.BOTH:
             if at_goal:
                 giskard_wrapper.motion_goals.allow_collision(gripper_group, CollisionEntry.ALL)
             else:
-                giskard_wrapper.allow_collision(gripper_group, CollisionEntry.ALL)
+                giskard_wrapper.motion_goals.allow_collision(gripper_group, CollisionEntry.ALL)
 
 
 @init_giskard_interface
@@ -623,7 +634,7 @@ def get_gripper_group_names() -> List[str]:
     """
     :return: The list of groups that are registered in giskard which have 'gripper' in their name.
     """
-    groups = giskard_wrapper.get_group_names()
+    groups = giskard_wrapper.world.get_group_names()
     return list(filter(lambda elem: "gripper" in elem, groups))
 
 
@@ -635,12 +646,13 @@ def add_gripper_groups() -> None:
     :return: Response of the RegisterGroup Service
     """
     with giskard_lock:
-        for name in giskard_wrapper.get_group_names():
+        for name in giskard_wrapper.world.get_group_names():
             if "gripper" in name:
                 return
         for description in RobotDescription.current_robot_description.get_manipulator_chains():
-            giskard_wrapper.register_group(description.name + "_gripper", description.end_effector.start_link,
-                                           RobotDescription.current_robot_description.name)
+            # register_group(self, new_group_name: str, root_link_name: Union[str, giskard_msgs.LinkName])
+            giskard_wrapper.world.register_group(new_group_name=description.name + "_gripper", root_link_name=description.end_effector.start_link)
+
 
 
 @init_giskard_interface
@@ -648,7 +660,7 @@ def avoid_all_collisions() -> None:
     """
     Will avoid all collision for the next goal.
     """
-    giskard_wrapper.avoid_all_collisions()
+    giskard_wrapper.motion_goals.avoid_all_collisions()
 
 
 @init_giskard_interface
@@ -656,7 +668,7 @@ def allow_self_collision() -> None:
     """
     Will allow the robot collision with itself.
     """
-    giskard_wrapper.allow_self_collision()
+    giskard_wrapper.motion_goals.allow_self_collision()
 
 
 @init_giskard_interface
