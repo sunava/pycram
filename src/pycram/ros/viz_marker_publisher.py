@@ -68,7 +68,8 @@ class VizMarkerPublisher:
         for obj in self.main_world.objects:
             if obj.name == "floor" or obj.obj_type == ObjectType.ROBOT:
                 continue
-            if obj.obj_type == ObjectType.GENERIC_OBJECT or obj.name == "plane_colored":
+            if obj.obj_type == ObjectType.GENERIC_OBJECT or obj.name == "plane_colored"\
+                    or obj.name in ["bowl", "milk", "cereal"]:
                 obj_coloring = True
             for link in obj.link_name_to_id.keys():
                 geom = obj.get_link_geometry(link)
@@ -90,13 +91,16 @@ class VizMarkerPublisher:
                 if obj_coloring:
                     colors = {
                         "orange": (1, 0.75, 0, 1),
+                        "cereal": (1, 0.75, 0, 1),
                         "cucumber": (0, 1, 0, 1),
                         "banana": (1, 1, 0, 1),
                         "lemon": (1, 1, 0, 1),
                         "citron": (1, 1, 0, 1),
+                        "milk": (1, 1, 0, 1),
                         "lime": (0.75, 1.0, 0.0, 1),
                         "apple": (1, 0, 0, 1),
                         "tomato": (1, 0, 0, 1),
+                        "bowl": (1, 0, 0, 1),
                         "peach": (1.0, 0.8, 0.64, 1),
                         "kiwi": (0.76, 0.88, 0.52, 1),
                         "avocado": (0.0, 0.5, 0.0, 1),

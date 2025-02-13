@@ -1,0 +1,1949 @@
+<?xml version="1.0" ?>
+<robot name="root" version="1.0">
+  <material name="standard_material">
+    <color rgba="0.9 0.9 0.9 1.0"/>
+  </material>
+
+  <link name="root">
+    <inertial>
+      <origin xyz="0.0 0.0 0.0" rpy="0.0 0.0 0.0"/>
+      <mass value="0.0"/>
+      <inertia ixx="0.0" ixy="0.0" ixz="0.0" iyy="0.0" iyz="0.0" izz="0.0"/>
+    </inertial>
+  </link>
+  <joint name="World_joint" type="fixed">
+    <origin xyz="0.0 0.0 0.0" rpy="1.570796012878418 0.0 0.0"/>
+    <parent link="root"/>
+    <child link="World"/>
+  </joint>
+  <link name="World">
+    <inertial>
+      <origin xyz="0.0 0.0 0.0" rpy="0.0 0.0 0.0"/>
+      <mass value="0.0"/>
+      <inertia ixx="0.0" ixy="0.0" ixz="0.0" iyy="0.0" iyz="0.0" izz="0.0"/>
+    </inertial>
+  </link>
+  <joint name="Environment_joint" type="fixed">
+    <origin xyz="0.0 0.0 0.0" rpy="0.0 0.0 0.0"/>
+    <parent link="root"/>
+    <child link="Environment"/>
+  </joint>
+  <link name="Environment">
+    <inertial>
+      <origin xyz="0.0 0.0 0.0" rpy="0.0 0.0 0.0"/>
+      <mass value="0.0"/>
+      <inertia ixx="0.0" ixy="0.0" ixz="0.0" iyy="0.0" iyz="0.0" izz="0.0"/>
+    </inertial>
+  </link>
+
+  <!-- DOORS -->
+  <joint name="Door_0_joint" type="fixed">
+    <origin xyz="-0.034354 -0.036232 1.04066" rpy="-8.526514862000276e-14 0.0 -2.2204464727667867e-15"/>
+    <parent link="Environment"/>
+    <child link="Door_0_link"/>
+  </joint>
+  <link name="Door_0_link">
+    <inertial>
+      <origin xyz="0.0 0.0 0.0" rpy="0.0 0.0 0.0"/>
+      <mass value="0.0"/>
+      <inertia ixx="0.0" ixy="0.0" ixz="0.0" iyy="0.0" iyz="0.0" izz="0.0"/>
+    </inertial>
+    <visual name="Door_0">
+      <origin xyz="0.0 0.0 0.0" rpy="0.0 0.0 0.0"/>
+      <geometry>
+      	<mesh filename="package://robocane_manual/robocane_env/robocane_new/meshes/obj/Cube_026.obj" scale="1.0 1.0 1.0"/>
+      </geometry>
+      <material name="standard_material"/>
+    </visual>
+    <collision>
+      <origin rpy="0 0 0" xyz="0 0 0"/>
+      <geometry>
+        <mesh filename="package://robocane_manual/robocane_env/robocane_new/meshes/obj/Cube_026.obj"/>
+      </geometry>
+    </collision>
+  </link>
+  
+  <joint name="Door_1_main_joint" type="fixed">
+    <origin xyz="10.95 0.03623 1.039" rpy="0.0 0.0 0.0"/>
+    <parent link="Environment"/>
+    <child link="Door_1_main_link"/>
+  </joint>
+  <link name="Door_1_main_link">
+    <inertial>
+      <origin xyz="0.0 0.0 0.0" rpy="0.0 0.0 0.0"/>
+      <mass value="0.0"/>
+      <inertia ixx="0.0" ixy="0.0" ixz="0.0" iyy="0.0" iyz="0.0" izz="0.0"/>
+    </inertial>
+  </link>
+  <joint name="Door_1_panel_joint" type="fixed">
+    <origin xyz="0.0 0.0 0.0" rpy="-8.526514862000276e-14 0.0 -2.2204464727667867e-15"/>
+    <parent link="Door_1_main_link"/>
+    <child link="Door_1_panel_link"/>
+  </joint>
+  <link name="Door_1_panel_link">
+    <inertial>
+      <origin xyz="0.0 0.0 0.0" rpy="0.0 0.0 0.0"/>
+      <mass value="0.0"/>
+      <inertia ixx="0.0" ixy="0.0" ixz="0.0" iyy="0.0" iyz="0.0" izz="0.0"/>
+    </inertial>
+    <visual name="Door_1_panel">
+      <origin xyz="0.0 0.0 0.0" rpy="0.0 0.0 0.0"/>
+      <geometry>
+      	<mesh filename="package://robocane_manual/robocane_env/robocane_new/meshes/obj/Office_031.obj" scale="1.0 1.0 1.0"/>
+      </geometry>
+      <material name="standard_material"/>
+    </visual>
+    <collision>
+      <origin rpy="0 0 0" xyz="0 0 0"/>
+      <geometry>
+        <mesh filename="package://robocane_manual/robocane_env/robocane_new/meshes/obj/Office_031.obj" scale="1.0 1.0 1.0"/>
+      </geometry>
+    </collision>
+  </link>
+  <joint name="Door_1_border_joint" type="fixed">
+    <origin xyz="0.0 0.0 0.0" rpy="-8.526514862000276e-14 0.0 -2.2204464727667867e-15"/>
+    <parent link="Door_1_main_link"/>
+    <child link="Door_1_border_link"/>
+  </joint>
+  <link name="Door_1_border_link">
+    <inertial>
+      <origin xyz="0.0 0.0 0.0" rpy="0.0 0.0 0.0"/>
+      <mass value="0.0"/>
+      <inertia ixx="0.0" ixy="0.0" ixz="0.0" iyy="0.0" iyz="0.0" izz="0.0"/>
+    </inertial>
+    <visual name="Door_1_border">
+      <origin xyz="0.0 0.0 0.0" rpy="0.0 0.0 0.0"/>
+      <geometry>
+      	<mesh filename="package://robocane_manual/robocane_env/robocane_new/meshes/obj/Cube_012.obj" scale="1.0 1.0 1.0"/>
+      </geometry>
+      <material name="standard_material"/>
+    </visual>
+    <collision>
+      <origin rpy="0 0 0" xyz="0 0 0"/>
+      <geometry>
+        <mesh filename="package://robocane_manual/robocane_env/robocane_new/meshes/obj/Cube_012.obj" scale="1.0 1.0 1.0"/>
+      </geometry>
+    </collision>
+  </link>  
+  <joint name="Door_1_handle_frame_joint" type="fixed">
+    <origin xyz="-0.065775 -0.35004 -0.20166" rpy="-8.526514862000276e-14 0.0 -2.2204464727667867e-15"/>
+    <parent link="Door_1_main_link"/>
+    <child link="Door_1_handle_frame_link"/>
+  </joint>
+  <link name="Door_1_handle_frame_link">
+    <inertial>
+      <origin xyz="0.0 0.0 0.0" rpy="0.0 0.0 0.0"/>
+      <mass value="0.0"/>
+      <inertia ixx="0.0" ixy="0.0" ixz="0.0" iyy="0.0" iyz="0.0" izz="0.0"/>
+    </inertial>
+    <visual name="Door_1_handle_frame">
+      <origin xyz="0.0 0.0 0.0" rpy="0.0 0.0 0.0"/>
+      <geometry>
+      	<mesh filename="package://robocane_manual/robocane_env/robocane_new/meshes/obj/Office_003.obj" scale="1.0 1.0 1.0"/>
+      </geometry>
+      <material name="standard_material"/>
+    </visual>
+    <collision>
+      <origin rpy="0 0 0" xyz="0 0 0"/>
+      <geometry>
+        <mesh filename="package://robocane_manual/robocane_env/robocane_new/meshes/obj/Office_003.obj" scale="1.0 1.0 1.0"/>
+      </geometry>
+    </collision>
+  </link>
+  <joint name="Door_1_handle_knob_joint" type="fixed">
+    <origin xyz="-0.023419 0.0356732 -0.036879" rpy="-8.526514862000276e-14 0.0 -2.2204464727667867e-15"/>
+    <parent link="Door_1_handle_frame_link"/>
+    <child link="Door_1_handle_knob_link"/>
+  </joint>
+  <link name="Door_1_handle_knob_link">
+    <inertial>
+      <origin xyz="0.0 0.0 0.0" rpy="0.0 0.0 0.0"/>
+      <mass value="0.0"/>
+      <inertia ixx="0.0" ixy="0.0" ixz="0.0" iyy="0.0" iyz="0.0" izz="0.0"/>
+    </inertial>
+    <visual name="Door_1_handle_knob">
+      <origin xyz="0.0 0.0 0.0" rpy="0.0 0.0 0.0"/>
+      <geometry>
+      	<mesh filename="package://robocane_manual/robocane_env/robocane_new/meshes/obj/Office_051.obj" scale="1.0 1.0 1.0"/>
+      </geometry>
+      <material name="standard_material"/>
+    </visual>
+    <collision>
+      <origin rpy="0 0 0" xyz="0 0 0"/>
+      <geometry>
+        <mesh filename="package://robocane_manual/robocane_env/robocane_new/meshes/obj/Office_051.obj" scale="1.0 1.0 1.0"/>
+      </geometry>
+    </collision>
+  </link>
+  
+  
+  <joint name="Door_2_main_joint" type="fixed">
+    <origin xyz="9.0617 4.1219 1.0343" rpy="0.0 0.0 0.0"/>
+    <parent link="Environment"/>
+    <child link="Door_2_main_link"/>
+  </joint>
+  <link name="Door_2_main_link">
+    <inertial>
+      <origin xyz="0.0 0.0 0.0" rpy="0.0 0.0 0.0"/>
+      <mass value="0.0"/>
+      <inertia ixx="0.0" ixy="0.0" ixz="0.0" iyy="0.0" iyz="0.0" izz="0.0"/>
+    </inertial>
+  </link>
+  <joint name="Door_2_panel_joint" type="fixed">
+    <origin xyz="0.0 0.0 0.0" rpy="-8.526514862000276e-14 0.0 -2.2204464727667867e-15"/>
+    <parent link="Door_2_main_link"/>
+    <child link="Door_2_panel_link"/>
+  </joint>
+  <link name="Door_2_panel_link">
+    <inertial>
+      <origin xyz="0.0 0.0 0.0" rpy="0.0 0.0 0.0"/>
+      <mass value="0.0"/>
+      <inertia ixx="0.0" ixy="0.0" ixz="0.0" iyy="0.0" iyz="0.0" izz="0.0"/>
+    </inertial>
+    <visual name="Door_2_panel">
+      <origin xyz="0.0 0.0 0.0" rpy="0.0 0.0 0.0"/>
+      <geometry>
+      	<mesh filename="package://robocane_manual/robocane_env/robocane_new/meshes/obj/Office_019.obj" scale="1.0 1.0 1.0"/>
+      </geometry>
+      <material name="standard_material"/>
+    </visual>
+    <collision>
+      <origin rpy="0 0 0" xyz="0 0 0"/>
+      <geometry>
+        <mesh filename="package://robocane_manual/robocane_env/robocane_new/meshes/obj/Office_019.obj" scale="1.0 1.0 1.0"/>
+      </geometry>
+    </collision>
+  </link>
+  <joint name="Door_2_handle_frame_joint" type="fixed">
+    <origin xyz="0.33748 -0.065732 -0.19716" rpy="-8.526514862000276e-14 0.0 -2.2204464727667867e-15"/>
+    <parent link="Door_2_main_link"/>
+    <child link="Door_2_handle_frame_link"/>
+  </joint>
+  <link name="Door_2_handle_frame_link">
+    <inertial>
+      <origin xyz="0.0 0.0 0.0" rpy="0.0 0.0 0.0"/>
+      <mass value="0.0"/>
+      <inertia ixx="0.0" ixy="0.0" ixz="0.0" iyy="0.0" iyz="0.0" izz="0.0"/>
+    </inertial>
+    <visual name="Door_2_handle_frame">
+      <origin xyz="0.0 0.0 0.0" rpy="0.0 0.0 0.0"/>
+      <geometry>
+      	<mesh filename="package://robocane_manual/robocane_env/robocane_new/meshes/obj/Office_044.obj" scale="1.0 1.0 1.0"/>
+      </geometry>
+      <material name="standard_material"/>
+    </visual>
+    <collision>
+      <origin rpy="0 0 0" xyz="0 0 0"/>
+      <geometry>
+        <mesh filename="package://robocane_manual/robocane_env/robocane_new/meshes/obj/Office_044.obj" scale="1.0 1.0 1.0"/>
+      </geometry>
+    </collision>
+  </link>
+  <joint name="Door_2_handle_knob_joint" type="fixed">
+    <origin xyz="-0.036732 -0.023646 -0.036882" rpy="-8.526514862000276e-14 0.0 -2.2204464727667867e-15"/>
+    <parent link="Door_2_handle_frame_link"/>
+    <child link="Door_2_handle_knob_link"/>
+  </joint>
+  <link name="Door_2_handle_knob_link">
+    <inertial>
+      <origin xyz="0.0 0.0 0.0" rpy="0.0 0.0 0.0"/>
+      <mass value="0.0"/>
+      <inertia ixx="0.0" ixy="0.0" ixz="0.0" iyy="0.0" iyz="0.0" izz="0.0"/>
+    </inertial>
+    <visual name="Door_2_handle_knob">
+      <origin xyz="0.0 0.0 0.0" rpy="0.0 0.0 0.0"/>
+      <geometry>
+      	<mesh filename="package://robocane_manual/robocane_env/robocane_new/meshes/obj/Office_048.obj" scale="1.0 1.0 1.0"/>
+      </geometry>
+      <material name="standard_material"/>
+    </visual>
+    <collision>
+      <origin rpy="0 0 0" xyz="0 0 0"/>
+      <geometry>
+        <mesh filename="package://robocane_manual/robocane_env/robocane_new/meshes/obj/Office_048.obj" scale="1.0 1.0 1.0"/>
+      </geometry>
+    </collision>
+  </link>
+
+
+
+
+  <!-- Building -->
+    <joint name="Column_0_joint" type="fixed">
+    <origin xyz="5.09736 0.99928 1.8085" rpy="-8.526514862000276e-14 0.0 -2.2204464727667867e-15"/>
+    <parent link="Environment"/>
+    <child link="Column_0_link"/>
+  </joint>
+  <link name="Column_0_link">
+    <inertial>
+      <origin xyz="0.0 0.0 0.0" rpy="0.0 0.0 0.0"/>
+      <mass value="0.0"/>
+      <inertia ixx="0.0" ixy="0.0" ixz="0.0" iyy="0.0" iyz="0.0" izz="0.0"/>
+    </inertial>
+    <visual name="Column_0">
+      <origin xyz="0.0 0.0 0.0" rpy="0.0 0.0 0.0"/>
+      <geometry>
+      	<mesh filename="package://robocane_manual/robocane_env/robocane_new/meshes/obj/Cube_014.obj" scale="1.0 1.0 1.0"/>
+      </geometry>
+      <material name="standard_material"/>
+    </visual>
+    <collision>
+      <origin rpy="0 0 0" xyz="0 0 0"/>
+      <geometry>
+        <mesh filename="package://robocane_manual/robocane_env/robocane_new/meshes/obj/Cube_014.obj" scale="1.0 1.0 1.0"/>
+      </geometry>
+    </collision>
+  </link>
+  
+  <!-- Furniture -->
+    <joint name="Trash_1_joint" type="fixed">
+    <origin xyz="0.107491 0.72737 0" rpy="-8.526514862000276e-14 0.0 -2.2204464727667867e-15"/>
+    <parent link="Environment"/>
+    <child link="Trash_1_link"/>
+  </joint>
+  <link name="Trash_1_link">
+    <inertial>
+      <origin xyz="0.0 0.0 0.0" rpy="0.0 0.0 0.0"/>
+      <mass value="0.0"/>
+      <inertia ixx="0.0" ixy="0.0" ixz="0.0" iyy="0.0" iyz="0.0" izz="0.0"/>
+    </inertial>
+    <visual name="Trash_1">
+      <origin xyz="0.0 0.0 0.0" rpy="0.0 0.0 0.0"/>
+      <geometry>
+      	<mesh filename="package://robocane_manual/robocane_env/robocane_new/meshes/obj/Cube_027.obj" scale="1.0 1.0 1.0"/>
+      </geometry>
+      <material name="standard_material"/>
+    </visual>
+    <collision>
+      <origin rpy="0 0 0" xyz="0 0 0"/>
+      <geometry>
+        <mesh filename="package://robocane_manual/robocane_env/robocane_new/meshes/obj/Cube_027.obj" scale="1.0 1.0 1.0"/>
+      </geometry>
+    </collision>
+  </link>
+  
+  
+  <joint name="TV_0_joint" type="fixed">
+    <origin xyz="2.8288 6.4871 1.2664" rpy="-8.526514862000276e-14 0.0 -2.2204464727667867e-15"/>
+    <parent link="Environment"/>
+    <child link="TV_0_link"/>
+  </joint>
+  <link name="TV_0_link">
+    <inertial>
+      <origin xyz="0.0 0.0 0.0" rpy="0.0 0.0 0.0"/>
+      <mass value="0.0"/>
+      <inertia ixx="0.0" ixy="0.0" ixz="0.0" iyy="0.0" iyz="0.0" izz="0.0"/>
+    </inertial>
+    <visual name="TV_0">
+      <origin xyz="0.0 0.0 0.0" rpy="0.0 0.0 0.0"/>
+      <geometry>
+      	<mesh filename="package://robocane_manual/robocane_env/robocane_new/meshes/obj/Office_004.obj" scale="1.0 1.0 1.0"/>
+      </geometry>
+      <material name="standard_material"/>
+    </visual>
+    <collision>
+      <origin rpy="0 0 0" xyz="0 0 0"/>
+      <geometry>
+        <mesh filename="package://robocane_manual/robocane_env/robocane_new/meshes/obj/Office_004.obj" scale="1.0 1.0 1.0"/>
+      </geometry>
+    </collision>
+  </link>
+  
+  
+    <joint name="FloorBar_1_joint" type="fixed">
+    <origin xyz="0.491986 3.28716 0.06721" rpy="-8.526514862000276e-14 0.0 -2.2204464727667867e-15"/>
+    <parent link="Environment"/>
+    <child link="FloorBar_1_link"/>
+  </joint>
+  <link name="FloorBar_1_link">
+    <inertial>
+      <origin xyz="0.0 0.0 0.0" rpy="0.0 0.0 0.0"/>
+      <mass value="0.0"/>
+      <inertia ixx="0.0" ixy="0.0" ixz="0.0" iyy="0.0" iyz="0.0" izz="0.0"/>
+    </inertial>
+    <visual name="FloorBar_1">
+      <origin xyz="0.0 0.0 0.0" rpy="0.0 0.0 0.0"/>
+      <geometry>
+      	<mesh filename="package://robocane_manual/robocane_env/robocane_new/meshes/obj/Cube_119.obj" scale="1.0 1.0 1.0"/>
+      </geometry>
+      <material name="standard_material"/>
+    </visual>
+    <collision>
+      <origin rpy="0 0 0" xyz="0 0 0"/>
+      <geometry>
+        <mesh filename="package://robocane_manual/robocane_env/robocane_new/meshes/obj/Cube_119.obj" scale="1.0 1.0 1.0"/>
+      </geometry>
+    </collision>
+  </link>
+  
+  <joint name="Shelf_0_joint" type="fixed">
+    <origin xyz="3.8332 1.1975 0.33" rpy="3.14 0.0 3.14"/>
+    <parent link="Environment"/>
+    <child link="Shelf_0_link"/>
+  </joint>
+  <link name="Shelf_0_link">
+    <inertial>
+      <origin xyz="0.0 0.0 0.0" rpy="0.0 0.0 0.0"/>
+      <mass value="0.0"/>
+      <inertia ixx="0.0" ixy="0.0" ixz="0.0" iyy="0.0" iyz="0.0" izz="0.0"/>
+    </inertial>
+    <visual name="Shelf_0">
+      <origin xyz="0.0 0.0 0.0" rpy="0.0 0.0 0.0"/>
+      <geometry>
+      	<mesh filename="package://robocane_manual/robocane_env/robocane_new/meshes/obj/Cube_001.obj" scale="1.0 1.0 1.0"/>
+      </geometry>
+      <material name="standard_material"/>
+    </visual>
+    <collision>
+      <origin rpy="0 0 0" xyz="0 0 0"/>
+      <geometry>
+        <mesh filename="package://robocane_manual/robocane_env/robocane_new/meshes/obj/Cube_001.obj" scale="1.0 1.0 1.0"/>
+      </geometry>
+    </collision>
+  </link>
+  
+  <joint name="Shelf_1_main_joint" type="fixed">
+    <origin xyz="1.4694 6.6989 0.93986" rpy="-8.526514862000276e-14 0.0 -2.2204464727667867e-15"/>
+    <parent link="Environment"/>
+    <child link="Shelf_1_main_link"/>
+  </joint>
+  <link name="Shelf_1_main_link">
+    <inertial>
+      <origin xyz="0.0 0.0 0.0" rpy="0.0 0.0 0.0"/>
+      <mass value="0.0"/>
+      <inertia ixx="0.0" ixy="0.0" ixz="0.0" iyy="0.0" iyz="0.0" izz="0.0"/>
+    </inertial>
+    <visual name="Shelf_1">
+      <origin xyz="0.0 0.0 0.0" rpy="0.0 0.0 0.0"/>
+      <geometry>
+      	<mesh filename="package://robocane_manual/robocane_env/robocane_new/meshes/obj/Office_005.obj" scale="1.0 1.0 1.0"/>
+      </geometry>
+      <material name="standard_material"/>
+    </visual>
+    <collision>
+      <origin rpy="0 0 0" xyz="0 0 0"/>
+      <geometry>
+        <mesh filename="package://robocane_manual/robocane_env/robocane_new/meshes/obj/Office_005.obj" scale="1.0 1.0 1.0"/>
+      </geometry>
+    </collision>
+  </link>
+  <joint name="Shelf_1_floor_1_joint" type="fixed">
+    <origin xyz="0.0 0.0 -0.89" rpy="0.0 0.0 0.0"/>
+    <parent link="Shelf_1_main_link"/>
+    <child link="Shelf_1_floor_1_link"/>
+  </joint>
+  <link name="Shelf_1_floor_1_link">
+    <inertial>
+      <origin xyz="0.0 0.0 0.0" rpy="0.0 0.0 0.0"/>
+      <mass value="0.0"/>
+      <inertia ixx="0.0" ixy="0.0" ixz="0.0" iyy="0.0" iyz="0.0" izz="0.0"/>
+    </inertial>
+  </link>
+  <joint name="Shelf_1_floor_2_joint" type="fixed">
+    <origin xyz="0.0 0.0 -0.565" rpy="0.0 0.0 0.0"/>
+    <parent link="Shelf_1_main_link"/>
+    <child link="Shelf_1_floor_2_link"/>
+  </joint>
+  <link name="Shelf_1_floor_2_link">
+    <inertial>
+      <origin xyz="0.0 0.0 0.0" rpy="0.0 0.0 0.0"/>
+      <mass value="0.0"/>
+      <inertia ixx="0.0" ixy="0.0" ixz="0.0" iyy="0.0" iyz="0.0" izz="0.0"/>
+    </inertial>
+  </link>
+  <joint name="Shelf_1_floor_3_joint" type="fixed">
+    <origin xyz="0.0 0.0 -0.24" rpy="0.0 0.0 0.0"/>
+    <parent link="Shelf_1_main_link"/>
+    <child link="Shelf_1_floor_3_link"/>
+  </joint>
+  <link name="Shelf_1_floor_3_link">
+    <inertial>
+      <origin xyz="0.0 0.0 0.0" rpy="0.0 0.0 0.0"/>
+      <mass value="0.0"/>
+      <inertia ixx="0.0" ixy="0.0" ixz="0.0" iyy="0.0" iyz="0.0" izz="0.0"/>
+    </inertial>
+  </link>
+  <joint name="Shelf_1_floor_4_joint" type="fixed">
+    <origin xyz="0.0 0.0 0.085" rpy="0.0 0.0 0.0"/>
+    <parent link="Shelf_1_main_link"/>
+    <child link="Shelf_1_floor_4_link"/>
+  </joint>
+  <link name="Shelf_1_floor_4_link">
+    <inertial>
+      <origin xyz="0.0 0.0 0.0" rpy="0.0 0.0 0.0"/>
+      <mass value="0.0"/>
+      <inertia ixx="0.0" ixy="0.0" ixz="0.0" iyy="0.0" iyz="0.0" izz="0.0"/>
+    </inertial>
+  </link>
+  <joint name="Shelf_1_floor_5_joint" type="fixed">
+    <origin xyz="0.0 0.0 0.41" rpy="0.0 0.0 0.0"/>
+    <parent link="Shelf_1_main_link"/>
+    <child link="Shelf_1_floor_5_link"/>
+  </joint>
+  <link name="Shelf_1_floor_5_link">
+    <inertial>
+      <origin xyz="0.0 0.0 0.0" rpy="0.0 0.0 0.0"/>
+      <mass value="0.0"/>
+      <inertia ixx="0.0" ixy="0.0" ixz="0.0" iyy="0.0" iyz="0.0" izz="0.0"/>
+    </inertial>
+  </link>
+  <joint name="Shelf_1_floor_6_joint" type="fixed">
+    <origin xyz="0.0 0.0 0.70" rpy="0.0 0.0 0.0"/>
+    <parent link="Shelf_1_main_link"/>
+    <child link="Shelf_1_floor_6_link"/>
+  </joint>
+  <link name="Shelf_1_floor_6_link">
+    <inertial>
+      <origin xyz="0.0 0.0 0.0" rpy="0.0 0.0 0.0"/>
+      <mass value="0.0"/>
+      <inertia ixx="0.0" ixy="0.0" ixz="0.0" iyy="0.0" iyz="0.0" izz="0.0"/>
+    </inertial>
+  </link>
+
+  <joint name="Shelf_2_joint" type="fixed">
+    <origin xyz="2.7661 6.60044 0.33563" rpy="-8.526514862000276e-14 0.0 -2.2204464727667867e-15"/>
+    <parent link="Environment"/>
+    <child link="Shelf_2_link"/>
+  </joint>
+  <link name="Shelf_2_link">
+    <inertial>
+      <origin xyz="0.0 0.0 0.0" rpy="0.0 0.0 0.0"/>
+      <mass value="0.0"/>
+      <inertia ixx="0.0" ixy="0.0" ixz="0.0" iyy="0.0" iyz="0.0" izz="0.0"/>
+    </inertial>
+    <visual name="Shelf_2">
+      <origin xyz="0.0 0.0 0.0" rpy="0.0 0.0 0.0"/>
+      <geometry>
+      	<mesh filename="package://robocane_manual/robocane_env/robocane_new/meshes/obj/Office_022.obj" scale="1.0 1.0 1.0"/>
+      </geometry>
+      <material name="standard_material"/>
+    </visual>
+    <collision>
+      <origin rpy="0 0 0" xyz="0 0 0"/>
+      <geometry>
+        <mesh filename="package://robocane_manual/robocane_env/robocane_new/meshes/obj/Office_022.obj" scale="1.0 1.0 1.0"/>
+      </geometry>
+    </collision>
+  </link>
+
+
+  <joint name="Shelf_3_joint" type="fixed">
+    <origin xyz="5.1426 6.6482 0.11411" rpy="-1.57 0.0 1.57"/>
+    <parent link="Environment"/>
+    <child link="Shelf_3_link"/>
+  </joint>
+  <link name="Shelf_3_link">
+    <inertial>
+      <origin xyz="0.0 0.0 0.0" rpy="0.0 0.0 0.0"/>
+      <mass value="0.0"/>
+      <inertia ixx="0.0" ixy="0.0" ixz="0.0" iyy="0.0" iyz="0.0" izz="0.0"/>
+    </inertial>
+    <visual name="Shelf_3">
+      <origin xyz="0.0 0.0 0.0" rpy="0.0 0.0 0.0"/>
+      <geometry>
+      	<mesh filename="package://robocane_manual/robocane_env/robocane_new/meshes/obj/defaultMaterial.obj" scale="1.0 1.0 1.0"/>
+      </geometry>
+      <material name="standard_material"/>
+    </visual>
+    <collision>
+      <origin rpy="0 0 0" xyz="0 0 0"/>
+      <geometry>
+        <mesh filename="package://robocane_manual/robocane_env/robocane_new/meshes/obj/defaultMaterial.obj" scale="1.0 1.0 1.0"/>
+      </geometry>
+    </collision>
+  </link>
+
+
+  <joint name="Cupboard_0_main_joint" type="fixed">
+    <origin xyz="4.9489 1.729 0.44" rpy="-8.526514862000276e-14 0.0 -2.2204464727667867e-15"/>
+    <parent link="Environment"/>
+    <child link="Cupboard_0_main_link"/>
+  </joint>
+  <link name="Cupboard_0_main_link">
+    <inertial>
+      <origin xyz="0.0 0.0 0.0" rpy="0.0 0.0 0.0"/>
+      <mass value="0.0"/>
+      <inertia ixx="0.0" ixy="0.0" ixz="0.0" iyy="0.0" iyz="0.0" izz="0.0"/>
+    </inertial>
+  </link>
+  <joint name="Cupboard_0_faces_joint" type="fixed">
+    <origin xyz="0 0 0" rpy="-8.526514862000276e-14 0.0 -2.2204464727667867e-15"/>
+    <parent link="Cupboard_0_main_link"/>
+    <child link="Cupboard_0_faces_link"/>
+  </joint>
+  <link name="Cupboard_0_faces_link">
+    <inertial>
+      <origin xyz="0.0 0.0 0.0" rpy="0.0 0.0 0.0"/>
+      <mass value="0.0"/>
+      <inertia ixx="0.0" ixy="0.0" ixz="0.0" iyy="0.0" iyz="0.0" izz="0.0"/>
+    </inertial>
+    <visual name="Cupboard_0_faces">
+      <origin xyz="0.0 0.0 0.0" rpy="0.0 0.0 0.0"/>
+      <geometry>
+      	<mesh filename="package://robocane_manual/robocane_env/robocane_new/meshes/obj/Cube_130.obj" scale="1.0 1.0 1.0"/>
+      </geometry>
+      <material name="standard_material"/>
+    </visual>
+    <collision>
+      <origin rpy="0 0 0" xyz="0 0 0"/>
+      <geometry>
+        <mesh filename="package://robocane_manual/robocane_env/robocane_new/meshes/obj/Cube_130.obj" scale="1.0 1.0 1.0"/>
+      </geometry>
+    </collision>
+  </link>
+  <joint name="Cupboard_0_edges_joint" type="fixed">
+    <origin xyz="0 0 0" rpy="-8.526514862000276e-14 0.0 -2.2204464727667867e-15"/>
+    <parent link="Cupboard_0_main_link"/>
+    <child link="Cupboard_0_edges_link"/>
+  </joint>
+  <link name="Cupboard_0_edges_link">
+    <inertial>
+      <origin xyz="0.0 0.0 0.0" rpy="0.0 0.0 0.0"/>
+      <mass value="0.0"/>
+      <inertia ixx="0.0" ixy="0.0" ixz="0.0" iyy="0.0" iyz="0.0" izz="0.0"/>
+    </inertial>
+    <visual name="Cupboard_0_edges">
+      <origin xyz="0.0 0.0 0.0" rpy="0.0 0.0 0.0"/>
+      <geometry>
+      	<mesh filename="package://robocane_manual/robocane_env/robocane_new/meshes/obj/Cube_129.obj" scale="1.0 1.0 1.0"/>
+      </geometry>
+      <material name="standard_material"/>
+    </visual>
+    <collision>
+      <origin rpy="0 0 0" xyz="0 0 0"/>
+      <geometry>
+        <mesh filename="package://robocane_manual/robocane_env/robocane_new/meshes/obj/Cube_129.obj" scale="1.0 1.0 1.0"/>
+      </geometry>
+    </collision>
+  </link>
+  
+  <joint name="Table_0_joint" type="fixed">
+    <!--origin xyz="6.5785 5.5572 0.18149" rpy="-8.526514862000276e-14 0.0 -2.2204464727667867e-15"/-->
+    <origin xyz="2.7 5.5572 0.18149" rpy="-8.526514862000276e-14 0.0 -2.2204464727667867e-15"/>
+    <parent link="Environment"/>
+    <child link="Table_0_link"/>
+  </joint>
+  <link name="Table_0_link">
+    <inertial>
+      <origin xyz="0.0 0.0 0.0" rpy="0.0 0.0 0.0"/>
+      <mass value="0.0"/>
+      <inertia ixx="0.0" ixy="0.0" ixz="0.0" iyy="0.0" iyz="0.0" izz="0.0"/>
+    </inertial>
+    <visual name="Table_0">
+      <origin xyz="0.0 0.0 0.0" rpy="0.0 0.0 0.0"/>
+      <geometry>
+      	<mesh filename="package://robocane_manual/robocane_env/robocane_new/meshes/obj/Cube_004.obj" scale="1.0 1.0 1.0"/>
+      </geometry>
+      <material name="standard_material"/>
+    </visual>
+    <collision>
+      <origin rpy="0 0 0" xyz="0 0 0"/>
+      <geometry>
+        <mesh filename="package://robocane_manual/robocane_env/robocane_new/meshes/obj/Cube_004.obj" scale="1.0 1.0 1.0"/>
+      </geometry>
+    </collision>
+  </link>
+  
+  
+  <joint name="Chair_0_main_joint" type="fixed">
+    <origin xyz="7.9516 5.0083 0.39878" rpy="-8.526514862000276e-14 0.0 -2.2204464727667867e-15"/>
+    <parent link="Environment"/>
+    <child link="Chair_0_main_link"/>
+  </joint>
+  <link name="Chair_0_main_link">
+    <inertial>
+      <origin xyz="0.0 0.0 0.0" rpy="0.0 0.0 0.0"/>
+      <mass value="0.0"/>
+      <inertia ixx="0.0" ixy="0.0" ixz="0.0" iyy="0.0" iyz="0.0" izz="0.0"/>
+    </inertial>
+  </link>
+  <joint name="Chair_0_seat_joint" type="fixed">
+    <origin xyz="0.0 0.0 0.0" rpy="0 0.0 0.0"/>
+    <parent link="Chair_0_main_link"/>
+    <child link="Chair_0_seat_link"/>
+  </joint>
+  <link name="Chair_0_seat_link">
+    <inertial>
+      <origin xyz="0.0 0.0 0.0" rpy="0.0 0.0 0.0"/>
+      <mass value="0.0"/>
+      <inertia ixx="0.0" ixy="0.0" ixz="0.0" iyy="0.0" iyz="0.0" izz="0.0"/>
+    </inertial>
+    <visual name="Chair_0">
+      <origin xyz="0.0 0.0 0.0" rpy="0.0 0.0 0.0"/>
+      <geometry>
+      	<mesh filename="package://robocane_manual/robocane_env/robocane_new/meshes/obj/Cube_217.obj" scale="1.0 1.0 1.0"/>
+      </geometry>
+      <material name="standard_material"/>
+    </visual>
+    <collision>
+      <origin rpy="0 0 0" xyz="0 0 0"/>
+      <geometry>
+        <mesh filename="package://robocane_manual/robocane_env/robocane_new/meshes/obj/Cube_217.obj" scale="1.0 1.0 1.0"/>
+      </geometry>
+    </collision>
+  </link>
+  <joint name="Chair_0_legs_joint" type="fixed">
+    <origin xyz="-0.06 0.0 -0.29463" rpy="0 0.0 0.0"/>
+    <parent link="Chair_0_main_link"/>
+    <child link="Chair_0_legs_link"/>
+  </joint>
+  <link name="Chair_0_legs_link">
+    <inertial>
+      <origin xyz="0.0 0.0 0.0" rpy="0.0 0.0 0.0"/>
+      <mass value="0.0"/>
+      <inertia ixx="0.0" ixy="0.0" ixz="0.0" iyy="0.0" iyz="0.0" izz="0.0"/>
+    </inertial>
+    <visual name="Chair_0">
+      <origin xyz="0.0 0.0 0.0" rpy="0.0 0.0 0.0"/>
+      <geometry>
+      	<mesh filename="package://robocane_manual/robocane_env/robocane_new/meshes/obj/Cube_219.obj" scale="1.0 1.0 1.0"/>
+      </geometry>
+      <material name="standard_material"/>
+    </visual>
+    <collision>
+      <origin rpy="0 0 0" xyz="0 0 0"/>
+      <geometry>
+        <mesh filename="package://robocane_manual/robocane_env/robocane_new/meshes/obj/Cube_219.obj" scale="1.0 1.0 1.0"/>
+      </geometry>
+    </collision>
+  </link>
+
+  
+  <joint name="Chair_1_main_joint" type="fixed">
+    <origin xyz="7.9516 5.6266 0.4003" rpy="-8.526514862000276e-14 0.0 -2.2204464727667867e-15"/>
+    <parent link="Environment"/>
+    <child link="Chair_1_main_link"/>
+  </joint>
+  <link name="Chair_1_main_link">
+    <inertial>
+      <origin xyz="0.0 0.0 0.0" rpy="0.0 0.0 0.0"/>
+      <mass value="0.0"/>
+      <inertia ixx="0.0" ixy="0.0" ixz="0.0" iyy="0.0" iyz="0.0" izz="0.0"/>
+    </inertial>
+  </link>
+  <joint name="Chair_1_seat_joint" type="fixed">
+    <origin xyz="0.0 0.0 0.0" rpy="0 0.0 0.0"/>
+    <parent link="Chair_1_main_link"/>
+    <child link="Chair_1_seat_link"/>
+  </joint>
+  <link name="Chair_1_seat_link">
+    <inertial>
+      <origin xyz="0.0 0.0 0.0" rpy="0.0 0.0 0.0"/>
+      <mass value="0.0"/>
+      <inertia ixx="0.0" ixy="0.0" ixz="0.0" iyy="0.0" iyz="0.0" izz="0.0"/>
+    </inertial>
+    <visual name="Chair_1">
+      <origin xyz="0.0 0.0 0.0" rpy="0.0 0.0 0.0"/>
+      <geometry>
+      	<mesh filename="package://robocane_manual/robocane_env/robocane_new/meshes/obj/Cube_097.obj" scale="1.0 1.0 1.0"/>
+      </geometry>
+      <material name="standard_material"/>
+    </visual>
+    <collision>
+      <origin rpy="0 0 0" xyz="0 0 0"/>
+      <geometry>
+        <mesh filename="package://robocane_manual/robocane_env/robocane_new/meshes/obj/Cube_097.obj" scale="1.0 1.0 1.0"/>
+      </geometry>
+    </collision>
+  </link>
+  <joint name="Chair_1_legs_joint" type="fixed">
+    <origin xyz="-0.06 0.0 -0.29463" rpy="0 0.0 0.0"/>
+    <parent link="Chair_1_main_link"/>
+    <child link="Chair_1_legs_link"/>
+  </joint>
+  <link name="Chair_1_legs_link">
+    <inertial>
+      <origin xyz="0.0 0.0 0.0" rpy="0.0 0.0 0.0"/>
+      <mass value="0.0"/>
+      <inertia ixx="0.0" ixy="0.0" ixz="0.0" iyy="0.0" iyz="0.0" izz="0.0"/>
+    </inertial>
+    <visual name="Chair_1">
+      <origin xyz="0.0 0.0 0.0" rpy="0.0 0.0 0.0"/>
+      <geometry>
+      	<mesh filename="package://robocane_manual/robocane_env/robocane_new/meshes/obj/Cube_219.obj" scale="1.0 1.0 1.0"/>
+      </geometry>
+      <material name="standard_material"/>
+    </visual>
+    <collision>
+      <origin rpy="0 0 0" xyz="0 0 0"/>
+      <geometry>
+        <mesh filename="package://robocane_manual/robocane_env/robocane_new/meshes/obj/Cube_219.obj" scale="1.0 1.0 1.0"/>
+      </geometry>
+    </collision>
+  </link>
+  
+  
+  <joint name="Chair_2_main_joint" type="fixed">
+    <origin xyz="7.9516 6.2475 0.39878" rpy="-8.526514862000276e-14 0.0 -2.2204464727667867e-15"/>
+    <parent link="Environment"/>
+    <child link="Chair_2_main_link"/>
+  </joint>
+  <link name="Chair_2_main_link">
+    <inertial>
+      <origin xyz="0.0 0.0 0.0" rpy="0.0 0.0 0.0"/>
+      <mass value="0.0"/>
+      <inertia ixx="0.0" ixy="0.0" ixz="0.0" iyy="0.0" iyz="0.0" izz="0.0"/>
+    </inertial>
+  </link>
+  <joint name="Chair_2_seat_joint" type="fixed">
+    <origin xyz="0.0 0.0 0.0" rpy="0 0.0 0.0"/>
+    <parent link="Chair_2_main_link"/>
+    <child link="Chair_2_seat_link"/>
+  </joint>
+  <link name="Chair_2_seat_link">
+    <inertial>
+      <origin xyz="0.0 0.0 0.0" rpy="0.0 0.0 0.0"/>
+      <mass value="0.0"/>
+      <inertia ixx="0.0" ixy="0.0" ixz="0.0" iyy="0.0" iyz="0.0" izz="0.0"/>
+    </inertial>
+    <visual name="Chair_2">
+      <origin xyz="0.0 0.0 0.0" rpy="0.0 0.0 0.0"/>
+      <geometry>
+      	<mesh filename="package://robocane_manual/robocane_env/robocane_new/meshes/obj/Cube_221.obj" scale="1.0 1.0 1.0"/>
+      </geometry>
+      <material name="standard_material"/>
+    </visual>
+    <collision>
+      <origin rpy="0 0 0" xyz="0 0 0"/>
+      <geometry>
+        <mesh filename="package://robocane_manual/robocane_env/robocane_new/meshes/obj/Cube_221.obj" scale="1.0 1.0 1.0"/>
+      </geometry>
+    </collision>
+  </link>
+  <joint name="Chair_2_legs_joint" type="fixed">
+    <origin xyz="-0.06 0.0 -0.29463" rpy="0 0.0 0.0"/>
+    <parent link="Chair_2_main_link"/>
+    <child link="Chair_2_legs_link"/>
+  </joint>
+  <link name="Chair_2_legs_link">
+    <inertial>
+      <origin xyz="0.0 0.0 0.0" rpy="0.0 0.0 0.0"/>
+      <mass value="0.0"/>
+      <inertia ixx="0.0" ixy="0.0" ixz="0.0" iyy="0.0" iyz="0.0" izz="0.0"/>
+    </inertial>
+    <visual name="Chair_2">
+      <origin xyz="0.0 0.0 0.0" rpy="0.0 0.0 0.0"/>
+      <geometry>
+      	<mesh filename="package://robocane_manual/robocane_env/robocane_new/meshes/obj/Cube_223.obj" scale="1.0 1.0 1.0"/>
+      </geometry>
+      <material name="standard_material"/>
+    </visual>
+    <collision>
+      <origin rpy="0 0 0" xyz="0 0 0"/>
+      <geometry>
+        <mesh filename="package://robocane_manual/robocane_env/robocane_new/meshes/obj/Cube_223.obj" scale="1.0 1.0 1.0"/>
+      </geometry>
+    </collision>
+  </link>
+  
+
+
+  <joint name="Chair_3_main_joint" type="fixed">
+    <origin xyz="7.3227 6.6488 0.39878" rpy="-8.526514862000276e-14 0.0 -2.2204464727667867e-15"/>
+    <parent link="Environment"/>
+    <child link="Chair_3_main_link"/>
+  </joint>
+  <link name="Chair_3_main_link">
+    <inertial>
+      <origin xyz="0.0 0.0 0.0" rpy="0.0 0.0 0.0"/>
+      <mass value="0.0"/>
+      <inertia ixx="0.0" ixy="0.0" ixz="0.0" iyy="0.0" iyz="0.0" izz="0.0"/>
+    </inertial>
+  </link>
+  <joint name="Chair_3_seat_joint" type="fixed">
+    <origin xyz="0.0 0.0 0.0" rpy="0 0.0 0.0"/>
+    <parent link="Chair_3_main_link"/>
+    <child link="Chair_3_seat_link"/>
+  </joint>
+  <link name="Chair_3_seat_link">
+    <inertial>
+      <origin xyz="0.0 0.0 0.0" rpy="0.0 0.0 0.0"/>
+      <mass value="0.0"/>
+      <inertia ixx="0.0" ixy="0.0" ixz="0.0" iyy="0.0" iyz="0.0" izz="0.0"/>
+    </inertial>
+    <visual name="Chair_3">
+      <origin xyz="0.0 0.0 0.0" rpy="0.0 0.0 0.0"/>
+      <geometry>
+      	<mesh filename="package://robocane_manual/robocane_env/robocane_new/meshes/obj/Cube_229.obj" scale="1.0 1.0 1.0"/>
+      </geometry>
+      <material name="standard_material"/>
+    </visual>
+    <collision>
+      <origin rpy="0 0 0" xyz="0 0 0"/>
+      <geometry>
+        <mesh filename="package://robocane_manual/robocane_env/robocane_new/meshes/obj/Cube_229.obj" scale="1.0 1.0 1.0"/>
+      </geometry>
+    </collision>
+  </link>
+  <joint name="Chair_3_legs_joint" type="fixed">
+    <origin xyz="0.0 -0.06 -0.29463" rpy="0 0.0 0.0"/>
+    <parent link="Chair_3_main_link"/>
+    <child link="Chair_3_legs_link"/>
+  </joint>
+  <link name="Chair_3_legs_link">
+    <inertial>
+      <origin xyz="0.0 0.0 0.0" rpy="0.0 0.0 0.0"/>
+      <mass value="0.0"/>
+      <inertia ixx="0.0" ixy="0.0" ixz="0.0" iyy="0.0" iyz="0.0" izz="0.0"/>
+    </inertial>
+    <visual name="Chair_3">
+      <origin xyz="0.0 0.0 0.0" rpy="0.0 0.0 0.0"/>
+      <geometry>
+      	<mesh filename="package://robocane_manual/robocane_env/robocane_new/meshes/obj/Cube_231.obj" scale="1.0 1.0 1.0"/>
+      </geometry>
+      <material name="standard_material"/>
+    </visual>
+    <collision>
+      <origin rpy="0 0 0" xyz="0 0 0"/>
+      <geometry>
+        <mesh filename="package://robocane_manual/robocane_env/robocane_new/meshes/obj/Cube_231.obj" scale="1.0 1.0 1.0"/>
+      </geometry>
+    </collision>
+  </link>
+
+
+  <joint name="Chair_4_main_joint" type="fixed">
+    <origin xyz="6.704 6.649 0.39878" rpy="-8.526514862000276e-14 0.0 -2.2204464727667867e-15"/>
+    <parent link="Environment"/>
+    <child link="Chair_4_main_link"/>
+  </joint>
+  <link name="Chair_4_main_link">
+    <inertial>
+      <origin xyz="0.0 0.0 0.0" rpy="0.0 0.0 0.0"/>
+      <mass value="0.0"/>
+      <inertia ixx="0.0" ixy="0.0" ixz="0.0" iyy="0.0" iyz="0.0" izz="0.0"/>
+    </inertial>
+  </link>
+  <joint name="Chair_4_seat_joint" type="fixed">
+    <origin xyz="0.0 0.0 0.0" rpy="0 0.0 0.0"/>
+    <parent link="Chair_4_main_link"/>
+    <child link="Chair_4_seat_link"/>
+  </joint>
+  <link name="Chair_4_seat_link">
+    <inertial>
+      <origin xyz="0.0 0.0 0.0" rpy="0.0 0.0 0.0"/>
+      <mass value="0.0"/>
+      <inertia ixx="0.0" ixy="0.0" ixz="0.0" iyy="0.0" iyz="0.0" izz="0.0"/>
+    </inertial>
+    <visual name="Chair_4">
+      <origin xyz="0.0 0.0 0.0" rpy="0.0 0.0 0.0"/>
+      <geometry>
+      	<mesh filename="package://robocane_manual/robocane_env/robocane_new/meshes/obj/Cube_225.obj" scale="1.0 1.0 1.0"/>
+      </geometry>
+      <material name="standard_material"/>
+    </visual>
+    <collision>
+      <origin rpy="0 0 0" xyz="0 0 0"/>
+      <geometry>
+        <mesh filename="package://robocane_manual/robocane_env/robocane_new/meshes/obj/Cube_225.obj" scale="1.0 1.0 1.0"/>
+      </geometry>
+    </collision>
+  </link>
+  <joint name="Chair_4_legs_joint" type="fixed">
+    <origin xyz="0.0 -0.06 -0.29463" rpy="0 0.0 0.0"/>
+    <parent link="Chair_4_main_link"/>
+    <child link="Chair_4_legs_link"/>
+  </joint>
+  <link name="Chair_4_legs_link">
+    <inertial>
+      <origin xyz="0.0 0.0 0.0" rpy="0.0 0.0 0.0"/>
+      <mass value="0.0"/>
+      <inertia ixx="0.0" ixy="0.0" ixz="0.0" iyy="0.0" iyz="0.0" izz="0.0"/>
+    </inertial>
+    <visual name="Chair_4">
+      <origin xyz="0.0 0.0 0.0" rpy="0.0 0.0 0.0"/>
+      <geometry>
+      	<mesh filename="package://robocane_manual/robocane_env/robocane_new/meshes/obj/Cube_227.obj" scale="1.0 1.0 1.0"/>
+      </geometry>
+      <material name="standard_material"/>
+    </visual>
+    <collision>
+      <origin rpy="0 0 0" xyz="0 0 0"/>
+      <geometry>
+        <mesh filename="package://robocane_manual/robocane_env/robocane_new/meshes/obj/Cube_227.obj" scale="1.0 1.0 1.0"/>
+      </geometry>
+    </collision>
+  </link>
+
+
+  <joint name="Chair_5_main_joint" type="fixed">
+    <origin xyz="6.0834 6.6488 0.39878" rpy="-8.526514862000276e-14 0.0 -2.2204464727667867e-15"/>
+    <parent link="Environment"/>
+    <child link="Chair_5_main_link"/>
+  </joint>
+  <link name="Chair_5_main_link">
+    <inertial>
+      <origin xyz="0.0 0.0 0.0" rpy="0.0 0.0 0.0"/>
+      <mass value="0.0"/>
+      <inertia ixx="0.0" ixy="0.0" ixz="0.0" iyy="0.0" iyz="0.0" izz="0.0"/>
+    </inertial>
+  </link>
+  <joint name="Chair_5_seat_joint" type="fixed">
+    <origin xyz="0.0 0.0 0.0" rpy="0 0.0 0.0"/>
+    <parent link="Chair_5_main_link"/>
+    <child link="Chair_5_seat_link"/>
+  </joint>
+  <link name="Chair_5_seat_link">
+    <inertial>
+      <origin xyz="0.0 0.0 0.0" rpy="0.0 0.0 0.0"/>
+      <mass value="0.0"/>
+      <inertia ixx="0.0" ixy="0.0" ixz="0.0" iyy="0.0" iyz="0.0" izz="0.0"/>
+    </inertial>
+    <visual name="Chair_5">
+      <origin xyz="0.0 0.0 0.0" rpy="0.0 0.0 0.0"/>
+      <geometry>
+      	<mesh filename="package://robocane_manual/robocane_env/robocane_new/meshes/obj/Cube_233.obj" scale="1.0 1.0 1.0"/>
+      </geometry>
+      <material name="standard_material"/>
+    </visual>
+    <collision>
+      <origin rpy="0 0 0" xyz="0 0 0"/>
+      <geometry>
+        <mesh filename="package://robocane_manual/robocane_env/robocane_new/meshes/obj/Cube_233.obj" scale="1.0 1.0 1.0"/>
+      </geometry>
+    </collision>
+  </link>
+  <joint name="Chair_5_legs_joint" type="fixed">
+    <origin xyz="0.0 -0.06 -0.29463" rpy="0 0.0 0.0"/>
+    <parent link="Chair_5_main_link"/>
+    <child link="Chair_5_legs_link"/>
+  </joint>
+  <link name="Chair_5_legs_link">
+    <inertial>
+      <origin xyz="0.0 0.0 0.0" rpy="0.0 0.0 0.0"/>
+      <mass value="0.0"/>
+      <inertia ixx="0.0" ixy="0.0" ixz="0.0" iyy="0.0" iyz="0.0" izz="0.0"/>
+    </inertial>
+    <visual name="Chair_5">
+      <origin xyz="0.0 0.0 0.0" rpy="0.0 0.0 0.0"/>
+      <geometry>
+      	<mesh filename="package://robocane_manual/robocane_env/robocane_new/meshes/obj/Cube_235.obj" scale="1.0 1.0 1.0"/>
+      </geometry>
+      <material name="standard_material"/>
+    </visual>
+    <collision>
+      <origin rpy="0 0 0" xyz="0 0 0"/>
+      <geometry>
+        <mesh filename="package://robocane_manual/robocane_env/robocane_new/meshes/obj/Cube_235.obj" scale="1.0 1.0 1.0"/>
+      </geometry>
+    </collision>
+  </link>
+ 
+ 
+ 
+
+  <joint name="Desk_0_main_joint" type="fixed">
+    <origin xyz="4.7309 2.774 0.33" rpy="-8.526514862000276e-14 0.0 -2.2204464727667867e-15"/>
+    <parent link="Environment"/>
+    <child link="Desk_0_main_link"/>
+  </joint>
+  <link name="Desk_0_main_link">
+    <inertial>
+      <origin xyz="0.0 0.0 0.0" rpy="0.0 0.0 0.0"/>
+      <mass value="0.0"/>
+      <inertia ixx="0.0" ixy="0.0" ixz="0.0" iyy="0.0" iyz="0.0" izz="0.0"/>
+    </inertial>
+  </link>
+  <joint name="Desk_0_stand_joint" type="fixed">
+    <origin xyz="0 0 0" rpy="-8.526514862000276e-14 0.0 -2.2204464727667867e-15"/>
+    <parent link="Desk_0_main_link"/>
+    <child link="Desk_0_stand_link"/>
+  </joint>
+  <link name="Desk_0_stand_link">
+    <inertial>
+      <origin xyz="0.0 0.0 0.0" rpy="0.0 0.0 0.0"/>
+      <mass value="0.0"/>
+      <inertia ixx="0.0" ixy="0.0" ixz="0.0" iyy="0.0" iyz="0.0" izz="0.0"/>
+    </inertial>
+    <visual name="Desk_0_stand">
+      <origin xyz="0.0 0.0 0.0" rpy="0.0 0.0 0.0"/>
+      <geometry>
+      	<mesh filename="package://robocane_manual/robocane_env/robocane_new/meshes/obj/Cube_074.obj" scale="1.0 1.0 1.0"/>
+      </geometry>
+      <material name="standard_material"/>
+    </visual>
+    <collision>
+      <origin rpy="0 0 0" xyz="0 0 0"/>
+      <geometry>
+        <mesh filename="package://robocane_manual/robocane_env/robocane_new/meshes/obj/Cube_074.obj" scale="1.0 1.0 1.0"/>
+      </geometry>
+    </collision>
+  </link>
+  <joint name="Desk_0_top_joint" type="fixed">
+    <origin xyz="0.1 0 0.32662" rpy="-8.526514862000276e-14 0.0 -2.2204464727667867e-15"/>
+    <parent link="Desk_0_stand_link"/>
+    <child link="Desk_0_top_link"/>
+  </joint>
+  <link name="Desk_0_top_link">
+    <inertial>
+      <origin xyz="0.0 0.0 0.0" rpy="0.0 0.0 0.0"/>
+      <mass value="0.0"/>
+      <inertia ixx="0.0" ixy="0.0" ixz="0.0" iyy="0.0" iyz="0.0" izz="0.0"/>
+    </inertial>
+    <visual name="Desk_0_top">
+      <origin xyz="0.0 0.0 0.0" rpy="0.0 0.0 0.0"/>
+      <geometry>
+      	<mesh filename="package://robocane_manual/robocane_env/robocane_new/meshes/obj/Cube_013.obj" scale="1.0 1.0 1.0"/>
+      </geometry>
+      <material name="standard_material"/>
+    </visual>
+    <collision>
+      <origin rpy="0 0 0" xyz="0 0 0"/>
+      <geometry>
+        <mesh filename="package://robocane_manual/robocane_env/robocane_new/meshes/obj/Cube_013.obj" scale="1.0 1.0 1.0"/>
+      </geometry>
+    </collision>
+  </link>
+  <joint name="Desk_0_front_joint" type="fixed">
+    <origin xyz="-0.2 0 0.19" rpy="-8.526514862000276e-14 0.0 -2.2204464727667867e-15"/>
+    <parent link="Desk_0_stand_link"/>
+    <child link="Desk_0_front_link"/>
+  </joint>
+  <link name="Desk_0_front_link">
+    <inertial>
+      <origin xyz="0.0 0.0 0.0" rpy="0.0 0.0 0.0"/>
+      <mass value="0.0"/>
+      <inertia ixx="0.0" ixy="0.0" ixz="0.0" iyy="0.0" iyz="0.0" izz="0.0"/>
+    </inertial>
+    <visual name="Desk_0_front">
+      <origin xyz="0.0 0.0 0.0" rpy="0.0 0.0 0.0"/>
+      <geometry>
+      	<mesh filename="package://robocane_manual/robocane_env/robocane_new/meshes/obj/Cube_121.obj" scale="1.0 1.0 1.0"/>
+      </geometry>
+      <material name="standard_material"/>
+    </visual>
+    <collision>
+      <origin rpy="0 0 0" xyz="0 0 0"/>
+      <geometry>
+        <mesh filename="package://robocane_manual/robocane_env/robocane_new/meshes/obj/Cube_121.obj" scale="1.0 1.0 1.0"/>
+      </geometry>
+    </collision>
+  </link>
+    <joint name="Desk_0_rolls_joint" type="fixed">
+    <origin xyz="0.00121 0.000427 -0.34455" rpy="-8.526514862000276e-14 0.0 -2.2204464727667867e-15"/>
+    <parent link="Desk_0_stand_link"/>
+    <child link="Desk_0_rolls_link"/>
+  </joint>
+  <link name="Desk_0_rolls_link">
+    <inertial>
+      <origin xyz="0.0 0.0 0.0" rpy="0.0 0.0 0.0"/>
+      <mass value="0.0"/>
+      <inertia ixx="0.0" ixy="0.0" ixz="0.0" iyy="0.0" iyz="0.0" izz="0.0"/>
+    </inertial>
+    <visual name="Desk_0_rolls">
+      <origin xyz="0.0 0.0 0.0" rpy="0.0 0.0 0.0"/>
+      <geometry>
+      	<mesh filename="package://robocane_manual/robocane_env/robocane_new/meshes/obj/Cube_117.obj" scale="1.0 1.0 1.0"/>
+      </geometry>
+      <material name="standard_material"/>
+    </visual>
+    <collision>
+      <origin rpy="0 0 0" xyz="0 0 0"/>
+      <geometry>
+        <mesh filename="package://robocane_manual/robocane_env/robocane_new/meshes/obj/Cube_117.obj" scale="1.0 1.0 1.0"/>
+      </geometry>
+    </collision>
+  </link>
+  
+  
+<joint name="Desk_1_main_joint" type="fixed">
+    <origin xyz="7.6405 1.668 0.33" rpy="0.0 0.0 0.0"/>
+    <parent link="Environment"/>
+    <child link="Desk_1_main_link"/>
+  </joint>
+  <link name="Desk_1_main_link">
+    <inertial>
+      <origin xyz="0.0 0.0 0.0" rpy="0.0 0.0 0.0"/>
+      <mass value="0.0"/>
+      <inertia ixx="0.0" ixy="0.0" ixz="0.0" iyy="0.0" iyz="0.0" izz="0.0"/>
+    </inertial>
+  </link>
+  <joint name="Desk_1_stand_joint" type="fixed">
+    <origin xyz="0 0 0" rpy="-8.526514862000276e-14 0.0 -2.2204464727667867e-15"/>
+    <parent link="Desk_1_main_link"/>
+    <child link="Desk_1_stand_link"/>
+  </joint>
+  <link name="Desk_1_stand_link">
+    <inertial>
+      <origin xyz="0.0 0.0 0.0" rpy="0.0 0.0 0.0"/>
+      <mass value="0.0"/>
+      <inertia ixx="0.0" ixy="0.0" ixz="0.0" iyy="0.0" iyz="0.0" izz="0.0"/>
+    </inertial>
+    <visual name="Desk_1_stand">
+      <origin xyz="0.0 0.0 0.0" rpy="0.0 0.0 0.0"/>
+      <geometry>
+      	<mesh filename="package://robocane_manual/robocane_env/robocane_new/meshes/obj/Cube_303.obj" scale="1.0 1.0 1.0"/>
+      </geometry>
+      <material name="standard_material"/>
+    </visual>
+    <collision>
+      <origin rpy="0 0 0" xyz="0 0 0"/>
+      <geometry>
+        <mesh filename="package://robocane_manual/robocane_env/robocane_new/meshes/obj/Cube_303.obj" scale="1.0 1.0 1.0"/>
+      </geometry>
+    </collision>
+  </link>
+  <joint name="Desk_1_top_joint" type="fixed">
+    <origin xyz="-0.000983 0.097651 0.32662" rpy="-8.526514862000276e-14 0.0 -2.2204464727667867e-15"/>
+    <parent link="Desk_1_stand_link"/>
+    <child link="Desk_1_top_link"/>
+  </joint>
+  <link name="Desk_1_top_link">
+    <inertial>
+      <origin xyz="0.0 0.0 0.0" rpy="0.0 0.0 0.0"/>
+      <mass value="0.0"/>
+      <inertia ixx="0.0" ixy="0.0" ixz="0.0" iyy="0.0" iyz="0.0" izz="0.0"/>
+    </inertial>
+    <visual name="Desk_1_top">
+      <origin xyz="0.0 0.0 0.0" rpy="0.0 0.0 0.0"/>
+      <geometry>
+      	<mesh filename="package://robocane_manual/robocane_env/robocane_new/meshes/obj/Cube_302.obj" scale="1.0 1.0 1.0"/>
+      </geometry>
+      <material name="standard_material"/>
+    </visual>
+    <collision>
+      <origin rpy="0 0 0" xyz="0 0 0"/>
+      <geometry>
+        <mesh filename="package://robocane_manual/robocane_env/robocane_new/meshes/obj/Cube_302.obj" scale="1.0 1.0 1.0"/>
+      </geometry>
+    </collision>
+  </link>
+  <joint name="Desk_1_front_joint" type="fixed">
+    <origin xyz="0.000997 -0.20418 0.19" rpy="-8.526514862000276e-14 0.0 -2.2204464727667867e-15"/>
+    <parent link="Desk_1_stand_link"/>
+    <child link="Desk_1_front_link"/>
+  </joint>
+  <link name="Desk_1_front_link">
+    <inertial>
+      <origin xyz="0.0 0.0 0.0" rpy="0.0 0.0 0.0"/>
+      <mass value="0.0"/>
+      <inertia ixx="0.0" ixy="0.0" ixz="0.0" iyy="0.0" iyz="0.0" izz="0.0"/>
+    </inertial>
+    <visual name="Desk_1_front">
+      <origin xyz="0.0 0.0 0.0" rpy="0.0 0.0 0.0"/>
+      <geometry>
+      	<mesh filename="package://robocane_manual/robocane_env/robocane_new/meshes/obj/Cube_305.obj" scale="1.0 1.0 1.0"/>
+      </geometry>
+      <material name="standard_material"/>
+    </visual>
+    <collision>
+      <origin rpy="0 0 0" xyz="0 0 0"/>
+      <geometry>
+        <mesh filename="package://robocane_manual/robocane_env/robocane_new/meshes/obj/Cube_305.obj" scale="1.0 1.0 1.0"/>
+      </geometry>
+    </collision>
+  </link>
+    <joint name="Desk_1_rolls_joint" type="fixed">
+    <origin xyz="0.00121 0.000427 -0.34455" rpy="-8.526514862000276e-14 0.0 -2.2204464727667867e-15"/>
+    <parent link="Desk_1_stand_link"/>
+    <child link="Desk_1_rolls_link"/>
+  </joint>
+  <link name="Desk_1_rolls_link">
+    <inertial>
+      <origin xyz="0.0 0.0 0.0" rpy="0.0 0.0 0.0"/>
+      <mass value="0.0"/>
+      <inertia ixx="0.0" ixy="0.0" ixz="0.0" iyy="0.0" iyz="0.0" izz="0.0"/>
+    </inertial>
+    <visual name="Desk_1_rolls">
+      <origin xyz="0.0 0.0 0.0" rpy="0.0 0.0 0.0"/>
+      <geometry>
+      	<mesh filename="package://robocane_manual/robocane_env/robocane_new/meshes/obj/Cube_304.obj" scale="1.0 1.0 1.0"/>
+      </geometry>
+      <material name="standard_material"/>
+    </visual>
+    <collision>
+      <origin rpy="0 0 0" xyz="0 0 0"/>
+      <geometry>
+        <mesh filename="package://robocane_manual/robocane_env/robocane_new/meshes/obj/Cube_304.obj" scale="1.0 1.0 1.0"/>
+      </geometry>
+    </collision>
+  </link>
+
+<joint name="Desk_2_main_joint" type="fixed">
+    <origin xyz="6.084 1.668 0.33" rpy="0.0 0.0 0.0"/>
+    <parent link="Environment"/>
+    <child link="Desk_2_main_link"/>
+  </joint>
+  <link name="Desk_2_main_link">
+    <inertial>
+      <origin xyz="0.0 0.0 0.0" rpy="0.0 0.0 0.0"/>
+      <mass value="0.0"/>
+      <inertia ixx="0.0" ixy="0.0" ixz="0.0" iyy="0.0" iyz="0.0" izz="0.0"/>
+    </inertial>
+  </link>
+  <joint name="Desk_2_stand_joint" type="fixed">
+    <origin xyz="0 0 0" rpy="-8.526514862000276e-14 0.0 -2.2204464727667867e-15"/>
+    <parent link="Desk_2_main_link"/>
+    <child link="Desk_2_stand_link"/>
+  </joint>
+  <link name="Desk_2_stand_link">
+    <inertial>
+      <origin xyz="0.0 0.0 0.0" rpy="0.0 0.0 0.0"/>
+      <mass value="0.0"/>
+      <inertia ixx="0.0" ixy="0.0" ixz="0.0" iyy="0.0" iyz="0.0" izz="0.0"/>
+    </inertial>
+    <visual name="Desk_2_stand">
+      <origin xyz="0.0 0.0 0.0" rpy="0.0 0.0 0.0"/>
+      <geometry>
+      	<mesh filename="package://robocane_manual/robocane_env/robocane_new/meshes/obj/Cube_299.obj" scale="1.0 1.0 1.0"/>
+      </geometry>
+      <material name="standard_material"/>
+    </visual>
+    <collision>
+      <origin rpy="0 0 0" xyz="0 0 0"/>
+      <geometry>
+        <mesh filename="package://robocane_manual/robocane_env/robocane_new/meshes/obj/Cube_299.obj" scale="1.0 1.0 1.0"/>
+      </geometry>
+    </collision>
+  </link>
+  <joint name="Desk_2_top_joint" type="fixed">
+    <origin xyz="-0.000983 0.097651 0.32662" rpy="-8.526514862000276e-14 0.0 -2.2204464727667867e-15"/>
+    <parent link="Desk_2_stand_link"/>
+    <child link="Desk_2_top_link"/>
+  </joint>
+  <link name="Desk_2_top_link">
+    <inertial>
+      <origin xyz="0.0 0.0 0.0" rpy="0.0 0.0 0.0"/>
+      <mass value="0.0"/>
+      <inertia ixx="0.0" ixy="0.0" ixz="0.0" iyy="0.0" iyz="0.0" izz="0.0"/>
+    </inertial>
+    <visual name="Desk_2_top">
+      <origin xyz="0.0 0.0 0.0" rpy="0.0 0.0 0.0"/>
+      <geometry>
+      	<mesh filename="package://robocane_manual/robocane_env/robocane_new/meshes/obj/Cube_298.obj" scale="1.0 1.0 1.0"/>
+      </geometry>
+      <material name="standard_material"/>
+    </visual>
+    <collision>
+      <origin rpy="0 0 0" xyz="0 0 0"/>
+      <geometry>
+        <mesh filename="package://robocane_manual/robocane_env/robocane_new/meshes/obj/Cube_298.obj" scale="1.0 1.0 1.0"/>
+      </geometry>
+    </collision>
+  </link>
+  <joint name="Desk_2_front_joint" type="fixed">
+    <origin xyz="0.000997 -0.20418 0.19" rpy="-8.526514862000276e-14 0.0 -2.2204464727667867e-15"/>
+    <parent link="Desk_2_stand_link"/>
+    <child link="Desk_2_front_link"/>
+  </joint>
+  <link name="Desk_2_front_link">
+    <inertial>
+      <origin xyz="0.0 0.0 0.0" rpy="0.0 0.0 0.0"/>
+      <mass value="0.0"/>
+      <inertia ixx="0.0" ixy="0.0" ixz="0.0" iyy="0.0" iyz="0.0" izz="0.0"/>
+    </inertial>
+    <visual name="Desk_2_front">
+      <origin xyz="0.0 0.0 0.0" rpy="0.0 0.0 0.0"/>
+      <geometry>
+      	<mesh filename="package://robocane_manual/robocane_env/robocane_new/meshes/obj/Cube_301.obj" scale="1.0 1.0 1.0"/>
+      </geometry>
+      <material name="standard_material"/>
+    </visual>
+    <collision>
+      <origin rpy="0 0 0" xyz="0 0 0"/>
+      <geometry>
+        <mesh filename="package://robocane_manual/robocane_env/robocane_new/meshes/obj/Cube_301.obj" scale="1.0 1.0 1.0"/>
+      </geometry>
+    </collision>
+  </link>
+    <joint name="Desk_2_rolls_joint" type="fixed">
+    <origin xyz="0.00121 0.000427 -0.34455" rpy="-8.526514862000276e-14 0.0 -2.2204464727667867e-15"/>
+    <parent link="Desk_2_stand_link"/>
+    <child link="Desk_2_rolls_link"/>
+  </joint>
+  <link name="Desk_2_rolls_link">
+    <inertial>
+      <origin xyz="0.0 0.0 0.0" rpy="0.0 0.0 0.0"/>
+      <mass value="0.0"/>
+      <inertia ixx="0.0" ixy="0.0" ixz="0.0" iyy="0.0" iyz="0.0" izz="0.0"/>
+    </inertial>
+    <visual name="Desk_2_rolls">
+      <origin xyz="0.0 0.0 0.0" rpy="0.0 0.0 0.0"/>
+      <geometry>
+      	<mesh filename="package://robocane_manual/robocane_env/robocane_new/meshes/obj/Cube_304.obj" scale="1.0 1.0 1.0"/>
+      </geometry>
+      <material name="standard_material"/>
+    </visual>
+    <collision>
+      <origin rpy="0 0 0" xyz="0 0 0"/>
+      <geometry>
+        <mesh filename="package://robocane_manual/robocane_env/robocane_new/meshes/obj/Cube_304.obj" scale="1.0 1.0 1.0"/>
+      </geometry>
+    </collision>
+  </link>
+
+
+<joint name="Desk_3_main_joint" type="fixed">
+    <origin xyz="7.806 1.243 0.33" rpy="0.0 0.0 0.0"/>
+    <parent link="Environment"/>
+    <child link="Desk_3_main_link"/>
+  </joint>
+  <link name="Desk_3_main_link">
+    <inertial>
+      <origin xyz="0.0 0.0 0.0" rpy="0.0 0.0 0.0"/>
+      <mass value="0.0"/>
+      <inertia ixx="0.0" ixy="0.0" ixz="0.0" iyy="0.0" iyz="0.0" izz="0.0"/>
+    </inertial>
+  </link>
+  <joint name="Desk_3_stand_joint" type="fixed">
+    <origin xyz="0 0 0" rpy="-8.526514862000276e-14 0.0 -2.2204464727667867e-15"/>
+    <parent link="Desk_3_main_link"/>
+    <child link="Desk_3_stand_link"/>
+  </joint>
+  <link name="Desk_3_stand_link">
+    <inertial>
+      <origin xyz="0.0 0.0 0.0" rpy="0.0 0.0 0.0"/>
+      <mass value="0.0"/>
+      <inertia ixx="0.0" ixy="0.0" ixz="0.0" iyy="0.0" iyz="0.0" izz="0.0"/>
+    </inertial>
+    <visual name="Desk_3_stand">
+      <origin xyz="0.0 0.0 0.0" rpy="0.0 0.0 0.0"/>
+      <geometry>
+      	<mesh filename="package://robocane_manual/robocane_env/robocane_new/meshes/obj/Cube_299.obj" scale="1.0 1.0 1.0"/>
+      </geometry>
+      <material name="standard_material"/>
+    </visual>
+    <collision>
+      <origin rpy="0 0 0" xyz="0 0 0"/>
+      <geometry>
+        <mesh filename="package://robocane_manual/robocane_env/robocane_new/meshes/obj/Cube_299.obj" scale="1.0 1.0 1.0"/>
+      </geometry>
+    </collision>
+  </link>
+  <joint name="Desk_3_top_joint" type="fixed">
+    <origin xyz="0.000983 -0.097651 0.32662" rpy="-8.526514862000276e-14 0.0 -2.2204464727667867e-15"/>
+    <parent link="Desk_3_stand_link"/>
+    <child link="Desk_3_top_link"/>
+  </joint>
+  <link name="Desk_3_top_link">
+    <inertial>
+      <origin xyz="0.0 0.0 0.0" rpy="0.0 0.0 0.0"/>
+      <mass value="0.0"/>
+      <inertia ixx="0.0" ixy="0.0" ixz="0.0" iyy="0.0" iyz="0.0" izz="0.0"/>
+    </inertial>
+    <visual name="Desk_3_top">
+      <origin xyz="0.0 0.0 0.0" rpy="0.0 0.0 0.0"/>
+      <geometry>
+      	<mesh filename="package://robocane_manual/robocane_env/robocane_new/meshes/obj/Cube_298.obj" scale="1.0 1.0 1.0"/>
+      </geometry>
+      <material name="standard_material"/>
+    </visual>
+    <collision>
+      <origin rpy="0 0 0" xyz="0 0 0"/>
+      <geometry>
+        <mesh filename="package://robocane_manual/robocane_env/robocane_new/meshes/obj/Cube_298.obj" scale="1.0 1.0 1.0"/>
+      </geometry>
+    </collision>
+  </link>
+  <joint name="Desk_3_front_joint" type="fixed">
+    <origin xyz="0.0001015 0.20418 0.19" rpy="-8.526514862000276e-14 0.0 -2.2204464727667867e-15"/>
+    <parent link="Desk_3_stand_link"/>
+    <child link="Desk_3_front_link"/>
+  </joint>
+  <link name="Desk_3_front_link">
+    <inertial>
+      <origin xyz="0.0 0.0 0.0" rpy="0.0 0.0 0.0"/>
+      <mass value="0.0"/>
+      <inertia ixx="0.0" ixy="0.0" ixz="0.0" iyy="0.0" iyz="0.0" izz="0.0"/>
+    </inertial>
+    <visual name="Desk_3_front">
+      <origin xyz="0.0 0.0 0.0" rpy="0.0 0.0 0.0"/>
+      <geometry>
+      	<mesh filename="package://robocane_manual/robocane_env/robocane_new/meshes/obj/Cube_301.obj" scale="1.0 1.0 1.0"/>
+      </geometry>
+      <material name="standard_material"/>
+    </visual>
+    <collision>
+      <origin rpy="0 0 0" xyz="0 0 0"/>
+      <geometry>
+        <mesh filename="package://robocane_manual/robocane_env/robocane_new/meshes/obj/Cube_301.obj" scale="1.0 1.0 1.0"/>
+      </geometry>
+    </collision>
+  </link>
+    <joint name="Desk_3_rolls_joint" type="fixed">
+    <origin xyz="0.000427 -0.00121 -0.34455" rpy="-8.526514862000276e-14 0.0 -2.2204464727667867e-15"/>
+    <parent link="Desk_3_stand_link"/>
+    <child link="Desk_3_rolls_link"/>
+  </joint>
+  <link name="Desk_3_rolls_link">
+    <inertial>
+      <origin xyz="0.0 0.0 0.0" rpy="0.0 0.0 0.0"/>
+      <mass value="0.0"/>
+      <inertia ixx="0.0" ixy="0.0" ixz="0.0" iyy="0.0" iyz="0.0" izz="0.0"/>
+    </inertial>
+    <visual name="Desk_3_rolls">
+      <origin xyz="0.0 0.0 0.0" rpy="0.0 0.0 0.0"/>
+      <geometry>
+      	<mesh filename="package://robocane_manual/robocane_env/robocane_new/meshes/obj/Cube_308.obj" scale="1.0 1.0 1.0"/>
+      </geometry>
+      <material name="standard_material"/>
+    </visual>
+    <collision>
+      <origin rpy="0 0 0" xyz="0 0 0"/>
+      <geometry>
+        <mesh filename="package://robocane_manual/robocane_env/robocane_new/meshes/obj/Cube_308.obj" scale="1.0 1.0 1.0"/>
+      </geometry>
+    </collision>
+  </link>
+  
+
+<joint name="Desk_4_main_joint" type="fixed">
+    <origin xyz="6.2501 1.2428 0.33" rpy="0.0 0.0 0.0"/>
+    <parent link="Environment"/>
+    <child link="Desk_4_main_link"/>
+  </joint>
+  <link name="Desk_4_main_link">
+    <inertial>
+      <origin xyz="0.0 0.0 0.0" rpy="0.0 0.0 0.0"/>
+      <mass value="0.0"/>
+      <inertia ixx="0.0" ixy="0.0" ixz="0.0" iyy="0.0" iyz="0.0" izz="0.0"/>
+    </inertial>
+  </link>
+  <joint name="Desk_4_stand_joint" type="fixed">
+    <origin xyz="0 0 0" rpy="-8.526514862000276e-14 0.0 -2.2204464727667867e-15"/>
+    <parent link="Desk_4_main_link"/>
+    <child link="Desk_4_stand_link"/>
+  </joint>
+  <link name="Desk_4_stand_link">
+    <inertial>
+      <origin xyz="0.0 0.0 0.0" rpy="0.0 0.0 0.0"/>
+      <mass value="0.0"/>
+      <inertia ixx="0.0" ixy="0.0" ixz="0.0" iyy="0.0" iyz="0.0" izz="0.0"/>
+    </inertial>
+    <visual name="Desk_4_stand">
+      <origin xyz="0.0 0.0 0.0" rpy="0.0 0.0 0.0"/>
+      <geometry>
+      	<mesh filename="package://robocane_manual/robocane_env/robocane_new/meshes/obj/Cube_311.obj" scale="1.0 1.0 1.0"/>
+      </geometry>
+      <material name="standard_material"/>
+    </visual>
+    <collision>
+      <origin rpy="0 0 0" xyz="0 0 0"/>
+      <geometry>
+        <mesh filename="package://robocane_manual/robocane_env/robocane_new/meshes/obj/Cube_311.obj" scale="1.0 1.0 1.0"/>
+      </geometry>
+    </collision>
+  </link>
+  <joint name="Desk_4_top_joint" type="fixed">
+    <origin xyz="0.000983 -0.097651 0.32662" rpy="-8.526514862000276e-14 0.0 -2.2204464727667867e-15"/>
+    <parent link="Desk_4_stand_link"/>
+    <child link="Desk_4_top_link"/>
+  </joint>
+  <link name="Desk_4_top_link">
+    <inertial>
+      <origin xyz="0.0 0.0 0.0" rpy="0.0 0.0 0.0"/>
+      <mass value="0.0"/>
+      <inertia ixx="0.0" ixy="0.0" ixz="0.0" iyy="0.0" iyz="0.0" izz="0.0"/>
+    </inertial>
+    <visual name="Desk_4_top">
+      <origin xyz="0.0 0.0 0.0" rpy="0.0 0.0 0.0"/>
+      <geometry>
+      	<mesh filename="package://robocane_manual/robocane_env/robocane_new/meshes/obj/Cube_310.obj" scale="1.0 1.0 1.0"/>
+      </geometry>
+      <material name="standard_material"/>
+    </visual>
+    <collision>
+      <origin rpy="0 0 0" xyz="0 0 0"/>
+      <geometry>
+        <mesh filename="package://robocane_manual/robocane_env/robocane_new/meshes/obj/Cube_310.obj" scale="1.0 1.0 1.0"/>
+      </geometry>
+    </collision>
+  </link>
+  <joint name="Desk_4_front_joint" type="fixed">
+    <origin xyz="0.00097 0.20415 0.19" rpy="-8.526514862000276e-14 0.0 -2.2204464727667867e-15"/>
+    <parent link="Desk_4_stand_link"/>
+    <child link="Desk_4_front_link"/>
+  </joint>
+  <link name="Desk_4_front_link">
+    <inertial>
+      <origin xyz="0.0 0.0 0.0" rpy="0.0 0.0 0.0"/>
+      <mass value="0.0"/>
+      <inertia ixx="0.0" ixy="0.0" ixz="0.0" iyy="0.0" iyz="0.0" izz="0.0"/>
+    </inertial>
+    <visual name="Desk_4_front">
+      <origin xyz="0.0 0.0 0.0" rpy="0.0 0.0 0.0"/>
+      <geometry>
+      	<mesh filename="package://robocane_manual/robocane_env/robocane_new/meshes/obj/Cube_313.obj" scale="1.0 1.0 1.0"/>
+      </geometry>
+      <material name="standard_material"/>
+    </visual>
+    <collision>
+      <origin rpy="0 0 0" xyz="0 0 0"/>
+      <geometry>
+        <mesh filename="package://robocane_manual/robocane_env/robocane_new/meshes/obj/Cube_313.obj" scale="1.0 1.0 1.0"/>
+      </geometry>
+    </collision>
+  </link>
+    <joint name="Desk_4_rolls_joint" type="fixed">
+    <origin xyz="0.000427 -0.00121 -0.34455" rpy="-8.526514862000276e-14 0.0 -2.2204464727667867e-15"/>
+    <parent link="Desk_4_stand_link"/>
+    <child link="Desk_4_rolls_link"/>
+  </joint>
+  <link name="Desk_4_rolls_link">
+    <inertial>
+      <origin xyz="0.0 0.0 0.0" rpy="0.0 0.0 0.0"/>
+      <mass value="0.0"/>
+      <inertia ixx="0.0" ixy="0.0" ixz="0.0" iyy="0.0" iyz="0.0" izz="0.0"/>
+    </inertial>
+    <visual name="Desk_4_rolls">
+      <origin xyz="0.0 0.0 0.0" rpy="0.0 0.0 0.0"/>
+      <geometry>
+      	<mesh filename="package://robocane_manual/robocane_env/robocane_new/meshes/obj/Cube_312.obj" scale="1.0 1.0 1.0"/>
+      </geometry>
+      <material name="standard_material"/>
+    </visual>
+    <collision>
+      <origin rpy="0 0 0" xyz="0 0 0"/>
+      <geometry>
+        <mesh filename="package://robocane_manual/robocane_env/robocane_new/meshes/obj/Cube_312.obj" scale="1.0 1.0 1.0"/>
+      </geometry>
+    </collision>
+  </link>
+  
+  <!-- WINDOWS -->
+  <joint name="Window_0_main_joint" type="fixed">
+    <origin xyz="2.2306 -0.61081 1.5097" rpy="0.0 0.0 0.0"/>
+    <parent link="Environment"/>
+    <child link="Window_0_main_link"/>
+  </joint>
+  <link name="Window_0_main_link">
+    <inertial>
+      <origin xyz="0.0 0.0 0.0" rpy="0.0 0.0 0.0"/>
+      <mass value="0.0"/>
+      <inertia ixx="0.0" ixy="0.0" ixz="0.0" iyy="0.0" iyz="0.0" izz="0.0"/>
+    </inertial>
+  </link>
+  <joint name="Window_0_panel_joint" type="fixed">
+    <origin xyz="0 0 0" rpy="-8.526514862000276e-14 0.0 -2.2204464727667867e-15"/>
+    <parent link="Window_0_main_link"/>
+    <child link="Window_0_panel_link"/>
+  </joint>
+  <link name="Window_0_panel_link">
+    <inertial>
+      <origin xyz="0.0 0.0 0.0" rpy="0.0 0.0 0.0"/>
+      <mass value="0.0"/>
+      <inertia ixx="0.0" ixy="0.0" ixz="0.0" iyy="0.0" iyz="0.0" izz="0.0"/>
+    </inertial>
+    <visual name="Window_0_panel">
+      <origin xyz="0.0 0.0 0.0" rpy="0.0 0.0 0.0"/>
+      <geometry>
+      	<mesh filename="package://robocane_manual/robocane_env/robocane_new/meshes/obj/Office_034.obj" scale="1.0 1.0 1.0"/>
+      </geometry>
+      <material name="standard_material"/>
+    </visual>
+    <collision>
+      <origin rpy="0 0 0" xyz="0 0 0"/>
+      <geometry>
+        <mesh filename="package://robocane_manual/robocane_env/robocane_new/meshes/obj/Office_034.obj" scale="1.0 1.0 1.0"/>
+      </geometry>
+    </collision>
+  </link>
+  <joint name="Window_0_border_joint" type="fixed">
+    <origin xyz="0 0 0" rpy="-8.526514862000276e-14 0.0 -2.2204464727667867e-15"/>
+    <parent link="Window_0_main_link"/>
+    <child link="Window_0_border_link"/>
+  </joint>
+  <link name="Window_0_border_link">
+    <inertial>
+      <origin xyz="0.0 0.0 0.0" rpy="0.0 0.0 0.0"/>
+      <mass value="0.0"/>
+      <inertia ixx="0.0" ixy="0.0" ixz="0.0" iyy="0.0" iyz="0.0" izz="0.0"/>
+    </inertial>
+    <visual name="Window_0_border">
+      <origin xyz="0.0 0.0 0.0" rpy="0.0 0.0 0.0"/>
+      <geometry>
+      	<mesh filename="package://robocane_manual/robocane_env/robocane_new/meshes/obj/Office_018.obj" scale="1.0 1.0 1.0"/>
+      </geometry>
+      <material name="standard_material"/>
+    </visual>
+    <collision>
+      <origin rpy="0 0 0" xyz="0 0 0"/>
+      <geometry>
+        <mesh filename="package://robocane_manual/robocane_env/robocane_new/meshes/obj/Office_018.obj" scale="1.0 1.0 1.0"/>
+      </geometry>
+    </collision>
+  </link>
+
+
+  <joint name="Window_1_main_joint" type="fixed">
+    <origin xyz="5.3664 -0.61081 1.5097" rpy="0.0 0.0 0.0"/>
+    <parent link="Environment"/>
+    <child link="Window_1_main_link"/>
+  </joint>
+  <link name="Window_1_main_link">
+    <inertial>
+      <origin xyz="0.0 0.0 0.0" rpy="0.0 0.0 0.0"/>
+      <mass value="0.0"/>
+      <inertia ixx="0.0" ixy="0.0" ixz="0.0" iyy="0.0" iyz="0.0" izz="0.0"/>
+    </inertial>
+  </link>
+  <joint name="Window_1_panel_joint" type="fixed">
+    <origin xyz="0 0 0" rpy="-8.526514862000276e-14 0.0 -2.2204464727667867e-15"/>
+    <parent link="Window_1_main_link"/>
+    <child link="Window_1_panel_link"/>
+  </joint>
+  <link name="Window_1_panel_link">
+    <inertial>
+      <origin xyz="0.0 0.0 0.0" rpy="0.0 0.0 0.0"/>
+      <mass value="0.0"/>
+      <inertia ixx="0.0" ixy="0.0" ixz="0.0" iyy="0.0" iyz="0.0" izz="0.0"/>
+    </inertial>
+    <visual name="Window_1_panel">
+      <origin xyz="0.0 0.0 0.0" rpy="0.0 0.0 0.0"/>
+      <geometry>
+      	<mesh filename="package://robocane_manual/robocane_env/robocane_new/meshes/obj/Office_034.obj" scale="1.0 1.0 1.0"/>
+      </geometry>
+      <material name="standard_material"/>
+    </visual>
+    <collision>
+      <origin rpy="0 0 0" xyz="0 0 0"/>
+      <geometry>
+        <mesh filename="package://robocane_manual/robocane_env/robocane_new/meshes/obj/Office_034.obj" scale="1.0 1.0 1.0"/>
+      </geometry>
+    </collision>
+  </link>
+  <joint name="Window_1_border_joint" type="fixed">
+    <origin xyz="0 0 0" rpy="-8.526514862000276e-14 0.0 -2.2204464727667867e-15"/>
+    <parent link="Window_1_main_link"/>
+    <child link="Window_1_border_link"/>
+  </joint>
+  <link name="Window_1_border_link">
+    <inertial>
+      <origin xyz="0.0 0.0 0.0" rpy="0.0 0.0 0.0"/>
+      <mass value="0.0"/>
+      <inertia ixx="0.0" ixy="0.0" ixz="0.0" iyy="0.0" iyz="0.0" izz="0.0"/>
+    </inertial>
+    <visual name="Window_1_border">
+      <origin xyz="0.0 0.0 0.0" rpy="0.0 0.0 0.0"/>
+      <geometry>
+      	<mesh filename="package://robocane_manual/robocane_env/robocane_new/meshes/obj/Office_030.obj" scale="1.0 1.0 1.0"/>
+      </geometry>
+      <material name="standard_material"/>
+    </visual>
+    <collision>
+      <origin rpy="0 0 0" xyz="0 0 0"/>
+      <geometry>
+        <mesh filename="package://robocane_manual/robocane_env/robocane_new/meshes/obj/Office_030.obj" scale="1.0 1.0 1.0"/>
+      </geometry>
+    </collision>
+  </link>
+  
+
+  <joint name="Window_2_main_joint" type="fixed">
+    <origin xyz="8.5103 -0.61081 1.5097" rpy="0.0 0.0 0.0"/>
+    <parent link="Environment"/>
+    <child link="Window_2_main_link"/>
+  </joint>
+  <link name="Window_2_main_link">
+    <inertial>
+      <origin xyz="0.0 0.0 0.0" rpy="0.0 0.0 0.0"/>
+      <mass value="0.0"/>
+      <inertia ixx="0.0" ixy="0.0" ixz="0.0" iyy="0.0" iyz="0.0" izz="0.0"/>
+    </inertial>
+  </link>
+  <joint name="Window_2_panel_joint" type="fixed">
+    <origin xyz="0 0 0" rpy="-8.526514862000276e-14 0.0 -2.2204464727667867e-15"/>
+    <parent link="Window_2_main_link"/>
+    <child link="Window_2_panel_link"/>
+  </joint>
+  <link name="Window_2_panel_link">
+    <inertial>
+      <origin xyz="0.0 0.0 0.0" rpy="0.0 0.0 0.0"/>
+      <mass value="0.0"/>
+      <inertia ixx="0.0" ixy="0.0" ixz="0.0" iyy="0.0" iyz="0.0" izz="0.0"/>
+    </inertial>
+    <visual name="Window_2_panel">
+      <origin xyz="0.0 0.0 0.0" rpy="0.0 0.0 0.0"/>
+      <geometry>
+      	<mesh filename="package://robocane_manual/robocane_env/robocane_new/meshes/obj/Office_033.obj" scale="1.0 1.0 1.0"/>
+      </geometry>
+      <material name="standard_material"/>
+    </visual>
+    <collision>
+      <origin rpy="0 0 0" xyz="0 0 0"/>
+      <geometry>
+        <mesh filename="package://robocane_manual/robocane_env/robocane_new/meshes/obj/Office_033.obj" scale="1.0 1.0 1.0"/>
+      </geometry>
+    </collision>
+  </link>
+  <joint name="Window_2_border_joint" type="fixed">
+    <origin xyz="0 0 0" rpy="-8.526514862000276e-14 0.0 -2.2204464727667867e-15"/>
+    <parent link="Window_2_main_link"/>
+    <child link="Window_2_border_link"/>
+  </joint>
+  <link name="Window_2_border_link">
+    <inertial>
+      <origin xyz="0.0 0.0 0.0" rpy="0.0 0.0 0.0"/>
+      <mass value="0.0"/>
+      <inertia ixx="0.0" ixy="0.0" ixz="0.0" iyy="0.0" iyz="0.0" izz="0.0"/>
+    </inertial>
+    <visual name="Window_2_border">
+      <origin xyz="0.0 0.0 0.0" rpy="0.0 0.0 0.0"/>
+      <geometry>
+      	<mesh filename="package://robocane_manual/robocane_env/robocane_new/meshes/obj/Office_032.obj" scale="1.0 1.0 1.0"/>
+      </geometry>
+      <material name="standard_material"/>
+    </visual>
+    <collision>
+      <origin rpy="0 0 0" xyz="0 0 0"/>
+      <geometry>
+        <mesh filename="package://robocane_manual/robocane_env/robocane_new/meshes/obj/Office_032.obj" scale="1.0 1.0 1.0"/>
+      </geometry>
+    </collision>
+  </link>
+
+
+  <!-- WALLS -->
+  <joint name="Wall_0_joint" type="fixed">
+    <origin xyz="5.5 -0.75 0.7" rpy="-8.526514862000276e-14 0.0 -2.2204464727667867e-15"/>
+    <parent link="Environment"/>
+    <child link="Wall_0_link"/>
+  </joint>
+  <link name="Wall_0_link">
+    <inertial>
+      <origin xyz="0.0 0.0 0.0" rpy="0.0 0.0 0.0"/>
+      <mass value="0.0"/>
+      <inertia ixx="0.0" ixy="0.0" ixz="0.0" iyy="0.0" iyz="0.0" izz="0.0"/>
+    </inertial>
+    <visual name="Wall_0">
+      <origin xyz="0.0 0.0 0.0" rpy="0.0 0.0 0.0"/>
+      <geometry>
+      	<box size="11 0.2 1.4"/>
+      </geometry>
+      <material name="standard_material"/>
+    </visual>
+    <collision>
+      <origin rpy="0 0 0" xyz="0 0 0"/>
+      <geometry>
+        <box size="11 0.2 1.4"/>
+      </geometry>
+    </collision>
+  </link>
+  <joint name="Wall_1_joint" type="fixed">
+    <origin xyz="0 3.8 0.7" rpy="-8.526514862000276e-14 0.0 -2.2204464727667867e-15"/>
+    <parent link="Environment"/>
+    <child link="Wall_1_link"/>
+  </joint>
+  <link name="Wall_1_link">
+    <inertial>
+      <origin xyz="0.0 0.0 0.0" rpy="0.0 0.0 0.0"/>
+      <mass value="0.0"/>
+      <inertia ixx="0.0" ixy="0.0" ixz="0.0" iyy="0.0" iyz="0.0" izz="0.0"/>
+    </inertial>
+    <visual name="Wall_1">
+      <origin xyz="0.0 0.0 0.0" rpy="0.0 0.0 0.0"/>
+      <geometry>
+      	<box size="0.2 6.66 1.4"/>
+      </geometry>
+      <material name="standard_material"/>
+    </visual>
+    <collision>
+      <origin rpy="0 0 0" xyz="0 0 0"/>
+      <geometry>
+        <box size="0.2 6.66 1.4"/>
+      </geometry>
+    </collision>
+  </link>
+  <joint name="Wall_2_joint" type="fixed">
+    <origin xyz="4.2 7.2 0.7" rpy="-8.526514862000276e-14 0.0 -2.2204464727667867e-15"/>
+    <parent link="Environment"/>
+    <child link="Wall_2_link"/>
+  </joint>
+  <link name="Wall_2_link">
+    <inertial>
+      <origin xyz="0.0 0.0 0.0" rpy="0.0 0.0 0.0"/>
+      <mass value="0.0"/>
+      <inertia ixx="0.0" ixy="0.0" ixz="0.0" iyy="0.0" iyz="0.0" izz="0.0"/>
+    </inertial>
+    <visual name="Wall_2">
+      <origin xyz="0.0 0.0 0.0" rpy="0.0 0.0 0.0"/>
+      <geometry>
+      	<box size="8.4 0.2 1.4"/>
+      </geometry>
+      <material name="standard_material"/>
+    </visual>
+    <collision>
+      <origin rpy="0 0 0" xyz="0 0 0"/>
+      <geometry>
+        <box size="8.4 0.2 1.4"/>
+      </geometry>
+    </collision>
+  </link>
+  <joint name="Wall_3_joint" type="fixed">
+    <origin xyz="8.5 5.7 0.7" rpy="-8.526514862000276e-14 0.0 -2.2204464727667867e-15"/>
+    <parent link="Environment"/>
+    <child link="Wall_3_link"/>
+  </joint>
+  <link name="Wall_3_link">
+    <inertial>
+      <origin xyz="0.0 0.0 0.0" rpy="0.0 0.0 0.0"/>
+      <mass value="0.0"/>
+      <inertia ixx="0.0" ixy="0.0" ixz="0.0" iyy="0.0" iyz="0.0" izz="0.0"/>
+    </inertial>
+    <visual name="Wall_3">
+      <origin xyz="0.0 0.0 0.0" rpy="0.0 0.0 0.0"/>
+      <geometry>
+      	<box size="0.2 3.3 1.4"/>
+      </geometry>
+      <material name="standard_material"/>
+    </visual>
+    <collision>
+      <origin rpy="0 0 0" xyz="0 0 0"/>
+      <geometry>
+        <box size="0.2 3.3 1.4"/>
+      </geometry>
+    </collision>
+  </link>
+  <joint name="Wall_4_joint" type="fixed">
+    <origin xyz="11 2.4 0.7" rpy="-8.526514862000276e-14 0.0 -2.2204464727667867e-15"/>
+    <parent link="Environment"/>
+    <child link="Wall_4_link"/>
+  </joint>
+  <link name="Wall_4_link">
+    <inertial>
+      <origin xyz="0.0 0.0 0.0" rpy="0.0 0.0 0.0"/>
+      <mass value="0.0"/>
+      <inertia ixx="0.0" ixy="0.0" ixz="0.0" iyy="0.0" iyz="0.0" izz="0.0"/>
+    </inertial>
+    <visual name="Wall_4">
+      <origin xyz="0.0 0.0 0.0" rpy="0.0 0.0 0.0"/>
+      <geometry>
+      	<box size="0.2 3.7 1.4"/>
+      </geometry>
+      <material name="standard_material"/>
+    </visual>
+    <collision>
+      <origin rpy="0 0 0" xyz="0 0 0"/>
+      <geometry>
+        <box size="0.2 3.7 1.4"/>
+      </geometry>
+    </collision>
+  </link>
+  <joint name="Wall_5_joint" type="fixed">
+    <origin xyz="10.3 4.15 0.7" rpy="-8.526514862000276e-14 0.0 -2.2204464727667867e-15"/>
+    <parent link="Environment"/>
+    <child link="Wall_5_link"/>
+  </joint>
+  <link name="Wall_5_link">
+    <inertial>
+      <origin xyz="0.0 0.0 0.0" rpy="0.0 0.0 0.0"/>
+      <mass value="0.0"/>
+      <inertia ixx="0.0" ixy="0.0" ixz="0.0" iyy="0.0" iyz="0.0" izz="0.0"/>
+    </inertial>
+    <visual name="Wall_5">
+      <origin xyz="0.0 0.0 0.0" rpy="0.0 0.0 0.0"/>
+      <geometry>
+      	<box size="1.3 0.2 1.4"/>
+      </geometry>
+      <material name="standard_material"/>
+    </visual>
+    <collision>
+      <origin rpy="0 0 0" xyz="0 0 0"/>
+      <geometry>
+        <box size="1.3 0.2 1.4"/>
+      </geometry>
+    </collision>
+  </link>
+
+
+</robot>

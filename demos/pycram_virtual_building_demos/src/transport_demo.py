@@ -51,6 +51,22 @@ def transporting_demo(apartment_name, robot_name):
         pick_pose = Pose([1.4, 0.2, 0.96])
         nav_pose = Pose([0.7, 0, 0])
 
+    elif apartment_name == "robocane":
+        milk = Object("milk", ObjectType.MILK, "milk.stl",  pose=Pose([1.49, 6.52, 0.87]),
+                      color=Color(1, 0, 0, 1))
+        milk_target_pose = Pose([4.6, 2.8, 0.73])
+
+        cereal = Object("cereal", ObjectType.BREAKFAST_CEREAL, "breakfast_cereal.stl",
+                        pose=Pose([1.49, 6.52, 1.14],[ 0, 0, 0.707, 0.707]),  color=Color(0, 0, -1, -1))
+        cereal_target_pose = Pose([4.6, 3.1, 0.76])
+
+        bowl = Object("bowl", ObjectType.BOWL, "bowl.stl", pose=Pose([1.29, 6.51, 0.8], [0, 0, -1, 1]),
+                      color=Color(1, 1, 0, 0.72))
+        bowl_target_pose = Pose([4.6, 3.4, 0.7], [0, 0, -1, 1])
+
+        pick_pose = Pose([1.5, 6.5, 0.9])
+        nav_pose = Pose([1.7, 5.7, 0],[0, 0, 0.707, 0.707])
+
     elif apartment_name == "apartment":
         if robot.name == "iCub":
             milk = Object("milk", ObjectType.MILK, "milk.stl", pose=Pose([4.7, 4.6, 0.8]),

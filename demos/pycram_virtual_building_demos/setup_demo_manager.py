@@ -1,4 +1,5 @@
 import sys
+import time
 
 from IPython.core.display_functions import clear_output
 
@@ -63,7 +64,7 @@ def start_demo():
 
 def start_demo_local():
     # get params
-    environment_param = 'kitchen'
+    environment_param = 'robocane'
     robot_param = 'pr2'
     task_param = 'transporting'
 
@@ -71,13 +72,13 @@ def start_demo_local():
 
     extension = ObjectDescription.get_file_extension()
     world = BulletWorld(WorldMode.DIRECT)
-    VizMarkerPublisher(interval=0.4, spawn_floor=False)
-    VizMarkerRobotPublisher(interval=0.2)
+
     robot = Object(robot_name, ObjectType.ROBOT, f"robots/{robot_param}.urdf", pose=Pose([1, 2, 0]))
     apartment = Object(environment_param, ObjectType.ENVIRONMENT, f"{environment_param}{extension}")
 
-
-
+    VizMarkerPublisher(interval=0.4, spawn_floor=False)
+    VizMarkerRobotPublisher(interval=0.2)
+    time.sleep(10)
     demo_selecting(environment_param, robot_name, task_param)
     extension = ObjectDescription.get_file_extension()
 
@@ -109,4 +110,4 @@ def demo_selecting(envi, robot, task_param):
         specialized_task = rospy.get_param('/nbparam_specialized_task')
         start_generalized_demo(task_param, object_tool, object_target, specialized_task)
 
-#start_demo_local()
+start_demo_local()
