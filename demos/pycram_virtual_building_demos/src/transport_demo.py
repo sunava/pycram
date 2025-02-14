@@ -142,83 +142,83 @@ def transporting_demo(apartment_name, robot_name):
             bowl_desig = move_and_detect(ObjectType.BOWL)
             TransportAction(bowl_desig, [Arms.LEFT], [bowl_target_pose]).resolve().perform()
 
-        if robot.name == "iCub":
-            spoon_desig = move_and_detect(ObjectType.SPOON)
-
-            TransportAction(spoon_desig, [Arms.LEFT], [spoon_target_pose]).resolve().perform()
-            clear_output()
-        else:
-
-            # Finding and navigating to the drawer holding the spoon
-            handle_desig = ObjectPart(names=["handle_cab10_t"], part_of=apartment_desig.resolve())
-            closed_location, opened_location = AccessingLocation(handle_desig=handle_desig.resolve(),
-                                                                 robot_desig=robot_desig.resolve()).resolve()
-
-            NavigateAction([closed_location.pose]).resolve().perform()
-
-            OpenAction(object_designator_description=handle_desig, arms=[closed_location.arms[0]],
-                       start_goal_location=[closed_location, opened_location]).resolve().perform()
-            spoon.detach(apartment)
-
-            # Detect and pickup the spoon
-            ParkArmsAction([Arms.BOTH]).resolve().perform()
-            MoveTorsoAction([TorsoState.HIGH]).resolve().perform()
-            LookAtAction([apartment.get_link_pose("handle_cab10_t")]).resolve().perform()
-
-            spoon_desig = DetectAction(BelieveObject(types=[ObjectType.SPOON])).resolve().perform()
-
-            if robot.name in {"iai_donbot", "fetch"}:
-                ParkArmsAction([Arms.BOTH]).resolve().perform()
-                PickUpAction(spoon_desig, [Arms.LEFT], [Grasp.TOP]).resolve().perform()
-
-                ParkArmsAction([Arms.BOTH]).resolve().perform()
-
-                # Find a pose to place the spoon, move and then place it
-                placing_loc = CostmapLocation(target=spoon_target_pose, reachable_for=robot_desig.resolve(),
-                                              reachable_arm=Arms.LEFT,
-                                              used_grasps=[Grasp.TOP], object_in_hand=spoon_desig).resolve()
-
-                NavigateAction([placing_loc.pose]).resolve().perform()
-
-                PlaceAction(spoon_desig, [spoon_target_pose], [Arms.LEFT]).resolve().perform()
-
-                ParkArmsAction([Arms.BOTH]).resolve().perform()
-
-                NavigateAction([closed_location.pose]).resolve().perform()
-
-                CloseAction(object_designator_description=handle_desig, arms=[closed_location.arms[0]],
-                            start_goal_location=[opened_location, closed_location]).resolve().perform()
-
-                ParkArmsAction([Arms.BOTH]).resolve().perform()
-            else:
-                pickup_arm = Arms.LEFT if closed_location.arms[0] == Arms.RIGHT else Arms.RIGHT
-                try:
-                    PickUpAction(spoon_desig, [pickup_arm], [Grasp.TOP]).resolve().perform()
-                except IKError:
-                    pickup_loc = CostmapLocation(target=spoon_desig, reachable_for=robot_desig.resolve(),
-                                                 reachable_arm=pickup_arm, used_grasps=[Grasp.TOP]).resolve()
-                    ParkArmsAction([Arms.BOTH]).resolve().perform()
-                    NavigateActionPerformable(pickup_loc.pose).perform()
-                    PickUpAction(spoon_desig, [pickup_arm], [Grasp.TOP]).resolve().perform()
-
-                ParkArmsAction([Arms.LEFT if pickup_arm == Arms.LEFT else Arms.RIGHT]).resolve().perform()
-
-                NavigateAction([opened_location.pose]).resolve().perform()
-
-                CloseAction(object_designator_description=handle_desig, arms=[closed_location.arms[0]],
-                            start_goal_location=[opened_location, closed_location]).resolve().perform()
-
-                ParkArmsAction([Arms.BOTH]).resolve().perform()
-
-                MoveTorsoAction([TorsoState.MID]).resolve().perform()
-
-                # Find a pose to place the spoon, move and then place it
-                placing_loc = CostmapLocation(target=spoon_target_pose, reachable_for=robot_desig.resolve(),
-                                              reachable_arm=pickup_arm, used_grasps=[Grasp.TOP],
-                                              object_in_hand=spoon_desig).resolve()
-
-                NavigateAction([placing_loc.pose]).resolve().perform()
-
-                PlaceAction(spoon_desig, [spoon_target_pose], [pickup_arm]).resolve().perform()
-
-                ParkArmsAction([Arms.BOTH]).resolve().perform()
+        # if robot.name == "iCub":
+        #     spoon_desig = move_and_detect(ObjectType.SPOON)
+        #
+        #     TransportAction(spoon_desig, [Arms.LEFT], [spoon_target_pose]).resolve().perform()
+        #     clear_output()
+        # else:
+        #
+        #     # Finding and navigating to the drawer holding the spoon
+        #     handle_desig = ObjectPart(names=["handle_cab10_t"], part_of=apartment_desig.resolve())
+        #     closed_location, opened_location = AccessingLocation(handle_desig=handle_desig.resolve(),
+        #                                                          robot_desig=robot_desig.resolve()).resolve()
+        #
+        #     NavigateAction([closed_location.pose]).resolve().perform()
+        #
+        #     OpenAction(object_designator_description=handle_desig, arms=[closed_location.arms[0]],
+        #                start_goal_location=[closed_location, opened_location]).resolve().perform()
+        #     spoon.detach(apartment)
+        #
+        #     # Detect and pickup the spoon
+        #     ParkArmsAction([Arms.BOTH]).resolve().perform()
+        #     MoveTorsoAction([TorsoState.HIGH]).resolve().perform()
+        #     LookAtAction([apartment.get_link_pose("handle_cab10_t")]).resolve().perform()
+        #
+        #     spoon_desig = DetectAction(BelieveObject(types=[ObjectType.SPOON])).resolve().perform()
+        #
+        #     if robot.name in {"iai_donbot", "fetch"}:
+        #         ParkArmsAction([Arms.BOTH]).resolve().perform()
+        #         PickUpAction(spoon_desig, [Arms.LEFT], [Grasp.TOP]).resolve().perform()
+        #
+        #         ParkArmsAction([Arms.BOTH]).resolve().perform()
+        #
+        #         # Find a pose to place the spoon, move and then place it
+        #         placing_loc = CostmapLocation(target=spoon_target_pose, reachable_for=robot_desig.resolve(),
+        #                                       reachable_arm=Arms.LEFT,
+        #                                       used_grasps=[Grasp.TOP], object_in_hand=spoon_desig).resolve()
+        #
+        #         NavigateAction([placing_loc.pose]).resolve().perform()
+        #
+        #         PlaceAction(spoon_desig, [spoon_target_pose], [Arms.LEFT]).resolve().perform()
+        #
+        #         ParkArmsAction([Arms.BOTH]).resolve().perform()
+        #
+        #         NavigateAction([closed_location.pose]).resolve().perform()
+        #
+        #         CloseAction(object_designator_description=handle_desig, arms=[closed_location.arms[0]],
+        #                     start_goal_location=[opened_location, closed_location]).resolve().perform()
+        #
+        #         ParkArmsAction([Arms.BOTH]).resolve().perform()
+        #     else:
+        #         pickup_arm = Arms.LEFT if closed_location.arms[0] == Arms.RIGHT else Arms.RIGHT
+        #         try:
+        #             PickUpAction(spoon_desig, [pickup_arm], [Grasp.TOP]).resolve().perform()
+        #         except IKError:
+        #             pickup_loc = CostmapLocation(target=spoon_desig, reachable_for=robot_desig.resolve(),
+        #                                          reachable_arm=pickup_arm, used_grasps=[Grasp.TOP]).resolve()
+        #             ParkArmsAction([Arms.BOTH]).resolve().perform()
+        #             NavigateActionPerformable(pickup_loc.pose).perform()
+        #             PickUpAction(spoon_desig, [pickup_arm], [Grasp.TOP]).resolve().perform()
+        #
+        #         ParkArmsAction([Arms.LEFT if pickup_arm == Arms.LEFT else Arms.RIGHT]).resolve().perform()
+        #
+        #         NavigateAction([opened_location.pose]).resolve().perform()
+        #
+        #         CloseAction(object_designator_description=handle_desig, arms=[closed_location.arms[0]],
+        #                     start_goal_location=[opened_location, closed_location]).resolve().perform()
+        #
+        #         ParkArmsAction([Arms.BOTH]).resolve().perform()
+        #
+        #         MoveTorsoAction([TorsoState.MID]).resolve().perform()
+        #
+        #         # Find a pose to place the spoon, move and then place it
+        #         placing_loc = CostmapLocation(target=spoon_target_pose, reachable_for=robot_desig.resolve(),
+        #                                       reachable_arm=pickup_arm, used_grasps=[Grasp.TOP],
+        #                                       object_in_hand=spoon_desig).resolve()
+        #
+        #         NavigateAction([placing_loc.pose]).resolve().perform()
+        #
+        #         PlaceAction(spoon_desig, [spoon_target_pose], [pickup_arm]).resolve().perform()
+        #
+        #         ParkArmsAction([Arms.BOTH]).resolve().perform()
