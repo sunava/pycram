@@ -56,6 +56,12 @@ WORKDIR ${PYCRAM_WS}/src/
 RUN git clone https://github.com/hello-robot/stretch_ros.git
 RUN git clone https://github.com/issaiass/realsense2_description.git
 
+
+# Stretch resources
+WORKDIR ${PYCRAM_WS}/src/
+RUN git clone https://github.com/sunava/robocane_manual.git
+
+
 # Tiago resources
 WORKDIR ${PYCRAM_WS}/src/
 RUN git clone https://github.com/code-iai/iai_tiago.git
