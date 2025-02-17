@@ -27,8 +27,9 @@
   <material name="black">
     <color rgba="0.2 0.2 0.2 1"/>
   </material>
-
-
+  <material name="floor_color">
+    <color rgba="0.76 0.60 0.42 0.6"/>
+  </material>
 
   <link name="root">
     <inertial>
@@ -60,6 +61,33 @@
       <mass value="0.0"/>
       <inertia ixx="0.0" ixy="0.0" ixz="0.0" iyy="0.0" iyz="0.0" izz="0.0"/>
     </inertial>
+  </link>
+
+
+  <joint name="Floor_joint" type="fixed">
+    <origin xyz="5.5 3.0 0.0" rpy="1.570796012878418 0.0 0.0"/>
+    <parent link="Environment"/>
+    <child link="Floor_link"/>
+  </joint>
+  <link name="Floor_link">
+    <inertial>
+      <origin xyz="0.0 0.0 0.0" rpy="0.0 0.0 0.0" />
+      <mass value="0.0" />
+      <inertia ixx="0.0" ixy="0.0" ixz="0.0" iyy="0.0" iyz="0.0" izz="0.0" />
+    </inertial>
+    <visual name="Floor">
+      <origin xyz="0.0 0.0 0.0" rpy="0.0 0.0 0.0" />
+      <geometry>
+      	<box size="10 0.2 10.1"/>
+      </geometry>
+      <material name="floor_color"/>
+    </visual>
+    <collision>
+      <origin rpy="0 0 0" xyz="0 0 0"/>
+      <geometry>
+        <box size="11 0.1 8.0"/>
+      </geometry>
+    </collision>
   </link>
 
   <!-- DOORS -->
