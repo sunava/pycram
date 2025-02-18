@@ -105,14 +105,14 @@
     <visual name="Door_0">
       <origin xyz="0.0 0.0 0.0" rpy="0.0 0.0 0.0"/>
       <geometry>
-      	<mesh filename="package://robocane_manual/robocane_env/robocane_new/meshes/obj/Cube_026.dae" scale="1.0 1.0 1.0"/>
+      	<mesh filename="package://robocane_manual/robocane_env/robocane_new/meshes/obj/Cube_026.obj" scale="1.0 1.0 1.0"/>
       </geometry>
       <material name="environment_color"/>
     </visual>
     <collision>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="package://robocane_manual/robocane_env/robocane_new/meshes/obj/Cube_026.dae"/>
+        <mesh filename="package://robocane_manual/robocane_env/robocane_new/meshes/obj/Cube_026.obj"/>
       </geometry>
     </collision>
   </link>
