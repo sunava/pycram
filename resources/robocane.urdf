@@ -1,7 +1,34 @@
 <?xml version="1.0" ?>
 <robot name="root" version="1.0">
-  <material name="standard_material">
-    <color rgba="0.9 0.9 0.9 1.0"/>
+  <material name="blue">
+    <color rgba="0.4 0.4 0.6 1.0"/>
+  </material>
+  <material name="white">
+    <color rgba="1.0 1.0 1.0 1.0"/>
+  </material>
+  <material name="cabinet_handles">
+    <color rgba="0.6 0.6 0.6 1"/>
+  </material>
+  <material name="cabinet_surface">
+    <color rgba="0.4 0.4 0.4 1"/>
+  </material>
+  <material name="oven_silver">
+    <color rgba="0.64 0.66 0.7 1"/>
+  </material>
+  <material name="sink">
+    <color rgba="0.8 0.8 0.8 1"/>
+  </material>
+  <material name="object_mains">
+    <color rgba="0.7 0.7 0.7 1"/>
+  </material>
+  <material name="environment_color">
+    <color rgba="0.85 0.43 0.25 1"/>
+  </material>
+  <material name="black">
+    <color rgba="0.2 0.2 0.2 1"/>
+  </material>
+  <material name="floor_color">
+    <color rgba="0.76 0.60 0.42 0.6"/>
   </material>
 
   <link name="root">
@@ -36,6 +63,33 @@
     </inertial>
   </link>
 
+
+  <joint name="Floor_joint" type="fixed">
+    <origin xyz="5.5 3.0 0.0" rpy="1.570796012878418 0.0 0.0"/>
+    <parent link="Environment"/>
+    <child link="Floor_link"/>
+  </joint>
+  <link name="Floor_link">
+    <inertial>
+      <origin xyz="0.0 0.0 0.0" rpy="0.0 0.0 0.0" />
+      <mass value="0.0" />
+      <inertia ixx="0.0" ixy="0.0" ixz="0.0" iyy="0.0" iyz="0.0" izz="0.0" />
+    </inertial>
+    <visual name="Floor">
+      <origin xyz="0.0 0.0 0.0" rpy="0.0 0.0 0.0" />
+      <geometry>
+      	<box size="10 0.2 10.1"/>
+      </geometry>
+      <material name="floor_color"/>
+    </visual>
+    <collision>
+      <origin rpy="0 0 0" xyz="0 0 0"/>
+      <geometry>
+        <box size="11 0.1 8.0"/>
+      </geometry>
+    </collision>
+  </link>
+
   <!-- DOORS -->
   <joint name="Door_0_joint" type="fixed">
     <origin xyz="-0.034354 -0.036232 1.04066" rpy="-8.526514862000276e-14 0.0 -2.2204464727667867e-15"/>
@@ -51,18 +105,18 @@
     <visual name="Door_0">
       <origin xyz="0.0 0.0 0.0" rpy="0.0 0.0 0.0"/>
       <geometry>
-      	<mesh filename="package://robocane_manual/robocane_env/robocane_new/meshes/obj/Cube_026.obj" scale="1.0 1.0 1.0"/>
+      	<mesh filename="package://robocane_manual/robocane_env/robocane_new/meshes/obj/Cube_026.dae" scale="1.0 1.0 1.0"/>
       </geometry>
-      <material name="standard_material"/>
+      <material name="environment_color"/>
     </visual>
     <collision>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="package://robocane_manual/robocane_env/robocane_new/meshes/obj/Cube_026.obj"/>
+        <mesh filename="package://robocane_manual/robocane_env/robocane_new/meshes/obj/Cube_026.dae"/>
       </geometry>
     </collision>
   </link>
-  
+
   <joint name="Door_1_main_joint" type="fixed">
     <origin xyz="10.95 0.03623 1.039" rpy="0.0 0.0 0.0"/>
     <parent link="Environment"/>
@@ -89,14 +143,14 @@
     <visual name="Door_1_panel">
       <origin xyz="0.0 0.0 0.0" rpy="0.0 0.0 0.0"/>
       <geometry>
-      	<mesh filename="package://robocane_manual/robocane_env/robocane_new/meshes/obj/Office_031.obj" scale="1.0 1.0 1.0"/>
+      	<mesh filename="package://robocane_manual/robocane_env/robocane_new/meshes/obj/Office_031.dae" scale="1.0 1.0 1.0"/>
       </geometry>
-      <material name="standard_material"/>
+      <material name="environment_color"/>
     </visual>
     <collision>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="package://robocane_manual/robocane_env/robocane_new/meshes/obj/Office_031.obj" scale="1.0 1.0 1.0"/>
+        <mesh filename="package://robocane_manual/robocane_env/robocane_new/meshes/obj/Office_031.dae" scale="1.0 1.0 1.0"/>
       </geometry>
     </collision>
   </link>
@@ -114,17 +168,17 @@
     <visual name="Door_1_border">
       <origin xyz="0.0 0.0 0.0" rpy="0.0 0.0 0.0"/>
       <geometry>
-      	<mesh filename="package://robocane_manual/robocane_env/robocane_new/meshes/obj/Cube_012.obj" scale="1.0 1.0 1.0"/>
+      	<mesh filename="package://robocane_manual/robocane_env/robocane_new/meshes/obj/Cube_012.dae" scale="1.0 1.0 1.0"/>
       </geometry>
-      <material name="standard_material"/>
+      <material name="environment_color"/>
     </visual>
     <collision>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="package://robocane_manual/robocane_env/robocane_new/meshes/obj/Cube_012.obj" scale="1.0 1.0 1.0"/>
+        <mesh filename="package://robocane_manual/robocane_env/robocane_new/meshes/obj/Cube_012.dae" scale="1.0 1.0 1.0"/>
       </geometry>
     </collision>
-  </link>  
+  </link>
   <joint name="Door_1_handle_frame_joint" type="fixed">
     <origin xyz="-0.065775 -0.35004 -0.20166" rpy="-8.526514862000276e-14 0.0 -2.2204464727667867e-15"/>
     <parent link="Door_1_main_link"/>
@@ -139,14 +193,14 @@
     <visual name="Door_1_handle_frame">
       <origin xyz="0.0 0.0 0.0" rpy="0.0 0.0 0.0"/>
       <geometry>
-      	<mesh filename="package://robocane_manual/robocane_env/robocane_new/meshes/obj/Office_003.obj" scale="1.0 1.0 1.0"/>
+      	<mesh filename="package://robocane_manual/robocane_env/robocane_new/meshes/obj/Office_003.dae" scale="1.0 1.0 1.0"/>
       </geometry>
-      <material name="standard_material"/>
+      <material name="environment_color"/>
     </visual>
     <collision>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="package://robocane_manual/robocane_env/robocane_new/meshes/obj/Office_003.obj" scale="1.0 1.0 1.0"/>
+        <mesh filename="package://robocane_manual/robocane_env/robocane_new/meshes/obj/Office_003.dae" scale="1.0 1.0 1.0"/>
       </geometry>
     </collision>
   </link>
@@ -164,19 +218,19 @@
     <visual name="Door_1_handle_knob">
       <origin xyz="0.0 0.0 0.0" rpy="0.0 0.0 0.0"/>
       <geometry>
-      	<mesh filename="package://robocane_manual/robocane_env/robocane_new/meshes/obj/Office_051.obj" scale="1.0 1.0 1.0"/>
+      	<mesh filename="package://robocane_manual/robocane_env/robocane_new/meshes/obj/Office_051.dae" scale="1.0 1.0 1.0"/>
       </geometry>
-      <material name="standard_material"/>
+      <material name="environment_color"/>
     </visual>
     <collision>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="package://robocane_manual/robocane_env/robocane_new/meshes/obj/Office_051.obj" scale="1.0 1.0 1.0"/>
+        <mesh filename="package://robocane_manual/robocane_env/robocane_new/meshes/obj/Office_051.dae" scale="1.0 1.0 1.0"/>
       </geometry>
     </collision>
   </link>
-  
-  
+
+
   <joint name="Door_2_main_joint" type="fixed">
     <origin xyz="9.0617 4.1219 1.0343" rpy="0.0 0.0 0.0"/>
     <parent link="Environment"/>
@@ -203,14 +257,14 @@
     <visual name="Door_2_panel">
       <origin xyz="0.0 0.0 0.0" rpy="0.0 0.0 0.0"/>
       <geometry>
-      	<mesh filename="package://robocane_manual/robocane_env/robocane_new/meshes/obj/Office_019.obj" scale="1.0 1.0 1.0"/>
+      	<mesh filename="package://robocane_manual/robocane_env/robocane_new/meshes/obj/Office_019.dae" scale="1.0 1.0 1.0"/>
       </geometry>
-      <material name="standard_material"/>
+      <material name="environment_color"/>
     </visual>
     <collision>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="package://robocane_manual/robocane_env/robocane_new/meshes/obj/Office_019.obj" scale="1.0 1.0 1.0"/>
+        <mesh filename="package://robocane_manual/robocane_env/robocane_new/meshes/obj/Office_019.dae" scale="1.0 1.0 1.0"/>
       </geometry>
     </collision>
   </link>
@@ -228,14 +282,14 @@
     <visual name="Door_2_handle_frame">
       <origin xyz="0.0 0.0 0.0" rpy="0.0 0.0 0.0"/>
       <geometry>
-      	<mesh filename="package://robocane_manual/robocane_env/robocane_new/meshes/obj/Office_044.obj" scale="1.0 1.0 1.0"/>
+      	<mesh filename="package://robocane_manual/robocane_env/robocane_new/meshes/obj/Office_044.dae" scale="1.0 1.0 1.0"/>
       </geometry>
-      <material name="standard_material"/>
+      <material name="environment_color"/>
     </visual>
     <collision>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="package://robocane_manual/robocane_env/robocane_new/meshes/obj/Office_044.obj" scale="1.0 1.0 1.0"/>
+        <mesh filename="package://robocane_manual/robocane_env/robocane_new/meshes/obj/Office_044.dae" scale="1.0 1.0 1.0"/>
       </geometry>
     </collision>
   </link>
@@ -253,14 +307,14 @@
     <visual name="Door_2_handle_knob">
       <origin xyz="0.0 0.0 0.0" rpy="0.0 0.0 0.0"/>
       <geometry>
-      	<mesh filename="package://robocane_manual/robocane_env/robocane_new/meshes/obj/Office_048.obj" scale="1.0 1.0 1.0"/>
+      	<mesh filename="package://robocane_manual/robocane_env/robocane_new/meshes/obj/Office_048.dae" scale="1.0 1.0 1.0"/>
       </geometry>
-      <material name="standard_material"/>
+      <material name="environment_color"/>
     </visual>
     <collision>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="package://robocane_manual/robocane_env/robocane_new/meshes/obj/Office_048.obj" scale="1.0 1.0 1.0"/>
+        <mesh filename="package://robocane_manual/robocane_env/robocane_new/meshes/obj/Office_048.dae" scale="1.0 1.0 1.0"/>
       </geometry>
     </collision>
   </link>
@@ -283,18 +337,18 @@
     <visual name="Column_0">
       <origin xyz="0.0 0.0 0.0" rpy="0.0 0.0 0.0"/>
       <geometry>
-      	<mesh filename="package://robocane_manual/robocane_env/robocane_new/meshes/obj/Cube_014.obj" scale="1.0 1.0 1.0"/>
+      	<mesh filename="package://robocane_manual/robocane_env/robocane_new/meshes/obj/Cube_014.dae" scale="1.0 1.0 1.0"/>
       </geometry>
-      <material name="standard_material"/>
+      <material name="white"/>
     </visual>
     <collision>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="package://robocane_manual/robocane_env/robocane_new/meshes/obj/Cube_014.obj" scale="1.0 1.0 1.0"/>
+        <mesh filename="package://robocane_manual/robocane_env/robocane_new/meshes/obj/Cube_014.dae" scale="1.0 1.0 1.0"/>
       </geometry>
     </collision>
   </link>
-  
+
   <!-- Furniture -->
     <joint name="Trash_1_joint" type="fixed">
     <origin xyz="0.107491 0.72737 0" rpy="-8.526514862000276e-14 0.0 -2.2204464727667867e-15"/>
@@ -310,19 +364,19 @@
     <visual name="Trash_1">
       <origin xyz="0.0 0.0 0.0" rpy="0.0 0.0 0.0"/>
       <geometry>
-      	<mesh filename="package://robocane_manual/robocane_env/robocane_new/meshes/obj/Cube_027.obj" scale="1.0 1.0 1.0"/>
+      	<mesh filename="package://robocane_manual/robocane_env/robocane_new/meshes/obj/Cube_027.dae" scale="1.0 1.0 1.0"/>
       </geometry>
-      <material name="standard_material"/>
+      <material name="environment_color"/>
     </visual>
     <collision>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="package://robocane_manual/robocane_env/robocane_new/meshes/obj/Cube_027.obj" scale="1.0 1.0 1.0"/>
+        <mesh filename="package://robocane_manual/robocane_env/robocane_new/meshes/obj/Cube_027.dae" scale="1.0 1.0 1.0"/>
       </geometry>
     </collision>
   </link>
-  
-  
+
+
   <joint name="TV_0_joint" type="fixed">
     <origin xyz="2.8288 6.4871 1.2664" rpy="-8.526514862000276e-14 0.0 -2.2204464727667867e-15"/>
     <parent link="Environment"/>
@@ -337,19 +391,19 @@
     <visual name="TV_0">
       <origin xyz="0.0 0.0 0.0" rpy="0.0 0.0 0.0"/>
       <geometry>
-      	<mesh filename="package://robocane_manual/robocane_env/robocane_new/meshes/obj/Office_004.obj" scale="1.0 1.0 1.0"/>
+      	<mesh filename="package://robocane_manual/robocane_env/robocane_new/meshes/obj/Office_004.dae" scale="1.0 1.0 1.0"/>
       </geometry>
-      <material name="standard_material"/>
+      <material name="environment_color"/>
     </visual>
     <collision>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="package://robocane_manual/robocane_env/robocane_new/meshes/obj/Office_004.obj" scale="1.0 1.0 1.0"/>
+        <mesh filename="package://robocane_manual/robocane_env/robocane_new/meshes/obj/Office_004.dae" scale="1.0 1.0 1.0"/>
       </geometry>
     </collision>
   </link>
-  
-  
+
+
     <joint name="FloorBar_1_joint" type="fixed">
     <origin xyz="0.491986 3.28716 0.06721" rpy="-8.526514862000276e-14 0.0 -2.2204464727667867e-15"/>
     <parent link="Environment"/>
@@ -364,18 +418,18 @@
     <visual name="FloorBar_1">
       <origin xyz="0.0 0.0 0.0" rpy="0.0 0.0 0.0"/>
       <geometry>
-      	<mesh filename="package://robocane_manual/robocane_env/robocane_new/meshes/obj/Cube_119.obj" scale="1.0 1.0 1.0"/>
+      	<mesh filename="package://robocane_manual/robocane_env/robocane_new/meshes/obj/Cube_119.dae" scale="1.0 1.0 1.0"/>
       </geometry>
-      <material name="standard_material"/>
+      <material name="environment_color"/>
     </visual>
     <collision>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="package://robocane_manual/robocane_env/robocane_new/meshes/obj/Cube_119.obj" scale="1.0 1.0 1.0"/>
+        <mesh filename="package://robocane_manual/robocane_env/robocane_new/meshes/obj/Cube_119.dae" scale="1.0 1.0 1.0"/>
       </geometry>
     </collision>
   </link>
-  
+
   <joint name="Shelf_0_joint" type="fixed">
     <origin xyz="3.8332 1.1975 0.33" rpy="3.14 0.0 3.14"/>
     <parent link="Environment"/>
@@ -390,18 +444,18 @@
     <visual name="Shelf_0">
       <origin xyz="0.0 0.0 0.0" rpy="0.0 0.0 0.0"/>
       <geometry>
-      	<mesh filename="package://robocane_manual/robocane_env/robocane_new/meshes/obj/Cube_001.obj" scale="1.0 1.0 1.0"/>
+      	<mesh filename="package://robocane_manual/robocane_env/robocane_new/meshes/obj/Cube_001.dae" scale="1.0 1.0 1.0"/>
       </geometry>
-      <material name="standard_material"/>
+      <material name="environment_color"/>
     </visual>
     <collision>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="package://robocane_manual/robocane_env/robocane_new/meshes/obj/Cube_001.obj" scale="1.0 1.0 1.0"/>
+        <mesh filename="package://robocane_manual/robocane_env/robocane_new/meshes/obj/Cube_001.dae" scale="1.0 1.0 1.0"/>
       </geometry>
     </collision>
   </link>
-  
+
   <joint name="Shelf_1_main_joint" type="fixed">
     <origin xyz="1.4694 6.6989 0.93986" rpy="-8.526514862000276e-14 0.0 -2.2204464727667867e-15"/>
     <parent link="Environment"/>
@@ -416,14 +470,14 @@
     <visual name="Shelf_1">
       <origin xyz="0.0 0.0 0.0" rpy="0.0 0.0 0.0"/>
       <geometry>
-      	<mesh filename="package://robocane_manual/robocane_env/robocane_new/meshes/obj/Office_005.obj" scale="1.0 1.0 1.0"/>
+      	<mesh filename="package://robocane_manual/robocane_env/robocane_new/meshes/obj/Office_005.dae" scale="1.0 1.0 1.0"/>
       </geometry>
-      <material name="standard_material"/>
+      <material name="environment_color"/>
     </visual>
     <collision>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="package://robocane_manual/robocane_env/robocane_new/meshes/obj/Office_005.obj" scale="1.0 1.0 1.0"/>
+        <mesh filename="package://robocane_manual/robocane_env/robocane_new/meshes/obj/Office_005.dae" scale="1.0 1.0 1.0"/>
       </geometry>
     </collision>
   </link>
@@ -514,14 +568,14 @@
     <visual name="Shelf_2">
       <origin xyz="0.0 0.0 0.0" rpy="0.0 0.0 0.0"/>
       <geometry>
-      	<mesh filename="package://robocane_manual/robocane_env/robocane_new/meshes/obj/Office_022.obj" scale="1.0 1.0 1.0"/>
+      	<mesh filename="package://robocane_manual/robocane_env/robocane_new/meshes/obj/Office_022.dae" scale="1.0 1.0 1.0"/>
       </geometry>
-      <material name="standard_material"/>
+      <material name="environment_color"/>
     </visual>
     <collision>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="package://robocane_manual/robocane_env/robocane_new/meshes/obj/Office_022.obj" scale="1.0 1.0 1.0"/>
+        <mesh filename="package://robocane_manual/robocane_env/robocane_new/meshes/obj/Office_022.dae" scale="1.0 1.0 1.0"/>
       </geometry>
     </collision>
   </link>
@@ -541,14 +595,14 @@
     <visual name="Shelf_3">
       <origin xyz="0.0 0.0 0.0" rpy="0.0 0.0 0.0"/>
       <geometry>
-      	<mesh filename="package://robocane_manual/robocane_env/robocane_new/meshes/obj/defaultMaterial.obj" scale="1.0 1.0 1.0"/>
+      	<mesh filename="package://robocane_manual/robocane_env/robocane_new/meshes/obj/defaultMaterial.dae" scale="1.0 1.0 1.0"/>
       </geometry>
-      <material name="standard_material"/>
+      <material name="environment_color"/>
     </visual>
     <collision>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="package://robocane_manual/robocane_env/robocane_new/meshes/obj/defaultMaterial.obj" scale="1.0 1.0 1.0"/>
+        <mesh filename="package://robocane_manual/robocane_env/robocane_new/meshes/obj/defaultMaterial.dae" scale="1.0 1.0 1.0"/>
       </geometry>
     </collision>
   </link>
@@ -580,14 +634,14 @@
     <visual name="Cupboard_0_faces">
       <origin xyz="0.0 0.0 0.0" rpy="0.0 0.0 0.0"/>
       <geometry>
-      	<mesh filename="package://robocane_manual/robocane_env/robocane_new/meshes/obj/Cube_130.obj" scale="1.0 1.0 1.0"/>
+      	<mesh filename="package://robocane_manual/robocane_env/robocane_new/meshes/obj/Cube_130.dae" scale="1.0 1.0 1.0"/>
       </geometry>
-      <material name="standard_material"/>
+      <material name="environment_color"/>
     </visual>
     <collision>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="package://robocane_manual/robocane_env/robocane_new/meshes/obj/Cube_130.obj" scale="1.0 1.0 1.0"/>
+        <mesh filename="package://robocane_manual/robocane_env/robocane_new/meshes/obj/Cube_130.dae" scale="1.0 1.0 1.0"/>
       </geometry>
     </collision>
   </link>
@@ -605,18 +659,18 @@
     <visual name="Cupboard_0_edges">
       <origin xyz="0.0 0.0 0.0" rpy="0.0 0.0 0.0"/>
       <geometry>
-      	<mesh filename="package://robocane_manual/robocane_env/robocane_new/meshes/obj/Cube_129.obj" scale="1.0 1.0 1.0"/>
+      	<mesh filename="package://robocane_manual/robocane_env/robocane_new/meshes/obj/Cube_129.dae" scale="1.0 1.0 1.0"/>
       </geometry>
-      <material name="standard_material"/>
+      <material name="environment_color"/>
     </visual>
     <collision>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="package://robocane_manual/robocane_env/robocane_new/meshes/obj/Cube_129.obj" scale="1.0 1.0 1.0"/>
+        <mesh filename="package://robocane_manual/robocane_env/robocane_new/meshes/obj/Cube_129.dae" scale="1.0 1.0 1.0"/>
       </geometry>
     </collision>
   </link>
-  
+
   <joint name="Table_0_joint" type="fixed">
     <!--origin xyz="6.5785 5.5572 0.18149" rpy="-8.526514862000276e-14 0.0 -2.2204464727667867e-15"/-->
     <origin xyz="2.7 5.5572 0.18149" rpy="-8.526514862000276e-14 0.0 -2.2204464727667867e-15"/>
@@ -632,19 +686,19 @@
     <visual name="Table_0">
       <origin xyz="0.0 0.0 0.0" rpy="0.0 0.0 0.0"/>
       <geometry>
-      	<mesh filename="package://robocane_manual/robocane_env/robocane_new/meshes/obj/Cube_004.obj" scale="1.0 1.0 1.0"/>
+      	<mesh filename="package://robocane_manual/robocane_env/robocane_new/meshes/obj/Cube_004.dae" scale="1.0 1.0 1.0"/>
       </geometry>
-      <material name="standard_material"/>
+      <material name="white"/>
     </visual>
     <collision>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="package://robocane_manual/robocane_env/robocane_new/meshes/obj/Cube_004.obj" scale="1.0 1.0 1.0"/>
+        <mesh filename="package://robocane_manual/robocane_env/robocane_new/meshes/obj/Cube_004.dae" scale="1.0 1.0 1.0"/>
       </geometry>
     </collision>
   </link>
-  
-  
+
+
   <joint name="Chair_0_main_joint" type="fixed">
     <origin xyz="7.9516 5.0083 0.39878" rpy="-8.526514862000276e-14 0.0 -2.2204464727667867e-15"/>
     <parent link="Environment"/>
@@ -671,14 +725,14 @@
     <visual name="Chair_0">
       <origin xyz="0.0 0.0 0.0" rpy="0.0 0.0 0.0"/>
       <geometry>
-      	<mesh filename="package://robocane_manual/robocane_env/robocane_new/meshes/obj/Cube_217.obj" scale="1.0 1.0 1.0"/>
+      	<mesh filename="package://robocane_manual/robocane_env/robocane_new/meshes/obj/Cube_097.dae" scale="1.0 1.0 1.0"/>
       </geometry>
-      <material name="standard_material"/>
+      <material name="environment_color"/>
     </visual>
     <collision>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="package://robocane_manual/robocane_env/robocane_new/meshes/obj/Cube_217.obj" scale="1.0 1.0 1.0"/>
+        <mesh filename="package://robocane_manual/robocane_env/robocane_new/meshes/obj/Cube_097.dae" scale="1.0 1.0 1.0"/>
       </geometry>
     </collision>
   </link>
@@ -696,19 +750,19 @@
     <visual name="Chair_0">
       <origin xyz="0.0 0.0 0.0" rpy="0.0 0.0 0.0"/>
       <geometry>
-      	<mesh filename="package://robocane_manual/robocane_env/robocane_new/meshes/obj/Cube_219.obj" scale="1.0 1.0 1.0"/>
+      	<mesh filename="package://robocane_manual/robocane_env/robocane_new/meshes/obj/Cube_219.dae" scale="1.0 1.0 1.0"/>
       </geometry>
-      <material name="standard_material"/>
+      <material name="environment_color"/>
     </visual>
     <collision>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="package://robocane_manual/robocane_env/robocane_new/meshes/obj/Cube_219.obj" scale="1.0 1.0 1.0"/>
+        <mesh filename="package://robocane_manual/robocane_env/robocane_new/meshes/obj/Cube_219.dae" scale="1.0 1.0 1.0"/>
       </geometry>
     </collision>
   </link>
 
-  
+
   <joint name="Chair_1_main_joint" type="fixed">
     <origin xyz="7.9516 5.6266 0.4003" rpy="-8.526514862000276e-14 0.0 -2.2204464727667867e-15"/>
     <parent link="Environment"/>
@@ -735,14 +789,14 @@
     <visual name="Chair_1">
       <origin xyz="0.0 0.0 0.0" rpy="0.0 0.0 0.0"/>
       <geometry>
-      	<mesh filename="package://robocane_manual/robocane_env/robocane_new/meshes/obj/Cube_097.obj" scale="1.0 1.0 1.0"/>
+      	<mesh filename="package://robocane_manual/robocane_env/robocane_new/meshes/obj/Cube_097.dae" scale="1.0 1.0 1.0"/>
       </geometry>
-      <material name="standard_material"/>
+      <material name="environment_color"/>
     </visual>
     <collision>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="package://robocane_manual/robocane_env/robocane_new/meshes/obj/Cube_097.obj" scale="1.0 1.0 1.0"/>
+        <mesh filename="package://robocane_manual/robocane_env/robocane_new/meshes/obj/Cube_097.dae" scale="1.0 1.0 1.0"/>
       </geometry>
     </collision>
   </link>
@@ -760,19 +814,19 @@
     <visual name="Chair_1">
       <origin xyz="0.0 0.0 0.0" rpy="0.0 0.0 0.0"/>
       <geometry>
-      	<mesh filename="package://robocane_manual/robocane_env/robocane_new/meshes/obj/Cube_219.obj" scale="1.0 1.0 1.0"/>
+      	<mesh filename="package://robocane_manual/robocane_env/robocane_new/meshes/obj/Cube_219.dae" scale="1.0 1.0 1.0"/>
       </geometry>
-      <material name="standard_material"/>
+      <material name="environment_color"/>
     </visual>
     <collision>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="package://robocane_manual/robocane_env/robocane_new/meshes/obj/Cube_219.obj" scale="1.0 1.0 1.0"/>
+        <mesh filename="package://robocane_manual/robocane_env/robocane_new/meshes/obj/Cube_219.dae" scale="1.0 1.0 1.0"/>
       </geometry>
     </collision>
   </link>
-  
-  
+
+
   <joint name="Chair_2_main_joint" type="fixed">
     <origin xyz="7.9516 6.2475 0.39878" rpy="-8.526514862000276e-14 0.0 -2.2204464727667867e-15"/>
     <parent link="Environment"/>
@@ -799,14 +853,14 @@
     <visual name="Chair_2">
       <origin xyz="0.0 0.0 0.0" rpy="0.0 0.0 0.0"/>
       <geometry>
-      	<mesh filename="package://robocane_manual/robocane_env/robocane_new/meshes/obj/Cube_221.obj" scale="1.0 1.0 1.0"/>
+      	<mesh filename="package://robocane_manual/robocane_env/robocane_new/meshes/obj/Cube_221.dae" scale="1.0 1.0 1.0"/>
       </geometry>
-      <material name="standard_material"/>
+      <material name="environment_color"/>
     </visual>
     <collision>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="package://robocane_manual/robocane_env/robocane_new/meshes/obj/Cube_221.obj" scale="1.0 1.0 1.0"/>
+        <mesh filename="package://robocane_manual/robocane_env/robocane_new/meshes/obj/Cube_221.dae" scale="1.0 1.0 1.0"/>
       </geometry>
     </collision>
   </link>
@@ -824,18 +878,18 @@
     <visual name="Chair_2">
       <origin xyz="0.0 0.0 0.0" rpy="0.0 0.0 0.0"/>
       <geometry>
-      	<mesh filename="package://robocane_manual/robocane_env/robocane_new/meshes/obj/Cube_223.obj" scale="1.0 1.0 1.0"/>
+      	<mesh filename="package://robocane_manual/robocane_env/robocane_new/meshes/obj/Cube_223.dae" scale="1.0 1.0 1.0"/>
       </geometry>
-      <material name="standard_material"/>
+      <material name="environment_color"/>
     </visual>
     <collision>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="package://robocane_manual/robocane_env/robocane_new/meshes/obj/Cube_223.obj" scale="1.0 1.0 1.0"/>
+        <mesh filename="package://robocane_manual/robocane_env/robocane_new/meshes/obj/Cube_223.dae" scale="1.0 1.0 1.0"/>
       </geometry>
     </collision>
   </link>
-  
+
 
 
   <joint name="Chair_3_main_joint" type="fixed">
@@ -864,14 +918,14 @@
     <visual name="Chair_3">
       <origin xyz="0.0 0.0 0.0" rpy="0.0 0.0 0.0"/>
       <geometry>
-      	<mesh filename="package://robocane_manual/robocane_env/robocane_new/meshes/obj/Cube_229.obj" scale="1.0 1.0 1.0"/>
+      	<mesh filename="package://robocane_manual/robocane_env/robocane_new/meshes/obj/Cube_229.dae" scale="1.0 1.0 1.0"/>
       </geometry>
-      <material name="standard_material"/>
+      <material name="environment_color"/>
     </visual>
     <collision>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="package://robocane_manual/robocane_env/robocane_new/meshes/obj/Cube_229.obj" scale="1.0 1.0 1.0"/>
+        <mesh filename="package://robocane_manual/robocane_env/robocane_new/meshes/obj/Cube_229.dae" scale="1.0 1.0 1.0"/>
       </geometry>
     </collision>
   </link>
@@ -889,14 +943,14 @@
     <visual name="Chair_3">
       <origin xyz="0.0 0.0 0.0" rpy="0.0 0.0 0.0"/>
       <geometry>
-      	<mesh filename="package://robocane_manual/robocane_env/robocane_new/meshes/obj/Cube_231.obj" scale="1.0 1.0 1.0"/>
+      	<mesh filename="package://robocane_manual/robocane_env/robocane_new/meshes/obj/Cube_231.dae" scale="1.0 1.0 1.0"/>
       </geometry>
-      <material name="standard_material"/>
+      <material name="environment_color"/>
     </visual>
     <collision>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="package://robocane_manual/robocane_env/robocane_new/meshes/obj/Cube_231.obj" scale="1.0 1.0 1.0"/>
+        <mesh filename="package://robocane_manual/robocane_env/robocane_new/meshes/obj/Cube_231.dae" scale="1.0 1.0 1.0"/>
       </geometry>
     </collision>
   </link>
@@ -928,14 +982,14 @@
     <visual name="Chair_4">
       <origin xyz="0.0 0.0 0.0" rpy="0.0 0.0 0.0"/>
       <geometry>
-      	<mesh filename="package://robocane_manual/robocane_env/robocane_new/meshes/obj/Cube_225.obj" scale="1.0 1.0 1.0"/>
+      	<mesh filename="package://robocane_manual/robocane_env/robocane_new/meshes/obj/Cube_225.dae" scale="1.0 1.0 1.0"/>
       </geometry>
-      <material name="standard_material"/>
+      <material name="environment_color"/>
     </visual>
     <collision>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="package://robocane_manual/robocane_env/robocane_new/meshes/obj/Cube_225.obj" scale="1.0 1.0 1.0"/>
+        <mesh filename="package://robocane_manual/robocane_env/robocane_new/meshes/obj/Cube_225.dae" scale="1.0 1.0 1.0"/>
       </geometry>
     </collision>
   </link>
@@ -953,14 +1007,14 @@
     <visual name="Chair_4">
       <origin xyz="0.0 0.0 0.0" rpy="0.0 0.0 0.0"/>
       <geometry>
-      	<mesh filename="package://robocane_manual/robocane_env/robocane_new/meshes/obj/Cube_227.obj" scale="1.0 1.0 1.0"/>
+      	<mesh filename="package://robocane_manual/robocane_env/robocane_new/meshes/obj/Cube_227.dae" scale="1.0 1.0 1.0"/>
       </geometry>
-      <material name="standard_material"/>
+      <material name="environment_color"/>
     </visual>
     <collision>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="package://robocane_manual/robocane_env/robocane_new/meshes/obj/Cube_227.obj" scale="1.0 1.0 1.0"/>
+        <mesh filename="package://robocane_manual/robocane_env/robocane_new/meshes/obj/Cube_227.dae" scale="1.0 1.0 1.0"/>
       </geometry>
     </collision>
   </link>
@@ -992,14 +1046,14 @@
     <visual name="Chair_5">
       <origin xyz="0.0 0.0 0.0" rpy="0.0 0.0 0.0"/>
       <geometry>
-      	<mesh filename="package://robocane_manual/robocane_env/robocane_new/meshes/obj/Cube_233.obj" scale="1.0 1.0 1.0"/>
+      	<mesh filename="package://robocane_manual/robocane_env/robocane_new/meshes/obj/Cube_233.dae" scale="1.0 1.0 1.0"/>
       </geometry>
-      <material name="standard_material"/>
+      <material name="environment_color"/>
     </visual>
     <collision>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="package://robocane_manual/robocane_env/robocane_new/meshes/obj/Cube_233.obj" scale="1.0 1.0 1.0"/>
+        <mesh filename="package://robocane_manual/robocane_env/robocane_new/meshes/obj/Cube_233.dae" scale="1.0 1.0 1.0"/>
       </geometry>
     </collision>
   </link>
@@ -1017,20 +1071,20 @@
     <visual name="Chair_5">
       <origin xyz="0.0 0.0 0.0" rpy="0.0 0.0 0.0"/>
       <geometry>
-      	<mesh filename="package://robocane_manual/robocane_env/robocane_new/meshes/obj/Cube_235.obj" scale="1.0 1.0 1.0"/>
+      	<mesh filename="package://robocane_manual/robocane_env/robocane_new/meshes/obj/Cube_235.dae" scale="1.0 1.0 1.0"/>
       </geometry>
-      <material name="standard_material"/>
+      <material name="environment_color"/>
     </visual>
     <collision>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="package://robocane_manual/robocane_env/robocane_new/meshes/obj/Cube_235.obj" scale="1.0 1.0 1.0"/>
+        <mesh filename="package://robocane_manual/robocane_env/robocane_new/meshes/obj/Cube_235.dae" scale="1.0 1.0 1.0"/>
       </geometry>
     </collision>
   </link>
- 
- 
- 
+
+
+
 
   <joint name="Desk_0_main_joint" type="fixed">
     <origin xyz="4.7309 2.774 0.33" rpy="-8.526514862000276e-14 0.0 -2.2204464727667867e-15"/>
@@ -1058,14 +1112,14 @@
     <visual name="Desk_0_stand">
       <origin xyz="0.0 0.0 0.0" rpy="0.0 0.0 0.0"/>
       <geometry>
-      	<mesh filename="package://robocane_manual/robocane_env/robocane_new/meshes/obj/Cube_074.obj" scale="1.0 1.0 1.0"/>
+      	<mesh filename="package://robocane_manual/robocane_env/robocane_new/meshes/obj/Cube_074.dae" scale="1.0 1.0 1.0"/>
       </geometry>
-      <material name="standard_material"/>
+      <material name="environment_color"/>
     </visual>
     <collision>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="package://robocane_manual/robocane_env/robocane_new/meshes/obj/Cube_074.obj" scale="1.0 1.0 1.0"/>
+        <mesh filename="package://robocane_manual/robocane_env/robocane_new/meshes/obj/Cube_074.dae" scale="1.0 1.0 1.0"/>
       </geometry>
     </collision>
   </link>
@@ -1083,14 +1137,14 @@
     <visual name="Desk_0_top">
       <origin xyz="0.0 0.0 0.0" rpy="0.0 0.0 0.0"/>
       <geometry>
-      	<mesh filename="package://robocane_manual/robocane_env/robocane_new/meshes/obj/Cube_013.obj" scale="1.0 1.0 1.0"/>
+      	<mesh filename="package://robocane_manual/robocane_env/robocane_new/meshes/obj/Cube_013.dae" scale="1.0 1.0 1.0"/>
       </geometry>
-      <material name="standard_material"/>
+      <material name="environment_color"/>
     </visual>
     <collision>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="package://robocane_manual/robocane_env/robocane_new/meshes/obj/Cube_013.obj" scale="1.0 1.0 1.0"/>
+        <mesh filename="package://robocane_manual/robocane_env/robocane_new/meshes/obj/Cube_013.dae" scale="1.0 1.0 1.0"/>
       </geometry>
     </collision>
   </link>
@@ -1108,14 +1162,14 @@
     <visual name="Desk_0_front">
       <origin xyz="0.0 0.0 0.0" rpy="0.0 0.0 0.0"/>
       <geometry>
-      	<mesh filename="package://robocane_manual/robocane_env/robocane_new/meshes/obj/Cube_121.obj" scale="1.0 1.0 1.0"/>
+      	<mesh filename="package://robocane_manual/robocane_env/robocane_new/meshes/obj/Cube_121.dae" scale="1.0 1.0 1.0"/>
       </geometry>
-      <material name="standard_material"/>
+      <material name="environment_color"/>
     </visual>
     <collision>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="package://robocane_manual/robocane_env/robocane_new/meshes/obj/Cube_121.obj" scale="1.0 1.0 1.0"/>
+        <mesh filename="package://robocane_manual/robocane_env/robocane_new/meshes/obj/Cube_121.dae" scale="1.0 1.0 1.0"/>
       </geometry>
     </collision>
   </link>
@@ -1133,19 +1187,19 @@
     <visual name="Desk_0_rolls">
       <origin xyz="0.0 0.0 0.0" rpy="0.0 0.0 0.0"/>
       <geometry>
-      	<mesh filename="package://robocane_manual/robocane_env/robocane_new/meshes/obj/Cube_117.obj" scale="1.0 1.0 1.0"/>
+      	<mesh filename="package://robocane_manual/robocane_env/robocane_new/meshes/obj/Cube_117.dae" scale="1.0 1.0 1.0"/>
       </geometry>
-      <material name="standard_material"/>
+      <material name="environment_color"/>
     </visual>
     <collision>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="package://robocane_manual/robocane_env/robocane_new/meshes/obj/Cube_117.obj" scale="1.0 1.0 1.0"/>
+        <mesh filename="package://robocane_manual/robocane_env/robocane_new/meshes/obj/Cube_117.dae" scale="1.0 1.0 1.0"/>
       </geometry>
     </collision>
   </link>
-  
-  
+
+
 <joint name="Desk_1_main_joint" type="fixed">
     <origin xyz="7.6405 1.668 0.33" rpy="0.0 0.0 0.0"/>
     <parent link="Environment"/>
@@ -1172,14 +1226,14 @@
     <visual name="Desk_1_stand">
       <origin xyz="0.0 0.0 0.0" rpy="0.0 0.0 0.0"/>
       <geometry>
-      	<mesh filename="package://robocane_manual/robocane_env/robocane_new/meshes/obj/Cube_303.obj" scale="1.0 1.0 1.0"/>
+      	<mesh filename="package://robocane_manual/robocane_env/robocane_new/meshes/obj/Cube_303.dae" scale="1.0 1.0 1.0"/>
       </geometry>
-      <material name="standard_material"/>
+      <material name="environment_color"/>
     </visual>
     <collision>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="package://robocane_manual/robocane_env/robocane_new/meshes/obj/Cube_303.obj" scale="1.0 1.0 1.0"/>
+        <mesh filename="package://robocane_manual/robocane_env/robocane_new/meshes/obj/Cube_303.dae" scale="1.0 1.0 1.0"/>
       </geometry>
     </collision>
   </link>
@@ -1197,14 +1251,14 @@
     <visual name="Desk_1_top">
       <origin xyz="0.0 0.0 0.0" rpy="0.0 0.0 0.0"/>
       <geometry>
-      	<mesh filename="package://robocane_manual/robocane_env/robocane_new/meshes/obj/Cube_302.obj" scale="1.0 1.0 1.0"/>
+      	<mesh filename="package://robocane_manual/robocane_env/robocane_new/meshes/obj/Cube_302.dae" scale="1.0 1.0 1.0"/>
       </geometry>
-      <material name="standard_material"/>
+      <material name="environment_color"/>
     </visual>
     <collision>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="package://robocane_manual/robocane_env/robocane_new/meshes/obj/Cube_302.obj" scale="1.0 1.0 1.0"/>
+        <mesh filename="package://robocane_manual/robocane_env/robocane_new/meshes/obj/Cube_302.dae" scale="1.0 1.0 1.0"/>
       </geometry>
     </collision>
   </link>
@@ -1222,14 +1276,14 @@
     <visual name="Desk_1_front">
       <origin xyz="0.0 0.0 0.0" rpy="0.0 0.0 0.0"/>
       <geometry>
-      	<mesh filename="package://robocane_manual/robocane_env/robocane_new/meshes/obj/Cube_305.obj" scale="1.0 1.0 1.0"/>
+      	<mesh filename="package://robocane_manual/robocane_env/robocane_new/meshes/obj/Cube_305.dae" scale="1.0 1.0 1.0"/>
       </geometry>
-      <material name="standard_material"/>
+      <material name="environment_color"/>
     </visual>
     <collision>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="package://robocane_manual/robocane_env/robocane_new/meshes/obj/Cube_305.obj" scale="1.0 1.0 1.0"/>
+        <mesh filename="package://robocane_manual/robocane_env/robocane_new/meshes/obj/Cube_305.dae" scale="1.0 1.0 1.0"/>
       </geometry>
     </collision>
   </link>
@@ -1247,14 +1301,14 @@
     <visual name="Desk_1_rolls">
       <origin xyz="0.0 0.0 0.0" rpy="0.0 0.0 0.0"/>
       <geometry>
-      	<mesh filename="package://robocane_manual/robocane_env/robocane_new/meshes/obj/Cube_304.obj" scale="1.0 1.0 1.0"/>
+      	<mesh filename="package://robocane_manual/robocane_env/robocane_new/meshes/obj/Cube_304.dae" scale="1.0 1.0 1.0"/>
       </geometry>
-      <material name="standard_material"/>
+      <material name="environment_color"/>
     </visual>
     <collision>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="package://robocane_manual/robocane_env/robocane_new/meshes/obj/Cube_304.obj" scale="1.0 1.0 1.0"/>
+        <mesh filename="package://robocane_manual/robocane_env/robocane_new/meshes/obj/Cube_304.dae" scale="1.0 1.0 1.0"/>
       </geometry>
     </collision>
   </link>
@@ -1285,14 +1339,14 @@
     <visual name="Desk_2_stand">
       <origin xyz="0.0 0.0 0.0" rpy="0.0 0.0 0.0"/>
       <geometry>
-      	<mesh filename="package://robocane_manual/robocane_env/robocane_new/meshes/obj/Cube_299.obj" scale="1.0 1.0 1.0"/>
+      	<mesh filename="package://robocane_manual/robocane_env/robocane_new/meshes/obj/Cube_299.dae" scale="1.0 1.0 1.0"/>
       </geometry>
-      <material name="standard_material"/>
+      <material name="environment_color"/>
     </visual>
     <collision>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="package://robocane_manual/robocane_env/robocane_new/meshes/obj/Cube_299.obj" scale="1.0 1.0 1.0"/>
+        <mesh filename="package://robocane_manual/robocane_env/robocane_new/meshes/obj/Cube_299.dae" scale="1.0 1.0 1.0"/>
       </geometry>
     </collision>
   </link>
@@ -1310,14 +1364,14 @@
     <visual name="Desk_2_top">
       <origin xyz="0.0 0.0 0.0" rpy="0.0 0.0 0.0"/>
       <geometry>
-      	<mesh filename="package://robocane_manual/robocane_env/robocane_new/meshes/obj/Cube_298.obj" scale="1.0 1.0 1.0"/>
+      	<mesh filename="package://robocane_manual/robocane_env/robocane_new/meshes/obj/Cube_298.dae" scale="1.0 1.0 1.0"/>
       </geometry>
-      <material name="standard_material"/>
+      <material name="environment_color"/>
     </visual>
     <collision>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="package://robocane_manual/robocane_env/robocane_new/meshes/obj/Cube_298.obj" scale="1.0 1.0 1.0"/>
+        <mesh filename="package://robocane_manual/robocane_env/robocane_new/meshes/obj/Cube_298.dae" scale="1.0 1.0 1.0"/>
       </geometry>
     </collision>
   </link>
@@ -1335,14 +1389,14 @@
     <visual name="Desk_2_front">
       <origin xyz="0.0 0.0 0.0" rpy="0.0 0.0 0.0"/>
       <geometry>
-      	<mesh filename="package://robocane_manual/robocane_env/robocane_new/meshes/obj/Cube_301.obj" scale="1.0 1.0 1.0"/>
+      	<mesh filename="package://robocane_manual/robocane_env/robocane_new/meshes/obj/Cube_301.dae" scale="1.0 1.0 1.0"/>
       </geometry>
-      <material name="standard_material"/>
+      <material name="environment_color"/>
     </visual>
     <collision>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="package://robocane_manual/robocane_env/robocane_new/meshes/obj/Cube_301.obj" scale="1.0 1.0 1.0"/>
+        <mesh filename="package://robocane_manual/robocane_env/robocane_new/meshes/obj/Cube_301.dae" scale="1.0 1.0 1.0"/>
       </geometry>
     </collision>
   </link>
@@ -1360,14 +1414,14 @@
     <visual name="Desk_2_rolls">
       <origin xyz="0.0 0.0 0.0" rpy="0.0 0.0 0.0"/>
       <geometry>
-      	<mesh filename="package://robocane_manual/robocane_env/robocane_new/meshes/obj/Cube_304.obj" scale="1.0 1.0 1.0"/>
+      	<mesh filename="package://robocane_manual/robocane_env/robocane_new/meshes/obj/Cube_304.dae" scale="1.0 1.0 1.0"/>
       </geometry>
-      <material name="standard_material"/>
+      <material name="environment_color"/>
     </visual>
     <collision>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="package://robocane_manual/robocane_env/robocane_new/meshes/obj/Cube_304.obj" scale="1.0 1.0 1.0"/>
+        <mesh filename="package://robocane_manual/robocane_env/robocane_new/meshes/obj/Cube_304.dae" scale="1.0 1.0 1.0"/>
       </geometry>
     </collision>
   </link>
@@ -1399,14 +1453,14 @@
     <visual name="Desk_3_stand">
       <origin xyz="0.0 0.0 0.0" rpy="0.0 0.0 0.0"/>
       <geometry>
-      	<mesh filename="package://robocane_manual/robocane_env/robocane_new/meshes/obj/Cube_299.obj" scale="1.0 1.0 1.0"/>
+      	<mesh filename="package://robocane_manual/robocane_env/robocane_new/meshes/obj/Cube_299.dae" scale="1.0 1.0 1.0"/>
       </geometry>
-      <material name="standard_material"/>
+      <material name="environment_color"/>
     </visual>
     <collision>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="package://robocane_manual/robocane_env/robocane_new/meshes/obj/Cube_299.obj" scale="1.0 1.0 1.0"/>
+        <mesh filename="package://robocane_manual/robocane_env/robocane_new/meshes/obj/Cube_299.dae" scale="1.0 1.0 1.0"/>
       </geometry>
     </collision>
   </link>
@@ -1424,14 +1478,14 @@
     <visual name="Desk_3_top">
       <origin xyz="0.0 0.0 0.0" rpy="0.0 0.0 0.0"/>
       <geometry>
-      	<mesh filename="package://robocane_manual/robocane_env/robocane_new/meshes/obj/Cube_298.obj" scale="1.0 1.0 1.0"/>
+      	<mesh filename="package://robocane_manual/robocane_env/robocane_new/meshes/obj/Cube_298.dae" scale="1.0 1.0 1.0"/>
       </geometry>
-      <material name="standard_material"/>
+      <material name="environment_color"/>
     </visual>
     <collision>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="package://robocane_manual/robocane_env/robocane_new/meshes/obj/Cube_298.obj" scale="1.0 1.0 1.0"/>
+        <mesh filename="package://robocane_manual/robocane_env/robocane_new/meshes/obj/Cube_298.dae" scale="1.0 1.0 1.0"/>
       </geometry>
     </collision>
   </link>
@@ -1449,14 +1503,14 @@
     <visual name="Desk_3_front">
       <origin xyz="0.0 0.0 0.0" rpy="0.0 0.0 0.0"/>
       <geometry>
-      	<mesh filename="package://robocane_manual/robocane_env/robocane_new/meshes/obj/Cube_301.obj" scale="1.0 1.0 1.0"/>
+      	<mesh filename="package://robocane_manual/robocane_env/robocane_new/meshes/obj/Cube_301.dae" scale="1.0 1.0 1.0"/>
       </geometry>
-      <material name="standard_material"/>
+      <material name="environment_color"/>
     </visual>
     <collision>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="package://robocane_manual/robocane_env/robocane_new/meshes/obj/Cube_301.obj" scale="1.0 1.0 1.0"/>
+        <mesh filename="package://robocane_manual/robocane_env/robocane_new/meshes/obj/Cube_301.dae" scale="1.0 1.0 1.0"/>
       </geometry>
     </collision>
   </link>
@@ -1474,18 +1528,18 @@
     <visual name="Desk_3_rolls">
       <origin xyz="0.0 0.0 0.0" rpy="0.0 0.0 0.0"/>
       <geometry>
-      	<mesh filename="package://robocane_manual/robocane_env/robocane_new/meshes/obj/Cube_308.obj" scale="1.0 1.0 1.0"/>
+      	<mesh filename="package://robocane_manual/robocane_env/robocane_new/meshes/obj/Cube_308.dae" scale="1.0 1.0 1.0"/>
       </geometry>
-      <material name="standard_material"/>
+      <material name="environment_color"/>
     </visual>
     <collision>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="package://robocane_manual/robocane_env/robocane_new/meshes/obj/Cube_308.obj" scale="1.0 1.0 1.0"/>
+        <mesh filename="package://robocane_manual/robocane_env/robocane_new/meshes/obj/Cube_308.dae" scale="1.0 1.0 1.0"/>
       </geometry>
     </collision>
   </link>
-  
+
 
 <joint name="Desk_4_main_joint" type="fixed">
     <origin xyz="6.2501 1.2428 0.33" rpy="0.0 0.0 0.0"/>
@@ -1513,14 +1567,14 @@
     <visual name="Desk_4_stand">
       <origin xyz="0.0 0.0 0.0" rpy="0.0 0.0 0.0"/>
       <geometry>
-      	<mesh filename="package://robocane_manual/robocane_env/robocane_new/meshes/obj/Cube_311.obj" scale="1.0 1.0 1.0"/>
+      	<mesh filename="package://robocane_manual/robocane_env/robocane_new/meshes/obj/Cube_311.dae" scale="1.0 1.0 1.0"/>
       </geometry>
-      <material name="standard_material"/>
+      <material name="environment_color"/>
     </visual>
     <collision>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="package://robocane_manual/robocane_env/robocane_new/meshes/obj/Cube_311.obj" scale="1.0 1.0 1.0"/>
+        <mesh filename="package://robocane_manual/robocane_env/robocane_new/meshes/obj/Cube_311.dae" scale="1.0 1.0 1.0"/>
       </geometry>
     </collision>
   </link>
@@ -1538,14 +1592,14 @@
     <visual name="Desk_4_top">
       <origin xyz="0.0 0.0 0.0" rpy="0.0 0.0 0.0"/>
       <geometry>
-      	<mesh filename="package://robocane_manual/robocane_env/robocane_new/meshes/obj/Cube_310.obj" scale="1.0 1.0 1.0"/>
+      	<mesh filename="package://robocane_manual/robocane_env/robocane_new/meshes/obj/Cube_310.dae" scale="1.0 1.0 1.0"/>
       </geometry>
-      <material name="standard_material"/>
+      <material name="environment_color"/>
     </visual>
     <collision>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="package://robocane_manual/robocane_env/robocane_new/meshes/obj/Cube_310.obj" scale="1.0 1.0 1.0"/>
+        <mesh filename="package://robocane_manual/robocane_env/robocane_new/meshes/obj/Cube_310.dae" scale="1.0 1.0 1.0"/>
       </geometry>
     </collision>
   </link>
@@ -1563,14 +1617,14 @@
     <visual name="Desk_4_front">
       <origin xyz="0.0 0.0 0.0" rpy="0.0 0.0 0.0"/>
       <geometry>
-      	<mesh filename="package://robocane_manual/robocane_env/robocane_new/meshes/obj/Cube_313.obj" scale="1.0 1.0 1.0"/>
+      	<mesh filename="package://robocane_manual/robocane_env/robocane_new/meshes/obj/Cube_313.dae" scale="1.0 1.0 1.0"/>
       </geometry>
-      <material name="standard_material"/>
+      <material name="environment_color"/>
     </visual>
     <collision>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="package://robocane_manual/robocane_env/robocane_new/meshes/obj/Cube_313.obj" scale="1.0 1.0 1.0"/>
+        <mesh filename="package://robocane_manual/robocane_env/robocane_new/meshes/obj/Cube_313.dae" scale="1.0 1.0 1.0"/>
       </geometry>
     </collision>
   </link>
@@ -1588,18 +1642,18 @@
     <visual name="Desk_4_rolls">
       <origin xyz="0.0 0.0 0.0" rpy="0.0 0.0 0.0"/>
       <geometry>
-      	<mesh filename="package://robocane_manual/robocane_env/robocane_new/meshes/obj/Cube_312.obj" scale="1.0 1.0 1.0"/>
+      	<mesh filename="package://robocane_manual/robocane_env/robocane_new/meshes/obj/Cube_312.dae" scale="1.0 1.0 1.0"/>
       </geometry>
-      <material name="standard_material"/>
+      <material name="environment_color"/>
     </visual>
     <collision>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="package://robocane_manual/robocane_env/robocane_new/meshes/obj/Cube_312.obj" scale="1.0 1.0 1.0"/>
+        <mesh filename="package://robocane_manual/robocane_env/robocane_new/meshes/obj/Cube_312.dae" scale="1.0 1.0 1.0"/>
       </geometry>
     </collision>
   </link>
-  
+
   <!-- WINDOWS -->
   <joint name="Window_0_main_joint" type="fixed">
     <origin xyz="2.2306 -0.61081 1.5097" rpy="0.0 0.0 0.0"/>
@@ -1627,14 +1681,14 @@
     <visual name="Window_0_panel">
       <origin xyz="0.0 0.0 0.0" rpy="0.0 0.0 0.0"/>
       <geometry>
-      	<mesh filename="package://robocane_manual/robocane_env/robocane_new/meshes/obj/Office_034.obj" scale="1.0 1.0 1.0"/>
+      	<mesh filename="package://robocane_manual/robocane_env/robocane_new/meshes/obj/Office_034.dae" scale="1.0 1.0 1.0"/>
       </geometry>
-      <material name="standard_material"/>
+      <material name="environment_color"/>
     </visual>
     <collision>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="package://robocane_manual/robocane_env/robocane_new/meshes/obj/Office_034.obj" scale="1.0 1.0 1.0"/>
+        <mesh filename="package://robocane_manual/robocane_env/robocane_new/meshes/obj/Office_034.dae" scale="1.0 1.0 1.0"/>
       </geometry>
     </collision>
   </link>
@@ -1652,14 +1706,14 @@
     <visual name="Window_0_border">
       <origin xyz="0.0 0.0 0.0" rpy="0.0 0.0 0.0"/>
       <geometry>
-      	<mesh filename="package://robocane_manual/robocane_env/robocane_new/meshes/obj/Office_018.obj" scale="1.0 1.0 1.0"/>
+      	<mesh filename="package://robocane_manual/robocane_env/robocane_new/meshes/obj/Office_018.dae" scale="1.0 1.0 1.0"/>
       </geometry>
-      <material name="standard_material"/>
+      <material name="environment_color"/>
     </visual>
     <collision>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="package://robocane_manual/robocane_env/robocane_new/meshes/obj/Office_018.obj" scale="1.0 1.0 1.0"/>
+        <mesh filename="package://robocane_manual/robocane_env/robocane_new/meshes/obj/Office_018.dae" scale="1.0 1.0 1.0"/>
       </geometry>
     </collision>
   </link>
@@ -1691,14 +1745,14 @@
     <visual name="Window_1_panel">
       <origin xyz="0.0 0.0 0.0" rpy="0.0 0.0 0.0"/>
       <geometry>
-      	<mesh filename="package://robocane_manual/robocane_env/robocane_new/meshes/obj/Office_034.obj" scale="1.0 1.0 1.0"/>
+      	<mesh filename="package://robocane_manual/robocane_env/robocane_new/meshes/obj/Office_034.dae" scale="1.0 1.0 1.0"/>
       </geometry>
-      <material name="standard_material"/>
+      <material name="environment_color"/>
     </visual>
     <collision>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="package://robocane_manual/robocane_env/robocane_new/meshes/obj/Office_034.obj" scale="1.0 1.0 1.0"/>
+        <mesh filename="package://robocane_manual/robocane_env/robocane_new/meshes/obj/Office_034.dae" scale="1.0 1.0 1.0"/>
       </geometry>
     </collision>
   </link>
@@ -1716,18 +1770,18 @@
     <visual name="Window_1_border">
       <origin xyz="0.0 0.0 0.0" rpy="0.0 0.0 0.0"/>
       <geometry>
-      	<mesh filename="package://robocane_manual/robocane_env/robocane_new/meshes/obj/Office_030.obj" scale="1.0 1.0 1.0"/>
+      	<mesh filename="package://robocane_manual/robocane_env/robocane_new/meshes/obj/Office_030.dae" scale="1.0 1.0 1.0"/>
       </geometry>
-      <material name="standard_material"/>
+      <material name="environment_color"/>
     </visual>
     <collision>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="package://robocane_manual/robocane_env/robocane_new/meshes/obj/Office_030.obj" scale="1.0 1.0 1.0"/>
+        <mesh filename="package://robocane_manual/robocane_env/robocane_new/meshes/obj/Office_030.dae" scale="1.0 1.0 1.0"/>
       </geometry>
     </collision>
   </link>
-  
+
 
   <joint name="Window_2_main_joint" type="fixed">
     <origin xyz="8.5103 -0.61081 1.5097" rpy="0.0 0.0 0.0"/>
@@ -1755,14 +1809,14 @@
     <visual name="Window_2_panel">
       <origin xyz="0.0 0.0 0.0" rpy="0.0 0.0 0.0"/>
       <geometry>
-      	<mesh filename="package://robocane_manual/robocane_env/robocane_new/meshes/obj/Office_033.obj" scale="1.0 1.0 1.0"/>
+      	<mesh filename="package://robocane_manual/robocane_env/robocane_new/meshes/obj/Office_033.dae" scale="1.0 1.0 1.0"/>
       </geometry>
-      <material name="standard_material"/>
+      <material name="environment_color"/>
     </visual>
     <collision>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="package://robocane_manual/robocane_env/robocane_new/meshes/obj/Office_033.obj" scale="1.0 1.0 1.0"/>
+        <mesh filename="package://robocane_manual/robocane_env/robocane_new/meshes/obj/Office_033.dae" scale="1.0 1.0 1.0"/>
       </geometry>
     </collision>
   </link>
@@ -1780,14 +1834,14 @@
     <visual name="Window_2_border">
       <origin xyz="0.0 0.0 0.0" rpy="0.0 0.0 0.0"/>
       <geometry>
-      	<mesh filename="package://robocane_manual/robocane_env/robocane_new/meshes/obj/Office_032.obj" scale="1.0 1.0 1.0"/>
+      	<mesh filename="package://robocane_manual/robocane_env/robocane_new/meshes/obj/Office_032.dae" scale="1.0 1.0 1.0"/>
       </geometry>
-      <material name="standard_material"/>
+      <material name="environment_color"/>
     </visual>
     <collision>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="package://robocane_manual/robocane_env/robocane_new/meshes/obj/Office_032.obj" scale="1.0 1.0 1.0"/>
+        <mesh filename="package://robocane_manual/robocane_env/robocane_new/meshes/obj/Office_032.dae" scale="1.0 1.0 1.0"/>
       </geometry>
     </collision>
   </link>
@@ -1810,7 +1864,7 @@
       <geometry>
       	<box size="11 0.2 1.4"/>
       </geometry>
-      <material name="standard_material"/>
+      <material name="environment_color"/>
     </visual>
     <collision>
       <origin rpy="0 0 0" xyz="0 0 0"/>
@@ -1835,7 +1889,7 @@
       <geometry>
       	<box size="0.2 6.66 1.4"/>
       </geometry>
-      <material name="standard_material"/>
+      <material name="environment_color"/>
     </visual>
     <collision>
       <origin rpy="0 0 0" xyz="0 0 0"/>
@@ -1860,7 +1914,7 @@
       <geometry>
       	<box size="8.4 0.2 1.4"/>
       </geometry>
-      <material name="standard_material"/>
+      <material name="environment_color"/>
     </visual>
     <collision>
       <origin rpy="0 0 0" xyz="0 0 0"/>
@@ -1885,7 +1939,7 @@
       <geometry>
       	<box size="0.2 3.3 1.4"/>
       </geometry>
-      <material name="standard_material"/>
+      <material name="environment_color"/>
     </visual>
     <collision>
       <origin rpy="0 0 0" xyz="0 0 0"/>
@@ -1910,7 +1964,7 @@
       <geometry>
       	<box size="0.2 3.7 1.4"/>
       </geometry>
-      <material name="standard_material"/>
+      <material name="environment_color"/>
     </visual>
     <collision>
       <origin rpy="0 0 0" xyz="0 0 0"/>
@@ -1935,7 +1989,7 @@
       <geometry>
       	<box size="1.3 0.2 1.4"/>
       </geometry>
-      <material name="standard_material"/>
+      <material name="environment_color"/>
     </visual>
     <collision>
       <origin rpy="0 0 0" xyz="0 0 0"/>
