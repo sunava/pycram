@@ -2186,6 +2186,306 @@
     <parent link="room_link"/>
     <child link="table_area_main"/>
   </joint>
+
+  <link name="suturo_couch:couch:place_one">
+    <inertial>
+      <origin xyz="0.0 0.0 0.0" rpy="0.0 0.0 0.0"/>
+      <mass value="1.0"/>
+      <inertia ixx="0.1" ixy="0.0" ixz="0.0" iyy="0.1" iyz="0.0" izz="0.1"/>
+    </inertial>
+    <visual>
+      <origin xyz="0.0 0.0 0.15" rpy="0.0 0.0 0.0"/>
+      <geometry>
+        <box size="0.75 1.7 0.3"/>
+      </geometry>
+      <material name="color_grey"/>
+    </visual>
+    <collision>
+      <origin xyz="0.0 0.0 0.0" rpy="0.0 0.0 0.0"/>
+      <geometry>
+        <box size="0.75 1.7 0.3"/>
+      </geometry>
+    </collision>
+  </link>
+  <link name="suturo_couch:couch:place_two">
+    <inertial>
+      <origin xyz="0.0 0.0 0.0" rpy="0.0 0.0 0.0"/>
+      <mass value="1.0"/>
+      <inertia ixx="0.1" ixy="0.0" ixz="0.0" iyy="0.1" iyz="0.0" izz="0.1"/>
+    </inertial>
+  </link>
+  <link name="suturo_couch:couch:place_three">
+    <inertial>
+      <origin xyz="0.0 0.0 0.0" rpy="0.0 0.0 0.0"/>
+      <mass value="1.0"/>
+      <inertia ixx="0.1" ixy="0.0" ixz="0.0" iyy="0.1" iyz="0.0" izz="0.1"/>
+    </inertial>
+  </link>
+  <joint name="suturo_couch:couch:couch_origin_joint" type="fixed">
+    <origin xyz="-1.9 1.9 0.0" rpy="0.0 0.0 0.0"/>
+    <parent link="room_link"/>
+    <child link="suturo_couch:couch:place_one"/>
+  </joint>
+  <joint name="suturo_couch:couch:couch_left_joint" type="fixed">
+    <origin xyz="0.0 -0.425 0.15" rpy="0.0 0.0 0.0"/>
+    <parent link="suturo_couch:couch:place_one"/>
+    <child link="suturo_couch:couch:place_two"/>
+  </joint>
+  <joint name="suturo_couch:couch:couch_right_joint" type="fixed">
+    <origin xyz="0.0 0.425 0.15" rpy="0.0 0.0 0.0"/>
+    <parent link="suturo_couch:couch:place_one"/>
+    <child link="suturo_couch:couch:place_three"/>
+  </joint>
+
+
+  <link name="shelf_billy:shelf_billy:shelf_origin"/>
+  <link name="shelf_billy:shelf_billy:shelf_center"/>
+  <link name="shelf_billy:shelf_billy:shelf_base_center"/>
+  <joint name="shelf_billy:shelf_billy:shelf_origin_joint" type="fixed">
+    <origin xyz="-5.3 2.5 0.0" rpy="0.0 0.0 1.57"/>
+    <parent link="room_link"/>
+    <child link="shelf_billy:shelf_billy:shelf_origin"/>
+  </joint>
+  <joint name="shelf_billy:shelf_billy:shelf_center_joint" type="fixed">
+    <origin xyz="0.195 0.4 1.01" rpy="0.0 0.0 0.0"/>
+    <parent link="shelf_billy:shelf_billy:shelf_origin"/>
+    <child link="shelf_billy:shelf_billy:shelf_center"/>
+  </joint>
+  <joint name="shelf_billy:shelf_billy:shelf_base_center_joint" type="fixed">
+    <origin xyz="0.195 0.4 0.0" rpy="0.0 0.0 0.0"/>
+    <parent link="shelf_billy:shelf_billy:shelf_origin"/>
+    <child link="shelf_billy:shelf_billy:shelf_base_center"/>
+  </joint>
+  <link name="shelf_billy:shelf_billy:shelf_back">
+    <inertial>
+      <origin xyz="0.0 0.0 0.0" rpy="0.0 0.0 0.0"/>
+      <mass value="1.0"/>
+      <inertia ixx="0.1" ixy="0.0" ixz="0.0" iyy="0.1" iyz="0.0" izz="0.1"/>
+    </inertial>
+    <visual>
+      <origin xyz="0.0 0.0 0.0" rpy="0.0 0.0 0.0"/>
+      <geometry>
+        <box size="0.02 0.8 2.02"/>
+      </geometry>
+      <material name="shelf_blue"/>
+    </visual>
+    <collision>
+      <origin xyz="0.0 0.0 0.0" rpy="0.0 0.0 0.0"/>
+      <geometry>
+        <box size="0.02 0.8 2.02"/>
+      </geometry>
+    </collision>
+  </link>
+  <joint name="shelf_billy:shelf_billy:shelf_back:joint" type="fixed">
+    <origin xyz="0.39 0.4 1.01" rpy="0.0 0.0 0.0"/>
+    <parent link="shelf_billy:shelf_billy:shelf_origin"/>
+    <child link="shelf_billy:shelf_billy:shelf_back"/>
+  </joint>
+  <link name="shelf_billy:shelf_billy:shelf_right_side">
+    <inertial>
+      <origin xyz="0.0 0.0 0.0" rpy="0.0 0.0 0.0"/>
+      <mass value="1.0"/>
+      <inertia ixx="0.1" ixy="0.0" ixz="0.0" iyy="0.1" iyz="0.0" izz="0.1"/>
+    </inertial>
+    <visual>
+      <origin xyz="0.0 0.0 0.0" rpy="0.0 0.0 0.0"/>
+      <geometry>
+        <box size="0.39 0.02 2.02"/>
+      </geometry>
+      <material name="shelf_blue"/>
+    </visual>
+    <collision>
+      <origin xyz="0.0 0.0 0.0" rpy="0.0 0.0 0.0"/>
+      <geometry>
+        <box size="0.39 0.02 2.02"/>
+      </geometry>
+    </collision>
+  </link>
+  <joint name="shelf_billy:shelf_billy:shelf_right_side:joint" type="fixed">
+    <origin xyz="0.195 0.01 1.01" rpy="0.0 0.0 0.0"/>
+    <parent link="shelf_billy:shelf_billy:shelf_origin"/>
+    <child link="shelf_billy:shelf_billy:shelf_right_side"/>
+  </joint>
+  <link name="shelf_billy:shelf_billy:shelf_left_side">
+    <inertial>
+      <origin xyz="0.0 0.0 0.0" rpy="0.0 0.0 0.0"/>
+      <mass value="1.0"/>
+      <inertia ixx="0.1" ixy="0.0" ixz="0.0" iyy="0.1" iyz="0.0" izz="0.1"/>
+    </inertial>
+    <visual>
+      <origin xyz="0.0 0.0 0.0" rpy="0.0 0.0 0.0"/>
+      <geometry>
+        <box size="0.39 0.02 2.02"/>
+      </geometry>
+      <material name="shelf_blue"/>
+    </visual>
+    <collision>
+      <origin xyz="0.0 0.0 0.0" rpy="0.0 0.0 0.0"/>
+      <geometry>
+        <box size="0.39 0.02 2.02"/>
+      </geometry>
+    </collision>
+  </link>
+  <joint name="shelf_billy:shelf_billy:shelf_left_side:joint" type="fixed">
+    <origin xyz="0.195 0.79 1.01" rpy="0.0 0.0 0.0"/>
+    <parent link="shelf_billy:shelf_billy:shelf_origin"/>
+    <child link="shelf_billy:shelf_billy:shelf_left_side"/>
+  </joint>
+  <link name="shelf_billy:shelf_billy:shelf_floor_0">
+    <inertial>
+      <origin xyz="0.0 0.0 0.0" rpy="0.0 0.0 0.0"/>
+      <mass value="1.0"/>
+      <inertia ixx="0.1" ixy="0.0" ixz="0.0" iyy="0.1" iyz="0.0" izz="0.1"/>
+    </inertial>
+    <visual>
+      <origin xyz="0.0 0.0 -0.02" rpy="0.0 0.0 0.0"/>
+      <geometry>
+        <box size="0.39 0.8 0.04"/>
+      </geometry>
+      <material name="shelf_blue"/>
+    </visual>
+    <collision>
+      <origin xyz="0.0 0.0 -0.02" rpy="0.0 0.0 0.0"/>
+      <geometry>
+        <box size="0.39 0.8 0.04"/>
+      </geometry>
+    </collision>
+  </link>
+  <joint name="shelf_billy:shelf_billy:shelf_floor_0:joint" type="fixed">
+    <origin xyz="0.0 0.0 0.1" rpy="0.0 0.0 0.0"/>
+    <parent link="shelf_billy:shelf_billy:shelf_base_center"/>
+    <child link="shelf_billy:shelf_billy:shelf_floor_0"/>
+  </joint>
+  <link name="shelf_billy:shelf_billy:shelf_floor_1">
+    <inertial>
+      <origin xyz="0.0 0.0 0.0" rpy="0.0 0.0 0.0"/>
+      <mass value="1.0"/>
+      <inertia ixx="0.1" ixy="0.0" ixz="0.0" iyy="0.1" iyz="0.0" izz="0.1"/>
+    </inertial>
+    <visual>
+      <origin xyz="0.0 0.0 -0.02" rpy="0.0 0.0 0.0"/>
+      <geometry>
+        <box size="0.39 0.8 0.04"/>
+      </geometry>
+      <material name="shelf_blue"/>
+    </visual>
+    <collision>
+      <origin xyz="0.0 0.0 -0.02" rpy="0.0 0.0 0.0"/>
+      <geometry>
+        <box size="0.39 0.8 0.04"/>
+      </geometry>
+    </collision>
+  </link>
+  <joint name="shelf_billy:shelf_billy:shelf_floor_1:joint" type="fixed">
+    <origin xyz="0.0 0.0 0.54" rpy="0.0 0.0 0.0"/>
+    <parent link="shelf_billy:shelf_billy:shelf_base_center"/>
+    <child link="shelf_billy:shelf_billy:shelf_floor_1"/>
+  </joint>
+  <link name="shelf_billy:shelf_billy:shelf_floor_2">
+    <inertial>
+      <origin xyz="0.0 0.0 0.0" rpy="0.0 0.0 0.0"/>
+      <mass value="1.0"/>
+      <inertia ixx="0.1" ixy="0.0" ixz="0.0" iyy="0.1" iyz="0.0" izz="0.1"/>
+    </inertial>
+    <visual>
+      <origin xyz="0.0 0.0 -0.02" rpy="0.0 0.0 0.0"/>
+      <geometry>
+        <box size="0.39 0.8 0.04"/>
+      </geometry>
+      <material name="shelf_blue"/>
+    </visual>
+    <collision>
+      <origin xyz="0.0 0.0 -0.02" rpy="0.0 0.0 0.0"/>
+      <geometry>
+        <box size="0.39 0.8 0.04"/>
+      </geometry>
+    </collision>
+  </link>
+  <joint name="shelf_billy:shelf_billy:shelf_floor_2:joint" type="fixed">
+    <origin xyz="0.0 0.0 1.055" rpy="0.0 0.0 0.0"/>
+    <parent link="shelf_billy:shelf_billy:shelf_base_center"/>
+    <child link="shelf_billy:shelf_billy:shelf_floor_2"/>
+  </joint>
+  <link name="shelf_billy:shelf_billy:shelf_floor_3">
+    <inertial>
+      <origin xyz="0.0 0.0 0.0" rpy="0.0 0.0 0.0"/>
+      <mass value="1.0"/>
+      <inertia ixx="0.1" ixy="0.0" ixz="0.0" iyy="0.1" iyz="0.0" izz="0.1"/>
+    </inertial>
+    <visual>
+      <origin xyz="0.0 0.0 -0.02" rpy="0.0 0.0 0.0"/>
+      <geometry>
+        <box size="0.39 0.8 0.04"/>
+      </geometry>
+      <material name="shelf_blue"/>
+    </visual>
+    <collision>
+      <origin xyz="0.0 0.0 -0.02" rpy="0.0 0.0 0.0"/>
+      <geometry>
+        <box size="0.39 0.8 0.04"/>
+      </geometry>
+    </collision>
+  </link>
+  <joint name="shelf_billy:shelf_billy:shelf_floor_3:joint" type="fixed">
+    <origin xyz="0.0 0.0 2.02" rpy="0.0 0.0 0.0"/>
+    <parent link="shelf_billy:shelf_billy:shelf_base_center"/>
+    <child link="shelf_billy:shelf_billy:shelf_floor_3"/>
+  </joint>
+  <link name="shelf_billy:shelf_billy:shelf_door_left">
+    <inertial>
+      <origin xyz="0.0 0.0 0.0" rpy="0.0 0.0 0.0"/>
+      <mass value="1.0"/>
+      <inertia ixx="0.1" ixy="0.0" ixz="0.0" iyy="0.1" iyz="0.0" izz="0.1"/>
+    </inertial>
+    <visual>
+      <origin xyz="0.0 -0.19 0.0" rpy="0.0 0.0 0.0"/>
+      <geometry>
+        <box size="0.02 0.4 0.97"/>
+      </geometry>
+      <material name="shelf_door_green"/>
+    </visual>
+    <collision>
+      <origin xyz="0.0 -0.19 0.0" rpy="0.0 0.0 0.0"/>
+      <geometry>
+        <box size="0.02 0.4 0.97"/>
+      </geometry>
+    </collision>
+  </link>
+  <link name="shelf_billy:shelf_billy:shelf_door_left:handle">
+    <inertial>
+      <origin xyz="0.0 0.0 0.0" rpy="0.0 0.0 0.0"/>
+      <mass value="1.0"/>
+      <inertia ixx="0.1" ixy="0.0" ixz="0.0" iyy="0.1" iyz="0.0" izz="0.1"/>
+    </inertial>
+    <visual>
+      <origin xyz="0.0 0.0 0.0" rpy="0.0 0.0 0.0"/>
+      <geometry>
+        <cylinder radius="0.0075" length="0.02"/>
+      </geometry>
+      <material name="shelf_billy_handle_red"/>
+    </visual>
+    <collision>
+      <origin xyz="0.0 0.0 0.0" rpy="0.0 0.0 0.0"/>
+      <geometry>
+        <cylinder radius="0.0075" length="0.02"/>
+      </geometry>
+    </collision>
+  </link>
+  <joint name="shelf_billy:shelf_billy:shelf_door_left:handle_joint" type="fixed">
+    <origin xyz="-0.03 -0.3825 0.0075" rpy="0.0 1.5707963267948966 0.0"/>
+    <axis xyz="0.0 0.0 1.0"/>
+    <parent link="shelf_billy:shelf_billy:shelf_door_left"/>
+    <child link="shelf_billy:shelf_billy:shelf_door_left:handle"/>
+  </joint>
+  <joint name="shelf_billy:shelf_billy:shelf_door_left:joint" type="revolute">
+    <origin xyz="-0.215 0.0 -0.44" rpy="0.0 0.0 0.0"/>
+    <axis xyz="0.0 0.0 1.0"/>
+    <parent link="shelf_billy:shelf_billy:shelf_left_side"/>
+    <child link="shelf_billy:shelf_billy:shelf_door_left"/>
+    <limit effort="30.0" lower="-1.7" upper="0.0" velocity="1.0"/>
+  </joint>
+
+
   <!-- LINKS -->
   <link name="kitchen_wall_1">
     <inertial>
