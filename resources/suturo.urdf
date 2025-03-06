@@ -2182,7 +2182,7 @@
   </link>
   <!-- JOINTS -->
   <joint name="table_area_main_joint" type="fixed">
-    <origin rpy="0 0 1.57" xyz="-5.9 0.7 0"/>
+    <origin rpy="0 0 1.57" xyz="-5.9 -0.5 0"/>
     <parent link="room_link"/>
     <child link="table_area_main"/>
   </joint>
@@ -2198,7 +2198,7 @@
       <geometry>
         <box size="0.75 1.7 0.3"/>
       </geometry>
-      <material name="color_grey"/>
+      <material name="environment_color"/>
     </visual>
     <collision>
       <origin xyz="0.0 0.0 0.0" rpy="0.0 0.0 0.0"/>
@@ -2267,7 +2267,7 @@
       <geometry>
         <box size="0.02 0.8 2.02"/>
       </geometry>
-      <material name="shelf_blue"/>
+      <material name="environment_color"/>
     </visual>
     <collision>
       <origin xyz="0.0 0.0 0.0" rpy="0.0 0.0 0.0"/>
@@ -2292,7 +2292,7 @@
       <geometry>
         <box size="0.39 0.02 2.02"/>
       </geometry>
-      <material name="shelf_blue"/>
+      <material name="environment_color"/>
     </visual>
     <collision>
       <origin xyz="0.0 0.0 0.0" rpy="0.0 0.0 0.0"/>
@@ -2317,7 +2317,7 @@
       <geometry>
         <box size="0.39 0.02 2.02"/>
       </geometry>
-      <material name="shelf_blue"/>
+      <material name="environment_color"/>
     </visual>
     <collision>
       <origin xyz="0.0 0.0 0.0" rpy="0.0 0.0 0.0"/>
@@ -2342,7 +2342,7 @@
       <geometry>
         <box size="0.39 0.8 0.04"/>
       </geometry>
-      <material name="shelf_blue"/>
+      <material name="environment_color"/>
     </visual>
     <collision>
       <origin xyz="0.0 0.0 -0.02" rpy="0.0 0.0 0.0"/>
@@ -2367,7 +2367,7 @@
       <geometry>
         <box size="0.39 0.8 0.04"/>
       </geometry>
-      <material name="shelf_blue"/>
+      <material name="environment_color"/>
     </visual>
     <collision>
       <origin xyz="0.0 0.0 -0.02" rpy="0.0 0.0 0.0"/>
@@ -2392,7 +2392,7 @@
       <geometry>
         <box size="0.39 0.8 0.04"/>
       </geometry>
-      <material name="shelf_blue"/>
+      <material name="environment_color"/>
     </visual>
     <collision>
       <origin xyz="0.0 0.0 -0.02" rpy="0.0 0.0 0.0"/>
@@ -2417,7 +2417,7 @@
       <geometry>
         <box size="0.39 0.8 0.04"/>
       </geometry>
-      <material name="shelf_blue"/>
+      <material name="environment_color"/>
     </visual>
     <collision>
       <origin xyz="0.0 0.0 -0.02" rpy="0.0 0.0 0.0"/>
@@ -2442,7 +2442,7 @@
       <geometry>
         <box size="0.02 0.4 0.97"/>
       </geometry>
-      <material name="shelf_door_green"/>
+      <material name="environment_color"/>
     </visual>
     <collision>
       <origin xyz="0.0 -0.19 0.0" rpy="0.0 0.0 0.0"/>
@@ -2462,7 +2462,7 @@
       <geometry>
         <cylinder radius="0.0075" length="0.02"/>
       </geometry>
-      <material name="shelf_billy_handle_red"/>
+      <material name="environment_color"/>
     </visual>
     <collision>
       <origin xyz="0.0 0.0 0.0" rpy="0.0 0.0 0.0"/>
