@@ -2187,7 +2187,7 @@
     <child link="table_area_main"/>
   </joint>
 
-  <link name="suturo_couch:couch:place_one">
+  <link name="suturo_couch:couch:main">
     <inertial>
       <origin xyz="0.0 0.0 0.0" rpy="0.0 0.0 0.0"/>
       <mass value="1.0"/>
@@ -2207,36 +2207,11 @@
       </geometry>
     </collision>
   </link>
-  <link name="suturo_couch:couch:place_two">
-    <inertial>
-      <origin xyz="0.0 0.0 0.0" rpy="0.0 0.0 0.0"/>
-      <mass value="1.0"/>
-      <inertia ixx="0.1" ixy="0.0" ixz="0.0" iyy="0.1" iyz="0.0" izz="0.1"/>
-    </inertial>
-  </link>
-  <link name="suturo_couch:couch:place_three">
-    <inertial>
-      <origin xyz="0.0 0.0 0.0" rpy="0.0 0.0 0.0"/>
-      <mass value="1.0"/>
-      <inertia ixx="0.1" ixy="0.0" ixz="0.0" iyy="0.1" iyz="0.0" izz="0.1"/>
-    </inertial>
-  </link>
   <joint name="suturo_couch:couch:couch_origin_joint" type="fixed">
     <origin xyz="-1.9 1.9 0.0" rpy="0.0 0.0 0.0"/>
     <parent link="room_link"/>
-    <child link="suturo_couch:couch:place_one"/>
+    <child link="suturo_couch:couch:main"/>
   </joint>
-  <joint name="suturo_couch:couch:couch_left_joint" type="fixed">
-    <origin xyz="0.0 -0.425 0.15" rpy="0.0 0.0 0.0"/>
-    <parent link="suturo_couch:couch:place_one"/>
-    <child link="suturo_couch:couch:place_two"/>
-  </joint>
-  <joint name="suturo_couch:couch:couch_right_joint" type="fixed">
-    <origin xyz="0.0 0.425 0.15" rpy="0.0 0.0 0.0"/>
-    <parent link="suturo_couch:couch:place_one"/>
-    <child link="suturo_couch:couch:place_three"/>
-  </joint>
-
 
   <link name="shelf_billy:shelf_billy:shelf_origin"/>
   <link name="shelf_billy:shelf_billy:shelf_center"/>
