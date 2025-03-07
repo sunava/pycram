@@ -2196,19 +2196,19 @@
     <visual>
       <origin xyz="0.0 0.0 0.15" rpy="0.0 0.0 0.0"/>
       <geometry>
-        <box size="0.75 1.7 0.3"/>
+        <mesh filename="package://iai_apartment/meshes/visual/sofa.dae"/>
       </geometry>
       <material name="environment_color"/>
     </visual>
     <collision>
       <origin xyz="0.0 0.0 0.0" rpy="0.0 0.0 0.0"/>
       <geometry>
-        <box size="0.75 1.7 0.3"/>
+        <mesh filename="package://iai_apartment/meshes/visual/sofa.dae"/>
       </geometry>
     </collision>
   </link>
   <joint name="suturo_couch:couch:couch_origin_joint" type="fixed">
-    <origin xyz="-1.9 1.9 0.0" rpy="0.0 0.0 0.0"/>
+    <origin xyz="-1.9 1.9 0.0" rpy="0.0 0.0 -1.57"/>
     <parent link="room_link"/>
     <child link="suturo_couch:couch:main"/>
   </joint>
