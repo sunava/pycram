@@ -2265,6 +2265,33 @@
     <child link="suturo_couch:couch:main"/>
   </joint>
 
+  <link name="suturo_couch_table:couch_table:main">
+    <inertial>
+      <origin xyz="0.0 0.0 0.0" rpy="0.0 0.0 0.0"/>
+      <mass value="1.0"/>
+      <inertia ixx="0.1" ixy="0.0" ixz="0.0" iyy="0.1" iyz="0.0" izz="0.1"/>
+    </inertial>
+    <visual>
+      <origin xyz="0.0 0.0 0.15" rpy="0.0 0.0 0.0"/>
+      <geometry>
+        <mesh filename="package://iai_apartment/meshes/visual/coffee_table.dae"/>
+      </geometry>
+      <material name="environment_color"/>
+    </visual>
+    <collision>
+      <origin xyz="0.0 0.0 0.0" rpy="0.0 0.0 0.0"/>
+      <geometry>
+        <mesh filename="package://iai_apartment/meshes/visual/coffee_table.dae"/>
+      </geometry>
+    </collision>
+  </link>
+  <joint name="suturo_couch_table:couch_table:couch_table_origin_joint" type="fixed">
+    <origin xyz="-3.9 1.35 0.0" rpy="0.0 0.0 1.57"/>
+    <parent link="room_link"/>
+    <child link="suturo_couch_table:couch_table:main"/>
+  </joint>
+
+
   <link name="shelf_billy:shelf_billy:shelf_origin"/>
   <link name="shelf_billy:shelf_billy:shelf_center"/>
   <link name="shelf_billy:shelf_billy:shelf_base_center"/>
