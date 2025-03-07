@@ -2208,7 +2208,7 @@
     </collision>
   </link>
   <joint name="suturo_couch:couch:couch_origin_joint" type="fixed">
-    <origin xyz="-1.9 1.9 0.0" rpy="0.0 0.0 -1.57"/>
+    <origin xyz="-3.9 2.55 0.0" rpy="0.0 0.0 0.0"/>
     <parent link="room_link"/>
     <child link="suturo_couch:couch:main"/>
   </joint>
