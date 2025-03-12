@@ -93,10 +93,10 @@ def transporting_demo(apartment_name, robot_name):
             milk_target_pose = Pose([4.8, 3.3, 0.8],[0, 0, 1, 1])
 
             cereal = Object("cereal", ObjectType.BREAKFAST_CEREAL, "breakfast_cereal.stl",
-                            pose=Pose([2.5, 2.5, 1.05]), color=Color(0, 1, 0, 1))
+                            pose=Pose([2.4, 2.4, 1.05]), color=Color(0, 1, 0, 1))
             cereal_target_pose = Pose([5.2, 3.4, 0.8], [0, 0, 1, 1])
 
-            bowl = Object("bowl", ObjectType.BOWL, "bowl.stl", pose=Pose([2.4, 2.2, 0.98]),
+            bowl = Object("bowl", ObjectType.JEROEN_CUP, "jeroen_cup.stl", pose=Pose([2.4, 2.2, 0.97]),
                           color=Color(1, 1, 0, 1))
             bowl_target_pose = Pose([5, 3.3, 0.8], [0, 0, 1, 1])
 
@@ -108,6 +108,7 @@ def transporting_demo(apartment_name, robot_name):
 
             pick_pose = Pose([2.7, 2.15, 1])
             nav_pose = Pose([1.5, 2, 0])
+
 
     @with_simulated_robot
     def move_and_detect(obj_type):
@@ -139,7 +140,7 @@ def transporting_demo(apartment_name, robot_name):
         clear_output()
 
         if robot.name not in ["tiago_dual"]:
-            bowl_desig = move_and_detect(ObjectType.BOWL)
+            bowl_desig = move_and_detect(ObjectType.JEROEN_CUP)
             TransportAction(bowl_desig, [Arms.LEFT], [bowl_target_pose]).resolve().perform()
 
         # if robot.name == "iCub":
