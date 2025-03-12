@@ -71,7 +71,7 @@ def transporting_demo(apartment_name, robot_name):
         if robot.name == "iCub":
             milk = Object("milk", ObjectType.MILK, "milk.stl", pose=Pose([4.7, 4.6, 0.8]),
                           color=Color(1, 0, 0, 1))
-            milk_target_pose = Pose([4.8, 3.45, 0.8])
+            milk_target_pose = Pose([4.8, 3.45, 0.8],[0, 0, 1, 1])
 
             cereal = Object("cereal", ObjectType.BREAKFAST_CEREAL, "breakfast_cereal.stl",
                             pose=Pose([4.65, 4.75, 0.8]), color=Color(0, 1, 0, 1))
@@ -90,7 +90,7 @@ def transporting_demo(apartment_name, robot_name):
         else:
             milk = Object("milk", ObjectType.MILK, "milk.stl", pose=Pose([2.5, 2, 1.02], [0, 0, 1, 1]),
                           color=Color(1, 0, 0, 1))
-            milk_target_pose = Pose([4.8, 3.55, 0.8])
+            milk_target_pose = Pose([4.8, 3.3, 0.8],[0, 0, 1, 1])
 
             cereal = Object("cereal", ObjectType.BREAKFAST_CEREAL, "breakfast_cereal.stl",
                             pose=Pose([2.5, 2.5, 1.05]), color=Color(0, 1, 0, 1))
