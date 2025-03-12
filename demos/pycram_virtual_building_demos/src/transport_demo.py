@@ -1,3 +1,4 @@
+import rospy
 from IPython.core.display_functions import clear_output
 
 from pycram.plan_failures import IKError
@@ -40,13 +41,9 @@ def transporting_demo(apartment_name, robot_name):
                         pose=Pose([1.4, 0.65, 0.96]), color=Color(0, 1, 0, 1))
         cereal_target_pose = Pose([-0.79, 0.9, 0.96], [0, 0, 0, -11])
 
-        bowl = Object("bowl", ObjectType.BOWL, "bowl.stl", pose=Pose([1.4, 0, 0.9], [0, 0, -1, 1]),
+        bowl = Object("bowl", ObjectType.JEROEN_CUP, "jeroen_cup.stl", pose=Pose([1.4, 0, 0.9], [0, 0, -1, 1]),
                       color=Color(1, 1, 0, 1))
         bowl_target_pose = Pose([-0.79, 1.3, 0.89], [0, 0, 0, -11])
-
-        # spoon = Object("spoon", ObjectType.SPOON, "spoon.stl", pose=Pose([1.4, 0.75, 0.75], [0, 0, -1, 1]),
-        #                color=Color(0, 0, 1, 1))
-        # spoon_target_pose = Pose([5.2, 3.3, 0.8], [0, 0, 1, 1])
 
         pick_pose = Pose([1.4, 0.2, 0.96])
         nav_pose = Pose([0.7, 0, 0])
@@ -60,7 +57,7 @@ def transporting_demo(apartment_name, robot_name):
                         pose=Pose([1.49, 6.52, 1.14],[ 0, 0, 0.707, 0.707]),  color=Color(0, 0, -1, -1))
         cereal_target_pose = Pose([4.6, 3.1, 0.76])
 
-        bowl = Object("bowl", ObjectType.BOWL, "bowl.stl", pose=Pose([1.29, 6.51, 0.8], [0, 0, -1, 1]),
+        bowl = Object("bowl", ObjectType.JEROEN_CUP, "jeroen_cup.stl", pose=Pose([1.29, 6.51, 0.8], [0, 0, -1, 1]),
                       color=Color(1, 1, 0, 0.72))
         bowl_target_pose = Pose([4.6, 3.4, 0.7], [0, 0, -1, 1])
 
@@ -77,18 +74,14 @@ def transporting_demo(apartment_name, robot_name):
                             pose=Pose([4.65, 4.75, 0.8]), color=Color(0, 1, 0, 1))
             cereal_target_pose = Pose([4.85, 3.3, 0.8], [0, 0, 1, 1])
 
-            bowl = Object("bowl", ObjectType.BOWL, "bowl.stl", pose=Pose([4.7, 4, 0.75], [0, 0, -1, 1]),
+            bowl = Object("bowl", ObjectType.JEROEN_CUP, "jeroen_cup.stl", pose=Pose([4.7, 4, 0.75], [0, 0, -1, 1]),
                           color=Color(1, 1, 0, 1))
             bowl_target_pose = Pose([5, 3.3, 0.75], [0, 0, 0, 1])
-
-            spoon = Object("spoon", ObjectType.SPOON, "spoon.stl", pose=Pose([4.7, 4.2, 0.75], [0, 0, -1, 1]),
-                           color=Color(0, 0, 1, 1))
-            spoon_target_pose = Pose([5.2, 3.3, 0.8], [0, 0, 1, 1])
 
             pick_pose = Pose([4.7, 4.5, 0.8])
             nav_pose = Pose([4, 4.5, 0])
         else:
-            milk = Object("milk", ObjectType.MILK, "milk.stl", pose=Pose([2.5, 2, 1.02], [0, 0, 1, 1]),
+            milk = Object("milk", ObjectType.MILK, "milk.stl", pose=Pose([2.5, 2, 1.0], [0, 0, 1, 1]),
                           color=Color(1, 0, 0, 1))
             milk_target_pose = Pose([4.8, 3.3, 0.8],[0, 0, 1, 1])
 
@@ -96,18 +89,21 @@ def transporting_demo(apartment_name, robot_name):
                             pose=Pose([2.4, 2.4, 1.05]), color=Color(0, 1, 0, 1))
             cereal_target_pose = Pose([5.2, 3.4, 0.8], [0, 0, 1, 1])
 
-            bowl = Object("bowl", ObjectType.JEROEN_CUP, "jeroen_cup.stl", pose=Pose([2.4, 2.2, 0.97]),
-                          color=Color(1, 1, 0, 1))
+            if robot.name == "donbot":
+                bowl = Object("bowl", ObjectType.JEROEN_CUP, "jeroen_cup.stl", pose=Pose([2.4, 2.2, 0.99]),
+                              color=Color(1, 1, 0, 1))
+            else:
+                bowl = Object("bowl", ObjectType.JEROEN_CUP, "jeroen_cup.stl", pose=Pose([2.4, 2.2, 0.97]),
+                              color=Color(1, 1, 0, 1))
             bowl_target_pose = Pose([5, 3.3, 0.8], [0, 0, 1, 1])
 
-            spoon = Object("spoon", ObjectType.SPOON, "spoon.stl", pose=Pose([2.5, 2.2, 0.85]),
-                           color=Color(0, 0, 1, 1))
-            spoon_target_pose = Pose([4.85, 3.3, 0.8], [0, 0, 1, 1])
-
-            apartment.attach(spoon, 'cabinet10_drawer_top')
-
-            pick_pose = Pose([2.7, 2.15, 1])
-            nav_pose = Pose([1.5, 2, 0])
+            if robot.name == "amar6":
+                pick_pose = Pose([1, 2, 1])
+                nav_pose = Pose([1.5, 2, 0])
+            else:
+                pick_pose = Pose([2.7, 2.15, 1])
+                nav_pose = Pose([1.5, 2, 0])
+            rospy.sleep(2)
 
 
     @with_simulated_robot
@@ -124,10 +120,12 @@ def transporting_demo(apartment_name, robot_name):
         ParkArmsAction([Arms.BOTH]).resolve().perform()
 
         MoveTorsoAction([TorsoState.HIGH]).resolve().perform()
-
+        if robot.name == "armar6":
+            arms = Arms.RIGHT
+        else: arms = Arms.LEFT
         milk_desig = move_and_detect(ObjectType.MILK)
 
-        TransportAction(milk_desig, [Arms.LEFT], [milk_target_pose]).resolve().perform()
+        TransportAction(milk_desig, [arms], [milk_target_pose]).resolve().perform()
         clear_output()
 
         cereal_desig = move_and_detect(ObjectType.BREAKFAST_CEREAL)
