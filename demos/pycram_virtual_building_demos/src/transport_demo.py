@@ -43,7 +43,8 @@ def transporting_demo(apartment_name, robot_name):
 
         bowl = Object("bowl", ObjectType.JEROEN_CUP, "jeroen_cup.stl", pose=Pose([1.4, 0, 0.9], [0, 0, -1, 1]),
                       color=Color(1, 1, 0, 1))
-        bowl_target_pose = Pose([-0.79, 1.3, 0.89], [0, 0, 0, -11])
+        bowl_target_pose = Pose([-0.68, 0.6, 0.94], [0, 0, 0, -11])
+
 
         pick_pose = Pose([1.4, 0.2, 0.96])
         nav_pose = Pose([0.7, 0, 0])
@@ -57,9 +58,10 @@ def transporting_demo(apartment_name, robot_name):
                         pose=Pose([1.49, 6.52, 1.14],[ 0, 0, 0.707, 0.707]),  color=Color(0, 0, -1, -1))
         cereal_target_pose = Pose([4.6, 3.1, 0.76])
 
-        bowl = Object("bowl", ObjectType.JEROEN_CUP, "jeroen_cup.stl", pose=Pose([1.29, 6.51, 0.8], [0, 0, -1, 1]),
+        bowl = Object("bowl", ObjectType.JEROEN_CUP, "jeroen_cup.stl", pose=Pose([1.35, 6.51, 1.05]),
                       color=Color(1, 1, 0, 0.72))
         bowl_target_pose = Pose([4.6, 3.4, 0.7], [0, 0, -1, 1])
+
 
         pick_pose = Pose([1.5, 6.5, 0.9])
         nav_pose = Pose([1.7, 5.7, 0],[0, 0, 0.707, 0.707])
