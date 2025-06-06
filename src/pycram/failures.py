@@ -239,6 +239,7 @@ class ManipulationGoalNotReached(ManipulationLowLevelFailure):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
+
 class RobotInCollision(PlanFailure):
     """Thrown when the robot is in collision with the environment."""
 
@@ -423,24 +424,9 @@ class ObjectUnreachable(HighLevelFailure):
 
 class PerceptionLowLevelFailure(LowLevelFailure):
     """Low-level failure produced while perceiving, i.e. some kind of hardware issue."""
-    object_description: ObjectDesignatorDescription
-    """
-    The object description that was used to search for the object.
-    """
-    technique: DetectionTechnique
-    """
-    The detection technique that was used to search for the object.
-    """
-    region: Optional[Location] = None
-    """
-    The suggested region in which the object was searched.
-    """
 
-    def __init__(self, object_description: ObjectDesignatorDescription, technique: DetectionTechnique,
-                 region: Optional[Location] = None, *args, **kwargs):
-        self.object_description = object_description
-        self.technique = technique
-        self.region = region
+
+    def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
 
@@ -448,11 +434,8 @@ class PerceptionObjectNotFound(PerceptionLowLevelFailure):
     """Thrown when an attempt to find an object by perception fails -- and this can still be interpreted as the robot
     not looking in the right direction, as opposed to the object being absent."""
 
-    def __init__(self, obj_desc: ObjectDesignatorDescription, technique: DetectionTechnique, region: Location,
-                 *args, **kwargs):
-        super().__init__(obj_desc, technique, region,
-                         f"object described by {obj_desc} not found using {technique.name} technique in region"
-                         f" {region}", *args, **kwargs)
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
 
 
 class PerceptionObjectNotInWorld(PerceptionLowLevelFailure):
@@ -528,7 +511,7 @@ class Grasping(Task):
 
 
 class ObjectNotGraspedError(Grasping):
-    def __init__(self, obj: Object, robot: Object, arm: Arms, grasp = None, *args, **kwargs):
+    def __init__(self, obj: Object, robot: Object, arm: Arms, grasp=None, *args, **kwargs):
         grasp_str = f"using {grasp} grasp" if grasp else ""
         super().__init__(obj, robot, arm, grasp, f"object {obj.name} was not grasped by {arm.name} arm" + grasp_str,
                          *args, **kwargs)
@@ -754,6 +737,7 @@ class MultiverseFailedAPIResponse(Exception):
     """
     The name of the API that failed.
     """
+
     def __init__(self, api_response: List[str], api_name: MultiverseAPIName, *args, **kwargs):
         self.api_response = api_response
         self.api_name = api_name
@@ -769,6 +753,7 @@ class ProspectionObjectNotFound(KeyError):
     """
     The object that was not found in the prospection world.
     """
+
     def __init__(self, obj: Object):
         self.obj = obj
         super().__init__(f"The given object {obj.name} is not in the prospection world.")
@@ -782,6 +767,7 @@ class ObjectAlreadyExists(Exception):
     """
     The object that already exists in the world.
     """
+
     def __init__(self, obj: Object):
         self.obj = obj
         super().__init__(f"An object with the name {obj.name} already exists in the world.")
@@ -803,6 +789,7 @@ class ObjectDescriptionNotFound(KeyError):
     """
     The description extension of the object whose description was not found.
     """
+
     def __init__(self, object_name: str, path: str, extension: str):
         self.object_name = object_name
         self.path = path
@@ -823,6 +810,7 @@ class WorldMismatchErrorBetweenAttachedObjects(Exception):
     """
     The second object that has a mismatch in the world.
     """
+
     def __init__(self, obj_1: 'Object', obj_2: 'Object'):
         self.obj_1 = obj_1
         self.obj_2 = obj_2
@@ -838,6 +826,7 @@ class ObjectFrameNotFoundError(KeyError):
     """
     The name of the frame that was not found.
     """
+
     def __init__(self, frame_name: str):
         self.frame_name = frame_name
         super().__init__(f"Frame {frame_name} does not belong to any of the objects in the world.")
@@ -859,6 +848,7 @@ class MultiplePossibleTipLinks(Exception):
     """
     The list of tip links that are found for the object.
     """
+
     def __init__(self, object_name: str, start_link: str, tip_links: List[str]):
         self.object_name = object_name
         self.start_link = start_link
@@ -883,6 +873,7 @@ class UnsupportedFileExtension(Exception):
     """
     The unsupported file extension of the object description/mesh.
     """
+
     def __init__(self, object_name: str, path: str):
         self.object_name = object_name
         self.path = path
@@ -899,6 +890,7 @@ class ObjectDescriptionUndefined(Exception):
     """
     The name of the object that has an undefined description.
     """
+
     def __init__(self, object_name: str):
         self.object_name = object_name
         super().__init__(f"Object description for object {object_name} is not defined, either a path or a description"
@@ -913,6 +905,7 @@ class UnsupportedJointType(Exception):
     """
     The unsupported joint type that was used.
     """
+
     def __init__(self, joint_type: JointType):
         self.joint_type = joint_type
         super().__init__(f"Unsupported joint type: {joint_type}")
@@ -926,6 +919,7 @@ class LinkHasNoGeometry(Exception):
     """
     The name of the link that has no geometry.
     """
+
     def __init__(self, link_name: str):
         self.link_name = link_name
         super().__init__(f"Link {link_name} has no geometry.")
@@ -943,6 +937,7 @@ class LinkGeometryHasNoMesh(Exception):
     """
     The type of the link geometry.
     """
+
     def __init__(self, link_name: str, geometry_type: str):
         self.link_name = link_name
         self.geometry_type = geometry_type

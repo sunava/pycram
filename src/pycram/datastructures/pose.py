@@ -249,9 +249,9 @@ class Pose(HasParameters):
     position: Vector3 = field(default_factory=Vector3)
     orientation: Quaternion = field(default_factory=Quaternion)
 
-    def __repr__(self):
-        return (f"Pose: {[round(v, 3) for v in [self.position.x, self.position.y, self.position.z]]}, "
-                f"{[round(v, 3) for v in [self.orientation.x, self.orientation.y, self.orientation.z, self.orientation.w]]}")
+    # def __repr__(self):
+    #     return (f"Pose: {[round(v, 3) for v in [self.position.x, self.position.y, self.position.z]]}, "
+    #             f"{[round(v, 3) for v in [self.orientation.x, self.orientation.y, self.orientation.z, self.orientation.w]]}")
 
     def ros_message(self):
         """
@@ -372,8 +372,8 @@ class Vector3Stamped(Vector3):
     def frame_id(self, value: str):
         self.header.frame_id = value
 
-    def __repr__(self):
-        return f"Vector3: {[round(v, 3) for v in [self.x, self.y, self.z]]} in frame_id {self.frame_id}"
+    # def __repr__(self):
+    #     return f"Vector3: {[round(v, 3) for v in [self.x, self.y, self.z]]} in frame_id {self.frame_id}"
 
     def ros_message(self):
         """
@@ -398,6 +398,9 @@ class Vector3Stamped(Vector3):
         """
         header = Header(frame_id=message.header.frame_id, stamp=message.header.stamp)
         return cls(x=message.vector.x, y=message.vector.y, z=message.vector.z, header=header)
+
+
+
 
 @has_parameters
 @dataclass
@@ -432,10 +435,10 @@ class PoseStamped(HasParameters):
     def frame_id(self, value: str):
         self.header.frame_id = value
 
-    def __repr__(self):
-        return (f"Pose: {[round(v, 3) for v in [self.position.x, self.position.y, self.position.z]]}, "
-                f"{[round(v, 3) for v in [self.orientation.x, self.orientation.y, self.orientation.z, self.orientation.w]]} "
-                f"in frame_id {self.frame_id}")
+    # def __repr__(self):
+    #     return (f"Pose: {[round(v, 3) for v in [self.position.x, self.position.y, self.position.z]]}, "
+    #             f"{[round(v, 3) for v in [self.orientation.x, self.orientation.y, self.orientation.z, self.orientation.w]]} "
+    #             f"in frame_id {self.frame_id}")
 
     def ros_message(self):
         """

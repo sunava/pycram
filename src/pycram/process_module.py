@@ -279,6 +279,7 @@ class ProcessModuleManager(ABC):
         self._looking_lock = Lock()
         self._detecting_lock = Lock()
         self._move_tcp_lock = Lock()
+        self._move_tool_lock = Lock()
         self._move_arm_joints_lock = Lock()
         self._world_state_detecting_lock = Lock()
         self._move_joints_lock = Lock()
@@ -286,7 +287,7 @@ class ProcessModuleManager(ABC):
         self._open_lock = Lock()
         self._close_lock = Lock()
         self._move_tcp_waypoints_lock = Lock()
-        self.available_pms = []
+        #self.available_pms = []
         self.register_all_process_modules()
 
     @staticmethod

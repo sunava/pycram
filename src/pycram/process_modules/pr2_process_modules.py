@@ -4,7 +4,7 @@ from ..datastructures.world import World
 from ..designators.motion_designator import MoveGripperMotion
 from ..process_module import ProcessModule, ProcessModuleManager
 from ..ros import Duration, create_action_client
-from ..ros import  loginfo, logwarn, logdebug
+from ..ros import loginfo, logwarn, logdebug
 
 try:
     from pr2_controllers_msgs.msg import Pr2GripperCommandGoal, Pr2GripperCommandAction, Pr2
@@ -31,6 +31,7 @@ try:
     from pr2_controllers_msgs.msg import Pr2GripperCommandGoal, Pr2GripperCommandAction, Pr2
 except ImportError:
     logdebug("Pr2GripperCommandGoal not found")
+
 
 class Pr2MoveGripperMultiverse(ProcessModule):
     """
@@ -60,6 +61,7 @@ class Pr2MoveGripperMultiverse(ProcessModule):
         client.send_goal(goal, active_cb=activate_callback, done_cb=done_callback, feedback_cb=feedback_callback)
         wait = client.wait_for_result(Duration(5))
         # client.cancel_all_goals()
+
 
 class Pr2MoveGripperReal(ProcessModule):
     """
@@ -95,6 +97,7 @@ class Pr2MoveGripperReal(ProcessModule):
         client.send_goal(goal, active_cb=activate_callback, done_cb=done_callback, feedback_cb=feedback_callback)
         wait = client.wait_for_result()
 
+
 class Pr2Manager(DefaultManager):
     def __init__(self):
         super().__init__()
@@ -109,6 +112,7 @@ class Pr2Manager(DefaultManager):
                 return Pr2MoveGripperMultiverse(self._move_gripper_lock)
             else:
                 return Pr2MoveGripperReal(self._move_gripper_lock)
+
 
 # Initialize the PR2 manager and register it with the process module manager
 Pr2Manager()

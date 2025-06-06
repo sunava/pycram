@@ -11,8 +11,8 @@ from typing import Optional, Union, Iterable, Tuple
 from typing_extensions import Any
 
 from .. import utils
-from .motion_designator import MoveTCPMotion
-from ..datastructures.enums import Arms, Grasp, AxisIdentifier
+from .motion_designator import MoveTCPMotion, MoveToolMotion
+from ..datastructures.enums import Arms, Grasp, AxisIdentifier, MovementType
 from ..datastructures.partial_designator import PartialDesignator
 from ..datastructures.pose import PoseStamped
 from ..datastructures.world import World
@@ -95,21 +95,32 @@ class CuttingAction(GAP):
             tmp_pose.pose.position.x = x
             slice_poses.append(tmp_pose)
 
+        cutting_poses = []
         for slice_pose in slice_poses:
             pose_a = obj.pose
             pose_b = World.robot.pose
             angle, angle_y = self.get_rotation_offset_from_axis_preference(pose_a, pose_b)
-            direction = 1 if angle_y >= 0 else -1
+            direction = -1 if angle_y >= 0 else 1
             slice_pose.pose.position.y += direction * (length_tool / 2)
 
             new_pose = self.perpendicular_pose(slice_pose=slice_pose, angle=angle)
             final_pose = lt.transform_pose(new_pose, "map")
 
-            print(final_pose)
             World.current_world.add_vis_axis(final_pose)
 
-            lift_pose = new_pose.copy()
+            lift_pose = final_pose.copy()
             lift_pose.pose.position.z += height
+            World.current_world.add_vis_axis(lift_pose)
+            cutting_poses.append(lift_pose)
+            cutting_poses.append(final_pose)
+            cutting_poses.append(lift_pose)
+            # MoveToolMotion(self.tool, True,lift_pose, self.arm, allow_gripper_collision=True,
+            #                movement_type=MovementType.CARTESIAN).perform()
+            # MoveToolMotion(self.tool, True,final_pose, self.arm, allow_gripper_collision=True,
+            #                movement_type=MovementType.CARTESIAN).perform()
+            # MoveToolMotion(self.tool, True, lift_pose, self.arm, allow_gripper_collision=False,
+            #                movement_type=MovementType.CARTESIAN).perform()
+        print (cutting_poses)
 
     @classmethod
     @with_plan
@@ -149,8 +160,6 @@ class CuttingAction(GAP):
         fy, ay = pose_a.is_facing_2d_axis(pose_b, axis=AxisIdentifier.Y)
 
         return (-90 if abs(ax) > abs(ay) else 90), ay
-
-
 
 
 @dataclass

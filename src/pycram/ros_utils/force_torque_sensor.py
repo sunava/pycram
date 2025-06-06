@@ -246,7 +246,7 @@ class ForceTorqueSensor:
             loginfo_once("Now monitoring for human touch")
             if self.robot_name == 'pr2':
                 der = self.get_derivative()
-                if abs(der.wrench.torque.x) > 4:
+                if abs(der.wrench.torque.x) > 6:
                     plan.root.resume()
                     break
         return False

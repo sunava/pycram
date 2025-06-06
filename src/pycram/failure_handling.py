@@ -179,7 +179,7 @@ class RetryMonitor(FailureHandling):
         return flatten(res)
 
 
-def try_action(action: Any, failure_type: Type[Exception], max_tries: int = 3):
+def try_action(action: Any, failure_type: Type[Exception], max_tries: int = 1):
     """
     A generic function to retry an action a certain number of times before giving up, with a specific failure type.
 
@@ -194,7 +194,7 @@ def try_action(action: Any, failure_type: Type[Exception], max_tries: int = 3):
 
 
 def try_motion(motion: ProcessModule, motion_designator_instance: BaseMotion,
-               failure_type: Type[Exception], max_tries: int = 3):
+               failure_type: Type[Exception], max_tries: int = 1):
     """
     A generic function to retry a motion a certain number of times before giving up, with a specific exception.
 

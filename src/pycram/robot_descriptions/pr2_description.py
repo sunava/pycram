@@ -13,7 +13,7 @@ filename = get_ros_package_path('pycram') + '/resources/robots/' + "pr2" + '.urd
 
 mjcf_filename = get_robot_description_path("", "pr2")
 
-pr2_description = RobotDescription("pr2", "base_link", "torso_lift_link",
+pr2_description = RobotDescription("pr2", "base_footprint", "torso_lift_link",
                                    "torso_lift_joint", filename,
                                    virtual_mobile_base_joints=VirtualMobileBaseJoints(),
                                    mjcf_path=mjcf_filename,
