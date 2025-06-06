@@ -403,11 +403,12 @@ def set_joint_goal(goal_poses: Dict[str, float]) -> None:
 
 @init_giskard_interface
 @thread_safe
-def achieve_insert_w_wiggle(root_link: str, tip_link: str, hole_point: Vector3, name: Optional[str] = None,
+def achieve_insert_w_wiggle(hole_point: Vector3,  tip_link: str, root_link: str,
+                            grippers_that_can_collide: Optional[Arms] = None,
                             down_velocity: float = 0.2, noise_translation: float = 0.5, noise_angle: float = 10,
                             random_walk: bool = True, vector_momentum_factor: float = 0.9,
                             angular_momentum_factor: float = 0.9, center_pull_strength_angle: float = 0.1,
-                            center_pull_strength_vector: float = 0.25):
+                            center_pull_strength_vector: float = 0.25,):
     """
        Press down while wiggling the end effector.
         This will run in an endless loop and needs to be interrupted from a monitor within pycram.
@@ -431,13 +432,16 @@ def achieve_insert_w_wiggle(root_link: str, tip_link: str, hole_point: Vector3, 
     pstamped = make_point_stamped(hole_point.to_list())
     giskard_wrapper.motion_goals.add_wiggle_insert(root_link=root_link, tip_link=tip_link,
                                                    hole_point=pstamped,
-                                                   name=name, down_velocity=down_velocity,
+                                                   name="g1", down_velocity=down_velocity,
                                                    noise_translation=noise_translation, noise_angle=noise_angle,
                                                    random_walk=random_walk,
                                                    vector_momentum_factor=vector_momentum_factor,
                                                    angular_momentum_factor=angular_momentum_factor,
                                                    center_pull_strength_angle=center_pull_strength_angle,
                                                    center_pull_strength_vector=center_pull_strength_vector)
+    giskard_wrapper.monitors.add_end_motion(start_condition="g1")
+    if grippers_that_can_collide is not None:
+        allow_gripper_collision(grippers_that_can_collide)
     return giskard_wrapper.execute()
 
 

@@ -553,17 +553,28 @@ class DefaultCloseReal(ProcessModule):
             designator.object_part.name)
 
 
-class DefaultAlignmentWiggleReal(ProcessModule):
+class DefaultWiggleReal(ProcessModule):
     """
        Attempts to insert an object into a target slot using small corrective motions
     to overcome misalignment or minor physical resistance.
     """
 
-    def _execute(self, designator: WiggleMotion):
-        root_link = designator.root_link
-        tip_link = designator.tip_link
-        hole_point = designator.hole_point
-        giskard.achieve_insert_w_wiggle(root_link, tip_link, hole_point)
+    def _execute(self, designator: MoveTCPMotion):
+        lt = LocalTransformer()
+        pose_in_map = lt.transform_pose(designator.target, "map")
+
+        tip_link = RobotDescription.current_robot_description.get_arm_chain(designator.arm).get_tool_frame()
+        root_link = RobotDescription.current_robot_description.base_link
+
+        gripper_that_can_collide = designator.arm if designator.allow_gripper_collision else None
+        if designator.allow_gripper_collision:
+            giskard.allow_gripper_collision(designator.arm)
+
+        giskard.achieve_insert_w_wiggle(pose_in_map.position, tip_link, root_link,
+                                        grippers_that_can_collide=gripper_that_can_collide)
+        time.sleep(2)
+        if not World.current_world.robot.get_link_pose(tip_link).almost_equal(designator.target, 0.3, 3):
+            raise ToolPoseNotReachedError(World.current_world.robot.get_link_pose(tip_link), designator.target)
 
 
 class DefaultMoveTCPWaypointsReal(ProcessModule):
@@ -660,9 +671,9 @@ class DefaultManager(ProcessModuleManager):
         elif ProcessModuleManager.execution_type == ExecutionType.REAL:
             return DefaultMoveTCPWaypointsReal(self._move_tcp_waypoints_lock)
 
-    def alignment_wiggle(self):
+    def wiggle(self):
         if ProcessModuleManager.execution_type == ExecutionType.REAL:
-            return DefaultAlignmentWiggleReal(self._move_tcp_waypoints_lock)
+            return DefaultWiggleReal(self._move_tcp_waypoints_lock)
 
 # Initialize the default manager and register it with the ProcessModuleManager
 # DefaultManager()
