@@ -292,12 +292,12 @@ class ForceTorqueSensor:
 
         return input_data
 
-    def human_touch_monitoring(self, plan):
+    def human_touch_monitoring(self, plan, threshold: int = 6):
         while True:
             loginfo_once("Now monitoring for human touch")
             if self.robot_name == 'pr2':
                 der = self.get_derivative()
-                if abs(der.wrench.torque.x) > 6:
+                if abs(der.wrench.torque.x) > threshold:
                     plan.root.resume()
                     break
         return False
