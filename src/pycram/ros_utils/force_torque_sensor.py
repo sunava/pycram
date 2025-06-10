@@ -8,8 +8,8 @@ from ..datastructures.enums import FilterConfig
 from ..datastructures.world import World
 from ..failures import SensorMonitoringCondition
 from ..filter import Butterworth
-from ..ros import  Time
-from ..ros import  create_publisher, logdebug, loginfo_once, logerr, create_subscriber
+from ..ros import Time
+from ..ros import create_publisher, logwarn, logdebug, loginfo_once, logerr, create_subscriber, wait_for_message
 
 
 class ForceTorqueSensorSimulated:
@@ -100,17 +100,19 @@ class ForceTorqueSensor:
     filtered = 'filtered'
     unfiltered = 'unfiltered'
 
-    def __init__(self, robot_name, filter_config=FilterConfig.butterworth, filter_order=4, custom_topic=None,
+    def __init__(self, robot_name, filter_config=FilterConfig.butterworth, filter_order=4, use_offset=True, custom_topic=None,
                  debug=False):
         self.robot_name = robot_name
         self.filter_config = filter_config
         self.filter = self._get_filter(order=filter_order)
+        self.use_offset = use_offset
         self.debug = debug
 
         self.wrench_topic_name = custom_topic
         self.force_torque_subscriber = None
         self.init_data = True
 
+        self.offset_value = None
         self.whole_data = None
         self.prev_values = None
 
@@ -143,11 +145,8 @@ class ForceTorqueSensor:
             logerr(f'{self.robot_name} is not supported')
 
     def _get_rospy_data(self, data_compensated: WrenchStamped):
-        if self.init_data:
-            self.init_data = False
-            self.prev_values = [data_compensated] * (self.order + 1)
-            self.whole_data = {self.unfiltered: [data_compensated],
-                               self.filtered: [data_compensated]}
+        if self.use_offset:
+            data_compensated = self.process_offset(data_compensated)
 
         filtered_data = self._filter_data(data_compensated)
 
@@ -195,6 +194,17 @@ class ForceTorqueSensor:
                                                             WrenchStamped,
                                                             self._get_rospy_data)
 
+        first_data = wait_for_message(self.wrench_topic_name, WrenchStamped)
+
+        if self.use_offset:
+            self.offset_value = first_data
+            first_data = WrenchStamped()
+
+        self.prev_values = [first_data] * (self.order + 1)
+        self.whole_data = {self.unfiltered: [first_data],
+                           self.filtered: [first_data]}
+
+
     def unsubscribe(self):
         """
         Unsubscribe from the specified topic
@@ -221,6 +231,10 @@ class ForceTorqueSensor:
         """
         status = self.filtered if is_filtered else self.unfiltered
 
+        if self.whole_data is None:
+            logwarn(f'data is not initialized yet')
+            return WrenchStamped()
+
         if len(self.whole_data[status]) < 2:
             return WrenchStamped()
 
@@ -240,6 +254,16 @@ class ForceTorqueSensor:
         derivative.wrench.torque.z = float((after.wrench.torque.z - before.wrench.torque.z) / dt)
 
         return derivative
+
+    def process_offset(self, input_data: WrenchStamped) -> WrenchStamped:
+        input_data.wrench.force.x = float((input_data.wrench.force.x - self.offset_value.wrench.force.x))
+        input_data.wrench.force.y = float((input_data.wrench.force.y - self.offset_value.wrench.force.y))
+        input_data.wrench.force.z = float((input_data.wrench.force.z - self.offset_value.wrench.force.z))
+        input_data.wrench.torque.x = float((input_data.wrench.torque.x - self.offset_value.wrench.torque.x))
+        input_data.wrench.torque.y = float((input_data.wrench.torque.y - self.offset_value.wrench.torque.y))
+        input_data.wrench.torque.z = float((input_data.wrench.torque.z - self.offset_value.wrench.torque.z))
+
+        return input_data
 
     def human_touch_monitoring(self, plan):
         while True:
