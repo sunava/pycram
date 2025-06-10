@@ -1,6 +1,8 @@
 import atexit
 import time
 import threading
+from copy import deepcopy
+
 from geometry_msgs.msg import WrenchStamped
 from std_msgs.msg import Header
 
@@ -104,10 +106,9 @@ class ForceTorqueSensor:
                  filter_config=FilterConfig.butterworth, filter_order=4,
                  use_offset=True,
                  custom_topic=None,
-                 debug=False):
+                 debug=False,
+                 initialize=True):
         self.robot_name = robot_name
-        self.filter_config = filter_config
-        self.filter = self._get_filter(order=filter_order)
         self.use_offset = use_offset
         self.debug = debug
 
@@ -119,8 +120,11 @@ class ForceTorqueSensor:
         self.prev_values = None
 
         self.order = filter_order
+        self.filter_config = filter_config
+        self.filter = self._get_filter(order=filter_order)
 
-        self.setup()
+        if initialize:
+            self.setup()
 
     def _get_filter(self, order=4, cutoff=10, fs=60):
         if self.filter_config == FilterConfig.butterworth:
@@ -206,14 +210,15 @@ class ForceTorqueSensor:
 
         returns: processed data as WrenchStamped
         """
-        input_data.wrench.force.x = float((input_data.wrench.force.x - self.offset_value.wrench.force.x))
-        input_data.wrench.force.y = float((input_data.wrench.force.y - self.offset_value.wrench.force.y))
-        input_data.wrench.force.z = float((input_data.wrench.force.z - self.offset_value.wrench.force.z))
-        input_data.wrench.torque.x = float((input_data.wrench.torque.x - self.offset_value.wrench.torque.x))
-        input_data.wrench.torque.y = float((input_data.wrench.torque.y - self.offset_value.wrench.torque.y))
-        input_data.wrench.torque.z = float((input_data.wrench.torque.z - self.offset_value.wrench.torque.z))
+        output_data = deepcopy(input_data)
+        output_data.wrench.force.x = float((input_data.wrench.force.x - self.offset_value.wrench.force.x))
+        output_data.wrench.force.y = float((input_data.wrench.force.y - self.offset_value.wrench.force.y))
+        output_data.wrench.force.z = float((input_data.wrench.force.z - self.offset_value.wrench.force.z))
+        output_data.wrench.torque.x = float((input_data.wrench.torque.x - self.offset_value.wrench.torque.x))
+        output_data.wrench.torque.y = float((input_data.wrench.torque.y - self.offset_value.wrench.torque.y))
+        output_data.wrench.torque.z = float((input_data.wrench.torque.z - self.offset_value.wrench.torque.z))
 
-        return input_data
+        return output_data
 
     def _filter_data(self, current_wrench_data: WrenchStamped) -> WrenchStamped:
         """
@@ -272,11 +277,8 @@ class ForceTorqueSensor:
         """
         status = self.filtered if is_filtered else self.unfiltered
 
-        if self.whole_data is None:
-            logwarn(f'data is not initialized yet')
-            return WrenchStamped()
-
-        if len(self.whole_data[status]) < 2:
+        if not self.whole_data or len(self.whole_data[status]) < 2:
+            logwarn("Not enough data to compute derivative.")
             return WrenchStamped()
 
         before: WrenchStamped = self.whole_data[status][-2]
@@ -296,7 +298,7 @@ class ForceTorqueSensor:
 
         return derivative
 
-    def human_touch_monitoring(self, plan, threshold: int = 6):
+    def human_touch_monitoring(self, plan, threshold: float = 6.0):
         while True:
             loginfo_once("Now monitoring for human touch")
             if self.robot_name == 'pr2':
