@@ -100,7 +100,10 @@ class ForceTorqueSensor:
     filtered = 'filtered'
     unfiltered = 'unfiltered'
 
-    def __init__(self, robot_name, filter_config=FilterConfig.butterworth, filter_order=4, use_offset=True, custom_topic=None,
+    def __init__(self, robot_name,
+                 filter_config=FilterConfig.butterworth, filter_order=4,
+                 use_offset=True,
+                 custom_topic=None,
                  debug=False):
         self.robot_name = robot_name
         self.filter_config = filter_config
@@ -123,6 +126,7 @@ class ForceTorqueSensor:
     def _setup(self):
         self._get_robot_parameters()
         self.subscribe()
+        self.initialize_data()
 
     def _get_robot_parameters(self):
         if self.wrench_topic_name is not None:
@@ -144,7 +148,40 @@ class ForceTorqueSensor:
         else:
             logerr(f'{self.robot_name} is not supported')
 
+    def subscribe(self):
+        """
+        Subscribe to the specified wrench topic.
+
+        This will automatically be called on setup.
+        Only use this if you already unsubscribed before.
+        """
+        self.force_torque_subscriber = create_subscriber(self.wrench_topic_name,
+                                                         WrenchStamped,
+                                                         self._get_rospy_data)
+
+    def initialize_data(self):
+        """
+        Initialize data for the force-torque sensor.
+
+        If the boolean use_offset is True: Also add the first received data as offset base-line.
+        This can be useful if sensor drifting occurs during testing while taring the sensor is unavailable.
+        """
+        first_data = wait_for_message(self.wrench_topic_name, WrenchStamped)
+
+        if self.use_offset:
+            self.offset_value = first_data
+            first_data = WrenchStamped()
+
+        self.prev_values = [first_data] * (self.order + 1)
+        self.whole_data = {self.unfiltered: [first_data],
+                           self.filtered: [first_data]}
+
     def _get_rospy_data(self, data_compensated: WrenchStamped):
+        """
+        Callback method for the subscriber.
+        Save incoming data (unfiltered and filtered).
+        Also processes the offset, if wanted
+        """
         if self.use_offset:
             data_compensated = self.process_offset(data_compensated)
 
@@ -167,6 +204,12 @@ class ForceTorqueSensor:
             return Butterworth(order=order, cutoff=cutoff, fs=fs)
 
     def _filter_data(self, current_wrench_data: WrenchStamped) -> WrenchStamped:
+        """
+        Filter incoming data using the specified filter in the initialization
+
+        returns: filtered data as WrenchStamped
+        """
+
         filtered_data = WrenchStamped()
         filtered_data.header = current_wrench_data.header
         for attr in ['x', 'y', 'z']:
@@ -182,28 +225,6 @@ class ForceTorqueSensor:
             setattr(filtered_data.wrench.torque, attr, filtered_torque)
 
         return filtered_data
-
-    def subscribe(self):
-        """
-        Subscribe to the specified wrench topic.
-
-        This will automatically be called on setup.
-        Only use this if you already unsubscribed before.
-        """
-        self.force_torque_subscriber = create_subscriber(self.wrench_topic_name,
-                                                            WrenchStamped,
-                                                            self._get_rospy_data)
-
-        first_data = wait_for_message(self.wrench_topic_name, WrenchStamped)
-
-        if self.use_offset:
-            self.offset_value = first_data
-            first_data = WrenchStamped()
-
-        self.prev_values = [first_data] * (self.order + 1)
-        self.whole_data = {self.unfiltered: [first_data],
-                           self.filtered: [first_data]}
-
 
     def unsubscribe(self):
         """
@@ -256,6 +277,12 @@ class ForceTorqueSensor:
         return derivative
 
     def process_offset(self, input_data: WrenchStamped) -> WrenchStamped:
+        """
+        Process incoming data with the given offset.
+        This will only be done if the boolean use_offset is set to True during initialization.
+
+        returns: processed data as WrenchStamped
+        """
         input_data.wrench.force.x = float((input_data.wrench.force.x - self.offset_value.wrench.force.x))
         input_data.wrench.force.y = float((input_data.wrench.force.y - self.offset_value.wrench.force.y))
         input_data.wrench.force.z = float((input_data.wrench.force.z - self.offset_value.wrench.force.z))
@@ -274,5 +301,3 @@ class ForceTorqueSensor:
                     plan.root.resume()
                     break
         return False
-
-
