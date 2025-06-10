@@ -113,7 +113,6 @@ class ForceTorqueSensor:
 
         self.wrench_topic_name = custom_topic
         self.force_torque_subscriber = None
-        self.init_data = True
 
         self.offset_value = None
         self.whole_data = None
@@ -121,12 +120,13 @@ class ForceTorqueSensor:
 
         self.order = filter_order
 
-        self._setup()
+        self.setup()
 
-    def _setup(self):
-        self._get_robot_parameters()
-        self.subscribe()
-        self.initialize_data()
+    def _get_filter(self, order=4, cutoff=10, fs=60):
+        if self.filter_config == FilterConfig.butterworth:
+            return Butterworth(order=order, cutoff=cutoff, fs=fs)
+
+        raise NotImplementedError(f"Unsupported filter: {self.filter_config.name}")
 
     def _get_robot_parameters(self):
         if self.wrench_topic_name is not None:
@@ -148,7 +148,7 @@ class ForceTorqueSensor:
         else:
             logerr(f'{self.robot_name} is not supported')
 
-    def subscribe(self):
+    def _subscribe(self):
         """
         Subscribe to the specified wrench topic.
 
@@ -159,7 +159,7 @@ class ForceTorqueSensor:
                                                          WrenchStamped,
                                                          self._get_rospy_data)
 
-    def initialize_data(self):
+    def _initialize_data(self):
         """
         Initialize data for the force-torque sensor.
 
@@ -183,7 +183,7 @@ class ForceTorqueSensor:
         Also processes the offset, if wanted
         """
         if self.use_offset:
-            data_compensated = self.process_offset(data_compensated)
+            data_compensated = self._process_offset(data_compensated)
 
         filtered_data = self._filter_data(data_compensated)
 
@@ -199,9 +199,21 @@ class ForceTorqueSensor:
                 f'y: {data_compensated.wrench.force.y}, '
                 f'z: {data_compensated.wrench.force.z}')
 
-    def _get_filter(self, order=4, cutoff=10, fs=60):
-        if self.filter_config == FilterConfig.butterworth:
-            return Butterworth(order=order, cutoff=cutoff, fs=fs)
+    def _process_offset(self, input_data: WrenchStamped) -> WrenchStamped:
+        """
+        Process incoming data with the given offset.
+        This will only be done if the boolean use_offset is set to True during initialization.
+
+        returns: processed data as WrenchStamped
+        """
+        input_data.wrench.force.x = float((input_data.wrench.force.x - self.offset_value.wrench.force.x))
+        input_data.wrench.force.y = float((input_data.wrench.force.y - self.offset_value.wrench.force.y))
+        input_data.wrench.force.z = float((input_data.wrench.force.z - self.offset_value.wrench.force.z))
+        input_data.wrench.torque.x = float((input_data.wrench.torque.x - self.offset_value.wrench.torque.x))
+        input_data.wrench.torque.y = float((input_data.wrench.torque.y - self.offset_value.wrench.torque.y))
+        input_data.wrench.torque.z = float((input_data.wrench.torque.z - self.offset_value.wrench.torque.z))
+
+        return input_data
 
     def _filter_data(self, current_wrench_data: WrenchStamped) -> WrenchStamped:
         """
@@ -225,6 +237,14 @@ class ForceTorqueSensor:
             setattr(filtered_data.wrench.torque, attr, filtered_torque)
 
         return filtered_data
+
+    def setup(self):
+        """
+        Setup the monitoring for the force-torque sensor.
+        """
+        self._get_robot_parameters()
+        self._subscribe()
+        self._initialize_data()
 
     def unsubscribe(self):
         """
@@ -275,22 +295,6 @@ class ForceTorqueSensor:
         derivative.wrench.torque.z = float((after.wrench.torque.z - before.wrench.torque.z) / dt)
 
         return derivative
-
-    def process_offset(self, input_data: WrenchStamped) -> WrenchStamped:
-        """
-        Process incoming data with the given offset.
-        This will only be done if the boolean use_offset is set to True during initialization.
-
-        returns: processed data as WrenchStamped
-        """
-        input_data.wrench.force.x = float((input_data.wrench.force.x - self.offset_value.wrench.force.x))
-        input_data.wrench.force.y = float((input_data.wrench.force.y - self.offset_value.wrench.force.y))
-        input_data.wrench.force.z = float((input_data.wrench.force.z - self.offset_value.wrench.force.z))
-        input_data.wrench.torque.x = float((input_data.wrench.torque.x - self.offset_value.wrench.torque.x))
-        input_data.wrench.torque.y = float((input_data.wrench.torque.y - self.offset_value.wrench.torque.y))
-        input_data.wrench.torque.z = float((input_data.wrench.torque.z - self.offset_value.wrench.torque.z))
-
-        return input_data
 
     def human_touch_monitoring(self, plan, threshold: int = 6):
         while True:
