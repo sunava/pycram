@@ -1,6 +1,8 @@
 import atexit
 import time
 import threading
+from copy import deepcopy
+
 from geometry_msgs.msg import WrenchStamped
 from std_msgs.msg import Header
 
@@ -8,8 +10,8 @@ from ..datastructures.enums import FilterConfig
 from ..datastructures.world import World
 from ..failures import SensorMonitoringCondition
 from ..filter import Butterworth
-from ..ros import  Time
-from ..ros import  create_publisher, logdebug, loginfo_once, logerr, create_subscriber
+from ..ros import Time
+from ..ros import create_publisher, logwarn, logdebug, loginfo_once, logerr, create_subscriber, wait_for_message
 
 
 class ForceTorqueSensorSimulated:
@@ -100,27 +102,35 @@ class ForceTorqueSensor:
     filtered = 'filtered'
     unfiltered = 'unfiltered'
 
-    def __init__(self, robot_name, filter_config=FilterConfig.butterworth, filter_order=4, custom_topic=None,
-                 debug=False):
+    def __init__(self, robot_name,
+                 filter_config=FilterConfig.butterworth, filter_order=4,
+                 use_offset=True,
+                 custom_topic=None,
+                 debug=False,
+                 initialize=True):
         self.robot_name = robot_name
-        self.filter_config = filter_config
-        self.filter = self._get_filter(order=filter_order)
+        self.use_offset = use_offset
         self.debug = debug
 
         self.wrench_topic_name = custom_topic
         self.force_torque_subscriber = None
-        self.init_data = True
 
+        self.offset_value = None
         self.whole_data = None
         self.prev_values = None
 
         self.order = filter_order
+        self.filter_config = filter_config
+        self.filter = self._get_filter(order=filter_order)
 
-        self._setup()
+        if initialize:
+            self.setup()
 
-    def _setup(self):
-        self._get_robot_parameters()
-        self.subscribe()
+    def _get_filter(self, order=4, cutoff=10, fs=60):
+        if self.filter_config == FilterConfig.butterworth:
+            return Butterworth(order=order, cutoff=cutoff, fs=fs)
+
+        raise NotImplementedError(f"Unsupported filter: {self.filter_config.name}")
 
     def _get_robot_parameters(self):
         if self.wrench_topic_name is not None:
@@ -142,12 +152,42 @@ class ForceTorqueSensor:
         else:
             logerr(f'{self.robot_name} is not supported')
 
+    def _subscribe(self):
+        """
+        Subscribe to the specified wrench topic.
+
+        This will automatically be called on setup.
+        Only use this if you already unsubscribed before.
+        """
+        self.force_torque_subscriber = create_subscriber(self.wrench_topic_name,
+                                                         WrenchStamped,
+                                                         self._get_rospy_data)
+
+    def _initialize_data(self):
+        """
+        Initialize data for the force-torque sensor.
+
+        If the boolean use_offset is True: Also add the first received data as offset base-line.
+        This can be useful if sensor drifting occurs during testing while taring the sensor is unavailable.
+        """
+        first_data = wait_for_message(self.wrench_topic_name, WrenchStamped)
+
+        if self.use_offset:
+            self.offset_value = first_data
+            first_data = WrenchStamped()
+
+        self.prev_values = [first_data] * (self.order + 1)
+        self.whole_data = {self.unfiltered: [first_data],
+                           self.filtered: [first_data]}
+
     def _get_rospy_data(self, data_compensated: WrenchStamped):
-        if self.init_data:
-            self.init_data = False
-            self.prev_values = [data_compensated] * (self.order + 1)
-            self.whole_data = {self.unfiltered: [data_compensated],
-                               self.filtered: [data_compensated]}
+        """
+        Callback method for the subscriber.
+        Save incoming data (unfiltered and filtered).
+        Also processes the offset, if wanted
+        """
+        if self.use_offset:
+            data_compensated = self._process_offset(data_compensated)
 
         filtered_data = self._filter_data(data_compensated)
 
@@ -163,11 +203,30 @@ class ForceTorqueSensor:
                 f'y: {data_compensated.wrench.force.y}, '
                 f'z: {data_compensated.wrench.force.z}')
 
-    def _get_filter(self, order=4, cutoff=10, fs=60):
-        if self.filter_config == FilterConfig.butterworth:
-            return Butterworth(order=order, cutoff=cutoff, fs=fs)
+    def _process_offset(self, input_data: WrenchStamped) -> WrenchStamped:
+        """
+        Process incoming data with the given offset.
+        This will only be done if the boolean use_offset is set to True during initialization.
+
+        returns: processed data as WrenchStamped
+        """
+        output_data = deepcopy(input_data)
+        output_data.wrench.force.x = float((input_data.wrench.force.x - self.offset_value.wrench.force.x))
+        output_data.wrench.force.y = float((input_data.wrench.force.y - self.offset_value.wrench.force.y))
+        output_data.wrench.force.z = float((input_data.wrench.force.z - self.offset_value.wrench.force.z))
+        output_data.wrench.torque.x = float((input_data.wrench.torque.x - self.offset_value.wrench.torque.x))
+        output_data.wrench.torque.y = float((input_data.wrench.torque.y - self.offset_value.wrench.torque.y))
+        output_data.wrench.torque.z = float((input_data.wrench.torque.z - self.offset_value.wrench.torque.z))
+
+        return output_data
 
     def _filter_data(self, current_wrench_data: WrenchStamped) -> WrenchStamped:
+        """
+        Filter incoming data using the specified filter in the initialization
+
+        returns: filtered data as WrenchStamped
+        """
+
         filtered_data = WrenchStamped()
         filtered_data.header = current_wrench_data.header
         for attr in ['x', 'y', 'z']:
@@ -184,16 +243,13 @@ class ForceTorqueSensor:
 
         return filtered_data
 
-    def subscribe(self):
+    def setup(self):
         """
-        Subscribe to the specified wrench topic.
-
-        This will automatically be called on setup.
-        Only use this if you already unsubscribed before.
+        Setup the monitoring for the force-torque sensor.
         """
-        self.force_torque_subscriber = create_subscriber(self.wrench_topic_name,
-                                                            WrenchStamped,
-                                                            self._get_rospy_data)
+        self._get_robot_parameters()
+        self._subscribe()
+        self._initialize_data()
 
     def unsubscribe(self):
         """
@@ -221,7 +277,8 @@ class ForceTorqueSensor:
         """
         status = self.filtered if is_filtered else self.unfiltered
 
-        if len(self.whole_data[status]) < 2:
+        if not self.whole_data or len(self.whole_data[status]) < 2:
+            logwarn("Not enough data to compute derivative.")
             return WrenchStamped()
 
         before: WrenchStamped = self.whole_data[status][-2]
@@ -241,14 +298,12 @@ class ForceTorqueSensor:
 
         return derivative
 
-    def human_touch_monitoring(self, plan):
+    def human_touch_monitoring(self, plan, threshold: float = 6.0):
         while True:
             loginfo_once("Now monitoring for human touch")
             if self.robot_name == 'pr2':
                 der = self.get_derivative()
-                if abs(der.wrench.torque.x) > 6:
+                if abs(der.wrench.torque.x) > threshold:
                     plan.root.resume()
                     break
         return False
-
-
