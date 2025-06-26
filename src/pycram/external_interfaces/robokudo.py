@@ -2,6 +2,8 @@ import sys
 from threading import Lock, RLock
 from typing import Any
 
+from robokudo_msgs.msg import QueryGoal
+
 from ..ros import  create_action_client
 from ..ros import  logwarn, loginfo, loginfo_once
 from ..ros import  get_node_names

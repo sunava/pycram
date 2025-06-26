@@ -856,6 +856,10 @@ class TransportAction(ActionDescription):
      Attempts to insert the robot's end effector into a hole or slot using micro-corrective
      motions ("wiggle") to handle alignment errors or contact uncertainty.
     """
+
+    hold: Optional[bool] = None
+    """
+    """
     def __post_init__(self):
         super().__post_init__()
 

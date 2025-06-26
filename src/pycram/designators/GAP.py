@@ -11,7 +11,7 @@ from typing import Optional, Union, Iterable, Tuple
 from typing_extensions import Any
 
 from .. import utils
-from .motion_designator import MoveTCPMotion, MoveToolMotion
+from .motion_designator import MoveTCPMotion, MoveToolMotion, MoveTCPWaypointsMotion
 from ..datastructures.enums import Arms, Grasp, AxisIdentifier, MovementType
 from ..datastructures.partial_designator import PartialDesignator
 from ..datastructures.pose import PoseStamped
@@ -22,6 +22,8 @@ from ..local_transformer import LocalTransformer
 from ..plan import with_plan
 from ..robot_description import RobotDescription
 from ..world_concepts.world_object import Object
+
+from pycram.external_interfaces import giskard
 
 
 @dataclass
@@ -58,7 +60,7 @@ class MixingAction(GAP):
             spiral = lt.transform_pose(p, "map")
             spiral.pose.position.z += height_offset
             World.current_world.add_vis_axis(spiral)
-            MoveTCPMotion(spiral, self.arm).perform()
+            # MoveTCPMotion(spiral, self.arm).perform()
 
         World.current_world.remove_vis_axis()
 
@@ -72,7 +74,7 @@ class MixingAction(GAP):
 
 @dataclass
 class CuttingAction(GAP):
-    slice_thickness: Optional[float] = 0.03
+    slice_thickness: Optional[float] = 0.005
 
     def plan(self) -> None:
         if self.technique is None:
@@ -85,14 +87,17 @@ class CuttingAction(GAP):
         height = obj.size[2]
         length = max(obj.size[0], obj.size[1])
         length_tool = max(tool.size[0], tool.size[1])
-
+        print(length)
         num_slices, start_offset = self.calculate_slices(length)
+        print(num_slices, start_offset)
         slice_coordinates = [start_offset + i * self.slice_thickness for i in range(num_slices)]
-
         slice_poses = []
-        for x in slice_coordinates:
+        for i, x in enumerate(slice_coordinates):
             tmp_pose = pose.copy()
-            tmp_pose.pose.position.x = x
+            if i == len(slice_coordinates) - 1:
+                tmp_pose.pose.position.x = x
+            else:
+                tmp_pose.pose.position.x = x
             slice_poses.append(tmp_pose)
 
         cutting_poses = []
@@ -101,26 +106,105 @@ class CuttingAction(GAP):
             pose_b = World.robot.pose
             angle, angle_y = self.get_rotation_offset_from_axis_preference(pose_a, pose_b)
             direction = -1 if angle_y >= 0 else 1
-            slice_pose.pose.position.y += direction * (length_tool / 2)
+            tool_halve = length_tool / 2
+
+            slice_pose.pose.position.y += direction * (tool_halve + (tool_halve / 2))
 
             new_pose = self.perpendicular_pose(slice_pose=slice_pose, angle=angle)
-            final_pose = lt.transform_pose(new_pose, "map")
 
-            World.current_world.add_vis_axis(final_pose)
+            q1 = utils.axis_angle_to_quaternion([0, 1, 0], 15)
+            new_pose.rotate_by_quaternion(q1)
 
-            lift_pose = final_pose.copy()
-            lift_pose.pose.position.z += height
-            World.current_world.add_vis_axis(lift_pose)
-            cutting_poses.append(lift_pose)
-            cutting_poses.append(final_pose)
-            cutting_poses.append(lift_pose)
+
+
+            supreme_cut = new_pose.copy()
+            # new_pose.pose.position.x += 0.01
+            supreme_cut.pose.position.x -= 0.02
+            supreme_cut.pose.position.y += 0.06
+            supreme_cut_rotate = supreme_cut.copy()
+
+            #
+
+            q2 = utils.axis_angle_to_quaternion([1, 0, 0], 47)
+
+            supreme_cut_rotate.rotate_by_quaternion(q2)
+
+
+
+
+            supreme_cut_rotate.rotate_by_quaternion(q1)
+
+            final_new_pose = lt.transform_pose(new_pose, "map")
+            m_supreme_cut_r = lt.transform_pose(supreme_cut_rotate, "map")
+            m_supreme_cut = lt.transform_pose(supreme_cut, "map")
+            # World.current_world.add_vis_axis(final_pose)
+
+            lift_pose = final_new_pose.copy()
+            lift_pose.pose.position.z += 2 * height
+
+            adjusted_lift_pose = m_supreme_cut.copy()
+            adjusted_lift_pose.pose.position.z += 2 * height + 0.02
+            # World.current_world.add_vis_axis(lift_pose)
+            final_new_pose.pose.position.z -= 0.1
+
+            final_saw_pose = final_new_pose.copy()
+            final_saw_pose.pose.position.x += 0.08
+
+            final_saw_rotate = final_saw_pose.copy()
+
+            final_saw_rotate.pose.position.y -= 0.005
+            q2 = utils.axis_angle_to_quaternion([1, 0, 0], 90)
+            final_saw_rotate.rotate_by_quaternion(q2)
+
+            final_saw_rotate_back = final_saw_rotate.copy()
+            final_saw_rotate_back.pose.position.x -= 0.08
+            final_saw_rotate_back.pose.position.y -= 0.02
+
+            final_saw_rotate_back_lift = final_saw_rotate_back.copy()
+            final_saw_rotate_back_lift.pose.position.z = lift_pose.pose.position.z
+
+            m_supreme_cut.pose.position.z -= 0.1
+            m_supreme_cut_r.pose.position.z -= 0.1
+            cutting_poses_tmp = []
+            cutting_poses_tmp.append(lift_pose)
+            cutting_poses_tmp.append(final_new_pose)
+            cutting_poses_tmp.append(final_saw_pose)
+            cutting_poses_tmp.append(final_saw_rotate)
+            cutting_poses_tmp.append(final_saw_rotate_back)
+            cutting_poses_tmp.append(final_saw_rotate_back_lift)
+            cutting_poses_tmp.append(lift_pose)
+            cutting_poses.append(cutting_poses_tmp)
+            # cutting_poses.append(m_supreme_cut)
+            # cutting_poses.append(m_supreme_cut)
+            # cutting_poses.append(m_supreme_cut_r)
+            # # cutting_poses.append(m_supreme_cut)
+            # cutting_poses.append(adjusted_lift_pose)
             # MoveToolMotion(self.tool, True,lift_pose, self.arm, allow_gripper_collision=True,
             #                movement_type=MovementType.CARTESIAN).perform()
             # MoveToolMotion(self.tool, True,final_pose, self.arm, allow_gripper_collision=True,
             #                movement_type=MovementType.CARTESIAN).perform()
             # MoveToolMotion(self.tool, True, lift_pose, self.arm, allow_gripper_collision=False,
             #                movement_type=MovementType.CARTESIAN).perform()
-        print (cutting_poses)
+        # print("moveTCPway")
+        # cutting_poses[:] = cutting_poses[len(cutting_poses) // 3: 2 * len(cutting_poses) // 3]
+
+        # cutting_poses = cutting_poses[1:][: len(cutting_poses[1:]) // 3]
+        cutting_poses = cutting_poses[: len(cutting_poses) // 2]
+        cutting_poses = [pose for sublist in cutting_poses for pose in sublist]
+
+
+        World.current_world.add_vis_axis(cutting_poses[0])
+        tip_link = self.tool.name
+        root_link = "torso_lift_link"
+
+        giskard.avoid_all_collisions()
+        giskard.allow_gripper_collision(Arms.RIGHT)
+        print(tip_link)
+        print(root_link)
+
+        giskard.achieve_cartesian_goal_sequence(cutting_poses, tip_link, root_link, Arms.RIGHT)
+        # MoveTCPWaypointsMotion(cutting_poses, self.arm, allow_gripper_collision=True, tip_link=tool.tip_link)
+        # print("moveTCPwa11y")
 
     @classmethod
     @with_plan
@@ -135,6 +219,7 @@ class CuttingAction(GAP):
             return 1, 0
         if self.technique in ['Cutting Action', 'Sawing', 'Paring', 'Cutting', 'Carving', 'Slicing']:
             num_slices = int(obj_length // self.slice_thickness)
+            print(num_slices)
             start_offset = (-obj_length / 2) + (self.slice_thickness / 2)
             return num_slices, start_offset
         return 0, 0

@@ -1,7 +1,9 @@
 import json
+import secrets
 import threading
 
 import sys
+from random import random
 from typing import TYPE_CHECKING
 
 from ..object_descriptors.generic import NamedBoxVisualShape
@@ -403,12 +405,12 @@ def set_joint_goal(goal_poses: Dict[str, float]) -> None:
 
 @init_giskard_interface
 @thread_safe
-def achieve_insert_w_wiggle(hole_point: Vector3,  tip_link: str, root_link: str,
+def achieve_insert_w_wiggle(hole_point: Vector3, tip_link: str, root_link: str,
                             grippers_that_can_collide: Optional[Arms] = None,
                             down_velocity: float = 0.2, noise_translation: float = 0.5, noise_angle: float = 10,
                             random_walk: bool = True, vector_momentum_factor: float = 0.9,
                             angular_momentum_factor: float = 0.9, center_pull_strength_angle: float = 0.1,
-                            center_pull_strength_vector: float = 0.25,):
+                            center_pull_strength_vector: float = 0.25, ):
     """
        Press down while wiggling the end effector.
         This will run in an endless loop and needs to be interrupted from a monitor within pycram.
@@ -450,7 +452,8 @@ def achieve_insert_w_wiggle(hole_point: Vector3,  tip_link: str, root_link: str,
 def achieve_cartesian_goal_sequence(goal_poses: [PoseStamped],
                                     tip_link: str,
                                     root_link: str,
-                                    grippers_that_can_collide: Optional[Arms] = None) -> 'MoveResult':
+                                    grippers_that_can_collide: Optional[Arms] = None,
+                                    reference_linear_velocity: Optional[float] = None) -> 'MoveResult':
     """
     Takes a cartesian position and tries to move the tip_link to this position using the chain defined by
     tip_link and root_link.
@@ -464,16 +467,18 @@ def achieve_cartesian_goal_sequence(goal_poses: [PoseStamped],
     :param grippers_that_can_collide: The gripper(s) that should be allowed to collide.
     :return: MoveResult message for this goal
     """
-
+    reference_linear_velocity = 0.03
     sync_worlds()
     goals = goal_poses
-
+    name = f"g0"
+    print(name)
     giskard_wrapper.motion_goals.add_cartesian_pose(
-        name='g0',
+        name=name,
         root_link=root_link,
         tip_link=tip_link,
         goal_pose=goals[0].ros_message(),
-        end_condition='g0',
+        end_condition=name,
+        reference_linear_velocity=reference_linear_velocity
     )
 
     cart_monitor1 = giskard_wrapper.monitors.add_cartesian_pose(root_link=root_link, tip_link=tip_link,
@@ -482,6 +487,7 @@ def achieve_cartesian_goal_sequence(goal_poses: [PoseStamped],
     # Remaining goals
     end_monitor = None
     for i in range(1, len(goals)):
+        print(i)
         giskard_wrapper.motion_goals.add_cartesian_pose(
             name=f'g{i}',
             root_link=root_link,
@@ -489,12 +495,25 @@ def achieve_cartesian_goal_sequence(goal_poses: [PoseStamped],
             goal_pose=goals[i].ros_message(),
             start_condition=f'g{i - 1}',
             end_condition=f'g{i}',
+            reference_linear_velocity=reference_linear_velocity
         )
 
+    giskard_wrapper.motion_goals.allow_all_collisions()
+    giskard_wrapper.monitors.add_pr2_say(name='schnibbel', text='cutting now! Be careful',
+                                         start_condition=cart_monitor1)
+
+    # hand_point = make_point_stamped([0, 0, 0], 'r_gripper_tool_frame')
+    # print(hand_point)
+    # camera_vector = Vector3Stamped()
+    # camera_vector.header.frame_id = 'camera_link'
+    # camera_vector.x = 1
+    #
+    # giskard_wrapper.motion_goals.add_pointing(goal_point=hand_point, tip_link='camera_link',
+    #                                           pointing_axis=camera_vector, root_link='r_gripper_tool_frame')
+
     giskard_wrapper.monitors.add_end_motion(start_condition=cart_monitor1)
-    giskard_wrapper.motion_goals.avoid_all_collisions()
-    if grippers_that_can_collide is not None:
-        allow_gripper_collision(grippers_that_can_collide)
+    # if grippers_that_can_collide is not None:
+    #     allow_gripper_collision(grippers_that_can_collide)
     # giskard_wrapper.motion_goals.allow_collision(group1=tip_link, group2="zuc")
     return giskard_wrapper.execute()
 
@@ -975,7 +994,7 @@ def make_world_body(object: Object) -> 'WorldBody':
     return urdf_body
 
 
-def make_point_stamped(point: List[float]) -> 'PointStamped':
+def make_point_stamped(point: List[float], frame: Optional[str] = "map") -> 'PointStamped':
     """
     Creates a PointStamped message for the given position in world coordinate frame.
 
@@ -984,7 +1003,7 @@ def make_point_stamped(point: List[float]) -> 'PointStamped':
     """
     msg = PointStamped()
     msg.header.stamp = Time().now()
-    msg.header.frame_id = "map"
+    msg.header.frame_id = frame
 
     msg.point.x = point[0]
     msg.point.y = point[1]

@@ -584,18 +584,21 @@ class DefaultMoveTCPWaypointsReal(ProcessModule):
     """
 
     def _execute(self, designator: MoveTCPWaypointsMotion):
+        print("hi")
         lt = LocalTransformer()
         waypoints = [lt.transform_pose(x, "map") for x in designator.waypoints]
-        tip_link = RobotDescription.current_robot_description.get_arm_chain(designator.arm).get_tool_frame()
-        root_link = "map"
+        if designator.tip_link is None:
+            tip_link = RobotDescription.current_robot_description.get_arm_chain(designator.arm).get_tool_frame()
+        else:
+            tip_link = designator.tip_link
+        root_link = "torso_lift_link"
 
         giskard.avoid_all_collisions()
         if designator.allow_gripper_collision:
             giskard.allow_gripper_collision(designator.arm)
 
-        giskard.achieve_cartesian_waypoints_goal(waypoints=waypoints,
-                                                 tip_link=tip_link, root_link=root_link,
-                                                 enforce_final_orientation=True if designator.movement_type == WaypointsMovementType.ENFORCE_ORIENTATION_FINAL_POINT else False)
+        giskard.achieve_cartesian_goal_sequence(goal_poses=waypoints,
+                                                tip_link=tip_link, root_link=root_link)
 
 
 class DefaultManager(ProcessModuleManager):

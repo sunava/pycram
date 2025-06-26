@@ -387,8 +387,13 @@ class MoveTCPWaypointsMotion(BaseMotion):
     """
     The type of movement that should be performed.
     """
+    tip_link: Optional[str] = None
+    """
+    Tip link can be the tool that the robot is holding or tcp.
+    """
 
     def perform(self):
+        print("pm_manager")
         pm_manager = ProcessModuleManager.get_manager()
         pm_manager.move_tcp_waypoints().execute(self)
 

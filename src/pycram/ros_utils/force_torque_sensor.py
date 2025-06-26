@@ -171,7 +171,8 @@ class ForceTorqueSensor:
         This can be useful if sensor drifting occurs during testing while taring the sensor is unavailable.
         """
         first_data = wait_for_message(self.wrench_topic_name, WrenchStamped)
-
+        if first_data is None:
+            first_data = WrenchStamped()
         if self.use_offset:
             self.offset_value = first_data
             first_data = WrenchStamped()
@@ -186,6 +187,8 @@ class ForceTorqueSensor:
         Save incoming data (unfiltered and filtered).
         Also processes the offset, if wanted
         """
+        if data_compensated is None:
+            data_compensated = WrenchStamped()
         if self.use_offset:
             data_compensated = self._process_offset(data_compensated)
 
@@ -248,8 +251,9 @@ class ForceTorqueSensor:
         Setup the monitoring for the force-torque sensor.
         """
         self._get_robot_parameters()
-        self._subscribe()
         self._initialize_data()
+        self._subscribe()
+
 
     def unsubscribe(self):
         """

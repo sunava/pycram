@@ -46,6 +46,11 @@ class Food(Base):
 class Fruit(Food):
     ...
 
+class Zucchini(Food):
+    ...
+
+class Cucumber(Food):
+    ...
 
 class Apple(Fruit):
     ...
@@ -142,6 +147,12 @@ class PhysicalObject(Base):
 class PouringTool(PhysicalObject):
     """
     The Tool that is used for pouring, can be cup, bottle, etc.
+    """
+
+
+class Pot(PhysicalObject):
+    """
+    The pot that is used for most likely mixing.
     """
 
 

@@ -1,3 +1,4 @@
+from pycrap.ontologies import Zucchini
 from .designators.action_designator import ActionDescription
 from .designators.motion_designator import *
 from .world_concepts.world_object import Object
@@ -8,14 +9,14 @@ from .ros import get_time
 from .datastructures.dataclasses import Colors
 from typing_extensions import List, TYPE_CHECKING
 from .designators.object_designator import *
-
+import robokudo_msgs as rk
 if TYPE_CHECKING:
     from .designators.object_designator import ObjectDesignatorDescription
 
 extension = ObjectDescription.get_file_extension()
 
 
-def detect(believe_object: BelieveObject) -> Any:
+def detect(believe_object: Optional[BelieveObject]) -> Any:
     """
      Perform a perception query and inject the perceived object(s) back into the BelieveObject.
      Example:
@@ -72,13 +73,15 @@ def parse_query_result(query_result, searched_type: List[str]) -> List[Object]:
         name = f"{obj_type}_{get_time()}"
         if concept:
             concept_name = str(concept.name).lower()
-            print(concept_name)
-            path = f"{concept_name}.stl"
-            description = None
+            if concept_name == "zucchini":
+                description = GenericObjectDescription(name, [0, 0, 0], half_size)
+                path = None
+            else:
+                path = f"{concept_name}.stl"
+                description = None
         else:
             path = None
             description = GenericObjectDescription(name, [0, 0, 0], half_size)
-            print("spwaning primitives")
 
         obj = Object(
             name=name,
@@ -113,7 +116,7 @@ def extract_pose(result) -> PoseStamped:
 def extract_size(result) -> List[float]:
     try:
         dims = result.shape_size[0].dimensions
-        return [dims.x / 2, dims.y / 2, dims.z / 2]
+        return [dims.x , dims.y , dims.z ]
     except IndexError:
         return [0.2, 0.2, 0.2]
 
