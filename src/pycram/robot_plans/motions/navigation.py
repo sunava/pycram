@@ -2,6 +2,7 @@ from dataclasses import dataclass
 
 from .base import BaseMotion
 from ...datastructures.pose import PoseStamped
+from ...datastructures.world import World
 from ...plan import with_plan
 from ...process_module import ProcessModuleManager
 
@@ -24,8 +25,8 @@ class MoveMotion(BaseMotion):
     """
 
     def perform(self):
-        pm_manager = ProcessModuleManager().get_manager()
-        return pm_manager.navigate().execute(self)
+        robot = World.robot
+        robot.set_pose(self.target)
 
 
 @with_plan
