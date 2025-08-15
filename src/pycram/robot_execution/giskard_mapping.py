@@ -1,24 +1,26 @@
+from pycram.datastructures.world import World
 from pycram.external_interfaces import giskard
+from pycram.failures import NavigationGoalNotReachedError
 from pycram.robot_description import RobotDescription
-from pycram.world import World
-from pycram.local_transformer import LocalTransformer
-from pycram.datastructures.enums import MovementType, WaypointsMovementType
-from pycram.helpers import euler_from_quaternion
-from scipy.spatial.transform import Rotation as R
-import numpy as np
 
-# Falls du eigene Exceptions hast:
-from pycram.failures import NavigationGoalNotReachedError, ToolPoseNotReachedError
+class GiskardMappings:
+    def map_MoveMotion(self, motion):
+        giskard.avoid_all_collisions()
+        giskard.achieve_cartesian_goal(
+            motion.target,
+            RobotDescription.current_robot_description.base_link,
+            "map"
+        )
+        if not World.current_world.robot.pose.almost_equal(motion.target, 0.05, 3):
+            raise NavigationGoalNotReachedError(World.current_world.robot.pose, motion.target)
 
-def map_MoveMotion(motion):
-    giskard.avoid_all_collisions()
-    giskard.achieve_cartesian_goal(
-        motion.target,
-        RobotDescription.current_robot_description.base_link,
-        "map"
-    )
-    if not World.current_world.robot.pose.almost_equal(motion.target, 0.05, 3):
-        raise NavigationGoalNotReachedError(World.current_world.robot.pose, motion.target)
+    def map_LookingMotion(self, motion):
+        # dein Code hier …
+        pass
+
+    def map_MoveTCPMotion(self, motion):
+        # dein Code hier …
+        pass
 
 def map_LookingMotion(motion):
     target = motion.target

@@ -1,12 +1,14 @@
 from pycram.external_interfaces import giskard
 from pycram.plan import Plan, MotionNode
 from pycram.robot_description import RobotDescription
+from pycram.robot_execution.giskard_mapping import GiskardMappings
 from pycram.robot_plans import BaseMotion
 
-# --- generischer executor ---
+mappings = GiskardMappings()
+
 def execute_with_giskard(motion: BaseMotion):
     func_name = f"map_{type(motion).__name__}"
-    mapper = globals().get(func_name)
+    mapper = getattr(mappings, func_name, None)
     if not callable(mapper):
         raise ValueError(f"No Giskard mapper function found for {type(motion).__name__}")
     mapper(motion)
